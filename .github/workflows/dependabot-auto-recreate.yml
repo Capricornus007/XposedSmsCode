@@ -20,6 +20,7 @@ jobs:
       - name: Find and Recreate Dependabot PRs
         uses: actions/github-script@v8
         with:
+          github-token: "${{ secrets.GH_PAT }}"
           script: |
             console.log('Checking for Dependabot PRs that need recreation...');
 
