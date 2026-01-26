@@ -114,3 +114,20 @@
 -keepattributes Exceptions
 # retrofit2 end
 # ==========================
+
+# ==========================
+# Kotlin Serialization start
+-keepattributes *Annotation*
+-keepclassmembers class **$Companion {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keepclassmembers class **$Companion$* {
+    ** INSTANCE;
+}
+-keepclasseswithmembers class ** {
+    kotlinx.serialization.KSerializer serializer(...);
+}
+-keep @kotlinx.serialization.Serializable class * { *; }
+-dontwarn kotlinx.serialization.**
+# Kotlin Serialization end
+# ==========================
