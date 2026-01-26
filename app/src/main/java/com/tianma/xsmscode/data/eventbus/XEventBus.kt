@@ -1,27 +1,29 @@
 package com.tianma.xsmscode.data.eventbus
 
-import org.greenrobot.eventbus.EventBus
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.launch
 
 /**
  * Event bus utils
  */
 object XEventBus {
-    private fun get(): EventBus {
-        return EventBus.getDefault()
-    }
+    private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private val _events = MutableSharedFlow<Any>()
+    val events = _events.asSharedFlow()
 
-    @JvmStatic
     fun post(event: Any) {
-        get().post(event)
+        scope.launch {
+            _events.emit(event)
+        }
     }
 
-    @JvmStatic
-    fun register(subscriber: Any) {
-        get().register(subscriber)
-    }
-
-    @JvmStatic
-    fun unregister(subscriber: Any) {
-        get().unregister(subscriber)
+    suspend inline fun <reified T> observe(): Flow<T> {
+        return events.filterIsInstance<T>()
     }
 }

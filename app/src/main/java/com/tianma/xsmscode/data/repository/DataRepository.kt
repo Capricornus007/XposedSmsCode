@@ -3,6 +3,9 @@ package com.tianma.xsmscode.data.repository
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.data.db.entity.ApkVersion
 import com.tianma.xsmscode.data.http.ApiConst
+import com.tianma.xsmscode.data.http.NetworkError
+import com.tianma.xsmscode.data.http.NetworkResult
+import com.tianma.xsmscode.data.http.toNetworkError
 import com.tianma.xsmscode.data.http.service.CoolApkService
 import com.tianma.xsmscode.data.http.service.GithubService
 import com.tianma.xsmscode.data.http.service.ServiceGenerator
@@ -16,7 +19,7 @@ object DataRepository {
         return "zh".equals(language, ignoreCase = true)
     }
 
-    suspend fun getLatestVersion(): ApkVersion {
+    suspend fun getLatestVersion(): NetworkResult<ApkVersion> {
         val isInChina = isInChina()
 
         val coolApkService = ServiceGenerator.getInstance()
@@ -26,18 +29,35 @@ object DataRepository {
             .createService(ApiConst.GITHUB_BASE_URL, GithubService::class.java)
 
         return if (isInChina) {
-            try {
-                getFromCoolApk(coolApkService)
-            } catch (e: Exception) {
-                getFromGithub(githubService, isInChina)
-            }
+            getWithFallback(
+                primary = { getFromCoolApk(coolApkService) },
+                fallback = { getFromGithub(githubService, isInChina) }
+            )
         } else {
-            try {
-                getFromGithub(githubService, isInChina)
-            } catch (e: Exception) {
-                getFromCoolApk(coolApkService)
-            }
+            getWithFallback(
+                primary = { getFromGithub(githubService, isInChina) },
+                fallback = { getFromCoolApk(coolApkService) }
+            )
         }
+    }
+
+    private suspend fun getWithFallback(
+        primary: suspend () -> ApkVersion,
+        fallback: suspend () -> ApkVersion
+    ): NetworkResult<ApkVersion> {
+        val primaryError = try {
+            return NetworkResult.Success(primary())
+        } catch (e: Exception) {
+            e.toNetworkError()
+        }
+
+        val fallbackError = try {
+            return NetworkResult.Success(fallback())
+        } catch (e: Exception) {
+            e.toNetworkError()
+        }
+
+        return NetworkResult.Error(NetworkError.MultiSource(primaryError, fallbackError))
     }
 
     private suspend fun getFromCoolApk(service: CoolApkService): ApkVersion {

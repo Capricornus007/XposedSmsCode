@@ -1,12 +1,14 @@
 package com.tianma.xsmscode.data.http.entity
 
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class GithubRelease(
-    @SerializedName("tag_name")
+    @SerialName("tag_name")
     val tagName: String? = null,
-    @SerializedName("name")
+    @SerialName("name")
     val name: String? = null,
-    @SerializedName("body")
+    @SerialName("body")
     val body: String? = null
 )

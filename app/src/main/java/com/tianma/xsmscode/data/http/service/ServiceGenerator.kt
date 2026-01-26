@@ -1,9 +1,10 @@
 package com.tianma.xsmscode.data.http.service
 
-import android.util.ArrayMap
+import com.tianma.xsmscode.common.serialization.JsonConfig
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.util.concurrent.ConcurrentHashMap
 
@@ -28,7 +29,7 @@ class ServiceGenerator private constructor() {
                 .baseUrl(baseUrl)
                 .client(mOkHttpClient)
                 .addConverterFactory(ScalarsConverterFactory.create())
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(JsonConfig.json.asConverterFactory("application/json".toMediaType()))
                 .build()
             mRetrofitMap[baseUrl] = retrofit
         }

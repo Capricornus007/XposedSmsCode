@@ -4,27 +4,25 @@ import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.google.gson.annotations.Expose
-import com.google.gson.annotations.SerializedName
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 @Entity(tableName = "app_info")
 @Parcelize
+@Serializable
 data class AppInfo @JvmOverloads constructor(
     @PrimaryKey
     @ColumnInfo(name = "package_name")
-    @SerializedName("packageName")
-    @Expose
+    @SerialName("packageName")
     var packageName: String = "",
 
     @ColumnInfo(name = "label")
-    @SerializedName("label")
-    @Expose
+    @SerialName("label")
     var label: String? = null,
 
     @ColumnInfo(name = "blocked")
-    @SerializedName("blocked")
-    @Expose
+    @SerialName("blocked")
     @get:JvmName("isBlocked")
     var blocked: Boolean = false
 ) : Parcelable

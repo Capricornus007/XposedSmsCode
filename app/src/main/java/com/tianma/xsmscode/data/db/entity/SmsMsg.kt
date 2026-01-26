@@ -5,42 +5,38 @@ import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.google.gson.annotations.Expose
-import com.google.gson.annotations.SerializedName
 import com.tianma.xsmscode.common.utils.SmsMessageUtils
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.text.Normalizer
 
 @Entity(tableName = "sms_msg")
 @Parcelize
+@Serializable
 data class SmsMsg(
     @PrimaryKey(autoGenerate = true)
-    @SerializedName("id")
+    @SerialName("id")
     var id: Long? = null,
 
     @ColumnInfo(name = "sender")
-    @Expose
-    @SerializedName("sender")
+    @SerialName("sender")
     var sender: String? = null,
 
     @ColumnInfo(name = "body")
-    @Expose
-    @SerializedName("body")
+    @SerialName("body")
     var body: String? = null,
 
     @ColumnInfo(name = "date")
-    @Expose
-    @SerializedName("date")
+    @SerialName("date")
     var date: Long = 0,
 
     @ColumnInfo(name = "company")
-    @Expose
-    @SerializedName("company")
+    @SerialName("company")
     var company: String? = null,
 
     @ColumnInfo(name = "sms_code")
-    @Expose
-    @SerializedName("code")
+    @SerialName("code")
     var smsCode: String? = null
 ) : Parcelable {
 

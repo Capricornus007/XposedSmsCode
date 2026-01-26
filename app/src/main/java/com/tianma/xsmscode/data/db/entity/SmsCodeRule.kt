@@ -2,8 +2,8 @@ package com.tianma.xsmscode.data.db.entity
 
 import android.os.Parcelable
 import androidx.room.*
-import com.google.gson.annotations.Expose
-import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import com.tianma.xsmscode.feature.backup.BackupConst
 import kotlinx.parcelize.Parcelize
 
@@ -13,21 +13,19 @@ import kotlinx.parcelize.Parcelize
         Index(value = ["company", "code_keyword", "code_regex"], unique = true)
     ]
 )
+@Serializable
 @Parcelize
 data class SmsCodeRule @JvmOverloads constructor(
     @ColumnInfo(name = "company")
-    @SerializedName(BackupConst.KEY_COMPANY)
-    @Expose
+    @SerialName(BackupConst.KEY_COMPANY)
     var company: String? = null,
 
     @ColumnInfo(name = "code_keyword")
-    @SerializedName(BackupConst.KEY_CODE_KEYWORD)
-    @Expose
+    @SerialName(BackupConst.KEY_CODE_KEYWORD)
     var codeKeyword: String = "",
 
     @ColumnInfo(name = "code_regex")
-    @SerializedName(BackupConst.KEY_CODE_REGEX)
-    @Expose
+    @SerialName(BackupConst.KEY_CODE_REGEX)
     var codeRegex: String = "",
 
     @PrimaryKey(autoGenerate = true)

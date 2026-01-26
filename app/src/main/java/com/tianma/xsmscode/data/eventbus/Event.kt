@@ -10,7 +10,7 @@ object Event {
      * Start to edit codeRule event
      */
     data class StartRuleEditEvent(
-        @RuleEditFragment.RuleEditType var type: Int,
+        @param:RuleEditFragment.RuleEditType var type: Int,
         var codeRule: SmsCodeRule?
     )
 
@@ -18,7 +18,7 @@ object Event {
      * Rule create or update event
      */
     data class OnRuleCreateOrUpdate(
-        @RuleEditFragment.RuleEditType var type: Int,
+        @param:RuleEditFragment.RuleEditType var type: Int,
         var codeRule: SmsCodeRule
     )
 
