@@ -1,11 +1,18 @@
 # XposedSmsCode
 ![Total Downloads](https://img.shields.io/github/downloads/magisk317/XposedSmsCode/total) ![Total Stars](https://img.shields.io/github/stars/magisk317/XposedSmsCode?style=social) [![Latest Release](https://img.shields.io/github/v/release/magisk317/XposedSmsCode?label=Latest%20Release)](https://github.com/magisk317/XposedSmsCode/releases)
 
-![Star History Chart](https://api.star-history.com/svg?repos=magisk317/XposedSmsCode&type=Date)
-
 识别短信验证码的Xposed模块，并将验证码拷贝到剪切板，亦可以自动输入验证码。
 
 [English README](./README-EN.md)
+
+## 重构要点
+- 设置入口已迁移至 Jetpack Compose，旧 Preference 页面移除
+- 配置存储迁移到 DataStore，移除 SharedPreferences
+- 新增 core/storage 模块，拆分网络与备份/序列化逻辑
+- 备份写入 schemaVersion/appVersion，导入提供版本跨度提示
+- 规则/记录/应用列表升级为 ListAdapter + DiffUtil
+
+[重构与现代化报告](./REFACTORING.md)
 
 # 应用截图
 <img src="./art/cn/01.png" width="180"/><img src="./art/cn/02.png" width="180"/><img src="./art/cn/03.png" width="180"/>
@@ -45,6 +52,7 @@
 - **Material Design 3 (MD3) + Material You 动态配色**
 - **100% Kotlin + 协程 (Coroutines) + Room 数据库**
 - **Jetpack Compose 现代化 UI (FaqFragment 已迁移)**
+- **设置页已升级为 Jetpack Compose**
 
 # 更新日志
 [更新日志](/LOG-CN.md)
@@ -57,7 +65,7 @@
 - [Material Dialogs](https://github.com/afollestad/material-dialogs)
 - [EventBus](https://github.com/greenrobot/EventBus)
 - [Room](https://developer.android.com/training/data-storage/room)
-- [Gson](https://github.com/google/gson)
+- [Kotlin Serialization](https://github.com/Kotlin/kotlinx.serialization)
 - [Kotlin Coroutines](https://github.com/Kotlin/kotlinx.coroutines)
 - [Material Design 3](https://m3.material.io/)
 - [Jetpack Compose](https://developer.android.com/jetpack/compose)
@@ -72,3 +80,5 @@
 | 支付宝红包口令 | 支付宝收款码 | 微信赞赏码 |
 | :---: | :---: | :---: |
 | ![Alipay Red Packet](./art/sponsorship/alipay_pocket.png) | ![Alipay](./art/sponsorship/alipay.png) | ![WeChat](./art/sponsorship/wx.png) |
+
+![Star History Chart](https://api.star-history.com/svg?repos=magisk317/XposedSmsCode&type=Date)

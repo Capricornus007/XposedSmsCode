@@ -1,4 +1,11 @@
 # 更新日志
+- 26.01.26 v3.0.1
+  1. 变更：设置页全面迁移至 Jetpack Compose。
+  2. 变更：移除 SharedPreferences，配置全面迁移到 DataStore。
+  3. 变更：新增 core/storage 模块，拆分网络与备份序列化逻辑。
+  4. 优化：备份写入 schema/app 版本，导入提供版本跨度提示。
+  5. 优化：规则/记录/应用列表切换为 ListAdapter + DiffUtil。
+  6. 修复：网络错误提示本地化，避免英文拼接。
 - 26.01.26 v3.0.0 (重大重构项目)
   1. 重构: 整个代码库 100% 迁移至 Kotlin。
   2. 变化: 基准 SDK 提升至 Android 15 (API 35)，仅支持最新系统。

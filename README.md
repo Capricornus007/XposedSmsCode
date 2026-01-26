@@ -1,11 +1,18 @@
 # XposedSmsCode
 ![Total Downloads](https://img.shields.io/github/downloads/magisk317/XposedSmsCode/total) ![Total Stars](https://img.shields.io/github/stars/magisk317/XposedSmsCode?style=social) [![Latest Release](https://img.shields.io/github/v/release/magisk317/XposedSmsCode?label=Latest%20Release)](https://github.com/magisk317/XposedSmsCode/releases)
 
-![Star History Chart](https://api.star-history.com/svg?repos=magisk317/XposedSmsCode&type=Date)
-
 An Xposed module which can recognize, parse SMS code and copy it to clipboard when a new message arrives. It can also input SMS code automatically.
 
 [中文版说明](./README-CN.md)
+
+## Refactoring Highlights
+- Settings entry migrated to Jetpack Compose; legacy Preference screens removed
+- Configuration storage migrated to DataStore; SharedPreferences removed
+- Added core/storage modules to split network and backup/serialization logic
+- Backup writes schemaVersion/appVersion with import warnings on version gaps
+- Rules/records/apps lists upgraded to ListAdapter + DiffUtil
+
+[Refactoring Report](./REFACTORING.md)
 
 # Screenshots
 <img src="./art/en/01.png" width="180"/><img src="./art/en/02.png" width="180"/><img src="./art/en/03.png" width="180"/>
@@ -40,6 +47,7 @@ Welcome any feedbacks.
 - Support the SMS code match rules customization, importation and exportation.
 - Auto-input SMS code.
 - Various theme color to choose.
+- Modern settings UI powered by Jetpack Compose.
 
 # Release Log
 [Release Logs](/LOG-EN.md)
@@ -52,7 +60,7 @@ Welcome any feedbacks.
 - [Material Dialogs](https://github.com/afollestad/material-dialogs)
 - [EventBus](https://github.com/greenrobot/EventBus)
 - [Room](https://developer.android.com/training/data-storage/room)
-- [Gson](https://github.com/google/gson)
+- [Kotlin Serialization](https://github.com/Kotlin/kotlinx.serialization)
 - [Kotlin Coroutines](https://github.com/Kotlin/kotlinx.coroutines)
 - [Material Components](https://github.com/material-components/material-components-android)
 
@@ -65,3 +73,5 @@ If you find this project helpful, please consider rewarding the developer with a
 | Alipay Red Packet | Alipay Receipt | WeChat Appreciation |
 | :---: | :---: | :---: |
 | ![Alipay Red Packet](./art/sponsorship/alipay_pocket.png) | ![Alipay](./art/sponsorship/alipay.png) | ![WeChat](./art/sponsorship/wx.png) |
+
+![Star History Chart](https://api.star-history.com/svg?repos=magisk317/XposedSmsCode&type=Date)

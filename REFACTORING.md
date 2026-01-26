@@ -12,6 +12,7 @@
 ### 2. UI 现代化 (Material Design 3)
 -   **MD3 主题迁移**: 全局主题升级为 `Theme.Material3`。
 -   **动态配色 (Dynamic Colors)**: 在 Application 中启用了 MD3 动态配色功能。
+-   **设置入口迁移**: 使用 Compose 作为主入口设置页，原 Preference 页面移除。
 -   **组件升级**:
     -   `Toolbar` -> `MaterialToolbar`: 提升标题栏体验。
     -   `Button` -> `MaterialButton`: 使用 MD3 TonalButton 等样式。
@@ -35,7 +36,7 @@
 -   **代码逻辑优化**: 移除了 Xposed Hook 类中冗余的 null 检查（Kotlin 智能类型推断），并精准抑制了 `DBProvider` 等遗留组件的 `DEPRECATION` 警告。
 -   **精准警告抑制**: 为 Xposed 必须的 `MODE_WORLD_READABLE` 等 API 添加了 `@Suppress("DEPRECATION")` 标识，确保编译输出清洁。
 
-### 3. 组件现代化 (Component Modernization)
+### 4. 组件现代化 (Component Modernization)
 -   **minSdkVersion 升级**: 从 24 进一步提升至 **35 (Android 15)**。
     -   **影响分析**: 应用现在仅支持 Android 15 及以上设备。这允许我们彻底移除针对旧版本的兼容逻辑，大幅简化代码库。
     -   **Edge-to-Edge**: 适配了 Android 15 强制要求的全屏显示 (Edge-to-Edge)，通过 `WindowInsets` 处理确保 UI 在系统栏下方正常显示。
@@ -43,16 +44,34 @@
 -   **Back Press Handling**: 迁移至 `OnBackPressedDispatcher` API。
 -   **Menu Provider**: 使用 `MenuProvider` 解耦菜单逻辑。
 
-### 4. 架构现代化
+### 5. 架构现代化
 -   **MVVM**: 核心模块迁移至 **MVVM** 架构。
 -   **Google 架构组件**: 使用 `ViewModel`, `ViewBinding`, `Room` (替代 GreenDAO)。
 
-### 5. 异步处理
+### 6. 异步处理
 -   **Coroutines**: 全面使用 Kotlin 协程处理异步任务。
-### 6. 构建与依赖现代化
+
+### 7. 构建与依赖现代化
 -   **依赖库全面升级**: 升级了所有 AndroidX 核心库、Material 组件、Lifecycle、Room、Retrofit、OkHttp 等至 2024/2025 最新稳定版。
 -   **构建工具升级**: 适配了 Gradle 9.3+ 和 Java 21。
 -   **KSP 迁移**: 替代 KAPT 处理 Room 注解，提升编译速度。
+-   **CI/CD 集成**: 引入 GitHub Actions 自动化构建流程，支持从 Push Tag 到自动签名并发布 Release 的全链路自动化。
+-   **模块拆分**: 新增 `core` 与 `storage` 模块，抽离网络结果与备份/序列化逻辑。
+
+### 8. 架构优化 (Architecture Improvements)
+-   **EventBus 去除**: 彻底移除了 `org.greenrobot:eventbus` 第三方库。
+    -   **自研替代**: 实现了基于 Kotlin Coroutines `SharedFlow` 的轻量级 `XEventBus`。
+    -   **生命周期安全**: 结合 `LifecycleOwner.repeatOnLifecycle` API，确保 UI 事件仅在活跃状态下响应，避免了内存泄漏和后台更新 UI 的风险。
+    -   **类型安全**: 利用 Kotlin 泛型和 `filterIsInstance` 实现类型安全的事件分发。
+
+### 9. JSON 序列化迁移 (Gson -> Kotlin Serialization)
+-   **网络层**: Retrofit 迁移至 `converter-kotlinx-serialization`，统一使用 `Json` 配置解析。
+-   **网络错误本地化**: 统一 `NetworkResult` → `UiMessage` 映射，避免硬编码英文提示。
+-   **模型层**: 关键实体补齐 `@Serializable`/`@SerialName` 映射，确保字段命名一致。
+-   **文件存储**: 规则导入/导出与本地实体存储改为 Kotlin Serialization，新增备份载体结构以保持版本兼容。
+-   **备份版本校验**: 备份写入 `schemaVersion` 与 `appVersion`，导入时提供版本跨度提示。
+-   **列表性能**: 规则/记录/应用列表升级为 `ListAdapter + DiffUtil`。
+
 
 ## 已移除的关键库
 -   `ButterKnife`
@@ -60,9 +79,5 @@
 -   `RxJava` / `RxAndroid`
 -   `Dagger`
 -   `MaterialDialogs` (afollestad) -> 迁移至 MD3 `MaterialAlertDialogBuilder`
-
-## 下一步计划
--   **Compose 深度集成**: 继续推进 Jetpack Compose 的 UI 改造。
--   **UI 细节打磨**: 进一步优化 MD3 动态配色和交互动画。
--   **适配 Android 15+**: 完善了 Edge-to-Edge 适配和现代 Hooking 逻辑。
--   **类型安全 Intent/Bundle**: 全面迁移至 AndroidX 的 `BundleCompat` 和 `IntentCompat`。
+-   `EventBus` (GreenRobot) -> 迁移至 Kotlin SharedFlow
+-   `Gson` -> 迁移至 Kotlin Serialization

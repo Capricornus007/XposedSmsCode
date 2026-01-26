@@ -1,4 +1,11 @@
 # Update Logs
+- 26.01.26 v3.0.1
+  1. Change: Settings fully migrated to Jetpack Compose.
+  2. Change: Removed SharedPreferences; configuration moved to DataStore.
+  3. Change: Added core/storage modules to split network and backup/serialization.
+  4. Improve: Backup writes schema/app version; import warns on version gaps.
+  5. Improve: Rules/records/apps lists use ListAdapter + DiffUtil.
+  6. Fix: Localized network error messages.
 - 24.01.05 v2.5.1 Reboot required
   1. Fix: the issue of cannot show sms notification on Android 14 @klxiaoniu
   2. Fix: the issue of cannot open the webpage for viewing the source code
