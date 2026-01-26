@@ -22,6 +22,8 @@ object Const {
 
     /* Xposed SmsCode begin */
     const val HOME_ACTIVITY_ALIAS = BuildConfig.APPLICATION_ID + ".HomeActivityAlias"
+    const val EXTRA_ACTION = "extra_action"
+    const val ACTION_DONATE_BY_ALIPAY = "donate_by_alipay"
 
     const val PROJECT_SOURCE_CODE_URL = "https://github.com/magisk317/XposedSmsCode"
     const val PROJECT_GITHUB_LATEST_RELEASE_URL = PROJECT_SOURCE_CODE_URL + "/releases/latest"

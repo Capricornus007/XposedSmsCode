@@ -6,14 +6,12 @@ import android.os.Bundle
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.xp.hook.code.action.CallableAction
-import de.robv.android.xposed.XSharedPreferences
 
 class CancelNotifyAction(
     pluginContext: Context,
     phoneContext: Context,
-    smsMsg: SmsMsg,
-    xsp: XSharedPreferences
-) : CallableAction(pluginContext, phoneContext, smsMsg, xsp) {
+    smsMsg: SmsMsg
+) : CallableAction(pluginContext, phoneContext, smsMsg) {
 
     private var mNotificationId = NOTIFICATION_NONE
 

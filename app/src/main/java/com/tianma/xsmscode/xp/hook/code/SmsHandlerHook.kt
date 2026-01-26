@@ -12,15 +12,13 @@ import android.provider.Telephony
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.common.constant.NotificationConst
-import com.tianma.xsmscode.common.constant.PrefConst
 import androidx.core.content.ContextCompat
 import com.tianma.xsmscode.common.utils.NotificationUtils
+import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.common.utils.XSPUtils
 import com.tianma.xsmscode.xp.helper.XposedWrapper
 import com.tianma.xsmscode.xp.hook.BaseHook
 import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XSharedPreferences
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
@@ -164,12 +162,11 @@ class SmsHandlerHook : BaseHook() {
     }
 
     private fun registerCopyCodeReceiver() {
-        val xsp = XSharedPreferences(BuildConfig.APPLICATION_ID, PrefConst.PREF_NAME)
-        if (XSPUtils.showCodeNotification(xsp)) {
-            mPhoneContext?.let {
-                CopyCodeReceiver.registerMe(it)
-                XLog.d("Register copy code receiver")
-            }
+        val pluginContext = mPluginContext ?: return
+        if (!PrefsReader.showCodeNotification(pluginContext)) return
+        mPhoneContext?.let {
+            CopyCodeReceiver.registerMe(it)
+            XLog.d("Register copy code receiver")
         }
     }
 

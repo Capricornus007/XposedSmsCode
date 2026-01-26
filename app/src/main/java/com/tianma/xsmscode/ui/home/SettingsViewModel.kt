@@ -12,6 +12,8 @@ import com.tianma.xsmscode.common.constant.Const
 import com.tianma.xsmscode.common.livedata.SingleLiveEvent
 import com.tianma.xsmscode.common.utils.*
 import com.tianma.xsmscode.data.db.entity.ApkVersion
+import com.tianma.xsmscode.data.http.NetworkError
+import com.tianma.xsmscode.data.http.NetworkResult
 import com.tianma.xsmscode.data.repository.DataRepository
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -23,14 +25,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val mShowPrivacyPolicyEvent = SingleLiveEvent<Void>()
     private val mShowAlipayPacketEvent = SingleLiveEvent<Void>()
     private val mSmsCodeTestResultEvent = SingleLiveEvent<String>()
-    private val mCheckUpdateErrorEvent = SingleLiveEvent<Throwable>()
+    private val mCheckUpdateErrorEvent = SingleLiveEvent<NetworkError>()
     private val mShowUpdateDialogEvent = SingleLiveEvent<ApkVersion>()
     private val mAppAlreadyNewestEvent = SingleLiveEvent<Void>()
 
     val showPrivacyPolicyEvent: LiveData<Void> = mShowPrivacyPolicyEvent
     val showAlipayPacketEvent: LiveData<Void> = mShowAlipayPacketEvent
     val smsCodeTestResultEvent: LiveData<String> = mSmsCodeTestResultEvent
-    val checkUpdateErrorEvent: LiveData<Throwable> = mCheckUpdateErrorEvent
+    val checkUpdateErrorEvent: LiveData<NetworkError> = mCheckUpdateErrorEvent
     val showUpdateDialogEvent: LiveData<ApkVersion> = mShowUpdateDialogEvent
     val appAlreadyNewestEvent: LiveData<Void> = mAppAlreadyNewestEvent
 
@@ -46,17 +48,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             return
         }
 
-        val extraAction = args.getString(SettingsFragment.EXTRA_ACTION)
-        if (SettingsFragment.ACTION_DONATE_BY_ALIPAY == extraAction) {
-            args.remove(SettingsFragment.EXTRA_ACTION)
+        val extraAction = args.getString(Const.EXTRA_ACTION)
+        if (Const.ACTION_DONATE_BY_ALIPAY == extraAction) {
+            args.remove(Const.EXTRA_ACTION)
             mShowAlipayPacketEvent.call()
         }
     }
 
-    fun setPreferenceWorldWritable(preferencesName: String) {
-        val prefsFile = StorageUtils.getSharedPreferencesFile(getApplication(), preferencesName)
-        StorageUtils.setFileWorldWritable(prefsFile, 2)
-    }
 
     fun hideOrShowLauncherIcon(hide: Boolean) {
         val pm = getApplication<Application>().packageManager
@@ -71,7 +69,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val code = withContext(Dispatchers.IO) {
                 if (TextUtils.isEmpty(msgBody)) "" else
-                    SmsCodeUtils.parseSmsCodeIfExists(getApplication(), msgBody, false) ?: ""
+                    SmsCodeUtils.parseSmsCodeIfExists(getApplication(), msgBody)
             }
             mSmsCodeTestResultEvent.value = code
         }
@@ -86,23 +84,30 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setInternalFilesWritable() {
-        StorageUtils.setFileWorldWritable(StorageUtils.getFilesDir(), 1)
+        StorageUtils.setFileWorldWritable(StorageUtils.getFilesDir(getApplication()), 1)
     }
 
     fun checkUpdate() {
         viewModelScope.launch {
             try {
-                val latestVersion = withContext(Dispatchers.IO) {
+                val result = withContext(Dispatchers.IO) {
                     DataRepository.getLatestVersion()
                 }
-                val currentVersion = ApkVersion(BuildConfig.VERSION_NAME, "")
-                if (currentVersion < latestVersion) {
-                    mShowUpdateDialogEvent.value = latestVersion
-                } else {
-                    mAppAlreadyNewestEvent.call()
+                when (result) {
+                    is NetworkResult.Success -> {
+                        val currentVersion = ApkVersion(BuildConfig.VERSION_NAME, "")
+                        if (currentVersion < result.data) {
+                            mShowUpdateDialogEvent.value = result.data
+                        } else {
+                            mAppAlreadyNewestEvent.call()
+                        }
+                    }
+                    is NetworkResult.Error -> {
+                        mCheckUpdateErrorEvent.value = result.error
+                    }
                 }
             } catch (e: Throwable) {
-                mCheckUpdateErrorEvent.value = e
+                mCheckUpdateErrorEvent.value = NetworkError.Unexpected(e.message, e)
             }
         }
     }

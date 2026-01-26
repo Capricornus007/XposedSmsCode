@@ -13,11 +13,10 @@ import androidx.core.content.ContextCompat
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.common.constant.NotificationConst
 import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.common.utils.XSPUtils
+import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.xp.hook.code.CopyCodeReceiver
 import com.tianma.xsmscode.xp.hook.code.action.CallableAction
-import de.robv.android.xposed.XSharedPreferences
 
 /**
  * 显示验证码通知
@@ -25,12 +24,11 @@ import de.robv.android.xposed.XSharedPreferences
 class NotifyAction(
     pluginContext: Context,
     phoneContext: Context,
-    smsMsg: SmsMsg,
-    xsp: XSharedPreferences
-) : CallableAction(pluginContext, phoneContext, smsMsg, xsp) {
+    smsMsg: SmsMsg
+) : CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
-        if (XSPUtils.showCodeNotification(xsp)) {
+        if (PrefsReader.showCodeNotification(mPluginContext)) {
             return showCodeNotification(mSmsMsg)
         }
         return null
@@ -68,8 +66,8 @@ class NotifyAction(
         manager.notify(notificationId, notification)
         XLog.d("Show notification succeed")
 
-        if (XSPUtils.autoCancelCodeNotification(xsp)) {
-            val retentionTime = XSPUtils.getNotificationRetentionTime(xsp) * 1000L
+        if (PrefsReader.autoCancelCodeNotification(mPluginContext)) {
+            val retentionTime = PrefsReader.getNotificationRetentionTime(mPluginContext) * 1000L
             val bundle = Bundle()
             bundle.putLong(NOTIFY_RETENTION_TIME, retentionTime)
             bundle.putInt(NOTIFY_ID, notificationId)

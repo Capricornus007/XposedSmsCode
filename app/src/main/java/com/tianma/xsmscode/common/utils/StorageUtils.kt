@@ -3,8 +3,6 @@ package com.tianma.xsmscode.common.utils
 import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Environment
-import androidx.core.content.ContextCompat
-import com.github.tianma8023.xposed.smscode.BuildConfig
 import java.io.File
 
 /**
@@ -42,67 +40,33 @@ object StorageUtils {
         }
     }
 
-    /**
-     * Get sdcard directory
-     */
     @JvmStatic
-    fun getSDCardDir(): File {
-        return Environment.getExternalStorageDirectory()
-    }
-
-    /**
-     * get sdcard public documents directory
-     */
-    @JvmStatic
-    fun getPublicDocumentsDir(): File {
-        return Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
+    fun getPublicDocumentsDir(context: Context): File {
+        return context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS) ?: context.filesDir
     }
 
     @JvmStatic
-    fun getSharedPreferencesFile(context: Context, preferencesName: String): File {
-        val dataDir = ContextCompat.getDataDir(context)
-        val prefsDir = File(dataDir, "shared_prefs")
-        return File(prefsDir, "$preferencesName.xml")
+    fun getInternalDataDir(context: Context): File {
+        return context.dataDir
     }
 
-    /**
-     * Get internal data dir. /data/data/<package_name>/
-     */
     @JvmStatic
-    fun getInternalDataDir(): File {
-        return File(Environment.getDataDirectory(), "data/${BuildConfig.APPLICATION_ID}")
+    fun getInternalFilesDir(context: Context): File {
+        return File(getInternalDataDir(context), "files")
     }
 
-    /**
-     * Get internal files dir. /data/data/<package_name>/files/
-     */
     @JvmStatic
-    fun getInternalFilesDir(): File {
-        return File(getInternalDataDir(), "files")
+    fun getExternalFilesDir(context: Context): File {
+        return context.getExternalFilesDir(null) ?: context.filesDir
     }
 
-    /**
-     * Get external files dir. /sdcard/Android/data/<package_name>/files/
-     */
     @JvmStatic
-    fun getExternalFilesDir(): File {
-        return File(Environment.getExternalStorageDirectory(), "Android/data/${BuildConfig.APPLICATION_ID}/files/")
-    }
-
-    /**
-     * Get files dir
-     */
-    @JvmStatic
-    fun getFilesDir(): File {
-        return if (isSDCardMounted()) {
-            val externalFilesDir = getExternalFilesDir()
-            if (!externalFilesDir.exists()) {
-                externalFilesDir.mkdirs()
-            }
-            externalFilesDir
-        } else {
-            getInternalFilesDir()
+    fun getFilesDir(context: Context): File {
+        val externalFilesDir = getExternalFilesDir(context)
+        if (!externalFilesDir.exists()) {
+            externalFilesDir.mkdirs()
         }
+        return externalFilesDir
     }
 
     /**

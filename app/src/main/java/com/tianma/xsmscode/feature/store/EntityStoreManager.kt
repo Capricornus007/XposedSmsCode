@@ -1,5 +1,6 @@
 package com.tianma.xsmscode.feature.store
 
+import android.content.Context
 import com.tianma.xsmscode.common.utils.JsonUtils
 import com.tianma.xsmscode.common.utils.StorageUtils
 import com.tianma.xsmscode.common.utils.XLog
@@ -22,21 +23,21 @@ object EntityStoreManager {
     private val BLOCKED_APPS_FILE_NAME = "blocked_apps"
     private val PREV_CODE_RECORD = "prev_code_record"
 
-    private fun getStoreFile(entityType: EntityType): File {
+    private fun getStoreFile(context: Context, entityType: EntityType): File {
         val filename = when (entityType) {
             EntityType.BLOCKED_APP -> BLOCKED_APPS_FILE_NAME
             EntityType.CODE_RULES -> CODE_RULES_FILE_NAME
             EntityType.CODE_RULE_TEMPLATE -> CODE_RULE_TEMPLATE_FILE_NAME
             EntityType.PREV_SMS_MSG -> PREV_CODE_RECORD
         }
-        return File(StorageUtils.getFilesDir(), filename)
+        return File(StorageUtils.getFilesDir(context), filename)
     }
 
     @JvmStatic
-    fun <T> storeEntitiesToFile(entityType: EntityType, entities: List<T>): Boolean {
+    fun <T> storeEntitiesToFile(context: Context, entityType: EntityType, entities: List<T>): Boolean {
         var osw: OutputStreamWriter? = null
         try {
-            val storeFile = getStoreFile(entityType)
+            val storeFile = getStoreFile(context, entityType)
             osw = OutputStreamWriter(FileOutputStream(storeFile), StandardCharsets.UTF_8)
 
             JsonUtils.toJson(entities, osw, true)
@@ -59,15 +60,15 @@ object EntityStoreManager {
     }
 
     @JvmStatic
-    fun <T> storeEntityToFile(entityType: EntityType, entity: T): Boolean {
+    fun <T> storeEntityToFile(context: Context, entityType: EntityType, entity: T): Boolean {
         val entities = ArrayList<T>()
         entities.add(entity)
-        return storeEntitiesToFile(entityType, entities)
+        return storeEntitiesToFile(context, entityType, entities)
     }
 
     @JvmStatic
-    fun <T> loadEntitiesFromFile(entityType: EntityType, entityClass: Class<T>): List<T> {
-        val storeFile = getStoreFile(entityType)
+    fun <T : Any> loadEntitiesFromFile(context: Context, entityType: EntityType, entityClass: Class<T>): List<T> {
+        val storeFile = getStoreFile(context, entityType)
         if (!storeFile.exists()) {
             return ArrayList()
         }
@@ -77,7 +78,7 @@ object EntityStoreManager {
                 FileInputStream(storeFile), StandardCharsets.UTF_8
             )
 
-            return JsonUtils.listFromJson(isr, entityClass, true)
+            return JsonUtils.listFromJson(isr, entityClass)
         } catch (e: Exception) {
             XLog.e("load entities from file failed", e)
         } finally {
@@ -93,8 +94,8 @@ object EntityStoreManager {
     }
 
     @JvmStatic
-    fun <T> loadEntityFromFile(entityType: EntityType, entityClass: Class<T>): T? {
-        val entities = loadEntitiesFromFile(entityType, entityClass)
+    fun <T : Any> loadEntityFromFile(context: Context, entityType: EntityType, entityClass: Class<T>): T? {
+        val entities = loadEntitiesFromFile(context, entityType, entityClass)
         return if (entities.isNotEmpty()) {
             entities[0]
         } else null

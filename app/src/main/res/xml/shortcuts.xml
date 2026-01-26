@@ -33,7 +33,7 @@
         android:shortcutShortLabel="@string/pref_donate_by_alipay_title">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetClass="com.tianma.xsmscode.ui.home.HomeActivity"
+            android:targetClass="com.tianma.xsmscode.ui.home.ComposeSettingsActivity"
             android:targetPackage="com.github.tianma8023.xposed.smscode">
             <extra android:name="extra_action" android:value="donate_by_alipay"/>
         </intent>

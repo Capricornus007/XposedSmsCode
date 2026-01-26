@@ -1,22 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources xmlns:tools="http://schemas.android.com/tools">
+<resources>
 
     <style name="AppNoActionBarTheme" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="preferenceIconColor">?android:attr/textColorPrimary</item>
-        <item name="preferenceTheme">@style/MyPreferenceStyle</item>
     </style>
 
     <style name="AppActionBarTheme" parent="Theme.Material3.DayNight">
         <item name="preferenceIconColor">?android:attr/textColorPrimary</item>
-        <item name="preferenceTheme">@style/MyPreferenceStyle</item>
-    </style>
-
-    <style name="MyPreferenceStyle" parent="@style/PreferenceThemeOverlay.v14.Material">
-        <item name="preferenceCategoryStyle">@style/MyPreferenceCategoryStyle</item>
-    </style>
-
-    <style name="MyPreferenceCategoryStyle" parent="@style/Preference.Category.Material">
-        <item name="android:layout" tools:ignore="PrivateResource">@layout/preference_category</item>
     </style>
 
 </resources>

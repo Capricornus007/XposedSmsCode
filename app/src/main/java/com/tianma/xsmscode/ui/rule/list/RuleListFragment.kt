@@ -19,6 +19,9 @@ import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.launch
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -31,6 +34,7 @@ import com.google.android.material.snackbar.Snackbar
 import com.tianma.xsmscode.common.TextWatcherAdapter
 import com.tianma.xsmscode.common.adapter.BaseItemCallback
 import com.tianma.xsmscode.common.utils.SnackbarHelper
+import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
 import com.tianma.xsmscode.common.utils.Utils
 import com.tianma.xsmscode.common.widget.FabScrollBehavior
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
@@ -38,9 +42,8 @@ import com.tianma.xsmscode.data.eventbus.Event
 import com.tianma.xsmscode.data.eventbus.XEventBus
 import com.tianma.xsmscode.feature.backup.BackupManager
 import com.tianma.xsmscode.feature.backup.ImportResult
+import com.tianma.xsmscode.feature.backup.ImportWarning
 import com.tianma.xsmscode.ui.rule.edit.RuleEditFragment
-import org.greenrobot.eventbus.Subscribe
-import org.greenrobot.eventbus.ThreadMode
 import java.io.File
 
 /**
@@ -80,7 +83,7 @@ class RuleListFragment : Fragment() {
         binding?.ruleListRecyclerView?.apply {
             layoutManager = LinearLayoutManager(mActivity)
             addItemDecoration(DividerItemDecoration(mActivity, DividerItemDecoration.VERTICAL))
-            mRuleAdapter = RuleAdapter(requireActivity(), mutableListOf())
+            mRuleAdapter = RuleAdapter()
             adapter = mRuleAdapter
         }
 
@@ -125,7 +128,20 @@ class RuleListFragment : Fragment() {
         refreshData()
         mViewModel.handleArguments(arguments)
         
+        
         setupMenu()
+
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                XEventBus.observe<Event.OnRuleCreateOrUpdate>().collect { event ->
+                    if (event.type == RuleEditFragment.EDIT_TYPE_CREATE) {
+                        mRuleAdapter?.addRule(event.codeRule)
+                    } else if (event.type == RuleEditFragment.EDIT_TYPE_UPDATE) {
+                        mRuleAdapter?.updateAt(mSelectedPosition, event.codeRule)
+                    }
+                }
+            }
+        }
     }
 
     private fun setupMenu() {
@@ -156,12 +172,7 @@ class RuleListFragment : Fragment() {
 
     override fun onStart() {
         super.onStart()
-        XEventBus.register(this)
-    }
-
-    override fun onStop() {
-        super.onStop()
-        XEventBus.unregister(this)
+        mRuleAdapter?.getRuleList()?.let { mViewModel.saveRulesToFile(it) }
         mRuleAdapter?.getRuleList()?.let { mViewModel.saveRulesToFile(it) }
     }
 
@@ -241,14 +252,6 @@ class RuleListFragment : Fragment() {
         }
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onRuleSaveOrUpdate(event: Event.OnRuleCreateOrUpdate) {
-        if (event.type == RuleEditFragment.EDIT_TYPE_CREATE) {
-            mRuleAdapter?.addRule(event.codeRule)
-        } else if (event.type == RuleEditFragment.EDIT_TYPE_UPDATE) {
-            mRuleAdapter?.updateAt(mSelectedPosition, event.codeRule)
-        }
-    }
 
     private fun attemptExportRuleList() {
         if ((mRuleAdapter?.itemCount ?: 0) == 0) {
@@ -257,7 +260,7 @@ class RuleListFragment : Fragment() {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val exportIntent = BackupManager.getExportRuleListSAFIntent()
+            val exportIntent = BackupManager.getExportRuleListSAFIntent(requireContext())
             try {
                 mExportLauncher.launch(exportIntent)
             } catch (e: Exception) {
@@ -270,10 +273,10 @@ class RuleListFragment : Fragment() {
                 return
             }
 
-            val defaultFilename = BackupManager.getDefaultBackupFilename()
+            val defaultFilename = BackupManager.getDefaultBackupFilename(requireContext())
             val hint = getString(R.string.backup_file_name)
-            val backupDir = BackupManager.getBackupDir()
-            val backupDirPath = backupDir?.absolutePath ?: ""
+            val backupDir = BackupManager.getBackupDir(requireContext())
+            val backupDirPath = backupDir.absolutePath
             val content = getString(R.string.backup_file_dir, backupDirPath)
             val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_code_regex_quick_chcoose, null) // Reusing existing layout for input or just creating a new one
             // Actually I should create a simple input layout or use EditText directly. 
@@ -300,13 +303,9 @@ class RuleListFragment : Fragment() {
                 .setNegativeButton(R.string.cancel, null)
                 .setPositiveButton(R.string.confirm) { _, _ ->
                     val input = inputEditText.text.toString()
-                    if (backupDir != null) {
-                        val file = File(backupDir, input)
-                        mRuleAdapter?.getRuleList()?.let {
-                            mViewModel.exportRulesBelowQ(it, file, getString(R.string.exporting))
-                        }
-                    } else {
-                         SnackbarHelper.makeLong(binding!!.ruleListRecyclerView, R.string.save_failed).show()
+                    val file = File(backupDir, input)
+                    mRuleAdapter?.getRuleList()?.let {
+                        mViewModel.exportRulesBelowQ(it, file, getString(R.string.exporting))
                     }
                 }
                 .create()
@@ -323,7 +322,7 @@ class RuleListFragment : Fragment() {
 
     private fun attemptImportRuleList() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val importIntent = BackupManager.getImportRuleListSAFIntent()
+            val importIntent = BackupManager.getImportRuleListSAFIntent(requireContext())
             try {
                 mImportLauncher.launch(importIntent)
             } catch (e: Exception) {
@@ -336,7 +335,7 @@ class RuleListFragment : Fragment() {
                 return
             }
 
-            val files = BackupManager.getBackupFiles()
+            val files = BackupManager.getBackupFiles(requireContext())
             if (files == null || files.isEmpty()) {
                 binding?.let { SnackbarHelper.makeLong(it.ruleListRecyclerView, R.string.no_backup_exists).show() }
                 return
@@ -367,6 +366,7 @@ class RuleListFragment : Fragment() {
         mViewModel.exportResultBelowQEvent.observe(viewLifecycleOwner) { pair -> onExportCompletedBelowQ(pair.first, pair.second) }
         mViewModel.exportResultAboveQEvent.observe(viewLifecycleOwner) { onExportCompletedAboveQ(it) }
         mViewModel.importResultEvent.observe(viewLifecycleOwner) { onImportComplete(it) }
+        mViewModel.importWarningEvent.observe(viewLifecycleOwner) { showImportWarning(it) }
     }
 
     private fun displayRules(rules: List<SmsCodeRule>) {
@@ -419,10 +419,41 @@ class RuleListFragment : Fragment() {
             }
             ImportResult.VERSION_MISSED -> R.string.import_failed_version_missed
             ImportResult.VERSION_UNKNOWN -> R.string.import_failed_version_unknown
+            ImportResult.VERSION_TOO_NEW -> R.string.import_failed_version_too_new
+            ImportResult.VERSION_TOO_OLD -> R.string.import_failed_version_too_old
             ImportResult.BACKUP_INVALID -> R.string.import_failed_backup_invalid
             else -> R.string.import_failed_read_error
         }
         binding?.let { SnackbarHelper.makeLong(it.ruleListRecyclerView, msg).show() }
+        maybeShowCompatibilityTip(importResult)
+    }
+
+    private fun showImportWarning(warning: ImportWarning) {
+        val msg = when (warning) {
+            ImportWarning.APP_VERSION_MISMATCH -> R.string.import_warning_app_version_mismatch
+        }
+        binding?.let { SnackbarHelper.makeLong(it.ruleListRecyclerView, msg).show() }
+    }
+
+    private fun maybeShowCompatibilityTip(importResult: ImportResult) {
+        if (importResult == ImportResult.SUCCESS) return
+        val shouldShow = importResult == ImportResult.VERSION_MISSED ||
+            importResult == ImportResult.VERSION_UNKNOWN ||
+            importResult == ImportResult.VERSION_TOO_NEW ||
+            importResult == ImportResult.VERSION_TOO_OLD ||
+            importResult == ImportResult.BACKUP_INVALID
+        if (!shouldShow) return
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val context = requireContext()
+            if (AppPreferencesDataStore.isBackupCompatTipShown(context)) return@launch
+            AppPreferencesDataStore.setBackupCompatTipShown(context, true)
+            MaterialAlertDialogBuilder(context)
+                .setTitle(R.string.import_compatibility_title)
+                .setMessage(R.string.import_compatibility_message)
+                .setPositiveButton(R.string.i_know, null)
+                .show()
+        }
     }
 
     private fun showProgress(progressMsg: String) {

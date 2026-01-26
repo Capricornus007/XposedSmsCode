@@ -15,7 +15,7 @@ object SPUtils {
     @JvmStatic
     fun getLocalVersionCode(context: Context): Int {
         // 如果不存在,则默认返回16,即v1.4.5版本
-        return PreferencesUtils.getInt(context, LOCAL_VERSION_CODE, LOCAL_VERSION_CODE_DEFAULT)
+        return AppPreferencesDataStore.getIntBlocking(context, LOCAL_VERSION_CODE, LOCAL_VERSION_CODE_DEFAULT)
     }
 
     /**
@@ -23,7 +23,7 @@ object SPUtils {
      */
     @JvmStatic
     fun setLocalVersionCode(context: Context, versionCode: Int) {
-        PreferencesUtils.putInt(context, LOCAL_VERSION_CODE, versionCode)
+        AppPreferencesDataStore.setIntBlocking(context, LOCAL_VERSION_CODE, versionCode)
     }
 
     /**
@@ -31,7 +31,11 @@ object SPUtils {
      */
     @JvmStatic
     fun getSMSCodeKeywords(context: Context): String? {
-        return PreferencesUtils.getString(context, PrefConst.KEY_SMSCODE_KEYWORDS, PrefConst.SMSCODE_KEYWORDS_DEFAULT)
+        return AppPreferencesDataStore.getStringBlocking(
+            context,
+            PrefConst.KEY_SMSCODE_KEYWORDS,
+            PrefConst.SMSCODE_KEYWORDS_DEFAULT
+        )
     }
 
     /**
@@ -39,7 +43,7 @@ object SPUtils {
      */
     @JvmStatic
     fun isPrivacyPolicyAccepted(context: Context): Boolean {
-        return PreferencesUtils.getBoolean(context, PrefConst.KEY_PRIVACY_POLICY_ACCEPTED, false)
+        return AppPreferencesDataStore.getBooleanBlocking(context, PrefConst.KEY_PRIVACY_POLICY_ACCEPTED, false)
     }
 
     /**
@@ -47,7 +51,7 @@ object SPUtils {
      */
     @JvmStatic
     fun setPrivacyPolicyAccepted(context: Context, accepted: Boolean) {
-        PreferencesUtils.putBoolean(context, PrefConst.KEY_PRIVACY_POLICY_ACCEPTED, accepted)
+        AppPreferencesDataStore.setBooleanBlocking(context, PrefConst.KEY_PRIVACY_POLICY_ACCEPTED, accepted)
     }
 
     /**
@@ -56,7 +60,7 @@ object SPUtils {
      */
     @JvmStatic
     fun getThemeMode(context: Context): Int {
-        return PreferencesUtils.getInt(context, PrefConst.KEY_CHOOSE_THEME, 0)
+        return AppPreferencesDataStore.getIntBlocking(context, PrefConst.KEY_CHOOSE_THEME, 0)
     }
 
     /**
@@ -64,6 +68,6 @@ object SPUtils {
      */
     @JvmStatic
     fun setThemeMode(context: Context, mode: Int) {
-        PreferencesUtils.putInt(context, PrefConst.KEY_CHOOSE_THEME, mode)
+        AppPreferencesDataStore.setIntBlocking(context, PrefConst.KEY_CHOOSE_THEME, mode)
     }
 }

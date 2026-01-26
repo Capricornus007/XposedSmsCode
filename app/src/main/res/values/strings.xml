@@ -23,6 +23,8 @@
     <string name="pref_hide_launcher_icon_summary">You can reopen this App in Xposed modules</string>
     <string name="pref_choose_theme_title">Theme</string>
     <string name="pref_choose_theme_summary">Follow System, Light or Dark</string>
+    <string name="pref_compose_settings_title">Modern Settings</string>
+    <string name="pref_compose_settings_summary">Open Compose-based settings</string>
     <string name="theme_follow_system">Automatic (Follow System)</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
@@ -125,6 +127,8 @@
     <string name="pref_source_code_title">Source code</string>
     <string name="browser_install_or_enable_prompt">Please install or enable browser first</string>
     <string name="pref_source_code_summary">Welcome to star ♪(＾∀＾●)ﾉ</string>
+    <string name="pref_about_compose_title">Modern About</string>
+    <string name="pref_about_compose_summary">Open the Compose-based about page</string>
     <string name="pref_donate_by_alipay_title">Donation Appreciation</string>
     <string name="alipay_install_prompt">Please install Alipay</string>
     <string name="alipay_enable_prompt">Please enable Alipay</string>
@@ -181,6 +185,11 @@
     <string name="import_failed_version_unknown">Import failed, version unknown</string>
     <string name="import_failed_backup_invalid">Import failed, backup invalid</string>
     <string name="import_failed_read_error">Import failed, read file error</string>
+    <string name="import_failed_version_too_new">Import failed, backup version is newer</string>
+    <string name="import_failed_version_too_old">Import failed, backup version is too old</string>
+    <string name="import_warning_app_version_mismatch">Backup created by a different app version. Please verify rules.</string>
+    <string name="import_compatibility_title">Import compatibility tips</string>
+    <string name="import_compatibility_message">This backup may be from an older or incompatible version. Consider exporting a new backup from the same app version before importing.</string>
     <string name="export_succeed">Export succeed</string>
     <string name="export_failed">Export failed, try again please</string>
     <string name="import_confirmation_title">Import confirmation</string>
@@ -249,6 +258,11 @@
     <!-- check update -->
     <string name="new_version_found">New version found!</string>
     <string name="check_update_failed">Check update failed.</string>
+    <string name="network_error_http">HTTP %1$d</string>
+    <string name="network_error_io">Network error</string>
+    <string name="network_error_serialization">Response parsing failed</string>
+    <string name="network_error_unexpected">Unexpected error</string>
+    <string name="network_error_multi_source">All sources failed</string>
     <string name="app_already_newest">Current version is the latest.</string>
     <string name="update_from_github">Go to GitHub</string>
     <string name="update_from_coolapk">Go to Coolapk</string>

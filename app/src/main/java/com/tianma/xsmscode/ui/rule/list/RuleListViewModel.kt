@@ -10,14 +10,17 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.livedata.SingleLiveEvent
 import androidx.core.os.BundleCompat
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBManager
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.feature.backup.BackupManager
+import com.tianma.xsmscode.feature.backup.BackupRule
 import com.tianma.xsmscode.feature.backup.ExportResult
 import com.tianma.xsmscode.feature.backup.ImportResult
+import com.tianma.xsmscode.feature.backup.ImportWarning
 import com.tianma.xsmscode.feature.store.EntityStoreManager
 import com.tianma.xsmscode.feature.store.EntityType
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +40,7 @@ class RuleListViewModel(application: Application) : AndroidViewModel(application
     private val mExportResultBelowQEvent = SingleLiveEvent<Pair<Boolean, File>>()
     private val mExportResultAboveQEvent = SingleLiveEvent<Boolean>()
     private val mImportResultEvent = SingleLiveEvent<ImportResult>()
+    private val mImportWarningEvent = SingleLiveEvent<ImportWarning>()
 
     val rulesLiveData: LiveData<List<SmsCodeRule>> = mRulesLiveData
     val importDirectEvent: LiveData<Uri> = mImportDirectEvent
@@ -46,6 +50,7 @@ class RuleListViewModel(application: Application) : AndroidViewModel(application
     val exportResultBelowQEvent: LiveData<Pair<Boolean, File>> = mExportResultBelowQEvent
     val exportResultAboveQEvent: LiveData<Boolean> = mExportResultAboveQEvent
     val importResultEvent: LiveData<ImportResult> = mImportResultEvent
+    val importWarningEvent: LiveData<ImportWarning> = mImportWarningEvent
 
     override fun onCleared() {
         super.onCleared()
@@ -95,7 +100,7 @@ class RuleListViewModel(application: Application) : AndroidViewModel(application
             mShowProgressEvent.value = progressMsg
             try {
                 val result = withContext(Dispatchers.IO) {
-                    BackupManager.exportRuleList(file, rules)
+                    BackupManager.exportRuleList(file, rules.toBackupRules(), BuildConfig.VERSION_NAME)
                 }
                 mExportResultBelowQEvent.value = Pair(result == ExportResult.SUCCESS, file)
                 mCancelProgressEvent.call()
@@ -111,7 +116,7 @@ class RuleListViewModel(application: Application) : AndroidViewModel(application
             mShowProgressEvent.value = progressMsg
             try {
                 val result = withContext(Dispatchers.IO) {
-                     BackupManager.exportRuleList(context, uri, rules)
+                     BackupManager.exportRuleList(context, uri, rules.toBackupRules(), BuildConfig.VERSION_NAME)
                 }
                 mExportResultAboveQEvent.value = result == ExportResult.SUCCESS
                 mCancelProgressEvent.call()
@@ -126,10 +131,24 @@ class RuleListViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             mShowProgressEvent.value = progressMsg
             try {
-                val result = withContext(Dispatchers.IO) {
-                    BackupManager.importRuleList(getApplication(), uri, retain)
+                val importResult = withContext(Dispatchers.IO) {
+                    val result = BackupManager.importRuleList(getApplication(), uri, BuildConfig.VERSION_NAME)
+                    if (result.result == ImportResult.SUCCESS) {
+                        val dbManager = DBManager.get(getApplication())
+                        if (!retain) {
+                            dbManager.removeAllSmsCodeRules()
+                        }
+                        val rules = result.rules.toSmsCodeRules()
+                        if (rules.isNotEmpty()) {
+                            dbManager.addSmsCodeRules(rules)
+                        }
+                    }
+                    result
                 }
-                mImportResultEvent.value = result
+                mImportResultEvent.value = importResult.result
+                importResult.warning?.let { warning ->
+                    mImportWarningEvent.value = warning
+                }
                 mCancelProgressEvent.call()
             } catch (t: Throwable) {
                 XLog.e("Import rules failed", t)
@@ -142,8 +161,28 @@ class RuleListViewModel(application: Application) : AndroidViewModel(application
     fun saveRulesToFile(rules: List<SmsCodeRule>) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                EntityStoreManager.storeEntitiesToFile(EntityType.CODE_RULES, rules)
+                EntityStoreManager.storeEntitiesToFile(getApplication(), EntityType.CODE_RULES, rules)
             }
+        }
+    }
+
+    private fun List<SmsCodeRule>.toBackupRules(): List<BackupRule> {
+        return map { rule ->
+            BackupRule(
+                company = rule.company,
+                codeKeyword = rule.codeKeyword,
+                codeRegex = rule.codeRegex
+            )
+        }
+    }
+
+    private fun List<BackupRule>.toSmsCodeRules(): List<SmsCodeRule> {
+        return map { rule ->
+            SmsCodeRule(
+                company = rule.company,
+                codeKeyword = rule.codeKeyword,
+                codeRegex = rule.codeRegex
+            )
         }
     }
 }

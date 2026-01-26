@@ -2,16 +2,13 @@ package com.tianma.xsmscode.xp
 
 import android.util.Log
 import com.github.tianma8023.xposed.smscode.BuildConfig
-import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.common.utils.XSPUtils
 import com.tianma.xsmscode.xp.hook.BaseHook
 import com.tianma.xsmscode.xp.hook.me.ModuleUtilsHook
 import com.tianma.xsmscode.xp.hook.permission.PermissionGranterHook
 import com.tianma.xsmscode.xp.hook.code.SmsHandlerHook
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.IXposedHookZygoteInit
-import de.robv.android.xposed.XSharedPreferences
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
 class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
@@ -31,12 +28,7 @@ class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
         }
 
         try {
-            val xsp = XSharedPreferences(BuildConfig.APPLICATION_ID, PrefConst.PREF_NAME)
-            if (XSPUtils.isVerboseLogMode(xsp)) {
-                XLog.setLogLevel(Log.VERBOSE)
-            } else {
-                XLog.setLogLevel(BuildConfig.LOG_LEVEL)
-            }
+            XLog.setLogLevel(BuildConfig.LOG_LEVEL)
         } catch (t: Throwable) {
             XLog.e("", t)
         }

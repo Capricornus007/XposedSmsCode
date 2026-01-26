@@ -90,7 +90,7 @@ object InputHelper {
 
         val injectInputEventModeWaitForFinish = XposedHelpers.getStaticIntField(
             InputManager::class.java, "INJECT_INPUT_EVENT_MODE_WAIT_FOR_FINISH"
-        ) as Int
+        )
 
         val paramTypes = arrayOf(KeyEvent::class.java, Int::class.javaPrimitiveType)
         val args = arrayOf(keyEvent, injectInputEventModeWaitForFinish)

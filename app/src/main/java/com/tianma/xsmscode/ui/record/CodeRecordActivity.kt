@@ -3,8 +3,23 @@ package com.tianma.xsmscode.ui.record
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.fragment.app.FragmentContainerView
 import com.github.tianma8023.xposed.smscode.R
-import com.github.tianma8023.xposed.smscode.databinding.ActivityCodeRecordsBinding
 import com.tianma.xsmscode.ui.app.base.BaseActivity
 
 /**
@@ -12,27 +27,44 @@ import com.tianma.xsmscode.ui.app.base.BaseActivity
  */
 class CodeRecordActivity : BaseActivity() {
 
-    private lateinit var binding: ActivityCodeRecordsBinding
+    private val containerId = View.generateViewId()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityCodeRecordsBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        handleInsets(binding.root)
-
-        setupToolbar()
+        setContent { CodeRecordContent() }
 
         supportFragmentManager
             .beginTransaction()
-            .replace(R.id.code_records_main_content, CodeRecordFragment.newInstance())
+            .replace(containerId, CodeRecordFragment.newInstance())
             .commit()
     }
 
-    private fun setupToolbar() {
-        setSupportActionBar(binding.toolbar.root)
-        supportActionBar?.apply {
-            setHomeButtonEnabled(true)
-            setDisplayHomeAsUpEnabled(true)
+    @OptIn(ExperimentalMaterial3Api::class)
+    @androidx.compose.runtime.Composable
+    private fun CodeRecordContent() {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(text = getString(R.string.smscode_records)) },
+                    navigationIcon = {
+                        IconButton(onClick = { onBackPressedDispatcher.onBackPressed() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors()
+                )
+            }
+        ) { padding ->
+            AndroidView(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                factory = { context ->
+                    FragmentContainerView(context).apply {
+                        id = containerId
+                    }
+                }
+            )
         }
     }
 

@@ -1,18 +1,16 @@
 package com.tianma.xsmscode.common.constant
 
-import com.github.tianma8023.xposed.smscode.BuildConfig
-
 /**
  * Preference相关的常量
  */
 object PrefConst {
 
-    const val PREF_NAME = BuildConfig.APPLICATION_ID + "_preferences"
 
     // General
     const val KEY_ENABLE = "pref_enable"
     const val KEY_HIDE_LAUNCHER_ICON = "pref_hide_launcher_icon"
     const val KEY_CHOOSE_THEME = "pref_choose_theme"
+    const val KEY_COMPOSE_SETTINGS = "pref_compose_settings"
 
     // SMS Code
     const val KEY_SHOW_TOAST = "pref_show_toast"
@@ -59,4 +57,6 @@ object PrefConst {
     const val KEY_DONATE_BY_ALIPAY = "pref_donate_by_alipay"
     const val KEY_PRIVACY_POLICY = "pref_privacy_policy"
     const val KEY_PRIVACY_POLICY_ACCEPTED = "pref_privacy_policy_accepted"
+    const val KEY_BACKUP_COMPAT_TIP_SHOWN = "pref_backup_compat_tip_shown"
+    const val KEY_ABOUT_COMPOSE = "pref_about_compose"
 }

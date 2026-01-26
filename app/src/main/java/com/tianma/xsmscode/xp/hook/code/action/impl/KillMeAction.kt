@@ -6,17 +6,15 @@ import android.content.Context
 import android.os.Bundle
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.common.utils.XSPUtils
+import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.xp.hook.code.action.CallableAction
-import de.robv.android.xposed.XSharedPreferences
 
 class KillMeAction(
     pluginContext: Context,
     phoneContext: Context,
-    smsMsg: SmsMsg,
-    xsp: XSharedPreferences
-) : CallableAction(pluginContext, phoneContext, smsMsg, xsp) {
+    smsMsg: SmsMsg
+) : CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
         killMe()
@@ -24,7 +22,7 @@ class KillMeAction(
     }
 
     private fun killMe() {
-        if (XSPUtils.killMeEnabled(xsp)) {
+        if (PrefsReader.killMeEnabled(mPluginContext)) {
             killBackgroundProcess(BuildConfig.APPLICATION_ID)
         }
     }

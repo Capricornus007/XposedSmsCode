@@ -10,10 +10,9 @@ import android.provider.Telephony
 import androidx.annotation.IntDef
 import androidx.core.content.ContextCompat
 import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.common.utils.XSPUtils
+import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.xp.hook.code.action.CallableAction
-import de.robv.android.xposed.XSharedPreferences
 
 /**
  * 将验证码短信删除或者标记为已读
@@ -21,9 +20,8 @@ import de.robv.android.xposed.XSharedPreferences
 class OperateSmsAction(
     pluginContext: Context,
     phoneContext: Context,
-    smsMsg: SmsMsg,
-    xsp: XSharedPreferences
-) : CallableAction(pluginContext, phoneContext, smsMsg, xsp) {
+    smsMsg: SmsMsg
+) : CallableAction(pluginContext, phoneContext, smsMsg) {
 
     @IntDef(OP_DELETE, OP_MARK_AS_READ)
     @Retention(AnnotationRetention.SOURCE)
@@ -32,9 +30,9 @@ class OperateSmsAction(
     override fun action(): Bundle? {
         val sender = mSmsMsg.sender
         val body = mSmsMsg.body
-        if (XSPUtils.deleteSmsEnabled(xsp)) {
+        if (PrefsReader.deleteSmsEnabled(mPluginContext)) {
             deleteSms(sender, body)
-        } else if (XSPUtils.markAsReadEnabled(xsp)) {
+        } else if (PrefsReader.markAsReadEnabled(mPluginContext)) {
             markSmsAsRead(sender, body)
         }
         return null

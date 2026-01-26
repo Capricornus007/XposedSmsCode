@@ -23,6 +23,8 @@
     <string name="pref_hide_launcher_icon_summary">隱藏後可從模組列表中打開本模組</string>
     <string name="pref_choose_theme_title">主題</string>
     <string name="pref_choose_theme_summary">跟隨系統、淺色或深色</string>
+    <string name="pref_compose_settings_title">現代化設定</string>
+    <string name="pref_compose_settings_summary">打開 Compose 版設定</string>
     <string name="theme_follow_system">自動 (跟隨系統)</string>
     <string name="theme_light">淺色</string>
     <string name="theme_dark">深色</string>
@@ -124,6 +126,8 @@
     <string name="pref_source_code_title">項目源碼</string>
     <string name="browser_install_or_enable_prompt">請先安裝或啟用瀏覽器</string>
     <string name="pref_source_code_summary">歡迎Star ♪(＾∀＾)ﾉ</string>
+    <string name="pref_about_compose_title">現代化關於</string>
+    <string name="pref_about_compose_summary">打開 Compose 版關於頁面</string>
     <string name="pref_donate_by_alipay_title">捐贈打賞</string>
     <string name="alipay_install_prompt">請先安裝支付寶</string>
     <string name="alipay_enable_prompt">請先啟用支付寶</string>
@@ -180,6 +184,11 @@
     <string name="import_failed_version_unknown">導入失敗，未知版本號</string>
     <string name="import_failed_backup_invalid">導入失敗，備份文件格式錯誤</string>
     <string name="import_failed_read_error">導入失敗，讀取文件錯誤</string>
+    <string name="import_failed_version_too_new">導入失敗，備份版本過新</string>
+    <string name="import_failed_version_too_old">導入失敗，備份版本過舊</string>
+    <string name="import_warning_app_version_mismatch">備份來自不同版本，請確認規則無誤。</string>
+    <string name="import_compatibility_title">導入相容性提示</string>
+    <string name="import_compatibility_message">此備份可能來自較舊或不相容版本。建議在相同版本重新導出後再導入。</string>
     <string name="export_succeed">導出成功</string>
     <string name="export_failed">導出失敗，請重試</string>
     <string name="import_confirmation_title">導入確認</string>
@@ -243,12 +252,14 @@
     <string name="save_to_gallery_failed">保存失敗，請檢查文件權限</string>
     <!-- alipay packet end -->
 
-    <string name="xposed_not_installed">請安裝或啟用 LSPosed 會員</string>
-
-
     <!-- check update -->
     <string name="new_version_found">發現新版本！</string>
     <string name="check_update_failed">檢測更新失敗，請重試。</string>
+    <string name="network_error_http">HTTP %1$d</string>
+    <string name="network_error_io">網路異常</string>
+    <string name="network_error_serialization">解析失敗</string>
+    <string name="network_error_unexpected">未知錯誤</string>
+    <string name="network_error_multi_source">多來源請求失敗</string>
     <string name="app_already_newest">已經是最新版本</string>
     <string name="update_from_github">去GitHub更新</string>
     <string name="update_from_coolapk">去酷安更新</string>

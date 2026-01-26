@@ -103,7 +103,7 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                 apps.asSequence()
                     .filter { appInfo ->
                         val lowerLabel = appInfo.label?.lowercase() ?: ""
-                        val lowerPkg = appInfo.packageName?.lowercase() ?: ""
+                        val lowerPkg = appInfo.packageName.lowercase()
                         lowerLabel.contains(filter) || lowerPkg.contains(filter)
                     }
                     .sortedWith(mComparator)
@@ -114,12 +114,15 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun doItemClicked(item: AppInfo) {
-        for (appInfo in apps) {
+        val updatedApps = apps.map { appInfo ->
             if (appInfo.packageName == item.packageName) {
-                appInfo.blocked = !appInfo.blocked
-                break
+                appInfo.copy(blocked = !appInfo.blocked)
+            } else {
+                appInfo
             }
         }
+        apps = updatedApps
+        _appsLiveData.value = ArrayList(updatedApps)
     }
 
     fun saveData() {
@@ -143,7 +146,7 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                     dbManager.insertOrReplaceInTxSuspend(AppInfo::class.java, blockedApps)
                     
                     EntityStoreManager.storeEntitiesToFile(
-                        EntityType.BLOCKED_APP, blockedApps
+                        getApplication(), EntityType.BLOCKED_APP, blockedApps
                     )
                     blockedApps
                 }

@@ -3,7 +3,6 @@ package com.tianma.xsmscode.ui.app
 import android.app.Application
 import com.tianma.xsmscode.feature.migrate.TransitionTask
 import com.google.android.material.color.DynamicColors
-import org.greenrobot.eventbus.EventBus
 import java.util.concurrent.Executors
 
 class SmsCodeApplication : Application() {
@@ -11,7 +10,6 @@ class SmsCodeApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        installDefaultEventBus()
         applyTheme()
         DynamicColors.applyToActivitiesIfAvailable(this)
         performTransitionTask()
@@ -27,10 +25,6 @@ class SmsCodeApplication : Application() {
         androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(nightMode)
     }
 
-    private fun installDefaultEventBus() {
-        // EventBus index is disabled temporarily to support Java 25 (KAPT incompatible)
-        EventBus.builder().installDefaultEventBus()
-    }
 
     private fun performTransitionTask() {
         val singlePool = Executors.newSingleThreadExecutor()

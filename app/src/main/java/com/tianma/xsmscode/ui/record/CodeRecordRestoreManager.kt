@@ -16,11 +16,11 @@ object CodeRecordRestoreManager {
 
     @SuppressLint("SetWorldWritable", "SetWorldReadable")
     @JvmStatic
-    fun exportToFile(smsMsg: SmsMsg): Boolean {
+    fun exportToFile(context: Context, smsMsg: SmsMsg): Boolean {
         var osw: OutputStreamWriter? = null
         return try {
             val filename = RECORD_FILE_PREFIX + smsMsg.date
-            val recordFile = File(StorageUtils.getFilesDir(), filename)
+            val recordFile = File(StorageUtils.getFilesDir(context), filename)
             osw = OutputStreamWriter(FileOutputStream(recordFile), StandardCharsets.UTF_8)
             JsonUtils.toJson(smsMsg, osw, true)
             StorageUtils.setFileWorldWritable(recordFile, 0)
@@ -40,7 +40,7 @@ object CodeRecordRestoreManager {
     @JvmStatic
     fun importToDatabase(context: Context): Boolean {
         return try {
-            val recordFiles = getRecordFiles()
+            val recordFiles = getRecordFiles(context)
             val smsMsgList = mutableListOf<SmsMsg>()
             recordFiles?.forEach { recordFile ->
                 val smsMsg = loadFromFile(recordFile)
@@ -70,8 +70,8 @@ object CodeRecordRestoreManager {
     }
 
     @JvmStatic
-    fun getRecordFiles(): Array<File>? {
-        val filesDir = StorageUtils.getFilesDir()
+    fun getRecordFiles(context: Context): Array<File>? {
+        val filesDir = StorageUtils.getFilesDir(context)
         return filesDir.listFiles { _, name -> name.startsWith(RECORD_FILE_PREFIX) }
     }
 

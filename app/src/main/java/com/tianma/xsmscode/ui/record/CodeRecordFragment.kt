@@ -58,7 +58,7 @@ class CodeRecordFragment : BackPressFragment() {
         mViewModel = ViewModelProvider(this).get(CodeRecordViewModel::class.java)
         setupObservers()
 
-        val adapter = CodeRecordAdapter(requireContext(), mutableListOf())
+        val adapter = CodeRecordAdapter(requireContext())
         mAdapter = adapter
         adapter.setItemCallback(object : BaseItemCallback<RecordItem>() {
             override fun onItemClicked(itemView: View, item: RecordItem, position: Int) {

@@ -13,7 +13,6 @@ import com.tianma.xsmscode.feature.store.EntityStoreManager
 import com.tianma.xsmscode.feature.store.EntityType
 import com.tianma.xsmscode.xp.hook.code.action.CallableAction
 import com.tianma.xsmscode.xp.hook.code.helper.InputHelper
-import de.robv.android.xposed.XSharedPreferences
 import java.util.*
 
 /**
@@ -22,9 +21,8 @@ import java.util.*
 class AutoInputAction(
     pluginContext: Context,
     phoneContext: Context,
-    smsMsg: SmsMsg,
-    xsp: XSharedPreferences
-) : CallableAction(pluginContext, phoneContext, smsMsg, xsp) {
+    smsMsg: SmsMsg
+) : CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
         prepareAutoInputCode(mSmsMsg.smsCode)
@@ -71,7 +69,9 @@ class AutoInputAction(
                 }
                 XLog.d("Get blocked apps by content provider")
             } catch (e: Exception) {
-                val appInfoList = EntityStoreManager.loadEntitiesFromFile(EntityType.BLOCKED_APP, AppInfo::class.java)
+                val appInfoList = EntityStoreManager.loadEntitiesFromFile(
+                    mPluginContext, EntityType.BLOCKED_APP, AppInfo::class.java
+                )
                 for (appInfo in appInfoList) {
                     blockedAppList.add(appInfo.packageName)
                 }

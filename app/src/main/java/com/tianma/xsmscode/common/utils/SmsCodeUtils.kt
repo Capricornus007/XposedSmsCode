@@ -8,7 +8,6 @@ import com.tianma.xsmscode.data.db.DBProvider
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.feature.store.EntityStoreManager
 import com.tianma.xsmscode.feature.store.EntityType
-import de.robv.android.xposed.XSharedPreferences
 import java.util.regex.Pattern
 
 /**
@@ -50,19 +49,14 @@ object SmsCodeUtils {
         return SPUtils.getSMSCodeKeywords(context)
     }
 
-    private fun loadCodeKeywordsByXSP(): String? {
-        val preferences = XSharedPreferences(BuildConfig.APPLICATION_ID, PrefConst.PREF_NAME)
-        return XSPUtils.getSMSCodeKeywords(preferences)
-    }
-
     /**
      * 解析文本中的验证码并返回，如果不存在返回空字符
      */
     @JvmStatic
-    fun parseSmsCodeIfExists(context: Context, content: String, useXSP: Boolean): String {
+    fun parseSmsCodeIfExists(context: Context, content: String): String {
         var result = parseByCustomRules(context, content)
         if (TextUtils.isEmpty(result)) {
-            result = parseByDefaultRule(context, content, useXSP)
+            result = parseByDefaultRule(context, content)
         }
         return result
     }
@@ -70,13 +64,9 @@ object SmsCodeUtils {
     /**
      * Parse SMS code by default rule
      */
-    private fun parseByDefaultRule(context: Context, content: String, useXSP: Boolean): String {
+    private fun parseByDefaultRule(context: Context, content: String): String {
         var result = ""
-        val keywordsRegex = if (useXSP) {
-            loadCodeKeywordsByXSP()
-        } else {
-            loadCodeKeywordsBySP(context)
-        } ?: ""
+        val keywordsRegex = loadCodeKeywordsBySP(context) ?: ""
         val keyword = parseKeyword(keywordsRegex, content)
         if (!TextUtils.isEmpty(keyword)) {
             result = if (containsChinese(content)) {
@@ -226,8 +216,8 @@ object SmsCodeUtils {
             }
         } catch (e: Throwable) {
             rules = EntityStoreManager.loadEntitiesFromFile(
-                EntityType.CODE_RULES, SmsCodeRule::class.java
-            ) ?: emptyList()
+                context, EntityType.CODE_RULES, SmsCodeRule::class.java
+            )
             XLog.d("Load SmsCode rules by file")
         }
         return rules

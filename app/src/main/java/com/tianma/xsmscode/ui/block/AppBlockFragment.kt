@@ -50,7 +50,7 @@ class AppBlockFragment : Fragment() {
         mViewModel = ViewModelProvider(this).get(AppBlockViewModel::class.java)
         setupObservers()
 
-        mAppInfoAdapter = AppInfoAdapter(requireContext(), ArrayList())
+        mAppInfoAdapter = AppInfoAdapter(requireContext())
         mAppInfoAdapter?.setItemCallback(object : ItemCallback<AppInfo> {
             override fun onItemClicked(itemView: View, item: AppInfo, position: Int) {
                 itemClicked(item, position)
@@ -136,7 +136,6 @@ class AppBlockFragment : Fragment() {
 
     private fun itemClicked(appInfo: AppInfo, position: Int) {
         mViewModel.doItemClicked(appInfo)
-        mAppInfoAdapter?.setItemSelected(position)
     }
 
     private fun showData(appInfoList: List<AppInfo>) {

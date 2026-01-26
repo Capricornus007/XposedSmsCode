@@ -8,12 +8,11 @@ import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.utils.SmsCodeUtils
 import com.tianma.xsmscode.common.utils.StringUtils
 import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.common.utils.XSPUtils
+import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.feature.store.EntityStoreManager
 import com.tianma.xsmscode.feature.store.EntityType
 import com.tianma.xsmscode.xp.hook.code.action.CallableAction
-import de.robv.android.xposed.XSharedPreferences
 import kotlin.math.abs
 
 /**
@@ -22,9 +21,8 @@ import kotlin.math.abs
 class SmsParseAction(
     pluginContext: Context,
     phoneContext: Context,
-    smsMsg: SmsMsg?,
-    xsp: XSharedPreferences
-) : CallableAction(pluginContext, phoneContext, smsMsg ?: SmsMsg(), xsp) {
+    smsMsg: SmsMsg?
+) : CallableAction(pluginContext, phoneContext, smsMsg ?: SmsMsg()) {
 
     private var mSmsIntent: Intent? = null
 
@@ -53,7 +51,7 @@ class SmsParseAction(
             XLog.d("Body: %s", msgBody)
         } else {
             XLog.d("Sender: %s", StringUtils.escape(sender))
-            XLog.d("Body: %s", StringUtils.escape(msgBody))
+            XLog.d("Body length: %d", msgBody?.length ?: 0)
         }
 
         if (TextUtils.isEmpty(sender) || TextUtils.isEmpty(msgBody)) {
@@ -61,7 +59,7 @@ class SmsParseAction(
         }
 
         val msgBodyNotNull = msgBody ?: ""
-        val smsCode = SmsCodeUtils.parseSmsCodeIfExists(mPluginContext, msgBodyNotNull, true)
+        val smsCode = SmsCodeUtils.parseSmsCodeIfExists(mPluginContext, msgBodyNotNull)
         if (TextUtils.isEmpty(smsCode)) { // isn't code message
             return null
         }
@@ -83,8 +81,10 @@ class SmsParseAction(
 
         // 去除重复短信
         var duplicated = false
-        if (XSPUtils.deduplicateSms(xsp)) {
-            val prevSmsMsg = EntityStoreManager.loadEntityFromFile(EntityType.PREV_SMS_MSG, SmsMsg::class.java)
+        if (PrefsReader.deduplicateSms(mPluginContext)) {
+            val prevSmsMsg = EntityStoreManager.loadEntityFromFile(
+                mPluginContext, EntityType.PREV_SMS_MSG, SmsMsg::class.java
+            )
             if (prevSmsMsg != null) {
                 if (abs(timestamp - prevSmsMsg.date) <= 15000) {
                     if ((sender == prevSmsMsg.sender && smsCode == prevSmsMsg.smsCode)
@@ -96,7 +96,7 @@ class SmsParseAction(
                 }
             }
             // 保存当前验证码记录 Action
-            EntityStoreManager.storeEntityToFile(EntityType.PREV_SMS_MSG, mSmsMsg)
+            EntityStoreManager.storeEntityToFile(mPluginContext, EntityType.PREV_SMS_MSG, mSmsMsg)
         }
 
         bundle.putBoolean(SMS_DUPLICATED, duplicated)

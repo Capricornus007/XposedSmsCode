@@ -5,6 +5,8 @@ import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.github.tianma8023.xposed.smscode.databinding.ItemAppInfoBinding
 import com.tianma.xsmscode.common.adapter.ItemCallback
@@ -15,20 +17,15 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class AppInfoAdapter(private val mContext: Context, appInfoList: List<AppInfo>) :
-    RecyclerView.Adapter<AppInfoAdapter.VH>() {
+class AppInfoAdapter(private val mContext: Context) :
+    ListAdapter<AppInfo, AppInfoAdapter.VH>(DIFF_CALLBACK) {
 
-    private val mDataList: MutableList<AppInfo> = ArrayList(appInfoList)
     private val mPackageManager: PackageManager = mContext.packageManager
     private var mItemCallback: ItemCallback<AppInfo>? = null
     private val mScope = CoroutineScope(Dispatchers.Main)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         return VH(ItemAppInfoBinding.inflate(LayoutInflater.from(mContext), parent, false))
-    }
-
-    override fun getItemCount(): Int {
-        return mDataList.size
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
@@ -80,23 +77,37 @@ class AppInfoAdapter(private val mContext: Context, appInfoList: List<AppInfo>) 
     }
 
     fun getItemAt(position: Int): AppInfo {
-        return mDataList[position]
+        return getItem(position)
     }
 
     fun setItemList(appInfoList: List<AppInfo>) {
-        mDataList.clear()
-        mDataList.addAll(appInfoList)
-        notifyDataSetChanged()
+        submitList(appInfoList.toList())
     }
 
     fun setItemSelected(position: Int) {
-        notifyItemChanged(position)
+        val updated = currentList.toMutableList()
+        if (position < 0 || position >= updated.size) return
+        val item = updated[position]
+        updated[position] = item.copy(blocked = item.blocked)
+        submitList(updated)
     }
 
     fun removeItemAt(position: Int) {
-        if (position in mDataList.indices) {
-            mDataList.removeAt(position)
-            notifyItemRemoved(position)
+        val updated = currentList.toMutableList()
+        if (position < 0 || position >= updated.size) return
+        updated.removeAt(position)
+        submitList(updated)
+    }
+
+    companion object {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<AppInfo>() {
+            override fun areItemsTheSame(oldItem: AppInfo, newItem: AppInfo): Boolean {
+                return oldItem.packageName == newItem.packageName
+            }
+
+            override fun areContentsTheSame(oldItem: AppInfo, newItem: AppInfo): Boolean {
+                return oldItem == newItem
+            }
         }
     }
 }

@@ -6,6 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.IntDef
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.github.tianma8023.xposed.smscode.databinding.ItemCodeRecordBinding
 import com.tianma.xsmscode.common.adapter.ItemCallback
@@ -15,9 +17,8 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class CodeRecordAdapter(
-    private val mContext: Context,
-    private val mRecords: MutableList<RecordItem>
-) : RecyclerView.Adapter<CodeRecordAdapter.VH>() {
+    private val mContext: Context
+) : ListAdapter<RecordItem, CodeRecordAdapter.VH>(DIFF_CALLBACK) {
 
     private val mFormat = SimpleDateFormat("MM.dd HH:mm", Locale.getDefault())
     private var mItemCallback: ItemCallback<RecordItem>? = null
@@ -40,8 +41,6 @@ class CodeRecordAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         return VH(ItemCodeRecordBinding.inflate(LayoutInflater.from(mContext), parent, false))
     }
-
-    override fun getItemCount(): Int = mRecords.size
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val data = getItemAt(position)
@@ -93,42 +92,48 @@ class CodeRecordAdapter(
         }
     }
 
-    fun getItemAt(position: Int): RecordItem = mRecords[position]
+    fun getItemAt(position: Int): RecordItem = getItem(position)
 
     fun setItemSelected(position: Int, selected: Boolean) {
-        getItemAt(position).isSelected = selected
-        notifyDataSetChanged()
+        val updated = currentList.toMutableList()
+        if (position < 0 || position >= updated.size) return
+        val item = updated[position]
+        val newItem = RecordItem(item.smsMsg).apply { isSelected = selected }
+        updated[position] = newItem
+        submitList(updated)
     }
 
     fun isItemSelected(position: Int): Boolean = getItemAt(position).isSelected
 
     fun setAllSelected(selected: Boolean) {
-        for (item in mRecords) {
-            item.isSelected = selected
+        val updated = currentList.map { item ->
+            RecordItem(item.smsMsg).apply { isSelected = selected }
         }
-        notifyDataSetChanged()
+        submitList(updated)
     }
 
     fun isAllSelected(): Boolean {
-        if (mRecords.isEmpty()) return false
-        return mRecords.all { it.isSelected }
+        if (currentList.isEmpty()) return false
+        return currentList.all { it.isSelected }
     }
 
     fun removeSelectedItems(): List<SmsMsg> {
-        val recordsToRemove = mRecords.filter { it.isSelected }
+        val recordsToRemove = currentList.filter { it.isSelected }
         val messagesToRemove = recordsToRemove.map { it.smsMsg }
-        mRecords.removeAll(recordsToRemove)
-        notifyDataSetChanged()
+        val updated = currentList.filterNot { it.isSelected }
+        submitList(updated)
         return messagesToRemove
     }
 
     fun addItems(smsMsgList: List<SmsMsg>) {
-        val itemsToAdd = smsMsgList.map { RecordItem(it) }.filter { !mRecords.contains(it) }
-        if (itemsToAdd.isNotEmpty()) {
-            mRecords.addAll(itemsToAdd)
-            mRecords.sortByDescending { it.smsMsg.date }
-            notifyDataSetChanged()
-        }
+        val updated = currentList.toMutableList()
+        val existing = updated.map { it.smsMsg }.toSet()
+        val itemsToAdd = smsMsgList.filterNot { existing.contains(it) }
+            .map { RecordItem(it) }
+        if (itemsToAdd.isEmpty()) return
+        updated.addAll(itemsToAdd)
+        updated.sortByDescending { it.smsMsg.date }
+        submitList(updated)
     }
 
     fun setMode(@RecordMode mode: Int) {
@@ -144,5 +149,21 @@ class CodeRecordAdapter(
     companion object {
         const val RECORD_MODE_NORMAL = 0
         const val RECORD_MODE_EDIT = 1
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<RecordItem>() {
+            override fun areItemsTheSame(oldItem: RecordItem, newItem: RecordItem): Boolean {
+                val oldId = oldItem.smsMsg.id
+                val newId = newItem.smsMsg.id
+                if (oldId != null && newId != null) {
+                    return oldId == newId
+                }
+                return oldItem.smsMsg.date == newItem.smsMsg.date &&
+                    oldItem.smsMsg.sender == newItem.smsMsg.sender &&
+                    oldItem.smsMsg.body == newItem.smsMsg.body
+            }
+
+            override fun areContentsTheSame(oldItem: RecordItem, newItem: RecordItem): Boolean {
+                return oldItem.smsMsg == newItem.smsMsg && oldItem.isSelected == newItem.isSelected
+            }
+        }
     }
 }

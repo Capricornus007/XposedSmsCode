@@ -8,12 +8,11 @@ import android.net.Uri
 import android.os.Bundle
 import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.common.utils.XSPUtils
+import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.data.db.DBProvider
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.ui.record.CodeRecordRestoreManager
 import com.tianma.xsmscode.xp.hook.code.action.CallableAction
-import de.robv.android.xposed.XSharedPreferences
 
 /**
  * 记录验证码短信
@@ -21,12 +20,11 @@ import de.robv.android.xposed.XSharedPreferences
 class RecordSmsAction(
     pluginContext: Context,
     phoneContext: Context,
-    smsMsg: SmsMsg,
-    xsp: XSharedPreferences
-) : CallableAction(pluginContext, phoneContext, smsMsg, xsp) {
+    smsMsg: SmsMsg
+) : CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
-        if (XSPUtils.recordSmsCodeEnabled(xsp)) {
+        if (PrefsReader.recordSmsCodeEnabled(mPluginContext)) {
             recordSmsMsg(mSmsMsg)
         }
         return null
@@ -78,7 +76,7 @@ class RecordSmsAction(
         } catch (e1: Exception) {
             // ContentProvider dead.
             // Write file to do data transition
-            if (CodeRecordRestoreManager.exportToFile(smsMsg)) {
+            if (CodeRecordRestoreManager.exportToFile(mPluginContext, smsMsg)) {
                 XLog.d("Export code record to file succeed")
             }
         }

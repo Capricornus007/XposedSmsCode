@@ -36,22 +36,11 @@
             android:name="xposedsharedprefs"
             android:value="true" />
 
-        <activity
-            android:name="com.tianma.xsmscode.ui.home.HomeActivity"
-            android:exported="true"
-            android:launchMode="singleTop"
-            android:screenOrientation="portrait">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="de.robv.android.xposed.category.MODULE_SETTINGS" />
-            </intent-filter>
-        </activity>
-
         <activity-alias
             android:name=".HomeActivityAlias"
             android:enabled="true"
             android:exported="true"
-            android:targetActivity="com.tianma.xsmscode.ui.home.HomeActivity">
+            android:targetActivity="com.tianma.xsmscode.ui.home.ComposeSettingsActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -112,6 +101,20 @@
         <activity
             android:name="com.tianma.xsmscode.ui.block.AppBlockActivity"
             android:label="@string/app_block_settings" />
+
+        <activity
+            android:name="com.tianma.xsmscode.ui.home.AboutComposeActivity"
+            android:label="@string/pref_about_title" />
+
+        <activity
+            android:name="com.tianma.xsmscode.ui.home.ComposeSettingsActivity"
+            android:exported="true"
+            android:label="@string/pref_compose_settings_title">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="de.robv.android.xposed.category.MODULE_SETTINGS" />
+            </intent-filter>
+        </activity>
 
 
         <provider
