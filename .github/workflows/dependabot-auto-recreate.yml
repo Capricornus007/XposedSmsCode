@@ -11,7 +11,7 @@ jobs:
   auto-recreate:
     if: |
       github.event.pull_request.merged == true &&
-      github.event.pull_request.user.login == 'dependabot[bot]'
+      (github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'app/dependabot')
     runs-on: ubuntu-latest
     permissions:
       contents: read
