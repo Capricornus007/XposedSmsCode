@@ -2,6 +2,7 @@ package com.tianma.xsmscode.common.utils
 
 import android.content.Context
 import com.tianma.xsmscode.common.constant.PrefConst
+import com.tianma.xsmscode.common.utils.StorageUtils
 import kotlinx.coroutines.flow.first
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -10,7 +11,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.Flow
+import java.io.File
 
 private val Context.appPreferencesDataStore by preferencesDataStore(
     name = "app_preferences"
@@ -18,6 +20,20 @@ private val Context.appPreferencesDataStore by preferencesDataStore(
 
 object AppPreferencesDataStore {
     private val backupCompatTipShownKey = booleanPreferencesKey(PrefConst.KEY_BACKUP_COMPAT_TIP_SHOWN)
+    private const val DATASTORE_FILE_NAME = "app_preferences.preferences_pb"
+
+    private fun getDataStoreFile(context: Context): File {
+        return File(context.dataDir, "datastore/$DATASTORE_FILE_NAME")
+    }
+
+    private fun ensureDataStoreReadable(context: Context) {
+        val file = getDataStoreFile(context)
+        StorageUtils.setFileWorldReadable(file, 3)
+    }
+
+    fun ensureReadable(context: Context) {
+        ensureDataStoreReadable(context)
+    }
 
     suspend fun isBackupCompatTipShown(context: Context): Boolean {
         return context.appPreferencesDataStore.data
@@ -29,6 +45,7 @@ object AppPreferencesDataStore {
         context.appPreferencesDataStore.edit { prefs ->
             prefs[backupCompatTipShownKey] = shown
         }
+        ensureDataStoreReadable(context)
     }
 
     suspend fun getBoolean(context: Context, key: String, defaultValue: Boolean): Boolean {
@@ -43,6 +60,7 @@ object AppPreferencesDataStore {
         context.appPreferencesDataStore.edit { prefs ->
             prefs[prefKey] = value
         }
+        ensureDataStoreReadable(context)
     }
 
     suspend fun getString(context: Context, key: String, defaultValue: String): String {
@@ -57,6 +75,7 @@ object AppPreferencesDataStore {
         context.appPreferencesDataStore.edit { prefs ->
             prefs[prefKey] = value
         }
+        ensureDataStoreReadable(context)
     }
 
     suspend fun getInt(context: Context, key: String, defaultValue: Int): Int {
@@ -71,29 +90,24 @@ object AppPreferencesDataStore {
         context.appPreferencesDataStore.edit { prefs ->
             prefs[prefKey] = value
         }
+        ensureDataStoreReadable(context)
     }
 
-    fun getBooleanBlocking(context: Context, key: String, defaultValue: Boolean): Boolean {
-        return runBlocking { getBoolean(context, key, defaultValue) }
+    fun getBooleanFlow(context: Context, key: String, defaultValue: Boolean): Flow<Boolean> {
+        val prefKey = booleanPreferencesKey(key)
+        return context.appPreferencesDataStore.data
+            .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
     }
 
-    fun setBooleanBlocking(context: Context, key: String, value: Boolean) {
-        runBlocking { setBoolean(context, key, value) }
+    fun getStringFlow(context: Context, key: String, defaultValue: String): Flow<String> {
+        val prefKey = stringPreferencesKey(key)
+        return context.appPreferencesDataStore.data
+            .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
     }
 
-    fun getStringBlocking(context: Context, key: String, defaultValue: String): String {
-        return runBlocking { getString(context, key, defaultValue) }
-    }
-
-    fun setStringBlocking(context: Context, key: String, value: String) {
-        runBlocking { setString(context, key, value) }
-    }
-
-    fun getIntBlocking(context: Context, key: String, defaultValue: Int): Int {
-        return runBlocking { getInt(context, key, defaultValue) }
-    }
-
-    fun setIntBlocking(context: Context, key: String, value: Int) {
-        runBlocking { setInt(context, key, value) }
+    fun getIntFlow(context: Context, key: String, defaultValue: Int): Flow<Int> {
+        val prefKey = intPreferencesKey(key)
+        return context.appPreferencesDataStore.data
+            .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
     }
 }
