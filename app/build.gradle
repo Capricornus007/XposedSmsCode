@@ -55,7 +55,6 @@ android {
     }
 
     buildFeatures {
-        viewBinding true
         buildConfig true
         compose true
     }
@@ -122,13 +121,14 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_25
-        targetCompatibility JavaVersion.VERSION_25
+        // Keep JDK 25, but emit Java 21 bytecode so Compose/AGP tooling can read it.
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
     }
 
     kotlin {
         compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25)
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         }
     }
 }
@@ -153,75 +153,57 @@ androidComponents {
     }
 }
 
-ext {
-    okHttpVersion = "5.3.2" // OkHttp
-    retrofitVersion = "3.0.0" // retrofit
-    jsoupVersion = "1.22.1" // jsoup
-    composeBomVersion = "2026.01.00" // Compose BOM
-    coroutinesVersion = "1.10.2" // Coroutines version
-    roomVersion = "2.8.4" // Room version
-}
-
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(':core')
     implementation project(':storage')
-    implementation "androidx.core:core-ktx:1.17.0"
-    implementation "androidx.appcompat:appcompat:1.7.1"
-    implementation "com.google.android.material:material:1.13.0" // material design support
-    implementation "androidx.recyclerview:recyclerview:1.4.0" // recycler view
-    implementation "androidx.browser:browser:1.9.0" // custom tabs
-    implementation "androidx.constraintlayout:constraintlayout:2.2.1" // constraint layout
-    implementation "androidx.swiperefreshlayout:swiperefreshlayout:1.2.0" // swipe refresh layout
-    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.10.0" // ViewModel
-    implementation "androidx.lifecycle:lifecycle-livedata-ktx:2.10.0" // LiveData
-    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.10.0"
+    implementation libs.androidx.core.ktx
+    implementation libs.androidx.browser
+    implementation libs.androidx.lifecycle.viewmodel.ktx
+    implementation libs.androidx.lifecycle.livedata.ktx
+    implementation libs.androidx.lifecycle.runtime.ktx
     // Xposed
-    compileOnly 'de.robv.android.xposed:api:82'
-
-
+    compileOnly libs.xposed.api
     // OkHttp
-    implementation "com.squareup.okhttp3:okhttp:$okHttpVersion"
+    implementation libs.okhttp
     // OkHttp logging interceptor
-    implementation "com.squareup.okhttp3:logging-interceptor:$okHttpVersion"
+    implementation libs.okhttp.logging.interceptor
 
     // Retrofit
-    implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
+    implementation libs.retrofit
     // Retrofit Kotlin Serialization converter
-    implementation "com.squareup.retrofit2:converter-kotlinx-serialization:$retrofitVersion"
+    implementation libs.retrofit.converter.kotlinx.serialization
     // Retrofit scalars converter
-    implementation "com.squareup.retrofit2:converter-scalars:$retrofitVersion"
+    implementation libs.retrofit.converter.scalars
     // Kotlin Serialization
-    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.10.0"
-    // Retrofit RxJava Adapter
-
-    // JSoup
-    implementation "org.jsoup:jsoup:$jsoupVersion"
-
-    // Kotlin
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:2.3.0"
-    
+    implementation libs.kotlinx.serialization.json
     // Coroutines
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutinesVersion"
-    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutinesVersion"
+    implementation libs.kotlinx.coroutines.core
+    implementation libs.kotlinx.coroutines.android
 
     // Compose
-    implementation platform("androidx.compose:compose-bom:$composeBomVersion")
-    implementation "androidx.compose.ui:ui"
-    implementation "androidx.compose.material3:material3"
-    implementation "androidx.compose.material:material-icons-core"
-    implementation "androidx.compose.ui:ui-tooling-preview"
-    debugImplementation "androidx.compose.ui:ui-tooling"
-    implementation "androidx.activity:activity-compose:1.12.2"
-    implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0"
-    implementation "androidx.lifecycle:lifecycle-runtime-compose:2.10.0"
+    implementation platform(libs.androidx.compose.bom)
+    implementation libs.androidx.ui
+    implementation libs.androidx.material3
+    implementation libs.androidx.material.icons.core
+    implementation libs.androidx.material.icons.extended
+    implementation libs.androidx.ui.tooling.preview
+    debugImplementation libs.androidx.ui.tooling
+    implementation libs.androidx.activity.compose
+    implementation libs.androidx.lifecycle.viewmodel.compose
+    implementation libs.androidx.lifecycle.runtime.compose
+    implementation libs.androidx.compose.runtime.livedata
+    implementation libs.androidx.navigation.compose
 
     // Room
-    implementation "androidx.room:room-runtime:$roomVersion"
-    implementation "androidx.room:room-ktx:$roomVersion"
-    ksp "androidx.room:room-compiler:$roomVersion"
-    // For Kotlin projects using KSP (will add later if needed)
+    implementation libs.androidx.room.runtime
+    implementation libs.androidx.room.ktx
+    ksp libs.androidx.room.compiler
 
-    testImplementation "junit:junit:4.13.2"
-    implementation "androidx.datastore:datastore-preferences:1.2.0"
+    testImplementation libs.junit
+    implementation libs.timber
+    implementation libs.koin.android
+    implementation libs.koin.androidx.compose
+    implementation libs.koin.compose.viewmodel
+    implementation libs.androidx.datastore.preferences
 }
