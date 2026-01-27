@@ -81,6 +81,10 @@ class DBManager private constructor(context: Context) {
         return withContext(Dispatchers.IO) { mSmsCodeRuleDao.getAll() }
     }
 
+    suspend fun querySmsCodeRuleByIdSuspend(id: Long): SmsCodeRule? {
+        return withContext(Dispatchers.IO) { mSmsCodeRuleDao.getById(id) }
+    }
+
     // New Coroutines support
     fun queryAllSmsCodeRulesFlow(): Flow<List<SmsCodeRule>> {
         return mSmsCodeRuleDao.getAllFlow()
@@ -146,6 +150,12 @@ class DBManager private constructor(context: Context) {
     suspend fun removeSmsMsgListSuspend(smsMsgList: List<SmsMsg>) {
         withContext(Dispatchers.IO) {
             mSmsMsgDao.deleteInTx(smsMsgList)
+        }
+    }
+
+    suspend fun insertSmsMsgListSuspend(smsMsgList: List<SmsMsg>) {
+        withContext(Dispatchers.IO) {
+            mSmsMsgDao.insertAll(smsMsgList)
         }
     }
 

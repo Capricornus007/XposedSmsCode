@@ -7,11 +7,11 @@ interface ITransition {
     /**
      * Whether data migration is needed
      */
-    fun shouldTransit(): Boolean
+    suspend fun shouldTransit(): Boolean
 
     /**
      * Execute data migration logic
      * @return true if successful
      */
-    fun doTransition(): Boolean
+    suspend fun doTransition(): Boolean
 }

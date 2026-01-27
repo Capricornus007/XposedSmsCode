@@ -8,13 +8,13 @@ import com.tianma.xsmscode.feature.migrate.ITransition
  * SharedPreferences related data migration
  */
 class PreferencesTransition(private val mContext: Context) : ITransition {
-    private val mLocalVersionCode: Int = SPUtils.getLocalVersionCode(mContext)
 
-    override fun shouldTransit(): Boolean {
+    override suspend fun shouldTransit(): Boolean {
+        val localVersion = SPUtils.getLocalVersionCode(mContext)
         return false
     }
 
-    override fun doTransition(): Boolean {
+    override suspend fun doTransition(): Boolean {
         return false
     }
 

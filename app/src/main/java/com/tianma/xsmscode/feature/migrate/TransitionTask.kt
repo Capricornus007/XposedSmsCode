@@ -7,7 +7,7 @@ import java.util.ArrayList
 /**
  * Task to execute data migration transitions
  */
-class TransitionTask(context: Context) : Runnable {
+class TransitionTask(context: Context) {
     private val mTransitionList: MutableList<ITransition> = ArrayList()
 
     init {
@@ -15,11 +15,10 @@ class TransitionTask(context: Context) : Runnable {
     }
 
     private fun init(context: Context) {
-        // mTransitionList.add(PreferencesTransition(context))
         mTransitionList.add(DBTransition(context))
     }
 
-    override fun run() {
+    suspend fun run() {
         for (transition in mTransitionList) {
             if (transition.shouldTransit()) {
                 transition.doTransition()

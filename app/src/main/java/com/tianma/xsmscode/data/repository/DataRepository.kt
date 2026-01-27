@@ -6,7 +6,7 @@ import com.tianma.xsmscode.data.http.ApiConst
 import com.tianma.xsmscode.data.http.NetworkError
 import com.tianma.xsmscode.data.http.NetworkResult
 import com.tianma.xsmscode.data.http.toNetworkError
-import com.tianma.xsmscode.data.http.service.CoolApkService
+
 import com.tianma.xsmscode.data.http.service.GithubService
 import com.tianma.xsmscode.data.http.service.ServiceGenerator
 import java.util.Locale
@@ -21,48 +21,15 @@ object DataRepository {
 
     suspend fun getLatestVersion(): NetworkResult<ApkVersion> {
         val isInChina = isInChina()
-
-        val coolApkService = ServiceGenerator.getInstance()
-            .createService(ApiConst.COOLAPK_BASE_URL, CoolApkService::class.java)
         
         val githubService = ServiceGenerator.getInstance()
             .createService(ApiConst.GITHUB_BASE_URL, GithubService::class.java)
 
-        return if (isInChina) {
-            getWithFallback(
-                primary = { getFromCoolApk(coolApkService) },
-                fallback = { getFromGithub(githubService, isInChina) }
-            )
-        } else {
-            getWithFallback(
-                primary = { getFromGithub(githubService, isInChina) },
-                fallback = { getFromCoolApk(coolApkService) }
-            )
-        }
-    }
-
-    private suspend fun getWithFallback(
-        primary: suspend () -> ApkVersion,
-        fallback: suspend () -> ApkVersion
-    ): NetworkResult<ApkVersion> {
-        val primaryError = try {
-            return NetworkResult.Success(primary())
+        return try {
+            NetworkResult.Success(getFromGithub(githubService, isInChina))
         } catch (e: Exception) {
-            e.toNetworkError()
+            e.toNetworkError().let { NetworkResult.Error(it) }
         }
-
-        val fallbackError = try {
-            return NetworkResult.Success(fallback())
-        } catch (e: Exception) {
-            e.toNetworkError()
-        }
-
-        return NetworkResult.Error(NetworkError.MultiSource(primaryError, fallbackError))
-    }
-
-    private suspend fun getFromCoolApk(service: CoolApkService): ApkVersion {
-        val html = service.getLatestRelease(BuildConfig.APPLICATION_ID)
-        return ApkVersionHelper.parseFromCoolApk(html)
     }
 
     private suspend fun getFromGithub(service: GithubService, isInChina: Boolean): ApkVersion {

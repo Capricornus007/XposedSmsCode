@@ -6,12 +6,12 @@ import com.tianma.xsmscode.ui.record.CodeRecordRestoreManager
 
 class DBTransition(private val mContext: Context) : ITransition {
 
-    override fun shouldTransit(): Boolean {
+    override suspend fun shouldTransit(): Boolean {
         val recordFiles = CodeRecordRestoreManager.getRecordFiles(mContext)
         return recordFiles != null && recordFiles.isNotEmpty()
     }
 
-    override fun doTransition(): Boolean {
+    override suspend fun doTransition(): Boolean {
         return CodeRecordRestoreManager.importToDatabase(mContext)
     }
 }

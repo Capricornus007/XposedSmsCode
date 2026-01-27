@@ -11,6 +11,9 @@ interface SmsCodeRuleDao {
     @Query("SELECT * FROM sms_code_rule")
     fun getAll(): List<SmsCodeRule>
 
+    @Query("SELECT * FROM sms_code_rule WHERE id = :id")
+    fun getById(id: Long): SmsCodeRule?
+
 
     @Query("SELECT * FROM sms_code_rule")
     fun getAllFlow(): Flow<List<SmsCodeRule>>
