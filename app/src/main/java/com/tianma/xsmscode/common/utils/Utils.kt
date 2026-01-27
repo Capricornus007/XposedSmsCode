@@ -2,6 +2,11 @@ package com.tianma.xsmscode.common.utils
 
 import android.content.Context
 import android.net.Uri
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.browser.customtabs.CustomTabsIntent
 import com.github.tianma8023.xposed.smscode.R
@@ -68,6 +73,42 @@ object Utils {
             }
         }
         return true
+    }
+
+    @JvmStatic
+    fun saveImageToGallery(context: Context, resId: Int, fileName: String) {
+        val bitmap = BitmapFactory.decodeResource(context.resources, resId)
+        val resolver = context.contentResolver
+        val contentValues = android.content.ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, "$fileName.png")
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/png")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+        }
+
+        val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        if (imageUri != null) {
+            try {
+                resolver.openOutputStream(imageUri)?.use {
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    contentValues.clear()
+                    contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                    resolver.update(imageUri, contentValues, null, null)
+                }
+                Toast.makeText(context, R.string.save_to_gallery_success, Toast.LENGTH_SHORT).show()
+                if (fileName.contains("alipay")) {
+                    PackageUtils.startAlipayActivity(context)
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, R.string.save_to_gallery_failed, Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(context, R.string.save_to_gallery_failed, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun isValidFilenameChar(c: Char): Boolean {

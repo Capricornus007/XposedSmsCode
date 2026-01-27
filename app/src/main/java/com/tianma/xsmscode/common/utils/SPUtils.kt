@@ -3,6 +3,7 @@ package com.tianma.xsmscode.common.utils
 import android.content.Context
 import com.tianma.xsmscode.common.constant.PrefConst
 
+
 object SPUtils {
 
     // 本地的版本号
@@ -12,26 +13,23 @@ object SPUtils {
     /**
      * 获取本地记录的版本号
      */
-    @JvmStatic
-    fun getLocalVersionCode(context: Context): Int {
+    suspend fun getLocalVersionCode(context: Context): Int {
         // 如果不存在,则默认返回16,即v1.4.5版本
-        return AppPreferencesDataStore.getIntBlocking(context, LOCAL_VERSION_CODE, LOCAL_VERSION_CODE_DEFAULT)
+        return AppPreferencesDataStore.getInt(context, LOCAL_VERSION_CODE, LOCAL_VERSION_CODE_DEFAULT)
     }
 
     /**
      * 设置当前版本号
      */
-    @JvmStatic
-    fun setLocalVersionCode(context: Context, versionCode: Int) {
-        AppPreferencesDataStore.setIntBlocking(context, LOCAL_VERSION_CODE, versionCode)
+    suspend fun setLocalVersionCode(context: Context, versionCode: Int) {
+        AppPreferencesDataStore.setInt(context, LOCAL_VERSION_CODE, versionCode)
     }
 
     /**
      * 获取短信验证码关键字
      */
-    @JvmStatic
-    fun getSMSCodeKeywords(context: Context): String? {
-        return AppPreferencesDataStore.getStringBlocking(
+    suspend fun getSMSCodeKeywords(context: Context): String? {
+        return AppPreferencesDataStore.getString(
             context,
             PrefConst.KEY_SMSCODE_KEYWORDS,
             PrefConst.SMSCODE_KEYWORDS_DEFAULT
@@ -41,33 +39,29 @@ object SPUtils {
     /**
      * 是否同意隐私协议
      */
-    @JvmStatic
-    fun isPrivacyPolicyAccepted(context: Context): Boolean {
-        return AppPreferencesDataStore.getBooleanBlocking(context, PrefConst.KEY_PRIVACY_POLICY_ACCEPTED, false)
+    suspend fun isPrivacyPolicyAccepted(context: Context): Boolean {
+        return AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_PRIVACY_POLICY_ACCEPTED, false)
     }
 
     /**
      * 设置是否同意隐私协议
      */
-    @JvmStatic
-    fun setPrivacyPolicyAccepted(context: Context, accepted: Boolean) {
-        AppPreferencesDataStore.setBooleanBlocking(context, PrefConst.KEY_PRIVACY_POLICY_ACCEPTED, accepted)
+    suspend fun setPrivacyPolicyAccepted(context: Context, accepted: Boolean) {
+        AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_PRIVACY_POLICY_ACCEPTED, accepted)
     }
 
     /**
      * 获取当前主题模式
      * 0: Follow System, 1: Light, 2: Dark
      */
-    @JvmStatic
-    fun getThemeMode(context: Context): Int {
-        return AppPreferencesDataStore.getIntBlocking(context, PrefConst.KEY_CHOOSE_THEME, 0)
+    suspend fun getThemeMode(context: Context): Int {
+        return AppPreferencesDataStore.getInt(context, PrefConst.KEY_CHOOSE_THEME, 0)
     }
 
     /**
      * 设置当前主题模式
      */
-    @JvmStatic
-    fun setThemeMode(context: Context, mode: Int) {
-        AppPreferencesDataStore.setIntBlocking(context, PrefConst.KEY_CHOOSE_THEME, mode)
+    suspend fun setThemeMode(context: Context, mode: Int) {
+        AppPreferencesDataStore.setInt(context, PrefConst.KEY_CHOOSE_THEME, mode)
     }
 }

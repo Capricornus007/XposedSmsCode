@@ -45,15 +45,14 @@ object SmsCodeUtils {
         }
     }
 
-    private fun loadCodeKeywordsBySP(context: Context): String? {
+    private suspend fun loadCodeKeywordsBySP(context: Context): String? {
         return SPUtils.getSMSCodeKeywords(context)
     }
 
     /**
      * 解析文本中的验证码并返回，如果不存在返回空字符
      */
-    @JvmStatic
-    fun parseSmsCodeIfExists(context: Context, content: String): String {
+    suspend fun parseSmsCodeIfExists(context: Context, content: String): String {
         var result = parseByCustomRules(context, content)
         if (TextUtils.isEmpty(result)) {
             result = parseByDefaultRule(context, content)
@@ -64,7 +63,7 @@ object SmsCodeUtils {
     /**
      * Parse SMS code by default rule
      */
-    private fun parseByDefaultRule(context: Context, content: String): String {
+    private suspend fun parseByDefaultRule(context: Context, content: String): String {
         var result = ""
         val keywordsRegex = loadCodeKeywordsBySP(context) ?: ""
         val keyword = parseKeyword(keywordsRegex, content)
@@ -168,7 +167,7 @@ object SmsCodeUtils {
         return Math.abs(keywordIdx - possibleCodeIdx)
     }
 
-    private fun parseByCustomRules(context: Context, content: String): String {
+    private suspend fun parseByCustomRules(context: Context, content: String): String {
         val rules = queryAllSmsCodeRules(context)
         val lowerContent = content.lowercase()
         for (rule in rules) {

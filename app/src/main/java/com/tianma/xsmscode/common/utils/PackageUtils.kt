@@ -151,4 +151,10 @@ object PackageUtils {
             }
         }
     }
+    @JvmStatic
+    fun copyAlipayPocketToken(context: Context) {
+        Utils.copyToClipboard(context, Const.ALIPAY_POCKET_TOKEN)
+        val text = context.getString(R.string.alipay_red_packet_code_copied, Const.ALIPAY_POCKET_TOKEN)
+        Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+    }
 }
