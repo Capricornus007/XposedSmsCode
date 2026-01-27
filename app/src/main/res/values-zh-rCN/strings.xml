@@ -191,8 +191,12 @@
     <string name="export_succeed">导出成功</string>
     <string name="export_failed">导出失败，请重试</string>
     <string name="import_confirmation_title">导入确认</string>
+    <string name="import_rules_confirm_msg">导入时是否需要保留当前规则？</string>
     <string name="import_confirmation_message">导入时是否需要保留当前规则？</string>
     <string name="importing">正在导入</string>
+    <string name="please_wait">请稍候...</string>
+    <string name="import_failed">导入失败</string>
+    <string name="export_success_simple">导出成功</string>
     <string name="no_backup_exists">没有备份文件</string>
     <string name="choose_backup_file">选择备份文件</string>
     <string name="backup_file_dir">备份位置:\n%s</string>

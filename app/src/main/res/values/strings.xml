@@ -60,7 +60,6 @@
     <string name="pref_auto_cancel_notification_summary">Auto cancel SMS code notification</string>
     <!-- notification retention time -->
     <string name="pref_notification_retention_time_title">Notification retention time</string>
-    <string name="pref_notification_retention_time_summary">%s</string>
     <string name="notification_retention_time_5_secs_entry">5 s</string>
     <string name="notification_retention_time_10_secs_entry">10 s</string>
     <string name="notification_retention_time_30_secs_entry">30 s</string>
@@ -84,6 +83,7 @@
     <string name="copy_sms">Copy Message</string>
     <string name="prompt_sms_copied">SMS copied</string>
     <string name="pref_enable_code_records_title">Reserve SMS code records</string>
+    <string name="selected_count">%d selected</string>
     <!-- preference code records end -->
 
     <!-- preference code rules -->
@@ -193,8 +193,12 @@
     <string name="export_succeed">Export succeed</string>
     <string name="export_failed">Export failed, try again please</string>
     <string name="import_confirmation_title">Import confirmation</string>
+    <string name="import_rules_confirm_msg">Retain current rules when import new rules?</string>
     <string name="import_confirmation_message">Retain current rules when import new rules?</string>
     <string name="importing">Importing</string>
+    <string name="please_wait">Please wait...</string>
+    <string name="import_failed">Import failed</string>
+    <string name="export_success_simple">Export success</string>
     <string name="no_backup_exists">No backup file exists</string>
     <string name="choose_backup_file">Choose backup file</string>
     <string name="backup_file_dir">Backup location:\n%s</string>
@@ -251,6 +255,7 @@
     <string name="long_press_save_hint">Long press image to save to gallery</string>
     <string name="save_to_gallery_success">Image saved to gallery, opening payment app...</string>
     <string name="save_to_gallery_failed">Save failed, please check file permissions</string>
+    <string name="save_to_gallery">Save to Gallery</string>
     <!-- alipay packet end -->
 
 
@@ -314,4 +319,8 @@
     <string name="privacy_dialog_cancel">Refuse</string>
     <string name="privacy_dialog_confirm">Accept</string>
     <!-- privacy policy end -->
+    <string name="rule_list_empty_prompt">No rules yet. Click + to add one.</string>
+    <string name="rule_keyword_prefix">Keyword: </string>
+    <string name="rule_regex_prefix">Regex: </string>
+    <string name="save">Save</string>
 </resources>
