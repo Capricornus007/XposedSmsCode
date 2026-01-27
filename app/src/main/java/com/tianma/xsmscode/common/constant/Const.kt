@@ -31,6 +31,14 @@ object Const {
     const val DOC_SMS_CODE_RULE_HELP = "sms_code_rule_help"
     /* Xposed SmsCode end */
 
+    /* Rule Edit Types */
+    const val EDIT_TYPE_CREATE = 0
+    const val EDIT_TYPE_EDIT = 1
+    const val KEY_RULE_EDIT_TYPE = "key_rule_edit_type"
+    const val KEY_CODE_RULE = "key_code_rule"
+    const val KEY_RULE_ID = "key_rule_id"
+    const val EXTRA_IMPORT_URI = "extra_import_uri"
+
 
 
     /* CoolApk */

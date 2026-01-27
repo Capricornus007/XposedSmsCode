@@ -2,32 +2,37 @@ package com.tianma.xsmscode.ui.app
 
 import android.app.Application
 import com.tianma.xsmscode.feature.migrate.TransitionTask
-import com.google.android.material.color.DynamicColors
-import java.util.concurrent.Executors
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import timber.log.Timber
+import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidLogger
+import org.koin.core.context.startKoin
+import com.tianma.xsmscode.di.appModule
 
 class SmsCodeApplication : Application() {
 
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     override fun onCreate() {
         super.onCreate()
+        if (com.github.tianma8023.xposed.smscode.BuildConfig.DEBUG) {
+            Timber.plant(Timber.DebugTree())
+        }
 
-        applyTheme()
-        DynamicColors.applyToActivitiesIfAvailable(this)
+        startKoin {
+            androidLogger()
+            androidContext(this@SmsCodeApplication)
+            modules(appModule)
+        }
         performTransitionTask()
     }
 
-    private fun applyTheme() {
-        val mode = com.tianma.xsmscode.common.utils.SPUtils.getThemeMode(this)
-        val nightMode = when (mode) {
-            1 -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_NO
-            2 -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
-            else -> androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-        }
-        androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(nightMode)
-    }
-
-
     private fun performTransitionTask() {
-        val singlePool = Executors.newSingleThreadExecutor()
-        singlePool.execute(TransitionTask(this))
+        applicationScope.launch {
+            TransitionTask(this@SmsCodeApplication).run()
+        }
     }
 }
