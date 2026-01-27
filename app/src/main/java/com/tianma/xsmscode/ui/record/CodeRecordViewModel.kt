@@ -7,32 +7,39 @@ import androidx.lifecycle.MutableLiveData
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBManager
 import com.tianma.xsmscode.data.db.entity.SmsMsg
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.viewModelScope
+import com.tianma.xsmscode.common.utils.JsonUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.OutputStreamWriter
+import java.nio.charset.StandardCharsets
+
+data class CodeRecordUiState(
+    val smsList: List<SmsMsg> = emptyList(),
+    val isLoading: Boolean = false
+)
 
 class CodeRecordViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val mSmsMsgListLiveData = MutableLiveData<List<SmsMsg>>()
-    private val mLoadingLiveData = MutableLiveData<Boolean>()
-
-    val smsMsgListLiveData: LiveData<List<SmsMsg>> = mSmsMsgListLiveData
-    val loadingLiveData: LiveData<Boolean> = mLoadingLiveData
+    private val _loading = MutableStateFlow(false)
+    
+    val uiState: StateFlow<CodeRecordUiState> = DBManager.get(application)
+        .queryAllSmsMsgFlow()
+        .combine(_loading) { smsList, loading ->
+            CodeRecordUiState(smsList, loading)
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = CodeRecordUiState(isLoading = true)
+        )
 
     fun loadData() {
-        viewModelScope.launch {
-            mLoadingLiveData.value = true
-            try {
-                DBManager.get(getApplication())
-                    .queryAllSmsMsgFlow()
-                    .collect { smsMsgList ->
-                        mSmsMsgListLiveData.value = smsMsgList
-                        mLoadingLiveData.value = false
-                    }
-            } catch (t: Throwable) {
-                XLog.e("", t)
-                mLoadingLiveData.value = false
-            }
-        }
+        // Data is automatically loaded via queryAllSmsMsgFlow() in uiState
     }
 
     fun removeSmsMsg(smsMsgList: List<SmsMsg>) {
@@ -42,6 +49,38 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
                     .removeSmsMsgListSuspend(smsMsgList)
             } catch (t: Throwable) {
                 XLog.e("Error occurs when remove SMS records", t)
+            }
+        }
+    }
+
+    fun restoreSmsMsgList(smsMsgList: List<SmsMsg>) {
+        viewModelScope.launch {
+            try {
+                DBManager.get(getApplication())
+                    .insertSmsMsgListSuspend(smsMsgList)
+            } catch (t: Throwable) {
+                XLog.e("Error occurs when restore SMS records", t)
+            }
+        }
+    }
+
+    fun exportRecords(context: Context, uri: Uri) {
+        viewModelScope.launch {
+            _loading.value = true
+            try {
+                val records = uiState.value.smsList
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use { os ->
+                        OutputStreamWriter(os, StandardCharsets.UTF_8).use { osw ->
+                            JsonUtils.toJson(records, osw, true)
+                        }
+                    }
+                }
+                // We might want an event for success/failure
+            } catch (t: Throwable) {
+                XLog.e("Export records failed", t)
+            } finally {
+                _loading.value = false
             }
         }
     }
