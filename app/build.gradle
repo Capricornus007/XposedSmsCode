@@ -23,14 +23,14 @@ def static releaseTime() {
     return new Date().format("yyMMdd", TimeZone.default)
 }
 
-def VERSION_NAME = "3.0.2"
-def VERSION_CODE = 62
+def VERSION_NAME = "3.0.3"
+def VERSION_CODE = 63
 
 android {
-    namespace 'com.github.tianma8023.xposed.smscode'
+    namespace = 'com.github.tianma8023.xposed.smscode'
 
     compileSdk 36
-    ndkVersion "28.2.13676358"
+    ndkVersion = "28.2.13676358"
     defaultConfig {
         applicationId "com.github.tianma8023.xposed.smscode"
         minSdkVersion 35
@@ -47,16 +47,16 @@ android {
 
     splits {
         abi {
-            enable true
+            enable = true
             reset()
             include "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
-            universalApk true
+            universalApk = true
         }
     }
 
     buildFeatures {
-        buildConfig true
-        compose true
+        buildConfig = true
+        compose = true
     }
 
     signingConfigs {
@@ -74,21 +74,21 @@ android {
             buildConfigField("boolean", "LOG_TO_XPOSED", "true")
 
             if (isSigningInfoAvailable) {
-                signingConfig signingConfigs.release
+                signingConfig = signingConfigs.release
             }
         }
 
         alpha {
             minifyEnabled true
-            shrinkResources true
+            shrinkResources = true
             zipAlignEnabled true
-            debuggable  false
+            debuggable = false
 
             buildConfigField("int", "LOG_LEVEL", "2")
             buildConfigField("boolean", "LOG_TO_XPOSED", "true")
 
             if (isSigningInfoAvailable) {
-                signingConfig signingConfigs.release
+                signingConfig = signingConfigs.release
             }
 
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -96,22 +96,22 @@ android {
 
         release {
             minifyEnabled true
-            shrinkResources true
+            shrinkResources = true
             zipAlignEnabled true
 
             buildConfigField("int", "LOG_LEVEL", "4")
             buildConfigField("boolean", "LOG_TO_XPOSED", "true")
             if (isSigningInfoAvailable) {
-                signingConfig signingConfigs.release
+                signingConfig = signingConfigs.release
             } else {
-                signingConfig signingConfigs.debug
+                signingConfig = signingConfigs.debug
             }
 
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
 
             lintOptions {
                 disable 'MissingTranslation'
-                checkReleaseBuilds false
+                checkReleaseBuilds = false
             }
 
             packagingOptions {

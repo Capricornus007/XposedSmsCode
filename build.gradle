@@ -5,7 +5,7 @@ buildscript {
     repositories {
         google()
         mavenCentral() // add repository
-        maven { url "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/eap" }
+        maven { url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/eap" }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:9.0.0'
@@ -20,11 +20,11 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        maven { url "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/eap" }
-        maven { url "https://api.xposed.info/" }
-        maven { url "https://jitpack.io" }
+        maven { url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/eap" }
+        maven { url = "https://api.xposed.info/" }
+        maven { url = "https://jitpack.io" }
         maven {
-            url "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            url = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
         }
     }
 }
