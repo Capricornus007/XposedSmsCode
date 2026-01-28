@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">XposedSmsCode</string>
     <string name="xposed_description">Extract code from new SMS message and copy it to clipboard. It can also Auto-input SMS code</string>
@@ -71,7 +72,7 @@
 
     <!-- preference code records -->
     <string name="pref_entry_code_records_title">SMS code records</string>
-    <string name="pref_entry_code_records_summary">Reserve %d recent records at most</string>
+    <string name="pref_entry_code_records_summary">Total %d records</string>
     <string name="pref_code_records_title">SMS Code Records</string>
     <string name="smscode_records">Code Records</string>
     <string name="edit_smscode_records">Edit Code Records</string>
@@ -109,7 +110,6 @@
     <!-- preference code rules end -->
 
 
-
     <!-- preference others -->
     <string name="pref_others_title">Others</string>
     <string name="pref_verbose_log_mode_title">Detailed log</string>
@@ -139,12 +139,12 @@
     <string name="app_block_settings">App Block Settings</string>
     <string name="app_block_summary">Choose Apps that auto-input banned</string>
     <string name="action_sort">Sort Order</string>
-    <string name="action_sort_by_label_asc">App name</string>
-    <string name="action_sort_by_label_desc">App name(desc)</string>
-    <string name="action_sort_by_pkg_asc">Package name</string>
-    <string name="action_sort_by_pkg_desc">Package name(desc)</string>
+    <string name="action_sort_by_label">App name</string>
+    <string name="action_sort_by_pkg">Package name</string>
+    <string name="action_sort_by_usage">Usage frequency</string>
     <string name="action_search">Search</string>
     <string name="action_accomplish">Accomplish</string>
+    <string name="usage_permission_prompt">Sorting by usage frequency requires Usage Access permission. Please grant it in Settings.</string>
     <string name="save_failed">Save failed, try it again.</string>
     <string name="load_failed">Load failed, try it again.</string>
     <!-- auto-input block settings end -->
@@ -152,6 +152,7 @@
     <!-- code rules -->
     <string name="rule_company_hint">Institution or Company</string>
     <string name="rule_keyword_hint">SMS Code Keyword</string>
+    <string name="rule_code_type">SMS code type</string>
     <string name="rule_code_length">SMS code length</string>
     <string name="rule_code_regex_hint">SMS code regular expression</string>
     <string name="pref_code_rules_title">SMS code match rules</string>
@@ -251,11 +252,10 @@
     <string name="dialog_donate_alipay_qrcode">Save QR Code</string>
     <string name="dialog_donate_cancel">Next Time</string>
     <string name="long_press_save_hint">Long press image to save to gallery</string>
-    <string name="save_to_gallery_success">Image saved to gallery, opening payment app...</string>
+    <string name="save_to_gallery_success">Image saved to gallery, opening %s...</string>
     <string name="save_to_gallery_failed">Save failed, please check file permissions</string>
     <string name="save_to_gallery">Save to Gallery</string>
     <!-- alipay packet end -->
-
 
 
     <!-- check update -->
@@ -276,24 +276,15 @@
     <!-- check update end -->
 
 
-
     <!-- faq -->
     <string-array name="question_list">
         <item>Module inactive after being updated.</item>
-        <item>empty</item>
-        <item>empty</item>
-        <item>empty</item>
-        <item>empty</item>
         <item>Which Rom is this module suitable for?</item>
         <item>Why can\'t it mark SMS as read or delete SMS?</item>
         <item>What\'s the original intention of this App?</item>
     </string-array>
     <string-array name="answer_list">
         <item>Re-check this module in module list, and re-launch this app, and reboot system if it\'s necessary</item>
-        <item>empty</item>
-        <item>empty</item>
-        <item>empty</item>
-        <item>empty</item>
         <item>It\'s suitable for AOSP Rom, may not be suitable for other third-party heavily customized Rom.</item>
         <item>If the system default SMS app uses its own SMS database instead of the system\'s, it will not take effect for marking SMS as read or deleting SMS. If this happens, it may not work well on your device.</item>
         <item>Don\'t be evil. Green Android.</item>
@@ -310,4 +301,9 @@
     <string name="rule_keyword_prefix">Keyword: </string>
     <string name="rule_regex_prefix">Regex: </string>
     <string name="save">Save</string>
+    <string name="app_icon_description">Icon for %s</string>
+    <string name="sms_icon_description">SMS Icon</string>
+    <string name="action_block_app">Block %s</string>
+    <string name="action_unblock_app">Unblock %s</string>
+    <string name="action_back">Back</string>
 </resources>

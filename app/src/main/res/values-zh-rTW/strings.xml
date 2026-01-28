@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">XposedSmsCode</string>
     <string name="xposed_description">擷取新簡訊中的驗證碼複製到剪貼板，並自動輸入驗證碼</string>
@@ -14,45 +15,51 @@
 
     <!-- preferences general -->
     <string name="pref_general_title">一般設定</string>
-    <string name="pref_enable_title">啟用</string>
-    <string name="pref_enable_summary">模組已激活</string>
-    <string name="pref_hide_launcher_icon_title">隱藏應用圖示</string>
-    <string name="pref_hide_launcher_icon_summary">隱藏後可從模組列表中打開本模組</string>
+    <string name="pref_enable_title">主開關</string>
+    <string name="pref_enable_summary">模組已啟用</string>
+    <string name="pref_hide_launcher_icon_title">隱藏桌面圖示</string>
+    <string name="pref_hide_launcher_icon_summary">隱藏後您可以從 Xposed 模組清單中重新開啟本應用</string>
     <string name="pref_choose_theme_title">主題</string>
-    <string name="pref_choose_theme_summary">跟隨系統、淺色或深色</string>
-    <string name="theme_follow_system">自動 (跟隨系統)</string>
+    <string name="pref_choose_theme_summary">隨系統、淺色或深色</string>
+    <string name="theme_follow_system">自動 (隨系統)</string>
     <string name="theme_light">淺色</string>
     <string name="theme_dark">深色</string>
-    <string name="module_status_active">已激活</string>
-    <string name="module_status_inactive">未激活</string>
+    <string name="pref_language_title">語言</string>
+    <string name="pref_language_summary">Select language/語言</string>
+    <string name="language_follow_system">系統默認/跟隨系統</string>
+    <string name="language_en">English</string>
+    <string name="language_zh_cn">简体中文</string>
+    <string name="language_zh_tw">繁體中文</string>
+    <string name="module_status_active">已啟用</string>
+    <string name="module_status_inactive">未啟用</string>
     <!-- preferences general end -->
 
     <!-- preferences sms code -->
     <string name="pref_sms_code_title">驗證碼</string>
     <string name="pref_show_toast_title">顯示快顯訊息</string>
-    <string name="pref_show_toast_summary">接收到驗證碼時顯示快顯訊息</string>
-    <string name="pref_copy_to_clipboard_title">拷貝到剪切板</string>
-    <string name="pref_copy_to_clipboard_summary">擷取成功后拷貝驗證碼到系統剪切板</string>
+    <string name="pref_show_toast_summary">擷取到驗證碼時顯示快顯訊息</string>
+    <string name="pref_copy_to_clipboard_title">複製到剪貼簿</string>
+    <string name="pref_copy_to_clipboard_summary">擷取成功後將驗證碼複製到剪貼簿</string>
     <string name="pref_block_sms_title">攔截驗證碼簡訊</string>
-    <string name="pref_block_sms_summary">警告：擷取成功後驗證碼簡訊將完全被攔截(即簡訊App不會收到驗證碼簡訊)</string>
+    <string name="pref_block_sms_summary">警告！擷取成功後驗證碼簡訊將被攔截，簡訊應用程式將無法收到</string>
     <string name="pref_deduplicate_sms_title">過濾重複簡訊</string>
-    <string name="pref_deduplicate_sms_summary">過濾掉短時間內重複的驗證碼簡訊</string>
+    <string name="pref_deduplicate_sms_summary">過濾掉重複的驗證碼簡訊</string>
     <!-- preferences sms code end -->
 
     <!-- preferences auto-input -->
     <string name="pref_category_auto_input_title">自動輸入</string>
-    <string name="pref_enable_auto_input_code_title">自動輸入</string>
-    <string name="pref_enable_auto_input_code_summary">自動輸入驗證碼</string>
-    <string name="pref_auto_input_code_delay_title">自動輸入延時</string>
-    <string name="pref_auto_input_code_delay_summary">延時%ss後自動輸入</string>
+    <string name="pref_enable_auto_input_code_title">自動輸入驗證碼</string>
+    <string name="pref_enable_auto_input_code_summary">嘗試自動輸入驗證碼</string>
+    <string name="pref_auto_input_code_delay_title">自動輸入延遲</string>
+    <string name="pref_auto_input_code_delay_summary">延遲 %ss</string>
     <!-- preferences auto-input end -->
 
     <!-- preference code notification -->
     <string name="pref_notification_title">通知</string>
     <string name="pref_show_code_notification_title">顯示通知</string>
-    <string name="pref_show_code_notification_summary">收到驗證碼時顯示通知</string>
-    <string name="pref_auto_cancel_notification_title">自動清除通知</string>
-    <string name="pref_auto_cancel_notification_summary">自動清除驗證碼通知</string>
+    <string name="pref_show_code_notification_summary">擷取到驗證碼時顯示通知</string>
+    <string name="pref_auto_cancel_notification_title">自動取消通知</string>
+    <string name="pref_auto_cancel_notification_summary">自動取消驗證碼通知</string>
     <!-- notification retention time -->
     <string name="pref_notification_retention_time_title">通知保留時間</string>
     <string name="notification_retention_time_5_secs_entry">5 秒</string>
@@ -65,88 +72,96 @@
 
     <!-- preference code records -->
     <string name="pref_entry_code_records_title">驗證碼歷史記錄</string>
-    <string name="pref_entry_code_records_summary">最多保留%d條記錄</string>
-    <string name="pref_code_records_title">簡訊驗證碼記錄</string>
+    <string name="pref_entry_code_records_summary">共 %d 條記錄</string>
+    <string name="pref_code_records_title">驗證碼記錄</string>
     <string name="smscode_records">驗證碼記錄</string>
     <string name="edit_smscode_records">編輯驗證碼記錄</string>
-    <string name="prompt_sms_code_copied">已複製驗證碼: %s</string>
+    <string name="prompt_sms_code_copied">驗證碼已複製: %s</string>
     <string name="action_delete">刪除</string>
     <string name="action_select_all">全選</string>
-    <string name="some_items_removed">已刪除%d項記錄</string>
+    <string name="some_items_removed">刪除了 %d 條記錄</string>
     <string name="message_details">簡訊詳情</string>
     <string name="copy_smscode">複製驗證碼</string>
     <string name="copy_sms">複製簡訊</string>
-    <string name="prompt_sms_copied">已複製簡訊</string>
-    <string name="pref_enable_code_records_title">保存驗證碼記錄</string>
+    <string name="prompt_sms_copied">簡訊已複製</string>
+    <string name="pref_enable_code_records_title">保留驗證碼記錄</string>
+    <string name="selected_count">已選 %d 項</string>
+    <string name="pref_history_limit_title">歷史記錄限制</string>
+    <string name="pref_history_limit_summary">僅保留最近 %s 條記錄</string>
+    <string name="history_limit_10_entry">10 條記錄</string>
+    <string name="history_limit_20_entry">20 條記錄</string>
+    <string name="history_limit_50_entry">50 條記錄</string>
+    <string name="history_limit_all_entry">所有記錄</string>
+    <string name="history_limit_custom_entry">自定義</string>
     <!-- preference code records end -->
 
     <!-- preference code rules -->
     <string name="pref_match_rules">匹配規則</string>
-    <string name="pref_smscode_keywords_title">驗證碼簡訊關鍵字</string>
-    <string name="pref_smscode_keywords_summary">簡訊關鍵字(正則表達式)</string>
+    <string name="pref_smscode_keywords_title">關鍵字</string>
+    <string name="pref_smscode_keywords_summary">簡訊包含的驗證碼關鍵字(正規表達式)</string>
     <string name="reset">重置</string>
-    <string name="code_keywords_hint">關鍵字(正則表達式)</string>
+    <string name="code_keywords_hint">關鍵字(正規表達式)</string>
     <string name="pref_smscode_test_title">驗證碼簡訊測試</string>
-    <string name="pref_smscode_test_summary">測試是否能正確辨識簡訊中的驗證碼</string>
+    <string name="pref_smscode_test_summary">測試是否能正確讀取簡訊中的驗證碼</string>
     <string name="sms_content_hint">簡訊內容</string>
     <string name="test">測試</string>
-    <string name="current_sms_code">當前驗證碼：%s</string>
-    <string name="cannot_parse_smscode">無法正確辨識驗證碼</string>
+    <string name="current_sms_code">當前驗證碼為 %s</string>
+    <string name="cannot_parse_smscode">無法解析驗證碼</string>
     <!-- preference code rules end -->
 
 
-
     <!-- preference others -->
-    <string name="pref_others_title">其他</string>
-    <string name="pref_verbose_log_mode_title">輸出詳細日誌</string>
-    <string name="pref_verbose_log_mode_summary">輸出詳細的日誌到Xposed(僅用於調試)</string>
-    <string name="qq_group_number">1075934453</string>
+    <string name="pref_others_title">其他設定</string>
+    <string name="pref_verbose_log_mode_title">詳細日誌</string>
+    <string name="pref_verbose_log_mode_summary">列印詳細日誌(僅用於調試)</string>
     <!-- preference others end -->
 
     <!-- preference about -->
     <string name="pref_about_title">關於</string>
     <string name="pref_version_title">版本</string>
     <string name="pref_version_summary"><![CDATA[當前版本：%1$s (%2$d)]]></string>
-    <string name="pref_join_qq_group_title">加群反饋交流</string>
-    <string name="pref_join_qq_group_summary">QQ群：%s</string>
-    <string name="prompt_join_qq_group_failed">請先安裝手機QQ</string>
-    <string name="pref_source_code_title">項目源碼</string>
+    <string name="pref_join_qq_group_title">加入 QQ 群</string>
+    <string name="pref_join_qq_group_summary">點擊申請加入 (%s)</string>
+    <string name="qq_group_number">1075934453</string>
+    <string name="prompt_join_qq_group_failed">請先安裝手機 QQ</string>
+    <string name="pref_source_code_title">專案源碼</string>
     <string name="browser_install_or_enable_prompt">請先安裝或啟用瀏覽器</string>
-    <string name="pref_source_code_summary">歡迎Star ♪(＾∀＾)ﾉ</string>
-    <string name="pref_donate_by_alipay_title">捐贈打賞</string>
+    <string name="pref_source_code_summary">歡迎 Star ♪(＾∀＾)ﾉ</string>
+    <string name="pref_donate_by_alipay_title">打賞感謝</string>
     <string name="alipay_install_prompt">請先安裝支付寶</string>
     <string name="alipay_enable_prompt">請先啟用支付寶</string>
-    <string name="wechat_install_prompt">請先安裝WeChat</string>
-    <string name="wechat_enable_prompt">請先啟用WeChat</string>
+    <string name="wechat_install_prompt">請先安裝 WeChat</string>
+    <string name="wechat_enable_prompt">請先啟用 WeChat</string>
     <string name="pref_privacy_policy_title">隱私政策</string>
     <!-- preference about end -->
 
     <!-- auto-input block settings -->
     <string name="app_block_settings">自動輸入屏蔽設定</string>
-    <string name="app_block_summary">選取屏蔽自動輸入的程式</string>
+    <string name="app_block_summary">選取禁止自動輸入的應用程式</string>
     <string name="action_sort">排序</string>
-    <string name="action_sort_by_label_asc">程式名</string>
-    <string name="action_sort_by_label_desc">程式名(降序)</string>
-    <string name="action_sort_by_pkg_asc">包名</string>
-    <string name="action_sort_by_pkg_desc">包名(降序)</string>
+    <string name="action_sort_by_label">應用程式名稱</string>
+    <string name="action_sort_by_pkg">包名</string>
+    <string name="action_sort_by_usage">使用頻率</string>
     <string name="action_search">搜索</string>
-    <string name="action_accomplish">保存</string>
+    <string name="action_accomplish">完成</string>
+    <string name="usage_permission_prompt">按使用頻率排序需要使用情況存取權限。請在設定中授予該權限。</string>
     <string name="save_failed">保存失敗，請重試</string>
-    <string name="load_failed">加載失敗，請重試</string>
+    <string name="load_failed">載入失敗，請重试</string>
     <!-- auto-input block settings end -->
 
     <!-- code rules -->
     <string name="rule_company_hint">公司或組織名</string>
     <string name="rule_keyword_hint">驗證碼關鍵字</string>
+    <string name="rule_code_type">驗證碼類型</string>
     <string name="rule_code_length">驗證碼長度</string>
-    <string name="rule_code_regex_hint">驗證碼正則表達式</string>
+    <string name="rule_code_regex_hint">驗證碼正規表達式</string>
     <string name="pref_code_rules_title">驗證碼規則</string>
     <string name="pref_code_rules_summary">自定義特定的驗證碼匹配規則</string>
     <string name="quick_choose">快速選擇</string>
-    <string name="sms_code_type_digit_entry">數字 0\-9]</string>
-    <string name="sms_code_type_letter_entry">字母 [a\-zA\-Z]</string>
+    <string name="sms_code_type_digit_entry">僅數字 [0\-9]</string>
+    <string name="sms_code_type_letter_entry">僅字母 [a\-zA\-Z]</string>
     <string name="sms_code_type_text_entry">數字+字母 [a\-zA\-Z0\-9]</string>
-    <string name="action_rule_edit_done">保存</string>
+    <string name="action_rule_edit_done">完成</string>
     <string name="action_import_rules">導入</string>
     <string name="action_export_rules">導出</string>
     <string name="revoke">撤回</string>
@@ -155,13 +170,13 @@
     <string name="edit">編輯</string>
     <string name="actions">操作</string>
     <string name="list_empty_prompt">空空如也~</string>
-    <string name="rule_list_empty_snack_prompt">規則列表為空，無須導出</string>
+    <string name="rule_list_empty_snack_prompt">規則清單為空，無須導出</string>
     <string name="code_length_empty_prompt">請輸入驗證碼長度</string>
     <string name="rule_company_empty_hint">請輸入公司或組織名</string>
     <string name="rule_keyword_empty_hint">請輸入驗證碼關鍵字</string>
-    <string name="rule_code_regex_empty_hint">請輸入驗證碼正則表達式</string>
+    <string name="rule_code_regex_empty_hint">請輸入驗證碼正規表達式</string>
     <string name="rule_duplicated_prompt">此規則已存在，請重新編輯或退出</string>
-    <string name="rule_list">規則列表</string>
+    <string name="rule_list">規則清單</string>
     <string name="create_rule">新建規則</string>
     <string name="edit_rule">編輯規則</string>
     <string name="import_succeed">導入成功</string>
@@ -177,8 +192,12 @@
     <string name="export_succeed">導出成功</string>
     <string name="export_failed">導出失敗，請重試</string>
     <string name="import_confirmation_title">導入確認</string>
+    <string name="import_rules_confirm_msg">導入時是否需要保留當前規則？</string>
     <string name="import_confirmation_message">導入時是否需要保留當前規則？</string>
     <string name="importing">正在導入</string>
+    <string name="please_wait">請稍候...</string>
+    <string name="import_failed">導入失敗</string>
+    <string name="export_success_simple">導出成功</string>
     <string name="no_backup_exists">沒有備份文件</string>
     <string name="choose_backup_file">選擇備份文件</string>
     <string name="backup_file_dir">備份位置:\n%s</string>
@@ -186,11 +205,11 @@
     <string name="exporting">正在導出</string>
     <string name="action_save_as_template">保存為模版</string>
     <string name="save_template_succeed">保存模版成功</string>
-    <string name="save_template_failed">保存模版失败</string>
+    <string name="save_template_failed">保存模版失敗</string>
     <string name="action_rule_help">幫助</string>
     <string name="share">分享</string>
     <string name="import_rules">導入規則</string>
-    <string name="no_permission_prompt">沒有相關權限，請啟用模組并重啟后再試</string>
+    <string name="no_permission_prompt">沒有相關權限，重啟手機後再試</string>
     <string name="documents_ui_not_found">未發現 DocumentsUI 應用程式</string>
     <!-- code rules end -->
 
@@ -202,7 +221,7 @@
     <string name="green">原諒綠</string>
     <string name="blue">胖次藍</string>
     <string name="violet">基佬紫</string>
-    <string name="black">Dark♂黑</string>
+    <string name="black">暗黑</string>
     <!-- theme color end -->
 
     <!-- code parsing notification -->
@@ -218,69 +237,81 @@
 
     <!-- alipay packet start -->
     <string name="pref_get_alipay_packet_title">領個紅包救救孩子</string>
-    <string name="pref_get_alipay_packet_summary">每天領個免費紅包，也是對我的一點支持了 T_T</string>
-    <string name="pref_get_alipay_packet_content">求求了，打開支付寶搜這個口令，每天都能白嫖紅包，我就能吃上肉了 %s</string>
+    <string name="pref_get_alipay_packet_summary">每天領個免費紅包也是對我的一點支持了 T_T</string>
+    <string name="pref_get_alipay_packet_content">求求了，支付寶搜這個口令領每天的免費紅包，我就能吃上肉了 %s</string>
     <string name="copy_packet_code_open_alipay"><![CDATA[複製口令並打開支付寶]]></string>
     <string name="alipay_red_packet_code_copied">紅包口令已複製，快去白嫖吧: %s</string>
     <string name="get_red_packet">領個紅包</string>
-    <string name="dialog_donate_title">求賞口飯吃吧 T_T</string>
-    <string name="dialog_donate_content">開發者已經餓得快寫不動代碼了，求各位老闆大發慈悲賞口飯吃吧！不管是微信還是支付寶，哪怕是一分錢也是對我的巨大救贖 ✿✿ヽ(°▽°)ノ✿</string>
-    <string name="dialog_donate_wechat">微信賞點 (多謝老闆)</string>
-    <string name="dialog_donate_alipay">支付寶賞點 (感激涕零)</string>
+    <string name="dialog_donate_title">買杯咖啡吧 T_T</string>
+    <string name="dialog_donate_content">開發者已經餓得快寫不動代碼了，求各位大發慈悲賞口飯吃吧！不管是微信還是支付寶，哪怕是一分錢也是對我的巨大救贖 ✿✿ヽ(°▽°)ノ✿</string>
+    <string name="dialog_donate_wechat">咖啡 (微信)</string>
+    <string name="dialog_donate_alipay">咖啡 (支付寶)</string>
     <string name="dialog_donate_alipay_choice_title">請選擇支持方式</string>
-    <string name="dialog_donate_alipay_choice_content">您可以「複製紅包口令」白嫖紅包來支持我，或者直接「保存收款碼」進行打賞。保存圖片後會自動幫您跳轉到支付寶哦~</string>
-    <string name="dialog_donate_alipay_token">複製口令並白嫖</string>
-    <string name="dialog_donate_alipay_qrcode">保存收款碼並打賞</string>
-    <string name="dialog_donate_cancel">下次一定 (雖然可能沒有下次了...)</string>
-    <string name="long_press_save_hint">長按圖片可保存到相冊</string>
-    <string name="save_to_gallery_success">圖片已保存到相冊，正在前往支付應用...</string>
+    <string name="dialog_donate_alipay_choice_content">您可以「複製紅包口令」免費支持我，或者「保存收款碼」直接捐贈。保存圖片後會自動幫您打開支付寶哦~</string>
+    <string name="dialog_donate_alipay_token">複製口令</string>
+    <string name="dialog_donate_alipay_qrcode">保存收款碼</string>
+    <string name="dialog_donate_cancel">下次一定</string>
+    <string name="long_press_save_hint">長按圖片可保存到相簿</string>
+    <string name="save_to_gallery_success">圖片已保存到相簿，正在打開 %s...</string>
     <string name="save_to_gallery_failed">保存失敗，請檢查文件權限</string>
+    <string name="save_to_gallery">保存到相簿</string>
     <!-- alipay packet end -->
+
 
     <!-- check update -->
     <string name="new_version_found">發現新版本！</string>
-    <string name="check_update_failed">檢測更新失敗，請重試。</string>
+    <string name="check_update_failed">檢測更新失敗。</string>
     <string name="network_error_http">HTTP %1$d</string>
     <string name="network_error_io">網路異常</string>
     <string name="network_error_serialization">解析失敗</string>
     <string name="network_error_unexpected">未知錯誤</string>
     <string name="network_error_multi_source">多來源請求失敗</string>
-    <string name="app_already_newest">已經是最新版本</string>
-    <string name="update_from_github">去GitHub更新</string>
-    <string name="update_from_coolapk">去酷安更新</string>
+    <string name="app_already_newest">已經是最新版本。</string>
+    <string name="update_from_github">前往 GitHub</string>
+    <string name="update_from_coolapk">前往酷安</string>
     <string name="coolapk_install_prompt">請先安裝酷安</string>
     <string name="coolapk_enable_prompt">請先啟用酷安</string>
+    <string name="source_coolapk">酷安</string>
+    <string name="source_github">GitHub</string>
     <!-- check update end -->
-
 
 
     <!-- faq -->
     <string-array name="question_list">
-        <item>模組未激活怎麼辦？</item>
+        <item>模組未啟用怎麼辦？</item>
         <item>Android 15 會不定期閃退？</item>
         <item>手機發燙正常嗎？</item>
-        <item>empty</item>
+        <item>自動輸入不完整，怎麼辦？</item>
         <item>模組失效怎麼辦？</item>
         <item>標記簡訊為已讀或者刪除簡訊，為什麼不生效？</item>
-        <item>這個模組適用於什麼樣的Rom呢？</item>
-        <item>開發初衷是什麼？</item>
+        <item>這個模組適用於什麼樣的 Rom 呢？</item>
+        <item>產品初衷是什麼？</item>
     </string-array>
     <string-array name="answer_list">
-        <item>在模組列表中重新勾選本模組，結束本應用程式進程之後重新打開即可，必要時需要重啟手機。</item>
-        <item>Android 15 系統機制更新，請確保使用最新版本的 LSPosed 並適配作用域。</item>
-        <item>本模組資源佔用極低，若發燙嚴重請檢查是否與其他模組衝突。</item>
-        <item>empty</item>
-        <item>1. 因為使用到ContentProvider，所以需要將本模組放入應用控制類軟體(黑域、應用管理、綠色守護等)的白名單中。\n\n2. 檢查模組組件是否被禁用。\n\n3. 檢查系統是否開啟了驗證碼保護開關。\n\n4. 請聯繫開發者，反饋問題。</item>
-        <item>如果您設備上默認的簡訊 App 使用的是它自己的簡訊數據庫，而不是系統的簡訊數據庫，那麼這些操作都可能不會生效。</item>
-        <item>適用於基於AOSP的類原生Rom，在其他高度客製化的Rom可能無法正常運作。</item>
-        <item>不做毒瘤，綠色Android，不忘初心。</item>
+        <item>在模組清單中重新勾選本模組，強行停止本應用程式之後重新開啟即可，必要時需要重啟手機。</item>
+        <item>Android 15 引入了新的系統機制，請確保使用最新版的 LSPosed 並正確配置作用域。</item>
+        <item>本模組極輕量，若發燙嚴重請檢查是否與其他模組衝突。</item>
+        <item>自動輸入不完整，一般是因為自動輸入的過程中焦點被搶占。通常的解決方案是：檢查是否有監控剪貼簿的應用在背景工作，然後關閉這些應用對剪貼簿的監控，或者關閉本模組的「複製到剪貼簿」選項。</item>
+        <item>1. 因為使用到 ContentProvider，所以需要放入應用控制類軟體(黑域、應用管理、綠色守護等)的白名單中。\n\n2. 檢查模組組件是否被禁用。\n\n3. 檢查系統是否開啟了驗證碼保護開關。\n\n4. 請聯繫開發者，反饋問題。</item>
+        <item>如果您設備上預設的簡訊 App 使用的是它自己的簡訊資料庫，而不是系統的簡訊資料庫，那麼標記為已讀或者刪除操作可能不會生效。</item>
+        <item>適用於基於 AOSP 的原生類 Rom，在其他高度客製化的 Rom 可能運作效果不佳。</item>
+        <item>不做毒瘤，綠色 Android。</item>
     </string-array>
     <!-- faq end -->
 
     <!-- privacy policy start -->
     <string name="privacy_dialog_title">隱私政策</string>
-    <string name="privacy_dialog_content">發布日期：2022年5月19日\n生效日期：2022年5月19日\n\n<b>基本聲明</b>\n\n本應用不會收集您任何隱私信息，它僅會在必要時查詢以下與您個人信息無關的內容：\n\n· 讀取安裝的應用列表；僅在您選擇需要屏蔽自動輸入時使用，這些信息完全是在本地檢查，它的結果不會上傳到任何地方。 \n\n<b>申請的權限</b>\n\n本應用不會申請任何權限。 \n\n<b>本政策的更新</b>\n\n我們可能會不定期更新該本隱私政策，您可以隨時打開此頁面查詢最新版本的隱私政策。</string>
+    <string name="privacy_dialog_content">發布日期：2022年5月19日\n生效日期：2022年5月19日\n\n<b>基本聲明</b>\n\n本應用不會收集您任何隱私信息，它僅會在必要時查詢以下信息：\n\n · 讀取安裝的應用清單；僅用於您選擇屏蔽自動輸入的應用，此信息僅在本地檢查，結果不會上傳到任何地方。 \n\n<b>申請的權限</b>\n\n本應用不申請任何權限。 \n\n<b>政策更新</b>\n\n我們可能會不定期更新本隱私政策，您可以隨時通過此頁面查看最新版本。</string>
     <string name="privacy_dialog_cancel">拒絕</string>
-    <string name="privacy_dialog_confirm">同意</string>
+    <string name="privacy_dialog_confirm">允許</string>
     <!-- privacy policy end -->
+    <string name="rule_list_empty_prompt">暫無規則，點擊 + 添加。</string>
+    <string name="rule_keyword_prefix">關鍵字: </string>
+    <string name="rule_regex_prefix">正規表達式: </string>
+    <string name="save">保存</string>
+    <string name="app_icon_description">%s 的圖示</string>
+    <string name="sms_icon_description">簡訊圖示</string>
+    <string name="action_block_app">封鎖 %s</string>
+    <string name="action_unblock_app">允許 %s</string>
+    <string name="action_back">返回</string>
 </resources>
