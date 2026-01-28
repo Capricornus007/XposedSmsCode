@@ -18,7 +18,7 @@ class SystemInputInjectorHook : BaseHook() {
 
     override fun onLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
         if ("android" == lpparam.packageName && "android" == lpparam.processName) {
-            XLog.d("Hooking System Server for Input Injection...")
+            XLog.i("Hooking System Server for Input Injection...")
             
             // Hook Application.onCreate to get Context
             try {
@@ -47,7 +47,7 @@ class SystemInputInjectorHook : BaseHook() {
                 override fun onReceive(context: Context, intent: Intent) {
                     val code = intent.getStringExtra("code")
                     if (!code.isNullOrEmpty()) {
-                        XLog.d("SystemServer received input request: $code")
+                        XLog.i("SystemServer received input request: $code")
                         injectText(code)
                     }
                 }
@@ -85,7 +85,7 @@ class SystemInputInjectorHook : BaseHook() {
                 // Let's try Runtime.exec first as it is simplest.
                 
                 Runtime.getRuntime().exec("input text $text")
-                XLog.d("Executed 'input text' from System Server")
+                XLog.i("Executed 'input text' from System Server")
                 
             } catch (t: Throwable) {
                 XLog.e("Failed to inject text from System Server", t)

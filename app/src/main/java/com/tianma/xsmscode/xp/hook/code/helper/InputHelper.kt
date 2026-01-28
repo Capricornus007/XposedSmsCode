@@ -17,6 +17,6 @@ object InputHelper {
         // If we set package "android", it targets the package.
         // Dynamic receivers in "android" package should receive it.
         context.sendBroadcast(intent)
-        XLog.d("Sent Broadcast ACTION_AUTO_INPUT with code: $text")
+        XLog.i("Sent Broadcast ACTION_AUTO_INPUT with code: $text")
     }
 }

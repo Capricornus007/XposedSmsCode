@@ -196,6 +196,7 @@ class SmsHandlerHook : BaseHook() {
             XLog.d("SmsHandlerHook: Received intent action: $action")
             intent.extras?.let { bundle ->
                 for (key in bundle.keySet()) {
+                    @Suppress("DEPRECATION")
                     XLog.d("SmsHandlerHook: Extra[$key] = ${bundle.get(key)}")
                 }
             }

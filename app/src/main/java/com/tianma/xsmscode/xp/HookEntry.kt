@@ -38,6 +38,10 @@ class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
 
     @Throws(Throwable::class)
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
+        XLog.d("HookEntry: Loaded package: ${lpparam.packageName} process: ${lpparam.processName}")
+        if ("android" == lpparam.packageName) {
+            XLog.i("HookEntry: >>> FOUND SYSTEM SERVER <<< Load package: ${lpparam.packageName}")
+        }
         for (hook in mHookList) {
             if (hook.hookOnLoadPackage()) {
                 hook.onLoadPackage(lpparam)
