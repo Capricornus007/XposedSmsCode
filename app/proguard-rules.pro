@@ -71,3 +71,10 @@
 }
 # Room end
 # ==========================
+
+# ==========================
+# Xposed start
+-keep class com.tianma.xsmscode.xp.HookEntry { *; }
+-keep class com.tianma.xsmscode.xp.hook.** { *; }
+# Xposed end
+# ==========================

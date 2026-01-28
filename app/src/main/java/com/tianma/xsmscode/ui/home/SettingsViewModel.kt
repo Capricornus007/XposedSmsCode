@@ -94,9 +94,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun hideOrShowLauncherIcon(hide: Boolean) {
         val pm = getApplication<Application>().packageManager
         val launcherCN = ComponentName(getApplication(), Const.HOME_ACTIVITY_ALIAS)
+        val mainCN = ComponentName(getApplication(), MainActivity::class.java)
         val state = if (hide) PackageManager.COMPONENT_ENABLED_STATE_DISABLED else PackageManager.COMPONENT_ENABLED_STATE_ENABLED
         if (pm.getComponentEnabledSetting(launcherCN) != state) {
-            pm.setComponentEnabledSetting(launcherCN, state, PackageManager.DONT_KILL_APP)
+            val flags = if (hide) 0 else PackageManager.DONT_KILL_APP
+            pm.setComponentEnabledSetting(launcherCN, state, flags)
+            if (hide) {
+                pm.setComponentEnabledSetting(mainCN, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
+            }
         }
     }
 

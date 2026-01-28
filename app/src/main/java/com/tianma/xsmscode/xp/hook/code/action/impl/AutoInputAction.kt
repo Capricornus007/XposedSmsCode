@@ -38,7 +38,7 @@ class AutoInputAction(
     // auto-input
     private fun autoInputCode(code: String?) {
         try {
-            InputHelper.sendText(code)
+            InputHelper.sendText(mPhoneContext, code)
             XLog.d("Auto input code succeed")
         } catch (throwable: Throwable) {
             XLog.e("Error occurs when auto input code", throwable)

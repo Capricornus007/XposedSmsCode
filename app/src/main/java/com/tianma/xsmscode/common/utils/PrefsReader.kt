@@ -66,7 +66,7 @@ object PrefsReader {
 
     @JvmStatic
     fun copyToClipboardEnabled(context: Context): Boolean {
-        return runBlocking { AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_COPY_TO_CLIPBOARD, false) }
+        return runBlocking { AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_COPY_TO_CLIPBOARD, true) }
     }
 
     @JvmStatic

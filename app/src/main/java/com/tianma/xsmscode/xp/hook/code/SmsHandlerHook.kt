@@ -16,6 +16,7 @@ import androidx.core.content.ContextCompat
 import com.tianma.xsmscode.common.utils.NotificationUtils
 import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.common.utils.XLog
+import com.tianma.xsmscode.common.utils.ModuleActivationStore
 import com.tianma.xsmscode.xp.helper.XposedWrapper
 import com.tianma.xsmscode.xp.hook.BaseHook
 import de.robv.android.xposed.XC_MethodHook
@@ -133,7 +134,7 @@ class SmsHandlerHook : BaseHook() {
     }
 
     private fun afterConstructorHandler(param: XC_MethodHook.MethodHookParam) {
-        val context = param.args[1] as Context
+        val context = param.args.getOrNull(1) as? Context ?: return
         if (mPhoneContext == null) {
             mPhoneContext = context
             try {
@@ -141,8 +142,13 @@ class SmsHandlerHook : BaseHook() {
                     SMSCODE_PACKAGE,
                     Context.CONTEXT_IGNORE_SECURITY
                 )
-                initNotificationChannel()
-                registerCopyCodeReceiver()
+                if (mPluginContext != null) {
+                    initNotificationChannel()
+                    registerCopyCodeReceiver()
+                    mPluginContext?.let { ModuleActivationStore.markActivated(it) }
+                } else {
+                    XLog.e("Plugin context is null after creation attempt")
+                }
             } catch (e: Exception) {
                 XLog.e("Create plugin context failed: %s", e)
             }
@@ -183,19 +189,37 @@ class SmsHandlerHook : BaseHook() {
     }
 
     private fun beforeDispatchIntentHandler(param: XC_MethodHook.MethodHookParam, receiverIndex: Int) {
-        val intent = param.args[0] as Intent
+        val intent = param.args.getOrNull(0) as? Intent ?: return
         val action = intent.action
+        
+        if (BuildConfig.DEBUG) {
+            XLog.d("SmsHandlerHook: Received intent action: $action")
+            intent.extras?.let { bundle ->
+                for (key in bundle.keySet()) {
+                    XLog.d("SmsHandlerHook: Extra[$key] = ${bundle.get(key)}")
+                }
+            }
+        }
 
         if (Telephony.Sms.Intents.SMS_DELIVER_ACTION != action) {
             return
         }
 
-        val parseResult = CodeWorker(getPluginContext()!!, mPhoneContext!!, intent).parse()
+        val pluginContext = getPluginContext()
+        val phoneContext = mPhoneContext
+        if (pluginContext == null || phoneContext == null) {
+            XLog.e("Context is null, skip parsing. pluginContext: %s, phoneContext: %s", pluginContext, phoneContext)
+            return
+        }
+
+        val parseResult = CodeWorker(pluginContext, phoneContext, intent).parse()
         if (parseResult != null) {
             if (parseResult.isBlockSms) {
                 XLog.d("Blocking code SMS...")
-                deleteRawTableAndSendMessage(param.thisObject, param.args[receiverIndex])
-                param.result = null
+                param.args.getOrNull(receiverIndex)?.let { receiver ->
+                    deleteRawTableAndSendMessage(param.thisObject, receiver)
+                    param.result = null
+                }
             }
         }
     }

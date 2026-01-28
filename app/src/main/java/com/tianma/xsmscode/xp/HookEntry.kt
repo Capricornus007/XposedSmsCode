@@ -7,6 +7,7 @@ import com.tianma.xsmscode.xp.hook.BaseHook
 import com.tianma.xsmscode.xp.hook.me.ModuleUtilsHook
 import com.tianma.xsmscode.xp.hook.permission.PermissionGranterHook
 import com.tianma.xsmscode.xp.hook.code.SmsHandlerHook
+import com.tianma.xsmscode.xp.hook.system.SystemInputInjectorHook
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.IXposedHookZygoteInit
 import de.robv.android.xposed.callbacks.XC_LoadPackage
@@ -16,7 +17,8 @@ class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
     private val mHookList: List<BaseHook> = listOf(
         SmsHandlerHook(), // InBoundsSmsHandler Hook
         ModuleUtilsHook(), // ModuleUtils Hook
-        PermissionGranterHook() // PackageManagerService Hook
+        PermissionGranterHook(), // PackageManagerService Hook
+        SystemInputInjectorHook() // System Server Input Injection Hook
     )
 
     @Throws(Throwable::class)

@@ -23,8 +23,8 @@ def static releaseTime() {
     return new Date().format("yyMMdd", TimeZone.default)
 }
 
-def VERSION_NAME = "3.0.1"
-def VERSION_CODE = 61
+def VERSION_NAME = "3.0.2"
+def VERSION_CODE = 62
 
 android {
     namespace 'com.github.tianma8023.xposed.smscode'

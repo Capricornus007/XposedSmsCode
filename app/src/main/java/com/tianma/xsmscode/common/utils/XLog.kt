@@ -14,12 +14,22 @@ object XLog {
     private fun log(priority: Int, message: String, vararg args: Any?) {
         if (priority < sLogLevel) return
 
-        // Duplicate to the Xposed log if enabled (before formatting/Timber)
-        if (LOG_TO_XPOSED) {
-            val formattedForXposed = if (args.isNotEmpty()) {
+        // Write to the default log tag
+        val lastArg = args.lastOrNull()
+        val logMessage = if (lastArg is Throwable) {
+            message + '\n' + Log.getStackTraceString(lastArg)
+        } else {
+            if (args.isNotEmpty()) {
                 try { String.format(message, *args) } catch (e: Exception) { message }
-            } else message
-            Log.println(priority, "LSPosed-Bridge", "$LOG_TAG: $formattedForXposed")
+            } else {
+                message
+            }
+        }
+        Log.println(priority, LOG_TAG, logMessage)
+
+        // Duplicate to the Xposed log if enabled
+        if (LOG_TO_XPOSED) {
+            Log.println(priority, "LSPosed-Bridge", "$LOG_TAG: $logMessage")
         }
 
         Timber.log(priority, message, *args)

@@ -25,6 +25,7 @@ import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.common.constant.Const
 import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.ModuleUtils
+import com.tianma.xsmscode.common.utils.ModuleActivationStore
 import com.tianma.xsmscode.common.utils.PackageUtils
 import com.tianma.xsmscode.common.utils.Utils
 import com.tianma.xsmscode.common.utils.XLog
@@ -82,9 +83,9 @@ fun ComposeSettingsScreen(
 
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
-            isActivated = ModuleUtils.isModuleEnabled()
+            isActivated = ModuleUtils.isModuleEnabled() || ModuleActivationStore.isActivatedRecently(context)
             delay(1000L)
-            isActivated = ModuleUtils.isModuleEnabled()
+            isActivated = ModuleUtils.isModuleEnabled() || ModuleActivationStore.isActivatedRecently(context)
         }
     }
 
