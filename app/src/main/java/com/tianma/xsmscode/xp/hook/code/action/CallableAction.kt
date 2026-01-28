@@ -12,7 +12,7 @@ import java.util.concurrent.Callable
 abstract class CallableAction(
     @JvmField protected val mPluginContext: Context,
     @JvmField protected val mPhoneContext: Context,
-    @JvmField protected val mSmsMsg: SmsMsg
+    @JvmField protected var mSmsMsg: SmsMsg
 ) : Action<Bundle?>, Callable<Bundle?> {
 
     override fun call(): Bundle? {

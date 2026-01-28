@@ -243,4 +243,20 @@ object SmsCodeUtils {
         }
         return sb.toString()
     }
+
+    fun findPackageNameByLabel(context: Context, label: String?): String? {
+        if (label.isNullOrBlank()) return null
+        try {
+            val pm = context.packageManager
+            val apps = pm.getInstalledApplications(android.content.pm.PackageManager.MATCH_ALL)
+            for (app in apps) {
+                if (pm.getApplicationLabel(app).toString().equals(label, ignoreCase = true)) {
+                    return app.packageName
+                }
+            }
+        } catch (e: Exception) {
+            // ignore
+        }
+        return null
+    }
 }

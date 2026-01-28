@@ -1,5 +1,6 @@
 package com.tianma.xsmscode.data.db.entity
 
+import androidx.compose.runtime.Immutable
 import android.os.Parcelable
 import androidx.room.*
 import kotlinx.serialization.SerialName
@@ -7,6 +8,7 @@ import kotlinx.serialization.Serializable
 import com.tianma.xsmscode.feature.backup.BackupConst
 import kotlinx.parcelize.Parcelize
 
+@Immutable
 @Entity(
     tableName = "sms_code_rule",
     indices = [
@@ -18,24 +20,16 @@ import kotlinx.parcelize.Parcelize
 data class SmsCodeRule @JvmOverloads constructor(
     @ColumnInfo(name = "company")
     @SerialName(BackupConst.KEY_COMPANY)
-    var company: String? = null,
+    val company: String? = null,
 
     @ColumnInfo(name = "code_keyword")
     @SerialName(BackupConst.KEY_CODE_KEYWORD)
-    var codeKeyword: String = "",
+    val codeKeyword: String = "",
 
     @ColumnInfo(name = "code_regex")
     @SerialName(BackupConst.KEY_CODE_REGEX)
-    var codeRegex: String = "",
+    val codeRegex: String = "",
 
     @PrimaryKey(autoGenerate = true)
-    var id: Long? = null
-) : Parcelable {
-
-    fun copyFrom(newRule: SmsCodeRule) {
-        this.id = newRule.id
-        this.company = newRule.company
-        this.codeKeyword = newRule.codeKeyword
-        this.codeRegex = newRule.codeRegex
-    }
-}
+    val id: Long? = null
+) : Parcelable

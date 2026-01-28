@@ -142,6 +142,10 @@ class DBManager private constructor(context: Context) {
         return mSmsMsgDao.getAllFlow()
     }
 
+    fun queryAllSmsMsgCountFlow(): Flow<Long> {
+        return mSmsMsgDao.countFlow()
+    }
+
     fun removeSmsMsgList(smsMsgList: List<SmsMsg>) {
         mSmsMsgDao.deleteInTx(smsMsgList)
     }

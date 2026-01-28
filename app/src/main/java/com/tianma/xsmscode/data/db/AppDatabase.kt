@@ -11,7 +11,7 @@ import com.tianma.xsmscode.data.db.entity.AppInfo
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 
-@Database(entities = [SmsCodeRule::class, SmsMsg::class, AppInfo::class], version = 1, exportSchema = false)
+@Database(entities = [SmsCodeRule::class, SmsMsg::class, AppInfo::class], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun smsCodeRuleDao(): SmsCodeRuleDao
@@ -24,13 +24,28 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var instance: AppDatabase? = null
 
+        private val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE sms_msg ADD COLUMN package_name TEXT")
+            }
+        }
+
+        private val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                // Deduplicate before creating the unique index
+                db.execSQL("DELETE FROM sms_msg WHERE id NOT IN (SELECT MIN(id) FROM sms_msg GROUP BY sender, body, date)")
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_sms_msg_sender_body_date` ON `sms_msg` (`sender`, `body`, `date`)")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return instance ?: synchronized(this) {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     DATABASE_NAME
-                ).allowMainThreadQueries() // For legacy compatibility
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .allowMainThreadQueries() // For legacy compatibility
                 .build().also { instance = it }
             }
         }

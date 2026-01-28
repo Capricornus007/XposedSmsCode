@@ -112,7 +112,7 @@ object PrefsReader {
 
     @JvmStatic
     fun deduplicateSms(context: Context): Boolean {
-        return runBlocking { AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_DEDUPLICATE_SMS, false) }
+        return runBlocking { AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_DEDUPLICATE_SMS, true) }
     }
 
     @JvmStatic

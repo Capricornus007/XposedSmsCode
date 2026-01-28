@@ -44,4 +44,7 @@ object Const {
     /* CoolApk */
     const val COOL_MARKET_PACKAGE_NAME = "com.coolapk.market"
     /* CoolApk end */
+ 
+    /* Wechat */
+    const val WECHAT_PACKAGE_NAME = "com.tencent.mm"
 }

@@ -64,17 +64,16 @@ class SmsParseAction(
             return null
         }
 
-        smsMsg.smsCode = smsCode
-        smsMsg.company = SmsCodeUtils.parseCompany(msgBodyNotNull)
-        val timestamp = System.currentTimeMillis()
-        smsMsg.date = timestamp
-
-        // Sync with mSmsMsg so other actions can use it
-        mSmsMsg.sender = smsMsg.sender
-        mSmsMsg.body = smsMsg.body
-        mSmsMsg.date = smsMsg.date
-        mSmsMsg.company = smsMsg.company
-        mSmsMsg.smsCode = smsMsg.smsCode
+        val timestamp = if (smsMsg.date > 0) smsMsg.date else System.currentTimeMillis()
+        
+        // Update mSmsMsg using copy() to maintain immutability pattern
+        val company = SmsCodeUtils.parseCompany(msgBodyNotNull)
+        mSmsMsg = smsMsg.copy(
+            smsCode = smsCode,
+            company = company,
+            date = timestamp,
+            packageName = SmsCodeUtils.findPackageNameByLabel(mPhoneContext, company)
+        )
 
         val bundle = Bundle()
         bundle.putParcelable(SMS_MSG, mSmsMsg)

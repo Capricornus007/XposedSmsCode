@@ -99,9 +99,13 @@ object Utils {
                     contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
                     resolver.update(imageUri, contentValues, null, null)
                 }
-                Toast.makeText(context, R.string.save_to_gallery_success, Toast.LENGTH_SHORT).show()
+                val appNameResId = if (fileName.contains("alipay")) R.string.dialog_donate_alipay else R.string.dialog_donate_wechat
+                val appName = context.getString(appNameResId).replace(Regex("\\(.*?\\)"), "").trim()
+                Toast.makeText(context, context.getString(R.string.save_to_gallery_success, appName), Toast.LENGTH_SHORT).show()
                 if (fileName.contains("alipay")) {
                     PackageUtils.startAlipayActivity(context)
+                } else if (fileName.contains("wechat")) {
+                    PackageUtils.startWechatActivity(context)
                 }
             } catch (e: Exception) {
                 Toast.makeText(context, R.string.save_to_gallery_failed, Toast.LENGTH_SHORT).show()

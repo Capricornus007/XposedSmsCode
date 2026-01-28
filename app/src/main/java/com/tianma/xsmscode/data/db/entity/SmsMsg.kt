@@ -1,5 +1,6 @@
 package com.tianma.xsmscode.data.db.entity
 
+import androidx.compose.runtime.Immutable
 import android.content.Intent
 import android.os.Parcelable
 import androidx.room.ColumnInfo
@@ -11,49 +12,63 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.text.Normalizer
 
-@Entity(tableName = "sms_msg")
+@Immutable
+@Entity(
+    tableName = "sms_msg",
+    indices = [
+        androidx.room.Index(value = ["sender", "body", "date"], unique = true)
+    ]
+)
 @Parcelize
 @Serializable
 data class SmsMsg(
     @PrimaryKey(autoGenerate = true)
     @SerialName("id")
-    var id: Long? = null,
+    val id: Long? = null,
 
     @ColumnInfo(name = "sender")
     @SerialName("sender")
-    var sender: String? = null,
+    val sender: String? = null,
 
     @ColumnInfo(name = "body")
     @SerialName("body")
-    var body: String? = null,
+    val body: String? = null,
 
     @ColumnInfo(name = "date")
     @SerialName("date")
-    var date: Long = 0,
+    val date: Long = 0,
 
     @ColumnInfo(name = "company")
     @SerialName("company")
-    var company: String? = null,
+    val company: String? = null,
 
     @ColumnInfo(name = "sms_code")
     @SerialName("code")
-    var smsCode: String? = null
+    val smsCode: String? = null,
+
+    @ColumnInfo(name = "package_name")
+    @SerialName("packageName")
+    val packageName: String? = null
 ) : Parcelable {
 
     companion object {
         @JvmStatic
         fun fromIntent(intent: Intent): SmsMsg {
             val smsMessageParts = SmsMessageUtils.fromIntent(intent)
+            if (smsMessageParts.isEmpty()) return SmsMsg()
+            
             var sender = smsMessageParts[0].displayOriginatingAddress
             var body = SmsMessageUtils.getMessageBody(smsMessageParts)
+            val date = smsMessageParts[0].timestampMillis
 
             sender = Normalizer.normalize(sender, Normalizer.Form.NFC)
             body = Normalizer.normalize(body, Normalizer.Form.NFC)
 
-            val message = SmsMsg()
-            message.sender = sender
-            message.body = body
-            return message
+            return SmsMsg(
+                sender = sender,
+                body = body,
+                date = date
+            )
         }
     }
 }

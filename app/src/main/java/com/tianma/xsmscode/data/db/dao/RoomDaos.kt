@@ -64,6 +64,9 @@ interface SmsMsgDao {
     @Query("SELECT count(*) FROM sms_msg")
     fun count(): Long
 
+    @Query("SELECT count(*) FROM sms_msg")
+    fun countFlow(): Flow<Long>
+
     @Delete
     fun delete(msg: SmsMsg)
 
