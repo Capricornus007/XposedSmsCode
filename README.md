@@ -1,58 +1,64 @@
 # XposedSmsCode
 ![Total Downloads](https://img.shields.io/github/downloads/magisk317/XposedSmsCode/total) ![Total Stars](https://img.shields.io/github/stars/magisk317/XposedSmsCode?style=social) [![Latest Release](https://img.shields.io/github/v/release/magisk317/XposedSmsCode?label=Latest%20Release)](https://github.com/magisk317/XposedSmsCode/releases)
 
-An Xposed module which can recognize, parse SMS code and copy it to clipboard when a new message arrives. It can also input SMS code automatically.
+识别短信验证码的Xposed模块，并将验证码拷贝到剪切板，亦可以自动输入验证码。
 
-[中文版说明](./README-CN.md)
+[English Version](./README-EN.md)
 
-## Refactoring Highlights
-- Settings entry migrated to Jetpack Compose; legacy Preference screens removed
-- Configuration storage migrated to DataStore; SharedPreferences removed
-- Added core/storage modules to split network and backup/serialization logic
-- Backup writes schemaVersion/appVersion with import warnings on version gaps
-- Rules/records/apps lists upgraded to ListAdapter + DiffUtil
+## 重构要点
+- 设置入口已迁移至 Jetpack Compose，旧 Preference 页面移除
+- 配置存储迁移到 DataStore，移除 SharedPreferences
+- 新增 core/storage 模块，拆分网络与备份/序列化逻辑
+- 备份写入 schemaVersion/appVersion，导入提供版本跨度提示
+- 规则/记录/应用列表升级为 ListAdapter + DiffUtil
 
-[Refactoring Report](./REFACTORING.md)
+[重构与现代化报告](./REFACTORING.md)
 
-# Screenshots
-<img src="./art/en/01.png" width="180"/><img src="./art/en/02.png" width="180"/><img src="./art/en/03.png" width="180"/>
+# 应用截图
+<img src="./art/cn/01.png" width="180"/><img src="./art/cn/02.png" width="180"/><img src="./art/cn/03.png" width="180"/>
 
-# Download
+# 下载
+下载地址:
 - [GitHub Releases](https://github.com/magisk317/XposedSmsCode/releases)
-- ~~[LSPosed Repository](https://github.com/Xposed-Modules-Repo/com.github.tianma8023.xposed.smscode/releases/)~~
-- ~~[Coolapk](https://www.coolapk.com/apk/com.github.tianma8023.xposed.smscode)~~
-- ~~[Xposed Repository](http://repo.xposed.info/module/com.github.tianma8023.xposed.smscode)~~
+- ~~[LSPosed仓库](https://github.com/Xposed-Modules-Repo/com.github.tianma8023.xposed.smscode/releases/)~~
+- ~~[酷安](https://www.coolapk.com/apk/com.github.tianma8023.xposed.smscode)~~
+- ~~[Xposed仓库](http://repo.xposed.info/module/com.github.tianma8023.xposed.smscode)~~
 
-# Usage
-1. Root your device and install Xposed Framework.
-2. Install and activite this xposed module and then reboot.
-3. Enjoy it!
+# 使用
+1. Root你的设备，安装Xposed框架；
+2. 安装本模块，激活并重启；
+3. Enjoy it！
 
-Welcome any feedbacks.
+欢迎反馈，欢迎提出意见或建议。
 
-# Attention
-- **This module is suitable for AOSP ROM, it may not work well on other 3rd-party Rom.**
-- **Compatibility: Requires Android 15+ (api level ≥ 35).**
-- **Support LSPosed (Android 15+)**
-- **Read the FAQ in app first if you encounter any problems.**
+# 注意
+- **此模块适用于偏原生的系统，其他第三方定制Rom可能不适用。**
+- **兼容性：兼容 Android 15 及以上（API 等级 ≥ 35）设备。**
+- **支持 LSPosed (Android 15+)**
+- **代码库：100% Kotlin + Jetpack Compose + Room + Coroutines**
+- **遇到问题请先阅读模块中的"常见问题"**
 
-# Features
-- Copy verification code to clipboard when a new message arrives.
-- Show toast when the verification code is copied.
-- Show notification when verification SMS parsed.
-- Mark verification SMS as read(experimental).
-- Delete verification SMS when it's extracted successfully(experimental).
-- Block verification SMS if it's extracted successfully.
-- Custom keywords about verification code message (regular expressions allowed).
-- Support the SMS code match rules customization, importation and exportation.
-- Auto-input SMS code.
-- Various theme color to choose.
-- Modern settings UI powered by Jetpack Compose.
+# 功能
+- 收到验证码短信后将验证码复制到系统剪贴板
+- 收到验证码时显示Toast
+- 收到验证码时显示通知
+- 将验证码短信标记为已读（实验性）
+- 验证码提取成功后，删除验证码短信（实验性）
+- 拦截验证码短信
+- 自定义验证码短信关键字（正则表达式）
+- 自定义验证码匹配规则，并支持规则导入导出
+- 自动输入验证码
+- **全系统 Android 15 (API 35) 深度适配**
+- **Material Design 3 (MD3) + Material You 动态配色**
+- **100% Kotlin + 协程 (Coroutines) + Room 数据库**
+- **Jetpack Compose 现代化 UI (FaqFragment 已迁移)**
+- **设置页已升级为 Jetpack Compose**
 
-# Release Log
-[Release Logs](/LOG-EN.md)
+# 更新日志
+- [更新日志 (Changelog)](CHANGELOG.md)
+- [重构汇总 (Refactoring Summary)](REFACTORING.md)
 
-# Thanks To
+# 感谢
 - [Xposed](https://github.com/rovo89/Xposed)
 - [NekoSMS](https://github.com/apsun/NekoSMS)
 - [Xposed](https://github.com/rovo89/Xposed)
@@ -62,15 +68,17 @@ Welcome any feedbacks.
 - [Room](https://developer.android.com/training/data-storage/room)
 - [Kotlin Serialization](https://github.com/Kotlin/kotlinx.serialization)
 - [Kotlin Coroutines](https://github.com/Kotlin/kotlinx.coroutines)
-- [Material Components](https://github.com/material-components/material-components-android)
+- [Material Design 3](https://m3.material.io/)
+- [Jetpack Compose](https://developer.android.com/jetpack/compose)
 
-# License
-All code is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt) 
 
-# Donation
-If you find this project helpful, please consider rewarding the developer with a cup of coffee. Your support is the greatest motivation for my persistent maintenance!
+# 协议
+所有的源码均遵循 [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt) 协议
 
-| Alipay Red Packet | Alipay Receipt | WeChat Appreciation |
+# 赞助与捐赠
+如果您觉得本项目对您有所帮助，欢迎给开发者投喂一杯咖啡。您的支持是我坚持维护的最大动力！
+
+| 支付宝红包口令 | 支付宝收款码 | 微信赞赏码 |
 | :---: | :---: | :---: |
 | ![Alipay Red Packet](./art/sponsorship/alipay_pocket.png) | ![Alipay](./art/sponsorship/alipay.png) | ![WeChat](./art/sponsorship/wx.png) |
 

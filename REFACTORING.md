@@ -1,83 +1,87 @@
-# 重构与现代化报告
+# XposedSmsCode 项目重构与优化汇总文档 (REFACTORING.md)
 
-本文档概述了 **XposedSmsCode** 项目升级过程中的主要重构和现代化工作。
+本文档旨在记录并汇总近期对 `XposedSmsCode` 项目进行的系统性重构与性能优化工作。所有改进均严格遵循 Google 官方的 Jetpack Compose 最佳实践及 Kotlin 编程规范。
 
-## 变更摘要
+---
 
-### 1. 语言迁移 (Java 转 Kotlin)
--   **100% 转换**: 整个代码库已从 Java 转换为 **Kotlin**。
--   **现代语法**: 利用了 Kotlin 的特性，如属性 (Properties)、扩展函数 (Extensions)、高阶函数、协程 (Coroutines) 和对象 (Objects)。
--   **空安全**: 改进了整个应用的空安全处理，减少了空指针异常 (NPE)。
+## 1. 界面与主题架构 (UI & Theme)
 
-### 2. UI 现代化 (Material Design 3)
--   **MD3 主题迁移**: 全局主题升级为 `Theme.Material3`。
--   **动态配色 (Dynamic Colors)**: 在 Application 中启用了 MD3 动态配色功能。
--   **设置入口迁移**: 使用 Compose 作为主入口设置页，原 Preference 页面移除。
--   **组件升级**:
-    -   `Toolbar` -> `MaterialToolbar`: 提升标题栏体验。
-    -   `Button` -> `MaterialButton`: 使用 MD3 TonalButton 等样式。
-    -   `CheckBox` -> `MaterialCheckBox`: 全局列表项复选框升级。
-    -   `FAB` -> MD3 风格 FAB。
--   **进度提示**: 实现了自定义的 MD3 风格进度对话框 (`CircularProgressIndicator`)。
--   **Jetpack Compose**: `FaqFragment` 已完全使用 Compose + Material 3 重写，提供更现代的交互体验。
--   **功能迁移与清理**:
-    -   **LSPosed 独占支持**: 移除了对 EdXposed、太极 (TaiChi) 及原版 Xposed 的所有特定逻辑及提示。
-    -   **UI 清理**: 移除了首页菜单中针对旧框架的“须知”入口及相关对话框。
-    -   **代码瘦身**: 删除了 `PackageUtils` 中用于跳转旧版 Xposed 管理器或太极管理器的冗余代码，并清理了 `Const.kt` 中的相关包名常量。
--   **深色模式支持**: 移除了大量硬编码颜色（如 `@android:color/white`），改用主题属性（如 `?attr/colorSurface`），通过动态配色方案完美适配深色模式。
+### 1.1 Material 3 Expressive 深度迁移
+- **Material 3 Expressive 深度迁移**：全面升级至 `androidx.compose.material3:material3:1.5.0-alpha12`，引入原生支持的表现力 (Expressive) 组件、形状、动效及现代化的排版系统。
+- **反馈系统重塑**：弃用传统的 `Toast`，在所有主要 Screen (`RuleList`, `RuleEdit`, `Settings`) 中引入 `SnackbarHostState`，实现异步且风格一致的交互反馈。
+- **组件规范化**：重构 `ComposeSettingsScreen.kt` 中的自定义项，全面基于 M3 `ListItem` 标准实现，确保点击波纹、内边距及字体比例完美符合规范。
 
-### 3. 编译警告与 lint 清理
--   **Kotlin 现代化**: 替换了所有过时的 `toLowerCase()` 为 `lowercase()`。
--   **导航 API 迁移**: 替换了过时的 `onBackPressed()` 呼叫，全面转向 `onBackPressedDispatcher`。
--   **编译器与构建脚本清理**: 
-    -   移除了不再支持的 `freeCompilerArgs` 标识。
-    -   移除了 `gradle.properties` 中过时的 `android.enableResourceOptimizations` 配置。
-    -   修正了 `alpha` 构建类型的 `debuggable` 属性，消除了 R8 优化警告。
--   **代码逻辑优化**: 移除了 Xposed Hook 类中冗余的 null 检查（Kotlin 智能类型推断），并精准抑制了 `DBProvider` 等遗留组件的 `DEPRECATION` 警告。
--   **精准警告抑制**: 为 Xposed 必须的 `MODE_WORLD_READABLE` 等 API 添加了 `@Suppress("DEPRECATION")` 标识，确保编译输出清洁。
+### 1.2 高级交互组件
+- **Swipe-to-Dismiss**：在规则列表 (`RuleListScreen`) 中实现滑动删除，提升管理效率。
+- **Exposed Dropdown Menus**：在规则编辑页 (`RuleEditScreen`) 的快速选择功能中使用官方 `ExposedDropdownMenuBox`，替换非标准的自定义按钮。
 
-### 4. 组件现代化 (Component Modernization)
--   **minSdkVersion 升级**: 从 24 进一步提升至 **35 (Android 15)**。
-    -   **影响分析**: 应用现在仅支持 Android 15 及以上设备。这允许我们彻底移除针对旧版本的兼容逻辑，大幅简化代码库。
-    -   **Edge-to-Edge**: 适配了 Android 15 强制要求的全屏显示 (Edge-to-Edge)，通过 `WindowInsets` 处理确保 UI 在系统栏下方正常显示。
--   **Activity Result API**: 移除了 `startActivityForResult`，使用 `ActivityResultLauncher` 处理权限和文件操作。
--   **Back Press Handling**: 迁移至 `OnBackPressedDispatcher` API。
--   **Menu Provider**: 使用 `MenuProvider` 解耦菜单逻辑。
+---
 
-### 5. 架构现代化
--   **MVVM**: 核心模块迁移至 **MVVM** 架构。
--   **Google 架构组件**: 使用 `ViewModel`, `ViewBinding`, `Room` (替代 GreenDAO)。
+## 2. 文本交互与排版优化 (Text & Typography)
 
-### 6. 异步处理
--   **Coroutines**: 全面使用 Kotlin 协程处理异步任务。
+### 2.1 交互性增强
+- **可选择文本**：在短信记录列表 (`CodeRecordScreen`) 中为短信内容应用 `SelectionContainer`，方便用户快速复制验证码。
+- **长文本排版**：对 FAQ 等长段落应用 `LineBreak.Paragraph` 和渐进式连接符，优化中英文混排的视觉平衡。
 
-### 7. 构建与依赖现代化
--   **依赖库全面升级**: 升级了所有 AndroidX 核心库、Material 组件、Lifecycle、Room、Retrofit、OkHttp 等至 2024/2025 最新稳定版。
--   **构建工具升级**: 适配了 Gradle 9.3+ 和 Java 21。
--   **KSP 迁移**: 替代 KAPT 处理 Room 注解，提升编译速度。
--   **CI/CD 集成**: 引入 GitHub Actions 自动化构建流程，支持从 Push Tag 到自动签名并发布 Release 的全链路自动化。
--   **模块拆分**: 新增 `core` 与 `storage` 模块，抽离网络结果与备份/序列化逻辑。
+### 2.2 视觉引导
+- **高亮展示**：使用 `AnnotatedString` 为列表中的正则关键字添加主色高亮，增强界面扫描效率。
+- **输入引导**：在正则输入框中使用 `prefix` 特性（显示 "RE: "），明确输入意图。
+- **自动跑马灯**：为长标题应用 `basicMarquee` 效果，避免文本截断。
 
-### 8. 架构优化 (Architecture Improvements)
--   **EventBus 去除**: 彻底移除了 `org.greenrobot:eventbus` 第三方库。
-    -   **自研替代**: 实现了基于 Kotlin Coroutines `SharedFlow` 的轻量级 `XEventBus`。
-    -   **生命周期安全**: 结合 `LifecycleOwner.repeatOnLifecycle` API，确保 UI 事件仅在活跃状态下响应，避免了内存泄漏和后台更新 UI 的风险。
-    -   **类型安全**: 利用 Kotlin 泛型和 `filterIsInstance` 实现类型安全的事件分发。
+---
 
-### 9. JSON 序列化迁移 (Gson -> Kotlin Serialization)
--   **网络层**: Retrofit 迁移至 `converter-kotlinx-serialization`，统一使用 `Json` 配置解析。
--   **网络错误本地化**: 统一 `NetworkResult` → `UiMessage` 映射，避免硬编码英文提示。
--   **模型层**: 关键实体补齐 `@Serializable`/`@SerialName` 映射，确保字段命名一致。
--   **文件存储**: 规则导入/导出与本地实体存储改为 Kotlin Serialization，新增备份载体结构以保持版本兼容。
--   **备份版本校验**: 备份写入 `schemaVersion` 与 `appVersion`，导入时提供版本跨度提示。
--   **列表性能**: 规则/记录/应用列表升级为 `ListAdapter + DiffUtil`。
+## 3. 图形与无障碍优化 (Graphics & Accessibility)
 
+### 3.1 资源管理
+- **异步图标加载**：封装 `AppIconImage` 模块，通过 `LaunchedEffect` 在 IO 线程加载应用图标，并提供占位符与淡入动效，防止 UI 线程阻塞。
+- **规范剪裁**：使用 `Modifier.clip` 统一应用标准的 M3 圆角形状。
 
-## 已移除的关键库
--   `ButterKnife`
--   `GreenDAO`
--   `RxJava` / `RxAndroid`
--   `Dagger`
--   `MaterialDialogs` (afollestad) -> 迁移至 MD3 `MaterialAlertDialogBuilder`
--   `EventBus` (GreenRobot) -> 迁移至 Kotlin SharedFlow
--   `Gson` -> 迁移至 Kotlin Serialization
+### 3.2 无障碍合规
+- **语义增强**：补全所有图标及关键组件的 `contentDescription`，为 `Checkbox` 添加动态状态描述。
+- **对比度优化**：基于 M3 调色板重新校准颜色使用。
+
+---
+
+## 4. 动画体验优化 (Animation)
+
+### 4.1 容器与列表动效
+- **平滑状态切换**：使用 `AnimatedContent` 包装 Screen 级状态切换（加载中/空数据/内容区），消除界面跳变。
+- **列表自适应动效**：在 `LazyColumn` 中引入 `Modifier.animateItem()`，使列表项在增删改时具备自然的物理移动感。
+
+### 4.2 细节打磨
+- **组件显隐动画**：使用 `AnimatedVisibility` 配合 `expandVertically` 等过渡效果处理校验信息及进度条的显示。
+- **自定义 Reveal 动效**：在切换主题时，利用 `graphicsLayer` 实现基于点击坐标的圆形揭露动效。
+
+---
+
+## 5. 性能加固与稳定性 (Performance & Stability)
+
+### 5.1 数据模型稳定性
+- **完全不可变性**：将核心实体类 (`SmsMsg`, `SmsCodeRule`, `AppInfo`) 的所有属性从 `var` 改为 `val`。
+- **编译期跳过 (Skipping)**：添加 `@Immutable` 注解，允许 Compose 编译器在重组过程中安全地跳过未变化的数据项，极大降低重组频率。
+
+### 5.2 列表性能极致优化
+- **集合稳定性包装**：引入 `ImmutableListWrapper<T>` 自定义包装类，解决标准 `List` 接口在 Compose 编译器中被视为“不稳定”的问题，确保列表滚动时零冗余重组。
+
+### 5.3 渲染阶段延迟 (Phase Deferral)
+- **绘制逻辑下放**：审计复杂自定义动效，确保高频变化的数值读取（如 `revealAnim.value`）仅在绘制阶段（lambda 内部）进行，避开开销巨大的重组阶段。
+
+---
+
+## 6. Kotlin for Compose 最佳实践 (Kotlin Best Practices)
+
+### 6.1 状态声明标准化
+- **属性代理 (Property Delegation)**：全面普及 `by remember { mutableStateOf(...) }` 语法，淘汰繁杂的 `.value` 手写访问，使代码逻辑更简洁。
+- **基本类型优化**：在计数、索引等场景引入 `mutableIntStateOf` 等专用状态函数，避免 JVM 自动装箱带来的额外内存开销。
+
+### 6.2 强规范组件定义
+- **Modifier 链标准**：确保所有内部 Composable 组件遵循 `modifier: Modifier = Modifier` 惯例，并作为首个可选参数，赋予组件高度的外部扩展性。
+- **Trailing Lambdas**：严格遵守 Kotlin lambda 结尾写法，提升 DSL 风格代码的可读性。
+
+---
+
+> [!TIP]
+> **后续开发建议**：
+> 1. 新增数据实体时，请务必保持属性不可变（val）并添加 `@Immutable` 标签。
+> 2. 展示列表数据前，应使用 `ImmutableListWrapper` 进行包装。
+> 3. 避免在 Composable 内部进行复杂的、未记住的逻辑计算。
