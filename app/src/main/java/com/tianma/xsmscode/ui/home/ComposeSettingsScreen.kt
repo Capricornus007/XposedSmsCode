@@ -66,33 +66,33 @@ fun ComposeSettingsScreen(
     val themeMode = themeState.mode
     val updateVersion by settingsViewModel.updateVersion.collectAsStateWithLifecycle(null)
     
-    val autoInputDelayState = remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
-    val retentionTimeState = remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
-    val smsCodeKeywordsState = remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
-    val showFaqDialog = remember { mutableStateOf(false) }
+    var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
+    var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
+    var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
+    var showFaqDialog by remember { mutableStateOf(false) }
     
-    val showAutoInputDialog = remember { mutableStateOf(false) }
-    val showRetentionDialog = remember { mutableStateOf(false) }
-    val showSmsTestDialog = remember { mutableStateOf(false) }
-    val smsTestInput = remember { mutableStateOf("") }
-    val showThemeDialog = remember { mutableStateOf(false) }
-    val showDonateDialog = remember { mutableStateOf(false) }
-    val showAlipayChoiceDialog = remember { mutableStateOf(false) }
-    val showQRCodeDialog = remember { mutableStateOf<Pair<Int, String>?>(null) }
-    val showPrivacyPolicyDialog = remember { mutableStateOf(false) }
-    val showKeywordsDialog = remember { mutableStateOf(false) }
+    var showAutoInputDialog by remember { mutableStateOf(false) }
+    var showRetentionDialog by remember { mutableStateOf(false) }
+    var showSmsTestDialog by remember { mutableStateOf(false) }
+    var smsTestInput by remember { mutableStateOf("") }
+    var showThemeDialog by remember { mutableStateOf(false) }
+    var showDonateDialog by remember { mutableStateOf(false) }
+    var showAlipayChoiceDialog by remember { mutableStateOf(false) }
+    var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
+    var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
+    var showKeywordsDialog by remember { mutableStateOf(false) }
     var isActivated by remember { mutableStateOf(ModuleUtils.isModuleEnabled()) }
 
     LaunchedEffect(Unit) {
         if (!SPUtils.isPrivacyPolicyAccepted(context)) {
-            showPrivacyPolicyDialog.value = true
+            showPrivacyPolicyDialog = true
         }
     }
 
     LaunchedEffect(Unit) {
-        autoInputDelayState.value = AppPreferencesDataStore.getString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT)
-        retentionTimeState.value = AppPreferencesDataStore.getString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT)
-        smsCodeKeywordsState.value = AppPreferencesDataStore.getString(context, PrefConst.KEY_SMSCODE_KEYWORDS, PrefConst.SMSCODE_KEYWORDS_DEFAULT)
+        autoInputDelay = AppPreferencesDataStore.getString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT)
+        retentionTime = AppPreferencesDataStore.getString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT)
+        smsCodeKeywords = AppPreferencesDataStore.getString(context, PrefConst.KEY_SMSCODE_KEYWORDS, PrefConst.SMSCODE_KEYWORDS_DEFAULT)
         settingsViewModel.setInternalFilesWritable()
     }
 
@@ -104,6 +104,8 @@ fun ComposeSettingsScreen(
         }
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     LaunchedEffect(settingsViewModel, lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
             settingsViewModel.eventsFlow.collect { event ->
@@ -114,19 +116,19 @@ fun ComposeSettingsScreen(
                         } else {
                             context.getString(R.string.current_sms_code, event.code)
                         }
-                        Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+                        snackbarHostState.showSnackbar(text, duration = SnackbarDuration.Long)
                     }
                     is SettingsEvent.ShowPrivacyPolicy -> {
-                        showPrivacyPolicyDialog.value = true
+                        showPrivacyPolicyDialog = true
                     }
                     is SettingsEvent.ShowAlipayPacket -> {
-                        showDonateDialog.value = true
+                        showDonateDialog = true
                     }
                     is SettingsEvent.CheckUpdateError -> {
-                        Toast.makeText(context, R.string.check_update_failed, Toast.LENGTH_SHORT).show()
+                        snackbarHostState.showSnackbar(context.getString(R.string.check_update_failed))
                     }
                     is SettingsEvent.AppAlreadyNewest -> {
-                        Toast.makeText(context, R.string.app_already_newest, Toast.LENGTH_SHORT).show()
+                        snackbarHostState.showSnackbar(context.getString(R.string.app_already_newest))
                     }
                     else -> Unit
                 }
@@ -135,6 +137,7 @@ fun ComposeSettingsScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
@@ -175,17 +178,17 @@ fun ComposeSettingsScreen(
             Item(
                 title = stringResource(id = R.string.pref_choose_theme_title),
                 summary = stringResource(id = R.string.pref_choose_theme_summary)
-            ) { showThemeDialog.value = true }
+            ) { showThemeDialog = true }
             
-            val showLanguageDialog = remember { mutableStateOf(false) }
+            var showLanguageDialog by remember { mutableStateOf(false) }
             Item(
                 title = stringResource(id = R.string.pref_language_title),
                 summary = stringResource(id = R.string.pref_language_summary)
-            ) { showLanguageDialog.value = true }
-
-            if (showLanguageDialog.value) {
+            ) { showLanguageDialog = true }
+ 
+            if (showLanguageDialog) {
                 LanguageChooserDialog(
-                    onDismiss = { showLanguageDialog.value = false },
+                    onDismiss = { showLanguageDialog = false },
                     onLanguageSelected = { tag ->
                         val locales = if (tag.isEmpty()) {
                             androidx.core.os.LocaleListCompat.getEmptyLocaleList()
@@ -193,7 +196,7 @@ fun ComposeSettingsScreen(
                             androidx.core.os.LocaleListCompat.forLanguageTags(tag)
                         }
                         androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(locales)
-                        showLanguageDialog.value = false
+                        showLanguageDialog = false
                     }
                 )
             }
@@ -228,11 +231,11 @@ fun ComposeSettingsScreen(
             Item(
                 title = stringResource(id = R.string.pref_smscode_keywords_title),
                 summary = stringResource(id = R.string.pref_smscode_keywords_summary)
-            ) { showKeywordsDialog.value = true }
+            ) { showKeywordsDialog = true }
             Item(
                 title = stringResource(id = R.string.pref_smscode_test_title),
                 summary = stringResource(id = R.string.pref_smscode_test_summary)
-            ) { showSmsTestDialog.value = true }
+            ) { showSmsTestDialog = true }
             Item(
                 title = stringResource(id = R.string.pref_code_rules_title),
                 summary = stringResource(id = R.string.pref_code_rules_summary)
@@ -251,8 +254,8 @@ fun ComposeSettingsScreen(
             )
             Item(
                 title = stringResource(id = R.string.pref_auto_input_code_delay_title),
-                summary = stringResource(id = R.string.pref_auto_input_code_delay_summary, autoInputDelayState.value)
-            ) { showAutoInputDialog.value = true }
+                summary = stringResource(id = R.string.pref_auto_input_code_delay_summary, autoInputDelay)
+            ) { showAutoInputDialog = true }
             Item(
                 title = stringResource(id = R.string.app_block_settings),
                 summary = stringResource(id = R.string.app_block_summary)
@@ -278,14 +281,14 @@ fun ComposeSettingsScreen(
                 summary = run {
                     val entries = stringArrayResource(id = R.array.notification_retention_time_entry_list)
                     val values = stringArrayResource(id = R.array.notification_retention_time_list)
-                    val index = values.indexOf(retentionTimeState.value)
-                    if (index >= 0) entries[index] else retentionTimeState.value
+                    val index = values.indexOf(retentionTime)
+                    if (index >= 0) entries[index] else retentionTime
                 }
-            ) { showRetentionDialog.value = true }
+            ) { showRetentionDialog = true }
              Item(
                 title = stringResource(id = R.string.action_home_faq_title),
                 summary = ""
-            ) { showFaqDialog.value = true }
+            ) { showFaqDialog = true }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -296,17 +299,18 @@ fun ComposeSettingsScreen(
                 key = PrefConst.KEY_ENABLE_CODE_RECORDS,
                 defaultValue = true
             )
+            val recordCount by settingsViewModel.smsRecordCount.collectAsStateWithLifecycle()
             Item(
                 title = stringResource(id = R.string.pref_entry_code_records_title),
-                summary = stringResource(id = R.string.pref_entry_code_records_summary, PrefConst.MAX_SMS_RECORDS_COUNT_DEFAULT)
+                summary = stringResource(id = R.string.pref_entry_code_records_summary, recordCount.toInt())
             ) { onNavigateToRecords() }
             
-            val historyLimitState = remember { mutableStateOf("0") }
-            val showHistoryLimitDialog = remember { mutableStateOf(false) }
-            val showHistoryLimitInput = remember { mutableStateOf(false) }
+            var historyLimit by remember { mutableStateOf("0") }
+            var showHistoryLimitDialog by remember { mutableStateOf(false) }
+            var showHistoryLimitInput by remember { mutableStateOf(false) }
             
             LaunchedEffect(Unit) {
-                 historyLimitState.value = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT, "0")
+                 historyLimit = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT, "0")
             }
 
             Item(
@@ -314,40 +318,40 @@ fun ComposeSettingsScreen(
                 summary = run {
                     val entries = stringArrayResource(id = R.array.history_limit_entry_list)
                     val values = stringArrayResource(id = R.array.history_limit_value_list)
-                    val index = values.indexOf(historyLimitState.value)
-                    if (index >= 0) entries[index] else "${historyLimitState.value} ${stringResource(R.string.smscode_records)}" 
+                    val index = values.indexOf(historyLimit)
+                    if (index >= 0) entries[index] else "$historyLimit ${stringResource(R.string.smscode_records)}" 
                 }
-            ) { showHistoryLimitDialog.value = true }
+            ) { showHistoryLimitDialog = true }
 
-            if (showHistoryLimitDialog.value) {
+            if (showHistoryLimitDialog) {
                 RetentionDialog(
-                    selectedValue = historyLimitState.value,
-                    onDismiss = { showHistoryLimitDialog.value = false },
+                    selectedValue = historyLimit,
+                    onDismiss = { showHistoryLimitDialog = false },
                     titleId = R.string.pref_history_limit_title,
                     entriesId = R.array.history_limit_entry_list,
                     valuesId = R.array.history_limit_value_list
                 ) { value ->
                     if (value == "-1") {
-                        showHistoryLimitInput.value = true
+                        showHistoryLimitInput = true
                     } else {
-                        historyLimitState.value = value
+                        historyLimit = value
                         scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value) }
                     }
-                    showHistoryLimitDialog.value = false
+                    showHistoryLimitDialog = false
                 }
             }
             
-            if (showHistoryLimitInput.value) {
+            if (showHistoryLimitInput) {
                 TextInputDialog(
                     title = stringResource(id = R.string.history_limit_custom_entry),
-                    value = remember { mutableStateOf(if (historyLimitState.value == "0" || historyLimitState.value == "-1") "" else historyLimitState.value) },
-                    onDismiss = { showHistoryLimitInput.value = false }
+                    initialValue = if (historyLimit == "0" || historyLimit == "-1") "" else historyLimit,
+                    onDismiss = { showHistoryLimitInput = false }
                 ) { value ->
                    if (value.all { it.isDigit() } && value.isNotEmpty()) {
-                       historyLimitState.value = value
+                       historyLimit = value
                        scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value) }
                    }
-                   showHistoryLimitInput.value = false
+                   showHistoryLimitInput = false
                 }
             }
 
@@ -380,68 +384,68 @@ fun ComposeSettingsScreen(
             Item(
                 title = stringResource(id = R.string.pref_donate_by_alipay_title),
                 summary = stringResource(id = R.string.dialog_donate_content)
-            ) { showDonateDialog.value = true }
+            ) { showDonateDialog = true }
             Item(
                 title = stringResource(id = R.string.pref_privacy_policy_title),
                 summary = ""
-            ) { showPrivacyPolicyDialog.value = true }
+            ) { showPrivacyPolicyDialog = true }
         }
     }
 
-    if (showAutoInputDialog.value) {
+    if (showAutoInputDialog) {
         TextInputDialog(
             title = stringResource(id = R.string.pref_auto_input_code_delay_title),
-            value = autoInputDelayState,
-            onDismiss = { showAutoInputDialog.value = false }
+            initialValue = autoInputDelay,
+            onDismiss = { showAutoInputDialog = false }
         ) { value ->
-            autoInputDelayState.value = value
+            autoInputDelay = value
             scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, value) }
-            showAutoInputDialog.value = false
+            showAutoInputDialog = false
         }
     }
 
-    if (showRetentionDialog.value) {
+    if (showRetentionDialog) {
         RetentionDialog(
-            selectedValue = retentionTimeState.value,
-            onDismiss = { showRetentionDialog.value = false }
+            selectedValue = retentionTime,
+            onDismiss = { showRetentionDialog = false }
         ) { value ->
-            retentionTimeState.value = value
+            retentionTime = value
             scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, value) }
-            showRetentionDialog.value = false
+            showRetentionDialog = false
         }
     }
 
-    if (showSmsTestDialog.value) {
+    if (showSmsTestDialog) {
         TextInputDialog(
             title = stringResource(id = R.string.pref_smscode_test_title),
-            value = smsTestInput,
-            onDismiss = { showSmsTestDialog.value = false },
+            initialValue = smsTestInput,
+            onDismiss = { showSmsTestDialog = false },
             singleLine = false,
             maxLines = 8
         ) { value ->
-            smsTestInput.value = value
+            smsTestInput = value
             settingsViewModel.performSmsCodeTest(value)
-            showSmsTestDialog.value = false
+            showSmsTestDialog = false
         }
     }
 
-    if (showKeywordsDialog.value) {
+    if (showKeywordsDialog) {
         TextInputDialog(
             title = stringResource(id = R.string.pref_smscode_keywords_title),
-            value = smsCodeKeywordsState,
-            onDismiss = { showKeywordsDialog.value = false },
+            initialValue = smsCodeKeywords,
+            onDismiss = { showKeywordsDialog = false },
             singleLine = false,
             maxLines = 10
         ) { value ->
             val updated = if (value.isBlank()) PrefConst.SMSCODE_KEYWORDS_DEFAULT else value
-            smsCodeKeywordsState.value = updated
+            smsCodeKeywords = updated
             scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_SMSCODE_KEYWORDS, updated) }
-            showKeywordsDialog.value = false
+            showKeywordsDialog = false
         }
     }
 
-    if (showFaqDialog.value) {
-        FaqDialog(onDismiss = { showFaqDialog.value = false })
+    if (showFaqDialog) {
+        FaqDialog(onDismiss = { showFaqDialog = false })
     }
 
     updateVersion?.let { version ->
@@ -453,61 +457,62 @@ fun ComposeSettingsScreen(
         )
     }
 
-    if (showThemeDialog.value) {
+    if (showThemeDialog) {
         ThemeChooserDialog(
             currentMode = themeMode,
-            onDismiss = { showThemeDialog.value = false },
+            onDismiss = { showThemeDialog = false },
             onThemeSelected = { mode, x, y ->
                 settingsViewModel.setThemeMode(mode, x, y)
-                showThemeDialog.value = false
+                showThemeDialog = false
             }
         )
     }
 
-    if (showDonateDialog.value) {
+    if (showDonateDialog) {
          DonateDialog(
-             onDismiss = { showDonateDialog.value = false },
-             onAlipay = { showDonateDialog.value = false; showAlipayChoiceDialog.value = true },
+             onDismiss = { showDonateDialog = false },
+             onAlipay = { showDonateDialog = false; showAlipayChoiceDialog = true },
              onWechat = {
-                 showDonateDialog.value = false
-                 showQRCodeDialog.value = Pair(R.drawable.wx, "wechat")
+                 showDonateDialog = false
+                 showQRCodeDialog = Pair(R.drawable.wx, "wechat")
              }
          )
     }
 
-    if (showAlipayChoiceDialog.value) {
+    if (showAlipayChoiceDialog) {
         AlipayChoiceDialog(
-            onDismiss = { showAlipayChoiceDialog.value = false },
+            onDismiss = { showAlipayChoiceDialog = false },
             onQRCode = {
-                showAlipayChoiceDialog.value = false
-                showQRCodeDialog.value = Pair(R.drawable.alipay, "alipay")
+                showAlipayChoiceDialog = false
+                showQRCodeDialog = Pair(R.drawable.alipay, "alipay")
             },
             onToken = {
-                showAlipayChoiceDialog.value = false
+                showAlipayChoiceDialog = false
                 PackageUtils.copyAlipayPocketToken(context)
+                PackageUtils.startAlipayActivity(context)
             }
         )
     }
 
-    showQRCodeDialog.value?.let { pair ->
+    showQRCodeDialog?.let { pair ->
         QRCodeDialog(
             resId = pair.first,
             type = pair.second,
-            onDismiss = { showQRCodeDialog.value = null },
+            onDismiss = { showQRCodeDialog = null },
             onSave = { Utils.saveImageToGallery(context, pair.first, "${pair.second}_qrcode") }
         )
     }
 
-    if (showPrivacyPolicyDialog.value) {
+    if (showPrivacyPolicyDialog) {
         PrivacyPolicyDialog(
-            onDismiss = { showPrivacyPolicyDialog.value = false },
+            onDismiss = { showPrivacyPolicyDialog = false },
             onConfirm = {
                 scope.launch { SPUtils.setPrivacyPolicyAccepted(context, true) }
-                showPrivacyPolicyDialog.value = false
+                showPrivacyPolicyDialog = false
             },
             onCancel = {
                 scope.launch { SPUtils.setPrivacyPolicyAccepted(context, false) }
-                showPrivacyPolicyDialog.value = false
+                showPrivacyPolicyDialog = false
                 onExit()
             }
         )
@@ -517,28 +522,32 @@ fun ComposeSettingsScreen(
 // Helper Composables (extracted and made standalone)
 
 @Composable
-fun SectionHeader(text: String) {
+fun SectionHeader(
+    text: String,
+    modifier: Modifier = Modifier
+) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(vertical = 8.dp)
+        modifier = modifier.padding(vertical = 8.dp)
     )
 }
 
 @Composable
-fun Item(title: String, summary: String, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(vertical = 12.dp)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge)
-            if (summary.isNotEmpty()) {
-                Text(text = summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
+fun Item(
+    title: String,
+    summary: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    ListItem(
+        headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = if (summary.isNotEmpty()) {
+            { Text(text = summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        } else null,
+        modifier = modifier.clickable(onClick = onClick)
+    )
 }
 
 @Composable
@@ -547,6 +556,7 @@ fun SwitchItem(
     summary: String,
     key: String,
     defaultValue: Boolean,
+    modifier: Modifier = Modifier,
     stateOverride: MutableState<Boolean>? = null,
     onToggle: ((Boolean) -> Unit)? = null
 ) {
@@ -560,23 +570,16 @@ fun SwitchItem(
         onToggle?.invoke(checked)
     }
 
-    Surface(
-        onClick = { toggle(!checkedState.value) },
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, style = MaterialTheme.typography.bodyLarge)
-                if (summary.isNotEmpty()) {
-                    Text(text = summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
+    ListItem(
+        headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = if (summary.isNotEmpty()) {
+            { Text(text = summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        } else null,
+        trailingContent = {
             Switch(checked = checkedState.value, onCheckedChange = { toggle(it) })
-        }
-    }
+        },
+        modifier = modifier.clickable { toggle(!checkedState.value) }
+    )
 }
 
 @Composable
@@ -592,27 +595,29 @@ fun rememberPrefBoolean(key: String, defaultValue: Boolean): MutableState<Boolea
 @Composable
 fun TextInputDialog(
     title: String,
-    value: MutableState<String>,
+    initialValue: String,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
     singleLine: Boolean = true,
     maxLines: Int = if (singleLine) 1 else 6,
     onConfirm: (String) -> Unit
 ) {
-    val text = remember { mutableStateOf(value.value) }
+    var text by remember { mutableStateOf(initialValue) }
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = modifier,
         title = { Text(text = title) },
         text = {
             OutlinedTextField(
-                value = text.value,
-                onValueChange = { text.value = it },
+                value = text,
+                onValueChange = { text = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = singleLine,
                 maxLines = maxLines
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(text.value) }) {
+            TextButton(onClick = { onConfirm(text) }) {
                 Text(stringResource(id = R.string.confirm))
             }
         },
@@ -628,6 +633,7 @@ fun TextInputDialog(
 fun RetentionDialog(
     selectedValue: String,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
     titleId: Int = R.string.pref_notification_retention_time_title,
     entriesId: Int = R.array.notification_retention_time_entry_list,
     valuesId: Int = R.array.notification_retention_time_list,
@@ -637,6 +643,7 @@ fun RetentionDialog(
     val values = stringArrayResource(id = valuesId)
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = modifier,
         title = { Text(stringResource(id = titleId)) },
         text = {
             Column {
@@ -810,7 +817,7 @@ fun QRCodeDialog(resId: Int, type: String, onDismiss: () -> Unit, onSave: () -> 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 androidx.compose.foundation.Image(
                     painter = painterResource(id = resId),
-                    contentDescription = null,
+                    contentDescription = if (type == "alipay") stringResource(id = R.string.dialog_donate_alipay) else stringResource(id = R.string.dialog_donate_wechat),
                     modifier = Modifier.size(200.dp)
                 )
             }
@@ -869,7 +876,10 @@ fun FaqDialog(onDismiss: () -> Unit) {
                         )
                         Text(
                             text = "A: ${answers[index]}",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                lineBreak = androidx.compose.ui.text.style.LineBreak.Paragraph,
+                                hyphens = androidx.compose.ui.text.style.Hyphens.Auto
+                            ),
                             modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
                         )
                         HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))

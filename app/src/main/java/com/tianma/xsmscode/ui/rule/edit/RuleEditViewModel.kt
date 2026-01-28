@@ -108,9 +108,11 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
         if (!checkValid(codeRule)) return
         viewModelScope.launch { _eventsFlow.emit(RuleEditEvent.HideSoftInput) }
 
-        mCodeRule.company = codeRule.company
-        mCodeRule.codeKeyword = codeRule.codeKeyword
-        mCodeRule.codeRegex = codeRule.codeRegex
+        mCodeRule = mCodeRule.copy(
+            company = codeRule.company,
+            codeKeyword = codeRule.codeKeyword,
+            codeRegex = codeRule.codeRegex
+        )
 
         viewModelScope.launch {
             val success = withContext(Dispatchers.IO) {
@@ -120,7 +122,7 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
                         false
                     } else {
                         val id = dbManager.addSmsCodeRuleSuspend(mCodeRule)
-                        mCodeRule.id = id
+                        mCodeRule = mCodeRule.copy(id = id)
                         true
                     }
                 } else {
@@ -128,7 +130,7 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
                     true
                 }
             }
-            // XEventBus.post(Event.OnRuleCreateOrUpdate(mRuleEditType, mCodeRule)) - Removed
+            mCodeRuleLiveData.postValue(mCodeRule)
             _eventsFlow.emit(RuleEditEvent.CodeRuleSaved(success))
         }
     }

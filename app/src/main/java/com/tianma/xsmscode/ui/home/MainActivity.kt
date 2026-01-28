@@ -14,6 +14,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
@@ -167,6 +169,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     @Composable
     fun AppTheme(
         themeMode: Int,
@@ -177,7 +180,10 @@ class MainActivity : AppCompatActivity() {
             2 -> true
             else -> isSystemInDarkTheme()
         }
-        MaterialTheme(
+        
+        // Material 3 Expressive Theme Implementation
+        // Note: MaterialExpressiveTheme uses its own shape and typography defaults
+        MaterialExpressiveTheme(
             colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme(),
             content = content
         )

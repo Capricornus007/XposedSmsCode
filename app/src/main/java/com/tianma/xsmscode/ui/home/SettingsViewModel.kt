@@ -21,6 +21,9 @@ import com.tianma.xsmscode.data.http.NetworkError
 import com.tianma.xsmscode.data.http.NetworkResult
 import com.tianma.xsmscode.data.repository.DataRepository
 import androidx.lifecycle.viewModelScope
+import com.tianma.xsmscode.data.db.DBManager
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -48,6 +51,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val _updateVersion = MutableStateFlow<ApkVersion?>(null)
     val updateVersion: StateFlow<ApkVersion?> = _updateVersion.asStateFlow()
+
+    val smsRecordCount: StateFlow<Long> = DBManager.get(application)
+        .queryAllSmsMsgCountFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 0L
+        )
 
     init {
         viewModelScope.launch {

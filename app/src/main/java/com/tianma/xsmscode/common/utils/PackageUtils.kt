@@ -151,6 +151,34 @@ object PackageUtils {
             }
         }
     }
+    private fun checkWechatExists(context: Context): Boolean {
+        val packageState = checkPackageState(context, Const.WECHAT_PACKAGE_NAME)
+        return when (packageState) {
+            PACKAGE_ENABLED -> true
+            PACKAGE_DISABLED -> {
+                Toast.makeText(context, R.string.wechat_enable_prompt, Toast.LENGTH_SHORT).show()
+                false
+            }
+            PACKAGE_NOT_INSTALLED -> {
+                Toast.makeText(context, R.string.wechat_install_prompt, Toast.LENGTH_SHORT).show()
+                false
+            }
+            else -> false
+        }
+    }
+
+    /**
+     * 打开微信
+     */
+    @JvmStatic
+    fun startWechatActivity(context: Context) {
+        if (checkWechatExists(context)) {
+            val pm = context.packageManager
+            val intent = pm.getLaunchIntentForPackage(Const.WECHAT_PACKAGE_NAME)
+            context.startActivity(intent)
+        }
+    }
+
     @JvmStatic
     fun copyAlipayPocketToken(context: Context) {
         Utils.copyToClipboard(context, Const.ALIPAY_POCKET_TOKEN)

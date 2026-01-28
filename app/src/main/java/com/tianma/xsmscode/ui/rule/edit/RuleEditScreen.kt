@@ -7,6 +7,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.animation.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -60,6 +61,8 @@ fun RuleEditScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
     LaunchedEffect(viewModel.eventsFlow, lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             viewModel.eventsFlow.collect { event ->
@@ -70,12 +73,12 @@ fun RuleEditScreen(
                         if (event.success) {
                             onBack()
                         } else {
-                            Toast.makeText(context, R.string.rule_duplicated_prompt, Toast.LENGTH_LONG).show()
+                            snackbarHostState.showSnackbar(context.getString(R.string.rule_duplicated_prompt))
                         }
                     }
                     is RuleEditEvent.TemplateSaved -> {
                         val msg = if (event.success) R.string.save_template_succeed else R.string.save_template_failed
-                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                        snackbarHostState.showSnackbar(context.getString(msg))
                     }
                 }
             }
@@ -91,6 +94,7 @@ fun RuleEditScreen(
     var showQuickChoose by remember { mutableStateOf(false) }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
                 title = { 
@@ -109,7 +113,7 @@ fun RuleEditScreen(
         },
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                val ruleToSave = SmsCodeRule(company, keyword, regex).apply { id = codeRule.id }
+                val ruleToSave = SmsCodeRule(company, keyword, regex, id = codeRule.id)
                 viewModel.saveIfValid(ruleToSave)
             }) {
                 Icon(Icons.Default.Check, contentDescription = stringResource(R.string.save))
@@ -138,6 +142,7 @@ fun RuleEditScreen(
                 value = keyword,
                 onValueChange = { keyword = it },
                 label = { Text(stringResource(R.string.rule_keyword_hint)) },
+                placeholder = { Text("eg. 验证码") },
                 modifier = Modifier.fillMaxWidth(),
                 isError = validationErrorState?.keywordValid == false,
                 singleLine = true,
@@ -149,12 +154,13 @@ fun RuleEditScreen(
                     value = regex,
                     onValueChange = { regex = it },
                     label = { Text(stringResource(R.string.rule_code_regex_hint)) },
+                    prefix = { Text("RE: ", color = MaterialTheme.colorScheme.secondary) },
                     modifier = Modifier.weight(1f),
                     isError = validationErrorState?.codeRegexValid == false,
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
-                         val ruleToSave = SmsCodeRule(company, keyword, regex).apply { id = codeRule.id }
+                         val ruleToSave = SmsCodeRule(company, keyword, regex, id = codeRule.id)
                          viewModel.saveIfValid(ruleToSave)
                     })
                 )
@@ -166,47 +172,60 @@ fun RuleEditScreen(
         }
     }
 
-    if (showQuickChoose) {
-        QuickChooseDialog(
-            onDismiss = { showQuickChoose = false },
-            onConfirm = { generatedRegex ->
-                regex = generatedRegex
-                showQuickChoose = false
-            }
-        )
-    }
+    QuickChooseDialog(
+        onDismiss = { showQuickChoose = false },
+        onConfirm = { generatedRegex ->
+            regex = generatedRegex
+            showQuickChoose = false
+        }
+    )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QuickChooseDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
+fun QuickChooseDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val context = LocalContext.current
     val codeTypes = stringArrayResource(R.array.sms_code_type_list)
-    var selectedTypeIndex by remember { mutableStateOf(0) }
+    var selectedTypeIndex by remember { mutableIntStateOf(0) }
     var codeLength by remember { mutableStateOf("") }
     var lengthError by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        modifier = modifier,
         title = { Text(stringResource(R.string.quick_choose)) },
         text = {
             Column {
-                 // Spinner replacement
-                 // For simplicity, using a list of RadioButtons or a simpler selector
-                 // In Compose, DropdownMenu or ExposedDropdownMenu is standard.
-                 // Let's use a simple Text + Dropdown for now.
                  var expanded by remember { mutableStateOf(false) }
-                 Box {
-                     OutlinedButton(onClick = { expanded = true }) {
-                         Text(codeTypes[selectedTypeIndex])
-                     }
-                     DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                 ExposedDropdownMenuBox(
+                     expanded = expanded,
+                     onExpandedChange = { expanded = it }
+                 ) {
+                     OutlinedTextField(
+                         value = codeTypes[selectedTypeIndex],
+                         onValueChange = {},
+                         readOnly = true,
+                         label = { Text(stringResource(R.string.rule_code_type)) },
+                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
+                         modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, true).fillMaxWidth()
+                     )
+                     ExposedDropdownMenu(
+                         expanded = expanded,
+                         onDismissRequest = { expanded = false }
+                     ) {
                          codeTypes.forEachIndexed { index, type ->
                              DropdownMenuItem(
                                  text = { Text(type) },
                                  onClick = {
                                      selectedTypeIndex = index
                                      expanded = false
-                                 }
+                                 },
+                                 contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                              )
                          }
                      }
@@ -220,11 +239,16 @@ fun QuickChooseDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit) {
                          codeLength = it
                          lengthError = false 
                      },
-                     label = { Text("Length") }, // Need a string resource
+                     label = { Text(stringResource(R.string.rule_code_length)) },
                      isError = lengthError,
+                     modifier = Modifier.fillMaxWidth(),
                      keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number)
                  )
-                 if (lengthError) {
+                 AnimatedVisibility(
+                     visible = lengthError,
+                     enter = expandVertically() + fadeIn(),
+                     exit = shrinkVertically() + fadeOut()
+                 ) {
                      Text(stringResource(R.string.code_length_empty_prompt), color = MaterialTheme.colorScheme.error)
                  }
             }

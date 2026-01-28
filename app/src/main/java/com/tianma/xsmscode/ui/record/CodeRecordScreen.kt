@@ -3,13 +3,17 @@ package com.tianma.xsmscode.ui.record
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -28,15 +32,13 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.tianma8023.xposed.smscode.R
-import com.tianma.xsmscode.common.utils.ClipboardUtils
 import com.tianma.xsmscode.data.db.entity.SmsMsg
+import com.tianma.xsmscode.ui.common.AppIconImage
 import kotlinx.coroutines.launch
+import org.koin.compose.viewmodel.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.*
-
-import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,7 +116,11 @@ fun CodeRecordScreen(
         AlertDialog(
             onDismissRequest = { detailSmsMsg = null },
             title = { Text(stringResource(R.string.message_details)) },
-            text = { Text(detailSmsMsg?.body ?: "") },
+            text = {
+                SelectionContainer {
+                    Text(detailSmsMsg?.body ?: "")
+                }
+            },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -170,7 +176,10 @@ fun CodeRecordScreen(
                             onBack()
                         }
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = stringResource(R.string.action_back)
+                        )
                     }
                 },
                 actions = {
@@ -183,7 +192,7 @@ fun CodeRecordScreen(
                                 selectedIds = allIds
                             }
                         }) {
-                            Icon(Icons.Default.Check, contentDescription = "Select All")
+                            Icon(Icons.Default.Check, contentDescription = stringResource(R.string.action_select_all))
                         }
                         IconButton(onClick = { deleteSelected() }) {
                             Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete))
@@ -202,59 +211,70 @@ fun CodeRecordScreen(
         }
     ) { padding ->
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
-            if (isLoading && smsList.isEmpty()) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else if (smsList.isEmpty() && !isLoading) {
-                 // Empty View
-                 Column(
-                     modifier = Modifier.align(Alignment.Center),
-                     horizontalAlignment = Alignment.CenterHorizontally
-                 ) {
-                     Icon(
-                         imageVector = Icons.Default.Email,
-                         contentDescription = null,
-                         modifier = Modifier.size(64.dp),
-                         tint = MaterialTheme.colorScheme.onSurfaceVariant
-                     )
-                     Text(
-                         text = stringResource(R.string.list_empty_prompt),
-                         style = MaterialTheme.typography.bodyLarge,
-                         color = MaterialTheme.colorScheme.onSurfaceVariant
-                     )
-                 }
-            } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(smsList, key = { it.id ?: 0 }) { smsMsg ->
-                        val isSelected = selectedIds.contains(smsMsg.id)
-                        CodeRecordItem(
-                            smsMsg = smsMsg,
-                            isSelectionMode = isSelectionMode,
-                            isSelected = isSelected,
-                            onClick = {
-                                if (isSelectionMode) {
-                                    toggleSelection(smsMsg.id ?: 0)
-                                } else {
-                                    // Copy Code by default? adapter.itemClicked did copySmsCode.
-                                    val code = smsMsg.smsCode
-                                    if (!code.isNullOrEmpty()) {
-                                        clipboardManager.setText(AnnotatedString(code))
-                                        scope.launch {
-                                            snackbarHostState.showSnackbar(context.getString(R.string.prompt_sms_code_copied, code))
+            AnimatedContent(
+                targetState = Pair(isLoading, smsList),
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+                },
+                label = "CodeRecordState"
+            ) { (loading, list) ->
+                if (loading && list.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else if (list.isEmpty() && !loading) {
+                    // Empty View
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Email,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = stringResource(R.string.list_empty_prompt),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(list, key = { it.id ?: 0 }) { smsMsg ->
+                            val isSelected = selectedIds.contains(smsMsg.id)
+                            CodeRecordItem(
+                                smsMsg = smsMsg,
+                                isSelectionMode = isSelectionMode,
+                                isSelected = isSelected,
+                                onClick = {
+                                    if (isSelectionMode) {
+                                        toggleSelection(smsMsg.id ?: 0)
+                                    } else {
+                                        val code = smsMsg.smsCode
+                                        if (!code.isNullOrEmpty()) {
+                                            clipboardManager.setText(AnnotatedString(code))
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar(context.getString(R.string.prompt_sms_code_copied, code))
+                                            }
                                         }
                                     }
-                                }
-                            },
-                            onLongClick = {
-                                if (!isSelectionMode) {
-                                    isSelectionMode = true
-                                    toggleSelection(smsMsg.id ?: 0)
-                                }
-                            },
-                            onDetailClick = {
-                                detailSmsMsg = smsMsg
-                            }
-                        )
-                        HorizontalDivider()
+                                },
+                                onLongClick = {
+                                    if (!isSelectionMode) {
+                                        isSelectionMode = true
+                                        toggleSelection(smsMsg.id ?: 0)
+                                    }
+                                },
+                                onDetailClick = {
+                                    detailSmsMsg = smsMsg
+                                },
+                                modifier = Modifier.animateItem()
+                            )
+                            HorizontalDivider()
+                        }
                     }
                 }
             }
@@ -270,12 +290,13 @@ fun CodeRecordItem(
     isSelected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    onDetailClick: () -> Unit
+    onDetailClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val dateFormatter = remember { SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()) }
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .combinedClickable(
                 onClick = onClick,
@@ -298,19 +319,19 @@ fun CodeRecordItem(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(end = 16.dp)
         ) {
-            // Placeholder Icon (Use App Icon if available, else Default)
-            Icon(
-                imageVector = Icons.Default.Email, // Replace with App Icon loader if available
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.primary
+            val label = smsMsg.company ?: smsMsg.sender ?: "Unknown"
+            AppIconImage(
+                packageName = smsMsg.packageName,
+                label = label,
+                contentDescription = stringResource(R.string.sms_icon_description)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = if (!smsMsg.company.isNullOrBlank()) smsMsg.company!! else smsMsg.sender ?: "Unknown",
+                text = label,
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.basicMarquee()
             )
         }
 
@@ -335,10 +356,10 @@ fun CodeRecordItem(
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
-            // Bottom: Body
-            if (!smsMsg.body.isNullOrEmpty()) {
+            val body = smsMsg.body
+            if (!body.isNullOrEmpty()) {
                 Text(
-                    text = smsMsg.body!!,
+                    text = body,
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
