@@ -1,12 +1,5 @@
 package com.tianma.xsmscode.ui.block
 
-import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,28 +7,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.data.db.entity.AppInfo
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
+import com.tianma.xsmscode.ui.common.AppIconImage
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,13 +37,15 @@ fun AppBlockScreen(
     val apps by viewModel.appsFlow.collectAsStateWithLifecycle()
     val isLoading by viewModel.loadingFlow.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
     val context = LocalContext.current
     
     // Initial Load
     LaunchedEffect(Unit) {
         viewModel.refreshData()
     }
+
+    // Usage Permission Dialog State
+    var showUsagePermissionDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -64,6 +56,9 @@ fun AppBlockScreen(
                 }
                 is AppBlockViewModel.AppBlockEvent.Error -> {
                     snackbarHostState.showSnackbar(event.throwable.message ?: context.getString(R.string.save_failed))
+                }
+                is AppBlockViewModel.AppBlockEvent.ShowUsageStatsPermission -> {
+                    showUsagePermissionDialog = true
                 }
             }
         }
@@ -99,7 +94,7 @@ fun AppBlockScreen(
                                         searchQuery = ""
                                         viewModel.doFilter("")
                                     } else {
-                                        isSearchActive = false
+                                        isSearchActive = false; searchQuery = ""; viewModel.doFilter("")
                                     }
                                 }) {
                                     Icon(Icons.Default.Close, contentDescription = "Close search")
@@ -110,7 +105,22 @@ fun AppBlockScreen(
                     expanded = true,
                     onExpandedChange = { if (!it) { isSearchActive = false; searchQuery = ""; viewModel.doFilter("") } }
                 ) {
-                    // Suggestions could go here if needed
+                    // Show valid content inside search view
+                    Box(modifier = Modifier.fillMaxSize()) {
+                         if (isLoading) {
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                        } else {
+                            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                                items(apps, key = { it.packageName }) { app ->
+                                    AppInfoItem(
+                                        appInfo = app,
+                                        onClick = { viewModel.doItemClicked(app) }
+                                    )
+                                    HorizontalDivider()
+                                }
+                            }
+                        }
+                    }
                 }
             } else {
                 TopAppBar(
@@ -132,31 +142,51 @@ fun AppBlockScreen(
                                 expanded = showSortMenu,
                                 onDismissRequest = { showSortMenu = false }
                             ) {
+                                // 1. App Name
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_sort_by_label_asc)) },
+                                    text = { Text(stringResource(R.string.action_sort_by_label)) },
+                                    trailingIcon = {
+                                        if (viewModel.currentSortOption == AppBlockViewModel.SortOption.LABEL) {
+                                            Icon(
+                                                imageVector = if (viewModel.isAscending) androidx.compose.material.icons.Icons.Filled.ArrowDropUp else androidx.compose.material.icons.Icons.Filled.ArrowDropDown,
+                                                contentDescription = null
+                                            )
+                                        }
+                                    },
                                     onClick = { 
-                                        viewModel.doSort(SortType.LABEL_ASC)
+                                        viewModel.doSort(AppBlockViewModel.SortOption.LABEL)
                                         showSortMenu = false 
                                     }
                                 )
+                                // 2. Package Name
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_sort_by_label_desc)) },
+                                    text = { Text(stringResource(R.string.action_sort_by_pkg)) },
+                                    trailingIcon = {
+                                        if (viewModel.currentSortOption == AppBlockViewModel.SortOption.PACKAGE) {
+                                            Icon(
+                                                imageVector = if (viewModel.isAscending) androidx.compose.material.icons.Icons.Filled.ArrowDropUp else androidx.compose.material.icons.Icons.Filled.ArrowDropDown,
+                                                contentDescription = null
+                                            )
+                                        }
+                                    },
                                     onClick = { 
-                                        viewModel.doSort(SortType.LABEL_DESC)
+                                        viewModel.doSort(AppBlockViewModel.SortOption.PACKAGE)
                                         showSortMenu = false 
                                     }
                                 )
+                                // 3. Usage Frequency
                                 DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_sort_by_pkg_asc)) },
+                                    text = { Text(stringResource(R.string.action_sort_by_usage)) },
+                                    trailingIcon = {
+                                        if (viewModel.currentSortOption == AppBlockViewModel.SortOption.USAGE) {
+                                            Icon(
+                                                imageVector = if (viewModel.isAscending) androidx.compose.material.icons.Icons.Filled.ArrowDropUp else androidx.compose.material.icons.Icons.Filled.ArrowDropDown,
+                                                contentDescription = null
+                                            )
+                                        }
+                                    },
                                     onClick = { 
-                                        viewModel.doSort(SortType.PACKAGE_ASC)
-                                        showSortMenu = false 
-                                    }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_sort_by_pkg_desc)) },
-                                    onClick = { 
-                                        viewModel.doSort(SortType.PACKAGE_DESC)
+                                        viewModel.doSort(AppBlockViewModel.SortOption.USAGE)
                                         showSortMenu = false 
                                     }
                                 )
@@ -171,10 +201,13 @@ fun AppBlockScreen(
             }
         }
     ) { padding ->
+        // Main Content (only visible when search is NOT active, effectively)
+        // But since SearchBar is full screen overlay, this is hidden when search is active.
         Box(modifier = Modifier.padding(padding).fillMaxSize()) {
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
+                // Ensure list elements have stable keys and minimize recomposition
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(apps, key = { it.packageName }) { app ->
                         AppInfoItem(
@@ -187,61 +220,61 @@ fun AppBlockScreen(
             }
         }
     }
+
+    if (showUsagePermissionDialog) {
+        AlertDialog(
+            onDismissRequest = { showUsagePermissionDialog = false },
+            title = { Text(stringResource(R.string.action_sort_by_usage)) },
+            text = { Text(stringResource(R.string.usage_permission_prompt)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showUsagePermissionDialog = false
+                    try {
+                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                    } catch (e: Exception) {
+                        // Fallback or toast
+                    }
+                }) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUsagePermissionDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
+    }
 }
 
 @Composable
 fun AppInfoItem(
     appInfo: AppInfo,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    var iconPainter by remember { mutableStateOf<Painter?>(null) }
     val context = LocalContext.current
-    
-    LaunchedEffect(appInfo.packageName) {
-        withContext(Dispatchers.IO) {
-            try {
-                val drawable = context.packageManager.getApplicationIcon(appInfo.packageName)
-                val bitmap = drawableToBitmap(drawable)
-                iconPainter = BitmapPainter(bitmap.asImageBitmap())
-            } catch (e: Exception) {
-                // Ignore
-            }
-        }
-    }
-
     ListItem(
         headlineContent = { Text(appInfo.label ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis) },
         supportingContent = { Text(appInfo.packageName, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         leadingContent = {
-            if (iconPainter != null) {
-                Image(
-                    painter = iconPainter!!, 
-                    contentDescription = null, 
-                    modifier = Modifier.size(40.dp)
-                )
-            } else {
-                Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceVariant))
-            }
+            AppIconImage(
+                packageName = appInfo.packageName,
+                contentDescription = stringResource(R.string.app_icon_description, appInfo.label ?: "")
+            )
         },
         trailingContent = {
              Checkbox(
                  checked = appInfo.blocked,
-                 onCheckedChange = { onClick() }
+                 onCheckedChange = { onClick() },
+                 modifier = Modifier.semantics {
+                     contentDescription = context.getString(
+                         if (appInfo.blocked) R.string.action_unblock_app else R.string.action_block_app,
+                         appInfo.label ?: ""
+                     )
+                 }
              )
         },
-        modifier = Modifier.clickable(onClick = onClick)
+        modifier = modifier.clickable(onClick = onClick)
     )
-}
-
-fun drawableToBitmap(drawable: Drawable): Bitmap {
-    if (drawable is BitmapDrawable) {
-        return drawable.bitmap
-    }
-    val width = if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 1
-    val height = if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 1
-    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    val canvas = Canvas(bitmap)
-    drawable.setBounds(0, 0, canvas.width, canvas.height)
-    drawable.draw(canvas)
-    return bitmap
 }

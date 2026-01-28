@@ -10,12 +10,12 @@ object AppInfoHelper {
         val appInfo = packageInfo.applicationInfo
         val label = if (appInfo != null) pm.getApplicationLabel(appInfo).toString() else packageInfo.packageName
         val packageName = packageInfo.packageName
-        return AppInfo(label, packageName)
+        return AppInfo(packageName, label)
     }
 
     fun getAppInfo(pm: PackageManager, applicationInfo: ApplicationInfo): AppInfo {
         val label = pm.getApplicationLabel(applicationInfo).toString()
         val packageName = applicationInfo.packageName
-        return AppInfo(label, packageName)
+        return AppInfo(packageName, label)
     }
 }
