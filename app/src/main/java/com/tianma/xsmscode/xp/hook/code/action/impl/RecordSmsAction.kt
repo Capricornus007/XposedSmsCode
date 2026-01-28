@@ -54,12 +54,12 @@ class RecordSmsAction(
             }
 
             val count = cursor.count
-            val maxRecordCount = PrefConst.MAX_SMS_RECORDS_COUNT_DEFAULT
-            if (count > maxRecordCount) {
-                // 删除最早的记录，直至剩余数目为 PrefConst.MAX_SMS_RECORDS_COUNT_DEFAULT
+            val limit = PrefsReader.getHistoryLimit(mPluginContext)
+            if (limit > 0 && count > limit) {
+                // 删除最早的记录，直至剩余数目为 limit
                 val operations = ArrayList<ContentProviderOperation>()
                 val selection = "_id = ?"
-                for (i in 0 until count - maxRecordCount) {
+                for (i in 0 until count - limit) {
                     if (cursor.moveToNext()) {
                         val id = cursor.getLong(cursor.getColumnIndexOrThrow("_id"))
                         val operation = ContentProviderOperation.newDelete(smsMsgUri)

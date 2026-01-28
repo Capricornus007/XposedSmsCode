@@ -114,4 +114,20 @@ object PrefsReader {
     fun deduplicateSms(context: Context): Boolean {
         return runBlocking { AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_DEDUPLICATE_SMS, false) }
     }
+
+    @JvmStatic
+    fun getHistoryLimit(context: Context): Int {
+        val value = runBlocking {
+            AppPreferencesDataStore.getString(
+                context,
+                PrefConst.KEY_HISTORY_LIMIT,
+                "0"
+            )
+        }
+        return try {
+            value.toInt()
+        } catch (e: Exception) {
+            0
+        }
+    }
 }

@@ -50,6 +50,7 @@ fun CodeRecordScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    @Suppress("DEPRECATION")
     val clipboardManager = LocalClipboardManager.current
 
     // Initial Load
@@ -261,7 +262,6 @@ fun CodeRecordScreen(
     }
 }
 
-// Helper Composable for List Item
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CodeRecordItem(
@@ -272,40 +272,79 @@ fun CodeRecordItem(
     onLongClick: () -> Unit,
     onDetailClick: () -> Unit
 ) {
-    val dateFormatter = remember { SimpleDateFormat("MM.dd HH:mm", Locale.getDefault()) }
-    
-    ListItem(
-        headlineContent = { 
-            Text(
-                if (!smsMsg.company.isNullOrBlank()) smsMsg.company!! else smsMsg.sender ?: "",
-                maxLines = 1, 
-                overflow = TextOverflow.Ellipsis
-            ) 
-        },
-        supportingContent = {
-            Column {
-                Text(smsMsg.smsCode ?: "", style = MaterialTheme.typography.bodyLarge)
-                Text(dateFormatter.format(Date(smsMsg.date)), style = MaterialTheme.typography.bodySmall)
-                if (!smsMsg.body.isNullOrEmpty()) {
-                     Text(
-                         smsMsg.body!!, 
-                         maxLines = 2, 
-                         overflow = TextOverflow.Ellipsis, 
-                         style = MaterialTheme.typography.bodyMedium,
-                         modifier = Modifier.clickable { onDetailClick() }
-                     )
-                }
-            }
-        },
-        leadingContent = {
-             if (isSelectionMode) {
-                 Checkbox(checked = isSelected, onCheckedChange = { onClick() })
-             }
-        },
+    val dateFormatter = remember { SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()) }
+
+    Row(
         modifier = Modifier
-             .combinedClickable(
-                 onClick = onClick,
-                 onLongClick = onLongClick
-             )
-    )
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
+            .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
+            .padding(vertical = 12.dp, horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (isSelectionMode) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onClick() },
+                modifier = Modifier.padding(end = 16.dp)
+            )
+        }
+
+        // Left Side: Icon + App Name
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(end = 16.dp)
+        ) {
+            // Placeholder Icon (Use App Icon if available, else Default)
+            Icon(
+                imageVector = Icons.Default.Email, // Replace with App Icon loader if available
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = if (!smsMsg.company.isNullOrBlank()) smsMsg.company!! else smsMsg.sender ?: "Unknown",
+                style = MaterialTheme.typography.labelMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        // Right Side
+        Column(modifier = Modifier.weight(1f)) {
+            // Top Row: Code + Time
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = smsMsg.smsCode ?: "",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                )
+                Text(
+                    text = dateFormatter.format(Date(smsMsg.date)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            // Bottom: Body
+            if (!smsMsg.body.isNullOrEmpty()) {
+                Text(
+                    text = smsMsg.body!!,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clickable { onDetailClick() }
+                )
+            }
+        }
+    }
 }

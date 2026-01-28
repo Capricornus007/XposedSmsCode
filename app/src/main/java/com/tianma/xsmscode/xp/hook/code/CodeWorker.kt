@@ -94,6 +94,9 @@ class CodeWorker(
                     cancelNotifyAction.setNotificationId(notificationId)
 
                     mScheduledExecutor.schedule(cancelNotifyAction, delay, TimeUnit.MILLISECONDS)
+                    XLog.d("Scheduled CancelNotifyAction with delay: ${delay}ms for ID: $notificationId")
+                } else {
+                    XLog.d("NotifyAction bundle mismatch or missing retention time")
                 }
         } catch (e: Exception) {
             XLog.e("Error in notification future get()", e)
