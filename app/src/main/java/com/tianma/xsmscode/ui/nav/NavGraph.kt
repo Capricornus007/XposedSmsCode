@@ -43,7 +43,8 @@ fun SmsCodeNavHost(
             ComposeSettingsScreen(
                 onNavigateToRules = { navController.navigate(RulesListRoute) },
                 onNavigateToRecords = { navController.navigate(RecordsRoute) },
-                onNavigateToAppBlock = { navController.navigate(AppBlockRoute) }
+                onNavigateToAppBlock = { navController.navigate(AppBlockRoute) },
+                onExit = onBack
             )
         }
         

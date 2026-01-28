@@ -15,19 +15,20 @@
     <!-- preferences general -->
     <string name="pref_general_title">通用</string>
     <string name="pref_enable_title">总开关</string>
-    <string name="enable_module_title">模块未激活</string>
-    <string name="enable_module_message">请先激活本模块，否则本应用将无法工作！</string>
     <string name="pref_enable_summary">模块已激活</string>
-    <string name="pref_enable_summary_alt">模块未激活，请先激活本模块</string>
     <string name="pref_hide_launcher_icon_title">隐藏应用图标</string>
     <string name="pref_hide_launcher_icon_summary">隐藏后可从模块列表中打开本模块</string>
     <string name="pref_choose_theme_title">主题</string>
     <string name="pref_choose_theme_summary">跟随系统、浅色或深色</string>
-    <string name="pref_compose_settings_title">现代化设置</string>
-    <string name="pref_compose_settings_summary">打开 Compose 版设置</string>
     <string name="theme_follow_system">自动 (跟随系统)</string>
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>
+    <string name="pref_language_title">语言</string>
+    <string name="pref_language_summary">选择语言</string>
+    <string name="language_follow_system">跟随系统</string>
+    <string name="language_en">English</string>
+    <string name="language_zh_cn">简体中文</string>
+    <string name="language_zh_tw">繁體中文</string>
     <string name="module_status_active">已激活</string>
     <string name="module_status_inactive">未激活</string>
     <!-- preferences general end -->
@@ -83,6 +84,14 @@
     <string name="copy_sms">复制短信</string>
     <string name="prompt_sms_copied">已复制短信</string>
     <string name="pref_enable_code_records_title">保存验证码记录</string>
+    <string name="selected_count">已选 %d 项</string>
+    <string name="pref_history_limit_title">历史记录限制</string>
+    <string name="pref_history_limit_summary">仅保留最近 %s 条记录</string>
+    <string name="history_limit_10_entry">10 条</string>
+    <string name="history_limit_20_entry">20 条</string>
+    <string name="history_limit_50_entry">50 条</string>
+    <string name="history_limit_all_entry">全部</string>
+    <string name="history_limit_custom_entry">自定义</string>
     <!-- preference code records end -->
 
     <!-- preference code rules -->
@@ -99,15 +108,7 @@
     <string name="cannot_parse_smscode">未能解析出验证码</string>
     <!-- preference code rules end -->
 
-    <!-- preference experimental -->
-    <string name="pref_experimental_title">试验性功能</string>
-    <string name="pref_mark_as_read_title">验证码短信标记为已读</string>
-    <string name="pref_mark_as_read_summary">将验证码短信标记为已读</string>
-    <string name="pref_delete_sms_title">验证码短信删除</string>
-    <string name="pref_delete_sms_summary">警告：提取成功后验证码短信将被删除</string>
-    <string name="pref_kill_me_title">自杀</string>
-    <string name="pref_kill_me_summary">验证码提取成功后杀掉本应用</string>
-    <!-- preference experimental end -->
+
 
     <!-- preference others -->
     <string name="pref_others_title">其他</string>
@@ -125,8 +126,6 @@
     <string name="prompt_join_qq_group_failed">请先安装手机QQ</string>
     <string name="browser_install_or_enable_prompt">请安装或启用浏览器</string>
     <string name="pref_source_code_summary">欢迎Star ♪(＾∀＾)ﾉ</string>
-    <string name="pref_about_compose_title">现代化关于</string>
-    <string name="pref_about_compose_summary">打开 Compose 版关于页面</string>
     <string name="pref_donate_by_alipay_title">捐赠打赏</string>
     <string name="alipay_install_prompt">请先安装支付宝</string>
     <string name="alipay_enable_prompt">请先启用支付宝</string>
@@ -253,6 +252,7 @@
     <string name="long_press_save_hint">长按图片可保存到相册</string>
     <string name="save_to_gallery_success">图片已保存到相册，正在前往支付应用...</string>
     <string name="save_to_gallery_failed">保存失败，请检查文件权限</string>
+    <string name="save_to_gallery">保存到相册</string>
     <!-- alipay packet end -->
 
 
@@ -268,24 +268,7 @@
     <string name="app_already_newest">已经是最新版本</string>
     <string name="update_from_github">去GitHub更新</string>
     <string name="update_from_coolapk">去酷安更新</string>
-    <string name="coolapk_install_prompt">请先安装酷安</string>
-    <string name="coolapk_enable_prompt">请先启用酷安</string>
     <!-- check update end -->
-
-    <!-- theme Cyanea -->
-    <string name="label_theme_picker">主题选择</string>
-    <string name="pref_theme_title">主题</string>
-    <string name="pref_theme_summary">选择预设主题</string>
-    <string name="pref_primary_color_title">主色调(Primary color)</string>
-    <string name="pref_primary_color_summary"> </string>
-    <string name="pref_accent_color_title">强调色(Accent color)</string>
-    <string name="pref_accent_color_summary"> </string>
-    <string name="pref_background_color_title">背景色</string>
-    <string name="pref_background_color_summary"> </string>
-    <string name="pref_category_appearance">外观</string>
-    <string name="pref_colored_navigation_bar_title">导航栏颜色</string>
-    <string name="pref_colored_navigation_bar_summary">导航栏颜色和主色调保持一致</string>
-    <!-- theme Cyanea -->
 
     <!-- faq -->
     <string-array name="question_list">
@@ -315,4 +298,12 @@
     <string name="privacy_dialog_cancel">拒绝</string>
     <string name="privacy_dialog_confirm">同意和接受</string>
     <!-- privacy policy end -->
+    <string name="rule_list_empty_prompt">暂无规则. 点击 + 添加.</string>
+    <string name="rule_keyword_prefix">关键字: </string>
+    <string name="rule_regex_prefix">正则: </string>
+    <string name="save">保存</string>
+    <string name="source_coolapk">酷安</string>
+    <string name="source_github">GitHub</string>
+    <string name="coolapk_install_prompt">请安装酷安</string>
+    <string name="coolapk_enable_prompt">请启用酷安</string>
 </resources>

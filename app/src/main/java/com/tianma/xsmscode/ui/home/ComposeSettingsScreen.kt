@@ -36,6 +36,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.platform.LocalView
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComposeSettingsScreen(
@@ -55,12 +62,14 @@ fun ComposeSettingsScreen(
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
     
-    val themeMode by settingsViewModel.themeMode.collectAsStateWithLifecycle(0)
+    val themeState by settingsViewModel.themeState.collectAsStateWithLifecycle()
+    val themeMode = themeState.mode
     val updateVersion by settingsViewModel.updateVersion.collectAsStateWithLifecycle(null)
     
     val autoInputDelayState = remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
     val retentionTimeState = remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
     val smsCodeKeywordsState = remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
+    val showFaqDialog = remember { mutableStateOf(false) }
     
     val showAutoInputDialog = remember { mutableStateOf(false) }
     val showRetentionDialog = remember { mutableStateOf(false) }
@@ -73,6 +82,12 @@ fun ComposeSettingsScreen(
     val showPrivacyPolicyDialog = remember { mutableStateOf(false) }
     val showKeywordsDialog = remember { mutableStateOf(false) }
     var isActivated by remember { mutableStateOf(ModuleUtils.isModuleEnabled()) }
+
+    LaunchedEffect(Unit) {
+        if (!SPUtils.isPrivacyPolicyAccepted(context)) {
+            showPrivacyPolicyDialog.value = true
+        }
+    }
 
     LaunchedEffect(Unit) {
         autoInputDelayState.value = AppPreferencesDataStore.getString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT)
@@ -161,7 +176,28 @@ fun ComposeSettingsScreen(
                 title = stringResource(id = R.string.pref_choose_theme_title),
                 summary = stringResource(id = R.string.pref_choose_theme_summary)
             ) { showThemeDialog.value = true }
+            
+            val showLanguageDialog = remember { mutableStateOf(false) }
+            Item(
+                title = stringResource(id = R.string.pref_language_title),
+                summary = stringResource(id = R.string.pref_language_summary)
+            ) { showLanguageDialog.value = true }
 
+            if (showLanguageDialog.value) {
+                LanguageChooserDialog(
+                    onDismiss = { showLanguageDialog.value = false },
+                    onLanguageSelected = { tag ->
+                        val locales = if (tag.isEmpty()) {
+                            androidx.core.os.LocaleListCompat.getEmptyLocaleList()
+                        } else {
+                            androidx.core.os.LocaleListCompat.forLanguageTags(tag)
+                        }
+                        androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(locales)
+                        showLanguageDialog.value = false
+                    }
+                )
+            }
+            
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             SectionHeader(text = stringResource(id = R.string.pref_sms_code_title))
@@ -246,6 +282,10 @@ fun ComposeSettingsScreen(
                     if (index >= 0) entries[index] else retentionTimeState.value
                 }
             ) { showRetentionDialog.value = true }
+             Item(
+                title = stringResource(id = R.string.action_home_faq_title),
+                summary = ""
+            ) { showFaqDialog.value = true }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -260,6 +300,56 @@ fun ComposeSettingsScreen(
                 title = stringResource(id = R.string.pref_entry_code_records_title),
                 summary = stringResource(id = R.string.pref_entry_code_records_summary, PrefConst.MAX_SMS_RECORDS_COUNT_DEFAULT)
             ) { onNavigateToRecords() }
+            
+            val historyLimitState = remember { mutableStateOf("0") }
+            val showHistoryLimitDialog = remember { mutableStateOf(false) }
+            val showHistoryLimitInput = remember { mutableStateOf(false) }
+            
+            LaunchedEffect(Unit) {
+                 historyLimitState.value = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT, "0")
+            }
+
+            Item(
+                title = stringResource(id = R.string.pref_history_limit_title),
+                summary = run {
+                    val entries = stringArrayResource(id = R.array.history_limit_entry_list)
+                    val values = stringArrayResource(id = R.array.history_limit_value_list)
+                    val index = values.indexOf(historyLimitState.value)
+                    if (index >= 0) entries[index] else "${historyLimitState.value} ${stringResource(R.string.smscode_records)}" 
+                }
+            ) { showHistoryLimitDialog.value = true }
+
+            if (showHistoryLimitDialog.value) {
+                RetentionDialog(
+                    selectedValue = historyLimitState.value,
+                    onDismiss = { showHistoryLimitDialog.value = false },
+                    titleId = R.string.pref_history_limit_title,
+                    entriesId = R.array.history_limit_entry_list,
+                    valuesId = R.array.history_limit_value_list
+                ) { value ->
+                    if (value == "-1") {
+                        showHistoryLimitInput.value = true
+                    } else {
+                        historyLimitState.value = value
+                        scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value) }
+                    }
+                    showHistoryLimitDialog.value = false
+                }
+            }
+            
+            if (showHistoryLimitInput.value) {
+                TextInputDialog(
+                    title = stringResource(id = R.string.history_limit_custom_entry),
+                    value = remember { mutableStateOf(if (historyLimitState.value == "0" || historyLimitState.value == "-1") "" else historyLimitState.value) },
+                    onDismiss = { showHistoryLimitInput.value = false }
+                ) { value ->
+                   if (value.all { it.isDigit() } && value.isNotEmpty()) {
+                       historyLimitState.value = value
+                       scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value) }
+                   }
+                   showHistoryLimitInput.value = false
+                }
+            }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -298,7 +388,6 @@ fun ComposeSettingsScreen(
         }
     }
 
-    // Reuse Dialogs and Helper Components
     if (showAutoInputDialog.value) {
         TextInputDialog(
             title = stringResource(id = R.string.pref_auto_input_code_delay_title),
@@ -340,13 +429,19 @@ fun ComposeSettingsScreen(
         TextInputDialog(
             title = stringResource(id = R.string.pref_smscode_keywords_title),
             value = smsCodeKeywordsState,
-            onDismiss = { showKeywordsDialog.value = false }
+            onDismiss = { showKeywordsDialog.value = false },
+            singleLine = false,
+            maxLines = 10
         ) { value ->
             val updated = if (value.isBlank()) PrefConst.SMSCODE_KEYWORDS_DEFAULT else value
             smsCodeKeywordsState.value = updated
             scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_SMSCODE_KEYWORDS, updated) }
             showKeywordsDialog.value = false
         }
+    }
+
+    if (showFaqDialog.value) {
+        FaqDialog(onDismiss = { showFaqDialog.value = false })
     }
 
     updateVersion?.let { version ->
@@ -362,8 +457,8 @@ fun ComposeSettingsScreen(
         ThemeChooserDialog(
             currentMode = themeMode,
             onDismiss = { showThemeDialog.value = false },
-            onThemeSelected = { mode ->
-                settingsViewModel.setThemeMode(mode)
+            onThemeSelected = { mode, x, y ->
+                settingsViewModel.setThemeMode(mode, x, y)
                 showThemeDialog.value = false
             }
         )
@@ -533,13 +628,16 @@ fun TextInputDialog(
 fun RetentionDialog(
     selectedValue: String,
     onDismiss: () -> Unit,
+    titleId: Int = R.string.pref_notification_retention_time_title,
+    entriesId: Int = R.array.notification_retention_time_entry_list,
+    valuesId: Int = R.array.notification_retention_time_list,
     onConfirm: (String) -> Unit
 ) {
-    val entries = stringArrayResource(id = R.array.notification_retention_time_entry_list)
-    val values = stringArrayResource(id = R.array.notification_retention_time_list)
+    val entries = stringArrayResource(id = entriesId)
+    val values = stringArrayResource(id = valuesId)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(id = R.string.pref_notification_retention_time_title)) },
+        title = { Text(stringResource(id = titleId)) },
         text = {
             Column {
                 entries.forEachIndexed { index, entry ->
@@ -573,8 +671,8 @@ fun UpdateDialog(
         title = { Text(stringResource(id = R.string.pref_version_title)) },
         text = { Text(version.versionInfo ?: "") },
         confirmButton = {
-            TextButton(onClick = onUpdateCoolApk) { Text("CoolApk") }
-            TextButton(onClick = onUpdateGithub) { Text("GitHub") }
+            TextButton(onClick = onUpdateCoolApk) { Text(stringResource(id = R.string.source_coolapk)) }
+            TextButton(onClick = onUpdateGithub) { Text(stringResource(id = R.string.source_github)) }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) }
@@ -586,7 +684,7 @@ fun UpdateDialog(
 fun ThemeChooserDialog(
     currentMode: Int,
     onDismiss: () -> Unit,
-    onThemeSelected: (Int) -> Unit
+    onThemeSelected: (Int, Float, Float) -> Unit
 ) {
     val modes = listOf(
         stringResource(id = R.string.theme_follow_system) to 0,
@@ -599,14 +697,76 @@ fun ThemeChooserDialog(
         text = {
             Column {
                 modes.forEach { (label, mode) ->
+                   var rowCoords: LayoutCoordinates? by remember { mutableStateOf(null) }
+                   val view = LocalView.current
+                   
+                   Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp)
+                            .onGloballyPositioned { rowCoords = it }
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onTap = { tapOffset ->
+                                        val locationOnScreen = IntArray(2)
+                                        view.getLocationOnScreen(locationOnScreen)
+                                        
+                                        val rootCoords = rowCoords?.positionInRoot() ?: androidx.compose.ui.geometry.Offset.Zero
+                                        
+                                        // Dialog Window Offset + Item Offset in Dialog + Tap Offset
+                                        val finalX = locationOnScreen[0] + rootCoords.x + tapOffset.x
+                                        val finalY = locationOnScreen[1] + rootCoords.y + tapOffset.y
+                                        
+                                        onThemeSelected(mode, finalX, finalY)
+                                    }
+                                )
+                            },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = mode == currentMode, onClick = null)
+                        Text(text = label, modifier = Modifier.padding(start = 16.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {}
+    )
+}
+
+@Composable
+fun LanguageChooserDialog(
+    onDismiss: () -> Unit,
+    onLanguageSelected: (String) -> Unit
+) {
+    val context = LocalContext.current
+    val currentLocales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+    val currentTag = if (currentLocales.isEmpty) "" else currentLocales.get(0)?.toLanguageTag() ?: ""
+
+    val languages = listOf(
+        stringResource(id = R.string.language_follow_system) to "",
+        stringResource(id = R.string.language_en) to "en",
+        stringResource(id = R.string.language_zh_cn) to "zh-CN",
+        stringResource(id = R.string.language_zh_tw) to "zh-TW"
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.pref_language_title)) },
+        text = {
+            Column {
+                languages.forEach { (label, tag) ->
+                    val selected = if (tag.isEmpty()) currentTag.isEmpty() else currentTag.startsWith(tag)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onThemeSelected(mode) }
+                            .clickable { onLanguageSelected(tag) }
                             .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        RadioButton(selected = mode == currentMode, onClick = { onThemeSelected(mode) })
+                        RadioButton(
+                            selected = selected,
+                            onClick = { onLanguageSelected(tag) }
+                        )
                         Text(text = label, modifier = Modifier.padding(start = 16.dp))
                     }
                 }
@@ -670,13 +830,55 @@ fun PrivacyPolicyDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, onCancel: 
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.pref_privacy_policy_title)) },
         text = {
-            Text(androidx.core.text.HtmlCompat.fromHtml(stringResource(id = R.string.privacy_dialog_content), androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY).toString())
+            val htmlContent = stringResource(id = R.string.privacy_dialog_content).replace("\n", "<br>")
+            androidx.compose.ui.viewinterop.AndroidView(
+                factory = { context ->
+                    android.widget.TextView(context).apply {
+                        text = androidx.core.text.HtmlCompat.fromHtml(htmlContent, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY)
+                        movementMethod = android.text.method.LinkMovementMethod.getInstance()
+                        setTextIsSelectable(true)
+                    }
+                }
+            )
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) { Text(stringResource(id = R.string.confirm)) }
+            TextButton(onClick = onConfirm) { Text(stringResource(id = R.string.privacy_dialog_confirm)) }
         },
         dismissButton = {
-            TextButton(onClick = onCancel) { Text(stringResource(id = R.string.cancel)) }
+            TextButton(onClick = onCancel) { Text(stringResource(id = R.string.privacy_dialog_cancel)) }
+        }
+    )
+}
+
+@Composable
+fun FaqDialog(onDismiss: () -> Unit) {
+    val questions = stringArrayResource(id = R.array.question_list)
+    val answers = stringArrayResource(id = R.array.answer_list)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.action_home_faq_title)) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                questions.forEachIndexed { index, question ->
+                    if (question != "empty" && index < answers.size && answers[index] != "empty") {
+                        Text(
+                            text = "Q: $question",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                        Text(
+                            text = "A: ${answers[index]}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.okay)) }
         }
     )
 }

@@ -15,19 +15,20 @@
     <!-- preferences general -->
     <string name="pref_general_title">General</string>
     <string name="pref_enable_title">Main switch</string>
-    <string name="enable_module_title">Module inactive</string>
-    <string name="enable_module_message">Please activate this module, or this App won\'t work!</string>
     <string name="pref_enable_summary">Module active</string>
-    <string name="pref_enable_summary_alt">Please activate this module first!</string>
     <string name="pref_hide_launcher_icon_title">Hide launcher icon</string>
     <string name="pref_hide_launcher_icon_summary">You can reopen this App in Xposed modules</string>
     <string name="pref_choose_theme_title">Theme</string>
     <string name="pref_choose_theme_summary">Follow System, Light or Dark</string>
-    <string name="pref_compose_settings_title">Modern Settings</string>
-    <string name="pref_compose_settings_summary">Open Compose-based settings</string>
     <string name="theme_follow_system">Automatic (Follow System)</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
+    <string name="pref_language_title">Language</string>
+    <string name="pref_language_summary">Select language/语言</string>
+    <string name="language_follow_system">System Default/跟随系统</string>
+    <string name="language_en">English</string>
+    <string name="language_zh_cn">简体中文</string>
+    <string name="language_zh_tw">繁體中文</string>
     <string name="module_status_active">Active</string>
     <string name="module_status_inactive">Inactive</string>
     <!-- preferences general end -->
@@ -84,6 +85,13 @@
     <string name="prompt_sms_copied">SMS copied</string>
     <string name="pref_enable_code_records_title">Reserve SMS code records</string>
     <string name="selected_count">%d selected</string>
+    <string name="pref_history_limit_title">History record limit</string>
+    <string name="pref_history_limit_summary">Keep only %s recent records</string>
+    <string name="history_limit_10_entry">10 records</string>
+    <string name="history_limit_20_entry">20 records</string>
+    <string name="history_limit_50_entry">50 records</string>
+    <string name="history_limit_all_entry">All records</string>
+    <string name="history_limit_custom_entry">Custom</string>
     <!-- preference code records end -->
 
     <!-- preference code rules -->
@@ -100,15 +108,7 @@
     <string name="cannot_parse_smscode">Cannot parse SMS code.</string>
     <!-- preference code rules end -->
 
-    <!-- preference experimental -->
-    <string name="pref_experimental_title">Experimental</string>
-    <string name="pref_mark_as_read_title">Mark as read</string>
-    <string name="pref_mark_as_read_summary">Mark code SMS as read if succeed</string>
-    <string name="pref_delete_sms_title">Delete SMS</string>
-    <string name="pref_delete_sms_summary">Warning! Code SMS will be deleted if extract succeed</string>
-    <string name="pref_kill_me_title">Kill me</string>
-    <string name="pref_kill_me_summary">Kill this module app if extract succeed</string>
-    <!-- preference experimental end -->
+
 
     <!-- preference others -->
     <string name="pref_others_title">Others</string>
@@ -127,8 +127,6 @@
     <string name="pref_source_code_title">Source code</string>
     <string name="browser_install_or_enable_prompt">Please install or enable browser first</string>
     <string name="pref_source_code_summary">Welcome to star ♪(＾∀＾●)ﾉ</string>
-    <string name="pref_about_compose_title">Modern About</string>
-    <string name="pref_about_compose_summary">Open the Compose-based about page</string>
     <string name="pref_donate_by_alipay_title">Donation Appreciation</string>
     <string name="alipay_install_prompt">Please install Alipay</string>
     <string name="alipay_enable_prompt">Please enable Alipay</string>
@@ -273,22 +271,11 @@
     <string name="update_from_coolapk">Go to Coolapk</string>
     <string name="coolapk_install_prompt">Please install CoolApk</string>
     <string name="coolapk_enable_prompt">Please enable CoolApk</string>
+    <string name="source_coolapk">CoolApk</string>
+    <string name="source_github">GitHub</string>
     <!-- check update end -->
 
-    <!-- theme Cyanea -->
-    <string name="label_theme_picker">Theme Picker</string>
-    <string name="pref_theme_title">Themes</string>
-    <string name="pref_theme_summary">Select a pre-installed theme</string>
-    <string name="pref_primary_color_title">Primary color</string>
-    <string name="pref_primary_color_summary">Displayed most frequently across your app.</string>
-    <string name="pref_accent_color_title">Accent color</string>
-    <string name="pref_accent_color_summary">Accents select parts of the UI.</string>
-    <string name="pref_background_color_title">Background color</string>
-    <string name="pref_background_color_summary">The underlying color of the app’s content.</string>
-    <string name="pref_category_appearance">Appearance</string>
-    <string name="pref_colored_navigation_bar_title">Navigation bar color</string>
-    <string name="pref_colored_navigation_bar_summary">Apply the primary color to the navigation bar</string>
-    <!-- theme Cyanea -->
+
 
     <!-- faq -->
     <string-array name="question_list">

@@ -41,22 +41,25 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _eventsFlow = MutableSharedFlow<SettingsEvent>()
     val eventsFlow: SharedFlow<SettingsEvent> = _eventsFlow.asSharedFlow()
 
-    private val _themeMode = MutableStateFlow(0)
-    val themeMode: StateFlow<Int> = _themeMode.asStateFlow()
+    data class ThemeState(val mode: Int, val centerX: Float = -1f, val centerY: Float = -1f)
+
+    private val _themeState = MutableStateFlow(ThemeState(0))
+    val themeState: StateFlow<ThemeState> = _themeState.asStateFlow()
 
     private val _updateVersion = MutableStateFlow<ApkVersion?>(null)
     val updateVersion: StateFlow<ApkVersion?> = _updateVersion.asStateFlow()
 
     init {
         viewModelScope.launch {
-            _themeMode.value = SPUtils.getThemeMode(getApplication())
+            val mode = SPUtils.getThemeMode(getApplication())
+            _themeState.value = ThemeState(mode)
         }
     }
 
-    fun setThemeMode(mode: Int) {
+    fun setThemeMode(mode: Int, x: Float = -1f, y: Float = -1f) {
         viewModelScope.launch {
             SPUtils.setThemeMode(getApplication(), mode)
-            _themeMode.value = mode
+            _themeState.value = ThemeState(mode, x, y)
         }
     }
 

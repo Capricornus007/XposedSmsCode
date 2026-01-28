@@ -15,16 +15,11 @@
     <!-- preferences general -->
     <string name="pref_general_title">一般設定</string>
     <string name="pref_enable_title">啟用</string>
-    <string name="enable_module_title">模組未激活</string>
-    <string name="enable_module_message">請先激活本模組，否則本模組將無法正常運作！</string>
     <string name="pref_enable_summary">模組已激活</string>
-    <string name="pref_enable_summary_alt">請先激活本模組</string>
     <string name="pref_hide_launcher_icon_title">隱藏應用圖示</string>
     <string name="pref_hide_launcher_icon_summary">隱藏後可從模組列表中打開本模組</string>
     <string name="pref_choose_theme_title">主題</string>
     <string name="pref_choose_theme_summary">跟隨系統、淺色或深色</string>
-    <string name="pref_compose_settings_title">現代化設定</string>
-    <string name="pref_compose_settings_summary">打開 Compose 版設定</string>
     <string name="theme_follow_system">自動 (跟隨系統)</string>
     <string name="theme_light">淺色</string>
     <string name="theme_dark">深色</string>
@@ -99,15 +94,7 @@
     <string name="cannot_parse_smscode">無法正確辨識驗證碼</string>
     <!-- preference code rules end -->
 
-    <!-- preference experimental -->
-    <string name="pref_experimental_title">實驗性功能</string>
-    <string name="pref_mark_as_read_title">標記為已讀</string>
-    <string name="pref_mark_as_read_summary">將驗證碼簡訊標記為已讀</string>
-    <string name="pref_delete_sms_title">簡訊刪除</string>
-    <string name="pref_delete_sms_summary">警告：擷取成功后驗證碼簡訊將被刪除</string>
-    <string name="pref_kill_me_title">自殺</string>
-    <string name="pref_kill_me_summary">驗證碼擷取成功後殺掉本應用</string>
-    <!-- preference experimental end -->
+
 
     <!-- preference others -->
     <string name="pref_others_title">其他</string>
@@ -126,8 +113,6 @@
     <string name="pref_source_code_title">項目源碼</string>
     <string name="browser_install_or_enable_prompt">請先安裝或啟用瀏覽器</string>
     <string name="pref_source_code_summary">歡迎Star ♪(＾∀＾)ﾉ</string>
-    <string name="pref_about_compose_title">現代化關於</string>
-    <string name="pref_about_compose_summary">打開 Compose 版關於頁面</string>
     <string name="pref_donate_by_alipay_title">捐贈打賞</string>
     <string name="alipay_install_prompt">請先安裝支付寶</string>
     <string name="alipay_enable_prompt">請先啟用支付寶</string>
@@ -267,20 +252,7 @@
     <string name="coolapk_enable_prompt">請先啟用酷安</string>
     <!-- check update end -->
 
-    <!-- theme Cyanea -->
-    <string name="label_theme_picker">主題選取</string>
-    <string name="pref_theme_title">主題</string>
-    <string name="pref_theme_summary">選取預設主題</string>
-    <string name="pref_primary_color_title">主色調(Primary color)</string>
-    <string name="pref_primary_color_summary"> </string>
-    <string name="pref_accent_color_title">強調色(Accent color)</string>
-    <string name="pref_accent_color_summary"> </string>
-    <string name="pref_background_color_title">背景色</string>
-    <string name="pref_background_color_summary"> </string>
-    <string name="pref_category_appearance">外觀</string>
-    <string name="pref_colored_navigation_bar_title">導航欄顏色</string>
-    <string name="pref_colored_navigation_bar_summary">導航欄顏色與主色調保持一致</string>
-    <!-- theme Cyanea -->
+
 
     <!-- faq -->
     <string-array name="question_list">
