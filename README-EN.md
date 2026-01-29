@@ -12,7 +12,7 @@ An Xposed module which can recognize, parse SMS code and copy it to clipboard wh
 - Backup writes schemaVersion/appVersion with import warnings on version gaps
 - Rules/records/apps lists upgraded to ListAdapter + DiffUtil
 
-[Refactoring Report](./REFACTORING.md)
+[Refactoring Report](docs/REFACTORING.md)
 
 # Screenshots
 <img src="./art/en/01.png" width="180"/><img src="./art/en/02.png" width="180"/><img src="./art/en/03.png" width="180"/>
@@ -49,8 +49,9 @@ Welcome any feedbacks.
 - Various theme color to choose.
 - Modern settings UI powered by Jetpack Compose.
 
-# Release Log
-[Release Logs](CHANGELOG.md)
+# Documentation
+- [Release Logs](docs/CHANGELOG.md)
+- [Privacy Policy](docs/PRIVACY.md)
 
 # Thanks To
 - [Xposed](https://github.com/rovo89/Xposed)

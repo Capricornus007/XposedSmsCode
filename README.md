@@ -12,7 +12,7 @@
 - 备份写入 schemaVersion/appVersion，导入提供版本跨度提示
 - 规则/记录/应用列表升级为 ListAdapter + DiffUtil
 
-[重构与现代化报告](./REFACTORING.md)
+[重构与现代化报告](docs/REFACTORING.md)
 
 # 应用截图
 <img src="./art/cn/01.png" width="180"/><img src="./art/cn/02.png" width="180"/><img src="./art/cn/03.png" width="180"/>
@@ -54,9 +54,10 @@
 - **Jetpack Compose 现代化 UI (FaqFragment 已迁移)**
 - **设置页已升级为 Jetpack Compose**
 
-# 更新日志
-- [更新日志 (Changelog)](CHANGELOG.md)
-- [重构汇总 (Refactoring Summary)](REFACTORING.md)
+# 文档
+- [更新日志 (Changelog)](docs/CHANGELOG.md)
+- [重构汇总 (Refactoring Summary)](docs/REFACTORING.md)
+- [隐私政策 (Privacy Policy)](docs/PRIVACY.md)
 
 # 感谢
 - [Xposed](https://github.com/rovo89/Xposed)
