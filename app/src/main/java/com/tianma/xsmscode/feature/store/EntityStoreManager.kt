@@ -35,14 +35,18 @@ object EntityStoreManager {
     }
 
     //@JvmStatic // Removed for inline
-    inline fun <reified T> storeEntitiesToFile(context: Context, entityType: EntityType, entities: List<T>): Boolean {
+    @JvmStatic
+    fun <T : Any> storeEntitiesToFile(context: Context, entityType: EntityType, entities: List<T>, clazz: Class<T>): Boolean {
         var osw: OutputStreamWriter? = null
         try {
             val storeFile = getStoreFile(context, entityType)
+            // Truncate file first
+            val jsonString = JsonUtils.listToJson(entities, clazz)
+            if (jsonString.isEmpty()) return false
+
             osw = OutputStreamWriter(FileOutputStream(storeFile), StandardCharsets.UTF_8)
-
-            JsonUtils.toJson(entities, osw, true)
-
+            osw.write(jsonString)
+            
             // set file world writable
             StorageUtils.setFileWorldWritable(storeFile, 0)
             return true
@@ -61,10 +65,11 @@ object EntityStoreManager {
     }
 
     //@JvmStatic // Removed for inline
-    inline fun <reified T> storeEntityToFile(context: Context, entityType: EntityType, entity: T): Boolean {
+    @JvmStatic
+    fun <T : Any> storeEntityToFile(context: Context, entityType: EntityType, entity: T, clazz: Class<T>): Boolean {
         val entities = ArrayList<T>()
         entities.add(entity)
-        return storeEntitiesToFile(context, entityType, entities)
+        return storeEntitiesToFile(context, entityType, entities, clazz)
     }
 
     @JvmStatic

@@ -95,7 +95,7 @@ class SmsParseAction(
                 }
             }
             // 保存当前验证码记录 Action
-            EntityStoreManager.storeEntityToFile(mPluginContext, EntityType.PREV_SMS_MSG, mSmsMsg)
+            EntityStoreManager.storeEntityToFile(mPluginContext, EntityType.PREV_SMS_MSG, mSmsMsg, SmsMsg::class.java)
         }
 
         bundle.putBoolean(SMS_DUPLICATED, duplicated)
