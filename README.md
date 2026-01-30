@@ -19,10 +19,13 @@
 
 # 下载
 下载地址:
+- [Google Play (Testing)](https://play.google.com/apps/testing/com.github.tianma8023.xposed.smscode)
+  > join google group to get test permission / 加入 Google Group 获取测试权限: [Google Groups](https://groups.google.com/g/xposedsmscode)
 - [GitHub Releases](https://github.com/magisk317/XposedSmsCode/releases)
-- ~~[LSPosed仓库](https://github.com/Xposed-Modules-Repo/com.github.tianma8023.xposed.smscode/releases/)~~
-- ~~[酷安](https://www.coolapk.com/apk/com.github.tianma8023.xposed.smscode)~~
-- ~~[Xposed仓库](http://repo.xposed.info/module/com.github.tianma8023.xposed.smscode)~~
+
+# 交流与反馈
+- [Telegram Group](https://t.me/+NR2QaQ4dlEgxYmNl)
+
 
 # 使用
 1. Root你的设备，安装Xposed框架；

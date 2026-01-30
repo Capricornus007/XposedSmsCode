@@ -121,9 +121,11 @@
     <string name="pref_version_title">版本</string>
     <string name="pref_version_summary"><![CDATA[當前版本：%1$s (%2$d)]]></string>
     <string name="pref_join_qq_group_title">加入 QQ 群</string>
-    <string name="pref_join_qq_group_summary">點擊申請加入 (%s)</string>
+    <string name="pref_join_qq_group_summary">點擊申請加入</string>
     <string name="qq_group_number">1075934453</string>
     <string name="prompt_join_qq_group_failed">請先安裝手機 QQ</string>
+    <string name="pref_join_telegram_group_title">加入 Telegram 群</string>
+    <string name="pref_join_telegram_group_summary">點擊加入討論組</string>
     <string name="pref_source_code_title">專案源碼</string>
     <string name="browser_install_or_enable_prompt">請先安裝或啟用瀏覽器</string>
     <string name="pref_source_code_summary">歡迎 Star ♪(＾∀＾)ﾉ</string>
@@ -301,9 +303,10 @@
 
     <!-- privacy policy start -->
     <string name="privacy_dialog_title">隱私政策</string>
-    <string name="privacy_dialog_content">發布日期：2022年5月19日\n生效日期：2022年5月19日\n\n<b>基本聲明</b>\n\n本應用不會收集您任何隱私信息，它僅會在必要時查詢以下信息：\n\n · 讀取安裝的應用清單；僅用於您選擇屏蔽自動輸入的應用，此信息僅在本地檢查，結果不會上傳到任何地方。 \n\n<b>申請的權限</b>\n\n本應用不申請任何權限。 \n\n<b>政策更新</b>\n\n我們可能會不定期更新本隱私政策，您可以隨時通過此頁面查看最新版本。</string>
-    <string name="privacy_dialog_cancel">拒絕</string>
-    <string name="privacy_dialog_confirm">允許</string>
+    <string name="privacy_dialog_content">我們更新了隱私政策，請仔細閱讀。\n\n點擊下方的「隱私政策」按鈕可線上閱讀完整條款。</string>
+    <string name="privacy_dialog_cancel">退出</string>
+    <string name="privacy_dialog_confirm">同意並繼續</string>
+    <string name="privacy_policy_button">隱私政策</string>
     <!-- privacy policy end -->
     <string name="rule_list_empty_prompt">暫無規則，點擊 + 添加。</string>
     <string name="rule_keyword_prefix">關鍵字: </string>

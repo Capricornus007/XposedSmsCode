@@ -121,9 +121,11 @@
     <string name="pref_version_title">Version</string>
     <string name="pref_version_summary"><![CDATA[Current version: %1$s (%2$d)]]></string>
     <string name="pref_join_qq_group_title">Join QQ Group</string>
-    <string name="pref_join_qq_group_summary">Click to apply for joining (%s)</string>
+    <string name="pref_join_qq_group_summary">Click to apply for joining</string>
     <string name="qq_group_number">1075934453</string>
     <string name="prompt_join_qq_group_failed">Please install QQ first</string>
+    <string name="pref_join_telegram_group_title">Join Telegram Group</string>
+    <string name="pref_join_telegram_group_summary">Click to join discussion group</string>
     <string name="pref_source_code_title">Source code</string>
     <string name="browser_install_or_enable_prompt">Please install or enable browser first</string>
     <string name="pref_source_code_summary">Welcome to star ♪(＾∀＾●)ﾉ</string>
@@ -293,9 +295,10 @@
 
     <!-- privacy policy start -->
     <string name="privacy_dialog_title">Privacy Policy</string>
-    <string name="privacy_dialog_content">Release Date: May 19, 2022\nEffective Date: May 19, 2022\n\n<b>Basic Statement</b>\n\nThis app will not collect any of your private information, it will only query the following information when necessary:\n\n · Read the list of installed apps; only used when you choose to block automatic input, this information is checked completely locally, and its results will not be uploaded to anywhere. \n\n<b>Requested permissions</b>\n\nThis app does not request any permissions. \n\n<b>Updates to this policy</b>\n\nWe may update this privacy policy from time to time, you can check the latest version of this privacy policy at any time by opening this page.</string>
-    <string name="privacy_dialog_cancel">Refuse</string>
-    <string name="privacy_dialog_confirm">Accept</string>
+    <string name="privacy_dialog_content">We have updated our Privacy Policy. Please read it carefully before proceeding.\n\nClick "Private Policy" below to read the full policy online.</string>
+    <string name="privacy_dialog_cancel">Exit</string>
+    <string name="privacy_dialog_confirm">Agree and Continue</string>
+    <string name="privacy_policy_button">Privacy Policy</string>
     <!-- privacy policy end -->
     <string name="rule_list_empty_prompt">No rules yet. Click + to add one.</string>
     <string name="rule_keyword_prefix">Keyword: </string>

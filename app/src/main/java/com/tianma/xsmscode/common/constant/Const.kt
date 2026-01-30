@@ -18,6 +18,7 @@ object Const {
 
     /* QQ begin */
     const val QQ_GROUP_URL = "https://qm.qq.com/q/4mMpX3vk4U"
+    const val TELEGRAM_GROUP_URL = "https://t.me/+NR2QaQ4dlEgxYmNl"
     /* QQ end */
 
     /* Xposed SmsCode begin */
@@ -28,6 +29,7 @@ object Const {
     const val PROJECT_SOURCE_CODE_URL = "https://github.com/magisk317/XposedSmsCode"
     const val PROJECT_GITHUB_LATEST_RELEASE_URL = PROJECT_SOURCE_CODE_URL + "/releases/latest"
     const val PROJECT_DOC_BASE_URL = "https://magisk317.github.io/SmsCode"
+    const val PRIVACY_POLICY_URL = "https://github.com/magisk317/XposedSmsCode/blob/dev/docs/PRIVACY.md"
     const val DOC_SMS_CODE_RULE_HELP = "sms_code_rule_help"
     /* Xposed SmsCode end */
 

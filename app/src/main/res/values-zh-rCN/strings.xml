@@ -122,9 +122,11 @@
     <string name="pref_version_title">版本</string>
     <string name="pref_version_summary"><![CDATA[当前版本: %1$s (%2$d)]]></string>
     <string name="pref_join_qq_group_title">加入 QQ 群</string>
-    <string name="pref_join_qq_group_summary">点击申请加入 (%s)</string>
+    <string name="pref_join_qq_group_summary">点击申请加入</string>
     <string name="qq_group_number">1075934453</string>
     <string name="prompt_join_qq_group_failed">请先安装 QQ</string>
+    <string name="pref_join_telegram_group_title">加入 Telegram 群</string>
+    <string name="pref_join_telegram_group_summary">点击加入讨论组</string>
     <string name="pref_source_code_title">源代码</string>
     <string name="browser_install_or_enable_prompt">请先安装或启用浏览器</string>
     <string name="pref_source_code_summary">欢迎 Star ♪(＾∀＾●)ﾉ</string>
@@ -304,9 +306,10 @@
 
     <!-- privacy policy start -->
     <string name="privacy_dialog_title">隐私政策</string>
-    <string name="privacy_dialog_content">发布日期：2022年5月19日\n生效日期：2022年5月19日\n\n<b>基本声明</b>\n\n本应用不会收集您任何隐私信息，它仅会在必要时查询以下信息：\n\n · 读取安装的应用列表；仅用于您选择屏蔽自动输入的应用，此信息仅在本地检查，结果不会上传到任何地方。 \n\n<b>申请的权限</b>\n\n本应用不申请任何权限。 \n\n<b>政策更新</b>\n\n我们可能会不定期更新本隐私政策，您可以随时通过此页面查看最新版本。</string>
-    <string name="privacy_dialog_cancel">拒绝</string>
-    <string name="privacy_dialog_confirm">允许</string>
+    <string name="privacy_dialog_content">我们更新了隐私政策，请仔细阅读。\n\n点击下方的“隐私政策”按钮可在线阅读完整条款。</string>
+    <string name="privacy_dialog_cancel">退出</string>
+    <string name="privacy_dialog_confirm">同意并继续</string>
+    <string name="privacy_policy_button">隐私政策</string>
     <!-- privacy policy end -->
     <string name="rule_list_empty_prompt">暂无规则，点击 + 添加。</string>
     <string name="rule_keyword_prefix">关键字: </string>

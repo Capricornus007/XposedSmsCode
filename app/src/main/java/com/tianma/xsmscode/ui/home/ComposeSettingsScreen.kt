@@ -375,8 +375,12 @@ fun ComposeSettingsScreen(
             ) { settingsViewModel.checkUpdate() }
             Item(
                 title = stringResource(id = R.string.pref_join_qq_group_title),
-                summary = stringResource(id = R.string.pref_join_qq_group_summary, Const.QQ_GROUP_URL)
+                summary = stringResource(id = R.string.pref_join_qq_group_summary)
             ) { PackageUtils.joinQQGroup(context) }
+            Item(
+                title = stringResource(id = R.string.pref_join_telegram_group_title),
+                summary = stringResource(id = R.string.pref_join_telegram_group_summary)
+            ) { Utils.showWebPage(context, Const.TELEGRAM_GROUP_URL) }
             Item(
                 title = stringResource(id = R.string.pref_source_code_title),
                 summary = stringResource(id = R.string.pref_source_code_summary)
@@ -388,7 +392,7 @@ fun ComposeSettingsScreen(
             Item(
                 title = stringResource(id = R.string.pref_privacy_policy_title),
                 summary = ""
-            ) { showPrivacyPolicyDialog = true }
+            ) { Utils.showWebPage(context, Const.PRIVACY_POLICY_URL) }
         }
     }
 
@@ -514,6 +518,9 @@ fun ComposeSettingsScreen(
                 scope.launch { SPUtils.setPrivacyPolicyAccepted(context, false) }
                 showPrivacyPolicyDialog = false
                 onExit()
+            },
+            onViewPolicy = {
+                Utils.showWebPage(context, Const.PRIVACY_POLICY_URL)
             }
         )
     }
@@ -832,27 +839,36 @@ fun QRCodeDialog(resId: Int, type: String, onDismiss: () -> Unit, onSave: () -> 
 }
 
 @Composable
-fun PrivacyPolicyDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, onCancel: () -> Unit) {
+fun PrivacyPolicyDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+    onViewPolicy: () -> Unit
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(id = R.string.pref_privacy_policy_title)) },
+        title = { Text(stringResource(id = R.string.privacy_dialog_title)) },
         text = {
-            val htmlContent = stringResource(id = R.string.privacy_dialog_content).replace("\n", "<br>")
-            androidx.compose.ui.viewinterop.AndroidView(
-                factory = { context ->
-                    android.widget.TextView(context).apply {
-                        text = androidx.core.text.HtmlCompat.fromHtml(htmlContent, androidx.core.text.HtmlCompat.FROM_HTML_MODE_LEGACY)
-                        movementMethod = android.text.method.LinkMovementMethod.getInstance()
-                        setTextIsSelectable(true)
-                    }
+            Column {
+                Text(stringResource(id = R.string.privacy_dialog_content))
+                Spacer(modifier = Modifier.height(16.dp))
+                TextButton(
+                    onClick = onViewPolicy,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text(stringResource(id = R.string.privacy_policy_button))
                 }
-            )
+            }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) { Text(stringResource(id = R.string.privacy_dialog_confirm)) }
+            TextButton(onClick = onConfirm) {
+                Text(stringResource(id = R.string.privacy_dialog_confirm))
+            }
         },
         dismissButton = {
-            TextButton(onClick = onCancel) { Text(stringResource(id = R.string.privacy_dialog_cancel)) }
+            TextButton(onClick = onCancel) {
+                Text(stringResource(id = R.string.privacy_dialog_cancel))
+            }
         }
     )
 }
