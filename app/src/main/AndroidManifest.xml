@@ -110,6 +110,10 @@
                 android:resource="@xml/files" />
         </provider>
 
+        <receiver
+            android:name="com.tianma.xsmscode.xp.hook.code.AutoCancelReceiver"
+            android:exported="false" />
+
     </application>
 
 </manifest>
