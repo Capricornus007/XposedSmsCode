@@ -78,6 +78,9 @@ object EntityStoreManager {
         if (!storeFile.exists()) {
             return ArrayList()
         }
+        if (storeFile.length() == 0L) {
+            return ArrayList()
+        }
         var isr: InputStreamReader? = null
         try {
             isr = InputStreamReader(
