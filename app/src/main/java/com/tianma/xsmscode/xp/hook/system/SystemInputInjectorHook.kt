@@ -6,7 +6,9 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.Looper
+import android.os.Process
 import android.view.KeyCharacterMap
 import android.view.KeyEvent
 import com.tianma.xsmscode.common.utils.XLog
@@ -14,12 +16,21 @@ import com.tianma.xsmscode.xp.hook.BaseHook
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
+import java.lang.reflect.Method
 
 class SystemInputInjectorHook : BaseHook() {
     @Volatile
     private var receiverRegistered = false
     @Volatile
     private var registerAttempts = 0
+    @Volatile
+    private var inputHandler: Handler? = null
+    @Volatile
+    private var inputManagerGlobal: Any? = null
+    @Volatile
+    private var injectMethod: Method? = null
+
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     override fun hookInitZygote(): Boolean {
         return true
@@ -59,7 +70,7 @@ class SystemInputInjectorHook : BaseHook() {
 
     private fun scheduleRegister(context: Context) {
         if (receiverRegistered) return
-        Handler(Looper.getMainLooper()).postDelayed(
+        mainHandler.postDelayed(
             { registerReceiver(context) },
             500L
         )
@@ -70,6 +81,20 @@ class SystemInputInjectorHook : BaseHook() {
             if (receiverRegistered) return
             val receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
+                    val sendingUid = try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                            this.sendingUid
+                        } else {
+                            -1
+                        }
+                    } catch (t: Throwable) {
+                        -1
+                    }
+                    val appUid = context.applicationInfo.uid
+                    if (sendingUid != -1 && sendingUid != Process.SYSTEM_UID && sendingUid != Process.PHONE_UID && sendingUid != appUid) {
+                        XLog.w("SystemServer input request rejected from uid=%d", sendingUid)
+                        return
+                    }
                     val code = intent.getStringExtra("code")
                     if (!code.isNullOrEmpty()) {
                         XLog.i("SystemServer received input request: $code")
@@ -100,40 +125,79 @@ class SystemInputInjectorHook : BaseHook() {
         }
     }
 
+    private fun getInputHandler(): Handler {
+        val cached = inputHandler
+        if (cached != null) return cached
+        return synchronized(this) {
+            val existing = inputHandler
+            if (existing != null) {
+                existing
+            } else {
+                val thread = HandlerThread("xsmscode-input")
+                thread.start()
+                Handler(thread.looper).also { inputHandler = it }
+            }
+        }
+    }
+
+    private fun getInputManagerGlobal(): Pair<Any, Method>? {
+        val cachedManager = inputManagerGlobal
+        val cachedMethod = injectMethod
+        if (cachedManager != null && cachedMethod != null) return cachedManager to cachedMethod
+        return synchronized(this) {
+            val manager = inputManagerGlobal
+            val method = injectMethod
+            if (manager != null && method != null) {
+                manager to method
+            } else {
+                try {
+                    val inputManagerGlobalClass = XposedHelpers.findClass(
+                        "android.hardware.input.InputManagerGlobal",
+                        null
+                    )
+                    val instance = XposedHelpers.callStaticMethod(
+                        inputManagerGlobalClass,
+                        "getInstance"
+                    )
+                    val inject = XposedHelpers.findMethodBestMatch(
+                        inputManagerGlobalClass,
+                        "injectInputEvent",
+                        android.view.InputEvent::class.java,
+                        Int::class.javaPrimitiveType
+                    )
+                    inputManagerGlobal = instance
+                    injectMethod = inject
+                    instance to inject
+                } catch (t: Throwable) {
+                    XLog.e("Failed to resolve InputManagerGlobal", t)
+                    null
+                }
+            }
+        }
+    }
+
     private fun injectText(text: String) {
-        Thread {
+        getInputHandler().post {
             try {
                 val events = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD)
                     .getEvents(text.toCharArray())
                 if (events == null) {
                     XLog.e("Failed to create key events for text")
-                    return@Thread
+                    return@post
                 }
 
-                val inputManagerGlobalClass = XposedHelpers.findClass(
-                    "android.hardware.input.InputManagerGlobal",
-                    null
-                )
-                val inputManagerGlobal = XposedHelpers.callStaticMethod(
-                    inputManagerGlobalClass,
-                    "getInstance"
-                )
-                val injectMethod = XposedHelpers.findMethodBestMatch(
-                    inputManagerGlobalClass,
-                    "injectInputEvent",
-                    android.view.InputEvent::class.java,
-                    Int::class.javaPrimitiveType
-                )
+                val managerPair = getInputManagerGlobal() ?: return@post
+                val (manager, method) = managerPair
                 val mode = 0 // InputManager.INJECT_INPUT_EVENT_MODE_ASYNC
                 var injectedCount = 0
                 for (event in events) {
-                    val result = injectMethod.invoke(inputManagerGlobal, event, mode) as? Boolean ?: false
+                    val result = method.invoke(manager, event, mode) as? Boolean ?: false
                     if (result) injectedCount += 1
                 }
                 XLog.w("Injected key events from System Server, count=%d", injectedCount)
             } catch (t: Throwable) {
                 XLog.e("Failed to inject text from System Server", t)
             }
-        }.start()
+        }
     }
 }
