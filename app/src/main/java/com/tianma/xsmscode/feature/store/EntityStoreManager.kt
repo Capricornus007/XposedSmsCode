@@ -23,7 +23,8 @@ object EntityStoreManager {
     private val BLOCKED_APPS_FILE_NAME = "blocked_apps"
     private val PREV_CODE_RECORD = "prev_code_record"
 
-    private fun getStoreFile(context: Context, entityType: EntityType): File {
+    @PublishedApi
+    internal fun getStoreFile(context: Context, entityType: EntityType): File {
         val filename = when (entityType) {
             EntityType.BLOCKED_APP -> BLOCKED_APPS_FILE_NAME
             EntityType.CODE_RULES -> CODE_RULES_FILE_NAME
