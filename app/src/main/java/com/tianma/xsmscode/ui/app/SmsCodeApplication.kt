@@ -2,6 +2,7 @@ package com.tianma.xsmscode.ui.app
 
 import android.app.Application
 import com.tianma.xsmscode.feature.migrate.TransitionTask
+import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -27,7 +28,15 @@ class SmsCodeApplication : Application() {
             androidContext(this@SmsCodeApplication)
             modules(appModule)
         }
+        syncPreferences()
         performTransitionTask()
+    }
+
+    private fun syncPreferences() {
+        applicationScope.launch {
+            AppPreferencesDataStore.syncToSharedPrefs(this@SmsCodeApplication)
+            AppPreferencesDataStore.ensureReadable(this@SmsCodeApplication)
+        }
     }
 
     private fun performTransitionTask() {
