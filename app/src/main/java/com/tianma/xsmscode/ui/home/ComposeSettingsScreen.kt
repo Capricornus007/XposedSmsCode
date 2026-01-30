@@ -17,6 +17,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -82,6 +84,7 @@ fun ComposeSettingsScreen(
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
     var showKeywordsDialog by remember { mutableStateOf(false) }
     var isActivated by remember { mutableStateOf(ModuleUtils.isModuleEnabled()) }
+    var pendingSavedToast by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         if (!SPUtils.isPrivacyPolicyAccepted(context)) {
@@ -104,7 +107,19 @@ fun ComposeSettingsScreen(
         }
     }
 
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP && pendingSavedToast) {
+                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+                pendingSavedToast = false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
     val snackbarHostState = remember { SnackbarHostState() }
+    val markPrefsSaved = { pendingSavedToast = true }
 
     LaunchedEffect(settingsViewModel, lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
@@ -166,14 +181,16 @@ fun ComposeSettingsScreen(
                 title = stringResource(id = R.string.pref_enable_title),
                 summary = stringResource(id = R.string.pref_enable_summary),
                 key = PrefConst.KEY_ENABLE,
-                defaultValue = true
+                defaultValue = true,
+                onSaved = markPrefsSaved
             )
             SwitchItem(
                 title = stringResource(id = R.string.pref_hide_launcher_icon_title),
                 summary = stringResource(id = R.string.pref_hide_launcher_icon_summary),
                 key = PrefConst.KEY_HIDE_LAUNCHER_ICON,
                 defaultValue = false,
-                onToggle = { enabled -> settingsViewModel.hideOrShowLauncherIcon(enabled) }
+                onToggle = { enabled -> settingsViewModel.hideOrShowLauncherIcon(enabled) },
+                onSaved = markPrefsSaved
             )
             Item(
                 title = stringResource(id = R.string.pref_choose_theme_title),
@@ -208,25 +225,29 @@ fun ComposeSettingsScreen(
                 title = stringResource(id = R.string.pref_show_toast_title),
                 summary = stringResource(id = R.string.pref_show_toast_summary),
                 key = PrefConst.KEY_SHOW_TOAST,
-                defaultValue = true
+                defaultValue = true,
+                onSaved = markPrefsSaved
             )
             SwitchItem(
                 title = stringResource(id = R.string.pref_copy_to_clipboard_title),
                 summary = stringResource(id = R.string.pref_copy_to_clipboard_summary),
                 key = PrefConst.KEY_COPY_TO_CLIPBOARD,
-                defaultValue = false
+                defaultValue = false,
+                onSaved = markPrefsSaved
             )
             SwitchItem(
                 title = stringResource(id = R.string.pref_block_sms_title),
                 summary = stringResource(id = R.string.pref_block_sms_summary),
                 key = PrefConst.KEY_BLOCK_SMS,
-                defaultValue = false
+                defaultValue = false,
+                onSaved = markPrefsSaved
             )
             SwitchItem(
                 title = stringResource(id = R.string.pref_deduplicate_sms_title),
                 summary = stringResource(id = R.string.pref_deduplicate_sms_summary),
                 key = PrefConst.KEY_DEDUPLICATE_SMS,
-                defaultValue = false
+                defaultValue = false,
+                onSaved = markPrefsSaved
             )
             Item(
                 title = stringResource(id = R.string.pref_smscode_keywords_title),
@@ -250,7 +271,8 @@ fun ComposeSettingsScreen(
                 summary = stringResource(id = R.string.pref_enable_auto_input_code_summary),
                 key = PrefConst.KEY_ENABLE_AUTO_INPUT_CODE,
                 defaultValue = true,
-                stateOverride = autoInputEnabled
+                stateOverride = autoInputEnabled,
+                onSaved = markPrefsSaved
             )
             Item(
                 title = stringResource(id = R.string.pref_auto_input_code_delay_title),
@@ -268,13 +290,15 @@ fun ComposeSettingsScreen(
                 title = stringResource(id = R.string.pref_show_code_notification_title),
                 summary = stringResource(id = R.string.pref_show_code_notification_summary),
                 key = PrefConst.KEY_SHOW_CODE_NOTIFICATION,
-                defaultValue = true
+                defaultValue = true,
+                onSaved = markPrefsSaved
             )
             SwitchItem(
                 title = stringResource(id = R.string.pref_auto_cancel_notification_title),
                 summary = stringResource(id = R.string.pref_auto_cancel_notification_summary),
                 key = PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
-                defaultValue = false
+                defaultValue = false,
+                onSaved = markPrefsSaved
             )
             Item(
                 title = stringResource(id = R.string.pref_notification_retention_time_title),
@@ -297,7 +321,8 @@ fun ComposeSettingsScreen(
                 title = stringResource(id = R.string.pref_enable_code_records_title),
                 summary = "",
                 key = PrefConst.KEY_ENABLE_CODE_RECORDS,
-                defaultValue = true
+                defaultValue = true,
+                onSaved = markPrefsSaved
             )
             val recordCount by settingsViewModel.smsRecordCount.collectAsStateWithLifecycle()
             Item(
@@ -338,7 +363,7 @@ fun ComposeSettingsScreen(
                         scope.launch {
                             AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value)
                             AppPreferencesDataStore.syncToSharedPrefs(context)
-                            Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+                            pendingSavedToast = true
                         }
                     }
                     showHistoryLimitDialog = false
@@ -356,7 +381,7 @@ fun ComposeSettingsScreen(
                        scope.launch {
                            AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value)
                            AppPreferencesDataStore.syncToSharedPrefs(context)
-                           Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+                           pendingSavedToast = true
                        }
                    }
                    showHistoryLimitInput = false
@@ -371,7 +396,8 @@ fun ComposeSettingsScreen(
                 summary = stringResource(id = R.string.pref_verbose_log_mode_summary),
                 key = PrefConst.KEY_VERBOSE_LOG_MODE,
                 defaultValue = false,
-                onToggle = { on -> XLog.setLogLevel(if (on) Log.VERBOSE else BuildConfig.LOG_LEVEL) }
+                onToggle = { on -> XLog.setLogLevel(if (on) Log.VERBOSE else BuildConfig.LOG_LEVEL) },
+                onSaved = markPrefsSaved
             )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -414,7 +440,7 @@ fun ComposeSettingsScreen(
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, value)
                 AppPreferencesDataStore.syncToSharedPrefs(context)
-                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+                pendingSavedToast = true
             }
             showAutoInputDialog = false
         }
@@ -429,7 +455,7 @@ fun ComposeSettingsScreen(
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, value)
                 AppPreferencesDataStore.syncToSharedPrefs(context)
-                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+                pendingSavedToast = true
             }
             showRetentionDialog = false
         }
@@ -462,7 +488,7 @@ fun ComposeSettingsScreen(
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_SMSCODE_KEYWORDS, updated)
                 AppPreferencesDataStore.syncToSharedPrefs(context)
-                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+                pendingSavedToast = true
             }
             showKeywordsDialog = false
         }
@@ -585,7 +611,8 @@ fun SwitchItem(
     defaultValue: Boolean,
     modifier: Modifier = Modifier,
     stateOverride: MutableState<Boolean>? = null,
-    onToggle: ((Boolean) -> Unit)? = null
+    onToggle: ((Boolean) -> Unit)? = null,
+    onSaved: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -596,7 +623,7 @@ fun SwitchItem(
         scope.launch {
             AppPreferencesDataStore.setBoolean(context, key, checked)
             AppPreferencesDataStore.syncToSharedPrefs(context)
-            Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+            onSaved?.invoke()
         }
         onToggle?.invoke(checked)
     }
