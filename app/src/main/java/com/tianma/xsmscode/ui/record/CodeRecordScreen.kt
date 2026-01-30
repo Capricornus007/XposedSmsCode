@@ -14,6 +14,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.material.DismissDirection
+import androidx.compose.material.DismissValue
+import androidx.compose.material.ExperimentalMaterialApi
+import androidx.compose.material.SwipeToDismiss
+import androidx.compose.material.rememberDismissState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -40,7 +45,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun CodeRecordScreen(
     onBack: () -> Unit,
@@ -245,34 +250,89 @@ fun CodeRecordScreen(
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(list, key = { it.id ?: 0 }) { smsMsg ->
                             val isSelected = selectedIds.contains(smsMsg.id)
-                            CodeRecordItem(
-                                smsMsg = smsMsg,
-                                isSelectionMode = isSelectionMode,
-                                isSelected = isSelected,
-                                onClick = {
-                                    if (isSelectionMode) {
+                            val deleteAndUndo: (SmsMsg) -> Unit = { target ->
+                                viewModel.removeSmsMsg(listOf(target))
+                                scope.launch {
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = context.getString(R.string.some_items_removed, 1),
+                                        actionLabel = context.getString(R.string.revoke),
+                                        duration = SnackbarDuration.Long
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        viewModel.restoreSmsMsgList(listOf(target))
+                                    }
+                                }
+                            }
+
+                            if (isSelectionMode) {
+                                CodeRecordItem(
+                                    smsMsg = smsMsg,
+                                    isSelectionMode = isSelectionMode,
+                                    isSelected = isSelected,
+                                    onClick = {
                                         toggleSelection(smsMsg.id ?: 0)
-                                    } else {
-                                        val code = smsMsg.smsCode
-                                        if (!code.isNullOrEmpty()) {
-                                            clipboardManager.setText(AnnotatedString(code))
-                                            scope.launch {
-                                                snackbarHostState.showSnackbar(context.getString(R.string.prompt_sms_code_copied, code))
+                                    },
+                                    onLongClick = {},
+                                    onDetailClick = {
+                                        detailSmsMsg = smsMsg
+                                    },
+                                    modifier = Modifier.animateItem()
+                                )
+                            } else {
+                                val dismissState = rememberDismissState(confirmStateChange = { value ->
+                                    if (value == DismissValue.DismissedToEnd || value == DismissValue.DismissedToStart) {
+                                        deleteAndUndo(smsMsg)
+                                    }
+                                    true
+                                })
+                                SwipeToDismiss(
+                                    state = dismissState,
+                                    directions = setOf(DismissDirection.StartToEnd, DismissDirection.EndToStart),
+                                    background = {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .background(MaterialTheme.colorScheme.errorContainer)
+                                                .padding(horizontal = 24.dp),
+                                            contentAlignment = if (dismissState.dismissDirection == DismissDirection.StartToEnd) {
+                                                Alignment.CenterStart
+                                            } else {
+                                                Alignment.CenterEnd
                                             }
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Delete,
+                                                contentDescription = stringResource(R.string.remove),
+                                                tint = MaterialTheme.colorScheme.onErrorContainer
+                                            )
                                         }
+                                    },
+                                    dismissContent = {
+                                        CodeRecordItem(
+                                            smsMsg = smsMsg,
+                                            isSelectionMode = false,
+                                            isSelected = isSelected,
+                                            onClick = {
+                                                val code = smsMsg.smsCode
+                                                if (!code.isNullOrEmpty()) {
+                                                    clipboardManager.setText(AnnotatedString(code))
+                                                    scope.launch {
+                                                        snackbarHostState.showSnackbar(context.getString(R.string.prompt_sms_code_copied, code))
+                                                    }
+                                                }
+                                            },
+                                            onLongClick = {
+                                                isSelectionMode = true
+                                                toggleSelection(smsMsg.id ?: 0)
+                                            },
+                                            onDetailClick = {
+                                                detailSmsMsg = smsMsg
+                                            },
+                                            modifier = Modifier.animateItem()
+                                        )
                                     }
-                                },
-                                onLongClick = {
-                                    if (!isSelectionMode) {
-                                        isSelectionMode = true
-                                        toggleSelection(smsMsg.id ?: 0)
-                                    }
-                                },
-                                onDetailClick = {
-                                    detailSmsMsg = smsMsg
-                                },
-                                modifier = Modifier.animateItem()
-                            )
+                                )
+                            }
                             HorizontalDivider()
                         }
                     }
