@@ -80,21 +80,26 @@ class CodeWorker(
         val operateSmsAction = OperateSmsAction(mPluginContext, mPhoneContext, smsMsg)
         mScheduledExecutor.schedule(operateSmsAction, 3000, TimeUnit.MILLISECONDS)
 
-        // 自杀 Action
-        val killMeAction = KillMeAction(mPluginContext, mPhoneContext, smsMsg)
-        mScheduledExecutor.schedule(killMeAction, 4000, TimeUnit.MILLISECONDS)
-
-        // 自动清除通知
+        var autoCancelRetentionMs = 0L
         if (PrefsReader.autoCancelCodeNotification(mPluginContext)) {
-            val retentionTime = PrefsReader.getNotificationRetentionTime(mPluginContext) * 1000L
+            autoCancelRetentionMs = PrefsReader.getNotificationRetentionTime(mPluginContext) * 1000L
             val notificationId = smsMsg.hashCode()
-            
+
             val cancelNotifyAction = CancelNotifyAction(mPluginContext, mPhoneContext, smsMsg)
             cancelNotifyAction.setNotificationId(notificationId)
 
-            mScheduledExecutor.schedule(cancelNotifyAction, retentionTime, TimeUnit.MILLISECONDS)
-            XLog.d("Scheduled CancelNotifyAction with delay: ${retentionTime}ms for ID: $notificationId")
+            mScheduledExecutor.schedule(cancelNotifyAction, autoCancelRetentionMs, TimeUnit.MILLISECONDS)
+            XLog.d("Scheduled CancelNotifyAction with delay: ${autoCancelRetentionMs}ms for ID: $notificationId")
         }
+
+        // 自杀 Action - delay it if we need time for auto-cancel to fire.
+        val killMeAction = KillMeAction(mPluginContext, mPhoneContext, smsMsg)
+        val killDelayMs = if (autoCancelRetentionMs > 0L) {
+            maxOf(4000L, autoCancelRetentionMs + 500L)
+        } else {
+            4000L
+        }
+        mScheduledExecutor.schedule(killMeAction, killDelayMs, TimeUnit.MILLISECONDS)
 
         mScheduledExecutor.shutdown()
         return buildParseResult()
