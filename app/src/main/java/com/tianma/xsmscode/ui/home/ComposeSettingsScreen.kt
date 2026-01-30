@@ -335,7 +335,11 @@ fun ComposeSettingsScreen(
                         showHistoryLimitInput = true
                     } else {
                         historyLimit = value
-                        scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value) }
+                        scope.launch {
+                            AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value)
+                            AppPreferencesDataStore.syncToSharedPrefs(context)
+                            Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+                        }
                     }
                     showHistoryLimitDialog = false
                 }
@@ -349,7 +353,11 @@ fun ComposeSettingsScreen(
                 ) { value ->
                    if (value.all { it.isDigit() } && value.isNotEmpty()) {
                        historyLimit = value
-                       scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value) }
+                       scope.launch {
+                           AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value)
+                           AppPreferencesDataStore.syncToSharedPrefs(context)
+                           Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+                       }
                    }
                    showHistoryLimitInput = false
                 }
@@ -403,7 +411,11 @@ fun ComposeSettingsScreen(
             onDismiss = { showAutoInputDialog = false }
         ) { value ->
             autoInputDelay = value
-            scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, value) }
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, value)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+            }
             showAutoInputDialog = false
         }
     }
@@ -414,7 +426,11 @@ fun ComposeSettingsScreen(
             onDismiss = { showRetentionDialog = false }
         ) { value ->
             retentionTime = value
-            scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, value) }
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, value)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+            }
             showRetentionDialog = false
         }
     }
@@ -443,7 +459,11 @@ fun ComposeSettingsScreen(
         ) { value ->
             val updated = if (value.isBlank()) PrefConst.SMSCODE_KEYWORDS_DEFAULT else value
             smsCodeKeywords = updated
-            scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_SMSCODE_KEYWORDS, updated) }
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_SMSCODE_KEYWORDS, updated)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+            }
             showKeywordsDialog = false
         }
     }
@@ -573,7 +593,11 @@ fun SwitchItem(
 
     fun toggle(checked: Boolean) {
         checkedState.value = checked
-        scope.launch { AppPreferencesDataStore.setBoolean(context, key, checked) }
+        scope.launch {
+            AppPreferencesDataStore.setBoolean(context, key, checked)
+            AppPreferencesDataStore.syncToSharedPrefs(context)
+            Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+        }
         onToggle?.invoke(checked)
     }
 

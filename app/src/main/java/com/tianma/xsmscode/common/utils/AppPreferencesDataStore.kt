@@ -14,10 +14,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.File
+import android.content.SharedPreferences
 
 object AppPreferencesDataStore {
     private val backupCompatTipShownKey = booleanPreferencesKey(PrefConst.KEY_BACKUP_COMPAT_TIP_SHOWN)
     private const val DATASTORE_FILE_NAME = "app_preferences.preferences_pb"
+    private const val SHARED_PREFS_FILE_NAME = "xposed_prefs"
 
     @Volatile
     private var INSTANCE: DataStore<Preferences>? = null
@@ -36,13 +38,27 @@ object AppPreferencesDataStore {
         return File(context.dataDir, "datastore/$DATASTORE_FILE_NAME")
     }
 
+    private fun getSharedPrefsFile(context: Context): File {
+        return File(context.dataDir, "shared_prefs/$SHARED_PREFS_FILE_NAME.xml")
+    }
+
+    private fun getSharedPrefs(context: Context): SharedPreferences {
+        return context.getSharedPreferences(SHARED_PREFS_FILE_NAME, Context.MODE_PRIVATE)
+    }
+
     private fun ensureDataStoreReadable(context: Context) {
         val file = getDataStoreFile(context)
         StorageUtils.setFileWorldReadable(file, 3)
     }
 
+    private fun ensureSharedPrefsReadable(context: Context) {
+        val file = getSharedPrefsFile(context)
+        StorageUtils.setFileWorldReadable(file, 3)
+    }
+
     fun ensureReadable(context: Context) {
         ensureDataStoreReadable(context)
+        ensureSharedPrefsReadable(context)
     }
 
     suspend fun isBackupCompatTipShown(context: Context): Boolean {
@@ -55,7 +71,9 @@ object AppPreferencesDataStore {
         getInstance(context).edit { prefs ->
             prefs[backupCompatTipShownKey] = shown
         }
+        getSharedPrefs(context).edit().putBoolean(PrefConst.KEY_BACKUP_COMPAT_TIP_SHOWN, shown).apply()
         ensureDataStoreReadable(context)
+        ensureSharedPrefsReadable(context)
     }
 
     suspend fun getBoolean(context: Context, key: String, defaultValue: Boolean): Boolean {
@@ -70,7 +88,9 @@ object AppPreferencesDataStore {
         getInstance(context).edit { prefs ->
             prefs[prefKey] = value
         }
+        getSharedPrefs(context).edit().putBoolean(key, value).apply()
         ensureDataStoreReadable(context)
+        ensureSharedPrefsReadable(context)
     }
 
     suspend fun getString(context: Context, key: String, defaultValue: String): String {
@@ -85,7 +105,9 @@ object AppPreferencesDataStore {
         getInstance(context).edit { prefs ->
             prefs[prefKey] = value
         }
+        getSharedPrefs(context).edit().putString(key, value).apply()
         ensureDataStoreReadable(context)
+        ensureSharedPrefsReadable(context)
     }
 
     suspend fun getInt(context: Context, key: String, defaultValue: Int): Int {
@@ -100,7 +122,59 @@ object AppPreferencesDataStore {
         getInstance(context).edit { prefs ->
             prefs[prefKey] = value
         }
+        getSharedPrefs(context).edit().putInt(key, value).apply()
         ensureDataStoreReadable(context)
+        ensureSharedPrefsReadable(context)
+    }
+
+    suspend fun getBooleanCompat(context: Context, key: String, defaultValue: Boolean): Boolean {
+        val sharedPrefs = getSharedPrefs(context)
+        return if (sharedPrefs.contains(key)) {
+            sharedPrefs.getBoolean(key, defaultValue)
+        } else {
+            getBoolean(context, key, defaultValue)
+        }
+    }
+
+    suspend fun getStringCompat(context: Context, key: String, defaultValue: String): String {
+        val sharedPrefs = getSharedPrefs(context)
+        return if (sharedPrefs.contains(key)) {
+            sharedPrefs.getString(key, defaultValue) ?: defaultValue
+        } else {
+            getString(context, key, defaultValue)
+        }
+    }
+
+    suspend fun getIntCompat(context: Context, key: String, defaultValue: Int): Int {
+        val sharedPrefs = getSharedPrefs(context)
+        return if (sharedPrefs.contains(key)) {
+            sharedPrefs.getInt(key, defaultValue)
+        } else {
+            getInt(context, key, defaultValue)
+        }
+    }
+
+    suspend fun syncToSharedPrefs(context: Context) {
+        val editor = getSharedPrefs(context).edit()
+        editor.putBoolean(PrefConst.KEY_ENABLE, getBoolean(context, PrefConst.KEY_ENABLE, true))
+        editor.putBoolean(PrefConst.KEY_VERBOSE_LOG_MODE, getBoolean(context, PrefConst.KEY_VERBOSE_LOG_MODE, false))
+        editor.putBoolean(PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, getBoolean(context, PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, true))
+        editor.putString(PrefConst.KEY_AUTO_INPUT_CODE_DELAY, getString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT))
+        editor.putBoolean(PrefConst.KEY_SHOW_TOAST, getBoolean(context, PrefConst.KEY_SHOW_TOAST, true))
+        editor.putString(PrefConst.KEY_SMSCODE_KEYWORDS, getString(context, PrefConst.KEY_SMSCODE_KEYWORDS, PrefConst.SMSCODE_KEYWORDS_DEFAULT))
+        editor.putBoolean(PrefConst.KEY_MARK_AS_READ, getBoolean(context, PrefConst.KEY_MARK_AS_READ, false))
+        editor.putBoolean(PrefConst.KEY_DELETE_SMS, getBoolean(context, PrefConst.KEY_DELETE_SMS, false))
+        editor.putBoolean(PrefConst.KEY_COPY_TO_CLIPBOARD, getBoolean(context, PrefConst.KEY_COPY_TO_CLIPBOARD, true))
+        editor.putBoolean(PrefConst.KEY_ENABLE_CODE_RECORDS, getBoolean(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true))
+        editor.putBoolean(PrefConst.KEY_BLOCK_SMS, getBoolean(context, PrefConst.KEY_BLOCK_SMS, false))
+        editor.putBoolean(PrefConst.KEY_KILL_ME, getBoolean(context, PrefConst.KEY_KILL_ME, false))
+        editor.putBoolean(PrefConst.KEY_SHOW_CODE_NOTIFICATION, getBoolean(context, PrefConst.KEY_SHOW_CODE_NOTIFICATION, true))
+        editor.putBoolean(PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION, getBoolean(context, PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION, false))
+        editor.putString(PrefConst.KEY_NOTIFICATION_RETENTION_TIME, getString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT))
+        editor.putBoolean(PrefConst.KEY_DEDUPLICATE_SMS, getBoolean(context, PrefConst.KEY_DEDUPLICATE_SMS, true))
+        editor.putString(PrefConst.KEY_HISTORY_LIMIT, getString(context, PrefConst.KEY_HISTORY_LIMIT, "0"))
+        editor.apply()
+        ensureSharedPrefsReadable(context)
     }
 
     fun getBooleanFlow(context: Context, key: String, defaultValue: Boolean): Flow<Boolean> {

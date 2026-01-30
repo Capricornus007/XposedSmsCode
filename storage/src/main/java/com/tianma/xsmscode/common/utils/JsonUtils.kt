@@ -65,4 +65,10 @@ object JsonUtils {
         val jsonString = reader.readText()
         return listFromJson(jsonString, entityClass)
     }
+    @JvmStatic
+    fun <T : Any> listToJson(list: List<T>, entityClass: Class<T>): String {
+        @Suppress("UNCHECKED_CAST")
+        val entitySerializer = serializer(entityClass) as KSerializer<T>
+        return json.encodeToString(ListSerializer(entitySerializer), list)
+    }
 }

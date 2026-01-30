@@ -65,6 +65,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             val mode = SPUtils.getThemeMode(getApplication())
             _themeState.value = ThemeState(mode)
         }
+        viewModelScope.launch {
+            AppPreferencesDataStore.syncToSharedPrefs(getApplication())
+        }
     }
 
     fun setThemeMode(mode: Int, x: Float = -1f, y: Float = -1f) {

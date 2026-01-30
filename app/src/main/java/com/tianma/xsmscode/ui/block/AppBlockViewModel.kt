@@ -219,7 +219,7 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                     dbManager.insertOrReplaceInTxSuspend(AppInfo::class.java, blockedApps)
                     
                     EntityStoreManager.storeEntitiesToFile(
-                        getApplication(), EntityType.BLOCKED_APP, blockedApps
+                        getApplication(), EntityType.BLOCKED_APP, blockedApps, AppInfo::class.java
                     )
                 }
                 // Update original checks

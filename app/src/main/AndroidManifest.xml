@@ -96,6 +96,11 @@
             android:exported="true" />
 
         <provider
+            android:name="com.tianma.xsmscode.data.prefs.PrefsProvider"
+            android:authorities="${applicationId}.pref.provider"
+            android:exported="true" />
+
+        <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"
             android:exported="false"
@@ -104,6 +109,11 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/files" />
         </provider>
+
+        <receiver
+            android:name="com.tianma.xsmscode.xp.hook.code.AutoCancelReceiver"
+            android:exported="false" />
+
     </application>
 
 </manifest>

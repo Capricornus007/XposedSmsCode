@@ -23,6 +23,11 @@ def static releaseTime() {
     return new Date().format("yyMMdd", TimeZone.default)
 }
 
+def randomHex8() {
+    def r = new java.security.SecureRandom()
+    return String.format("%08x", r.nextInt() & 0xffffffffL)
+}
+
 def VERSION_NAME = "3.0.4"
 def VERSION_CODE = 66
 
@@ -74,6 +79,7 @@ android {
         debug {
             buildConfigField("int", "LOG_LEVEL", "2")
             buildConfigField("boolean", "LOG_TO_XPOSED", "true")
+            versionNameSuffix "-${randomHex8()}"
 
             if (isSigningInfoAvailable) {
                 signingConfig = signingConfigs.release
@@ -187,6 +193,7 @@ dependencies {
     // Compose
     implementation platform(libs.androidx.compose.bom)
     implementation libs.androidx.ui
+    implementation libs.androidx.material
     implementation libs.androidx.material3
     implementation libs.androidx.material.icons.core
     implementation libs.androidx.material.icons.extended

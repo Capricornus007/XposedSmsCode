@@ -1,12 +1,14 @@
 package com.tianma.xsmscode.xp.hook.code.action.impl
 
 import android.annotation.SuppressLint
+import android.app.AlarmManager
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.os.Build
 import android.text.TextUtils
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -15,6 +17,7 @@ import com.tianma.xsmscode.common.constant.NotificationConst
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.data.db.entity.SmsMsg
+import com.tianma.xsmscode.xp.hook.code.AutoCancelReceiver
 import com.tianma.xsmscode.xp.hook.code.CopyCodeReceiver
 import com.tianma.xsmscode.xp.hook.code.action.CallableAction
 
@@ -45,13 +48,13 @@ class NotifyAction(
 
         val notificationId = smsMsg.hashCode()
 
-        val copyCodeIntent = CopyCodeReceiver.createIntent(smsCode)
+        val copyCodeIntent = CopyCodeReceiver.createIntent(smsCode, notificationId)
         val contentIntent = PendingIntent.getBroadcast(
             mPhoneContext, 0, copyCodeIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE or 0x01000000 // PendingIntent.FLAG_ALLOW_UNSAFE_IMPLICIT_INTENT
         )
 
-        val notification = NotificationCompat.Builder(mPluginContext, NotificationConst.CHANNEL_ID_SMSCODE_NOTIFICATION)
+        val builder = NotificationCompat.Builder(mPluginContext, NotificationConst.CHANNEL_ID_SMSCODE_NOTIFICATION)
             .setSmallIcon(R.drawable.ic_app_icon)
             .setLargeIcon(BitmapFactory.decodeResource(mPluginContext.resources, R.drawable.ic_app_icon))
             .setWhen(System.currentTimeMillis())
@@ -61,12 +64,26 @@ class NotifyAction(
             .setAutoCancel(true)
             .setColor(ContextCompat.getColor(mPluginContext, R.color.ic_launcher_background))
             .setGroup(NotificationConst.GROUP_KEY_SMSCODE_NOTIFICATION)
-            .build()
+        
+        val autoCancelEnabled = PrefsReader.autoCancelCodeNotification(mPluginContext)
+        if (autoCancelEnabled) {
+            val retentionTime = PrefsReader.getNotificationRetentionTime(mPluginContext) * 1000L
+            if (retentionTime > 0L) {
+                builder.setTimeoutAfter(retentionTime)
+                scheduleAutoCancel(notificationId, retentionTime)
+            } else {
+                XLog.i("Auto cancel skipped: retentionTimeMs=%d", retentionTime)
+            }
+        } else {
+            XLog.i("Auto cancel disabled")
+        }
+
+        val notification = builder.build()
 
         manager.notify(notificationId, notification)
         XLog.d("Show notification succeed")
 
-        if (PrefsReader.autoCancelCodeNotification(mPluginContext)) {
+        if (autoCancelEnabled) {
             val retentionTime = PrefsReader.getNotificationRetentionTime(mPluginContext) * 1000L
             val bundle = Bundle()
             bundle.putLong(NOTIFY_RETENTION_TIME, retentionTime)
@@ -74,6 +91,31 @@ class NotifyAction(
             return bundle
         }
         return null
+    }
+
+    private fun scheduleAutoCancel(notificationId: Int, retentionTimeMs: Long) {
+        val alarmManager = mPluginContext.getSystemService(Context.ALARM_SERVICE) as AlarmManager? ?: return
+        val appUid = mPluginContext.applicationInfo?.uid ?: -1
+        if (android.os.Process.myUid() != appUid) {
+            XLog.i("Skip alarm auto cancel: uid=%d, appUid=%d", android.os.Process.myUid(), appUid)
+            return
+        }
+        val intent = AutoCancelReceiver.createIntent(mPluginContext, notificationId)
+        val pendingIntent = PendingIntent.getBroadcast(
+            mPluginContext,
+            notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val triggerAt = System.currentTimeMillis() + retentionTimeMs
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
+        } else {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
+        }
+        XLog.i("Schedule auto cancel alarm, id=%d, delayMs=%d", notificationId, retentionTimeMs)
     }
 
     companion object {

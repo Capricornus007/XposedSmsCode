@@ -98,7 +98,9 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
     fun saveAsTemplate(template: SmsCodeRule) {
         viewModelScope.launch {
             val success = withContext(Dispatchers.IO) {
-                EntityStoreManager.storeEntityToFile(getApplication(), EntityType.CODE_RULE_TEMPLATE, template)
+                EntityStoreManager.storeEntityToFile(
+                    getApplication(), EntityType.CODE_RULE_TEMPLATE, template, SmsCodeRule::class.java
+                )
             }
             _eventsFlow.emit(RuleEditEvent.TemplateSaved(success))
         }

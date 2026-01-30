@@ -126,7 +126,9 @@ class RuleListViewModel(application: Application) : AndroidViewModel(application
     fun saveRulesToFile(rules: List<SmsCodeRule>) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                EntityStoreManager.storeEntitiesToFile(getApplication(), EntityType.CODE_RULES, rules)
+                EntityStoreManager.storeEntitiesToFile(
+                    getApplication(), EntityType.CODE_RULES, rules, SmsCodeRule::class.java
+                )
             }
         }
     }

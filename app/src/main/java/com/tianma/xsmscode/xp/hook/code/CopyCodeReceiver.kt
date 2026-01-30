@@ -21,6 +21,13 @@ class CopyCodeReceiver private constructor() : BroadcastReceiver() {
         val action = intent.action
         if (ACTION_COPY_CODE == action) {
             val smsCode = intent.getStringExtra(EXTRA_KEY_CODE)
+            val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, -1)
+
+            // cancel notification
+            if (notificationId != -1) {
+                val manager = phoneContext.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager?
+                manager?.cancel(notificationId)
+            }
             // copy to clipboard
             smsCode?.let {
                 ClipboardUtils.copyToClipboard(phoneContext, it)
@@ -57,13 +64,15 @@ class CopyCodeReceiver private constructor() : BroadcastReceiver() {
     companion object {
         private const val ACTION_COPY_CODE = "${BuildConfig.APPLICATION_ID}.ACTION_COPY_CODE"
         private const val EXTRA_KEY_CODE = "extra_key_code"
+        private const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
 
         private val instance: CopyCodeReceiver by lazy { CopyCodeReceiver() }
 
         @JvmStatic
-        fun createIntent(smsCode: String?): Intent {
+        fun createIntent(smsCode: String?, notificationId: Int): Intent {
             val intent = Intent(ACTION_COPY_CODE)
             intent.putExtra(EXTRA_KEY_CODE, smsCode)
+            intent.putExtra(EXTRA_NOTIFICATION_ID, notificationId)
             return intent
         }
 
