@@ -41,8 +41,15 @@ object EntityStoreManager {
         try {
             val storeFile = getStoreFile(context, entityType)
             // Truncate file first
-            val jsonString = JsonUtils.listToJson(entities, clazz)
-            if (jsonString.isEmpty()) return false
+            val jsonString = if (entities.isEmpty()) {
+                "[]"
+            } else {
+                JsonUtils.listToJson(entities, clazz)
+            }
+            if (jsonString.isEmpty()) {
+                XLog.e("store entities to file failed: empty json, type=$entityType size=${entities.size} clazz=${clazz.name}")
+                return false
+            }
 
             osw = OutputStreamWriter(FileOutputStream(storeFile), StandardCharsets.UTF_8)
             osw.write(jsonString)
