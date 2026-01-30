@@ -28,8 +28,8 @@ def randomHex8() {
     return String.format("%08x", r.nextInt() & 0xffffffffL)
 }
 
-def VERSION_NAME = "3.0.4"
-def VERSION_CODE = 66
+def VERSION_NAME = "3.0.5"
+def VERSION_CODE = 70
 
 android {
     namespace = 'com.github.tianma8023.xposed.smscode'
