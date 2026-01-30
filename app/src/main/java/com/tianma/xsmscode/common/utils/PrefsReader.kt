@@ -4,6 +4,7 @@ import android.content.Context
 import com.tianma.xsmscode.common.constant.PrefConst
 
 import kotlinx.coroutines.runBlocking
+import com.tianma.xsmscode.common.utils.XLog
 
 object PrefsReader {
     private fun getBooleanViaProvider(context: Context, key: String, defaultValue: Boolean): Boolean {
@@ -20,6 +21,7 @@ object PrefsReader {
             }
             defaultValue
         } catch (t: Throwable) {
+            XLog.w("PrefsReader: read boolean '%s' failed, default=%s", key, defaultValue, t)
             defaultValue
         }
     }
@@ -37,6 +39,7 @@ object PrefsReader {
             }
             defaultValue
         } catch (t: Throwable) {
+            XLog.w("PrefsReader: read string '%s' failed, default=%s", key, defaultValue, t)
             defaultValue
         }
     }
@@ -54,6 +57,7 @@ object PrefsReader {
             }
             defaultValue
         } catch (t: Throwable) {
+            XLog.w("PrefsReader: read int '%s' failed, default=%d", key, defaultValue, t)
             defaultValue
         }
     }

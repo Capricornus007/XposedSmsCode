@@ -6,8 +6,11 @@ import android.content.UriMatcher
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
+import android.os.Binder
+import android.os.Process
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
+import com.tianma.xsmscode.common.utils.XLog
 import kotlinx.coroutines.runBlocking
 
 class PrefsProvider : ContentProvider() {
@@ -34,11 +37,15 @@ class PrefsProvider : ContentProvider() {
         selectionArgs: Array<String>?,
         sortOrder: String?
     ): Cursor? {
+        val ctx = context ?: return null
+        if (!isCallerAllowed(ctx)) {
+            XLog.w("PrefsProvider: deny caller uid=%d", Binder.getCallingUid())
+            return null
+        }
         val type = sUriMatcher.match(uri)
         val key = uri.getQueryParameter("key") ?: return null
         val defaultValue = uri.getQueryParameter("default")
         val cursor = MatrixCursor(arrayOf(COLUMN_VALUE))
-        val ctx = context ?: return cursor
 
         when (type) {
             TYPE_BOOL -> {
@@ -59,6 +66,12 @@ class PrefsProvider : ContentProvider() {
             else -> return null
         }
         return cursor
+    }
+
+    private fun isCallerAllowed(ctx: Context): Boolean {
+        val uid = Binder.getCallingUid()
+        if (uid == Process.SYSTEM_UID || uid == Process.PHONE_UID) return true
+        return uid == ctx.applicationInfo?.uid
     }
 
     companion object {
