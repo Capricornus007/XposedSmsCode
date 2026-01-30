@@ -24,7 +24,7 @@ def static releaseTime() {
 }
 
 def VERSION_NAME = "3.0.4"
-def VERSION_CODE = 65
+def VERSION_CODE = 66
 
 android {
     namespace = 'com.github.tianma8023.xposed.smscode'
