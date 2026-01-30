@@ -11,11 +11,7 @@ object InputHelper {
         if (text == null) return
         val intent = android.content.Intent("com.tianma.xsmscode.ACTION_AUTO_INPUT")
         intent.putExtra("code", text)
-        intent.setPackage("android") // Send explicit broadcast to system package (hooked) or general?
-        // Wait, SystemInputInjectorHook registers receiver dynamically on the system context.
-        // It's a dynamic receiver.
-        // If we set package "android", it targets the package.
-        // Dynamic receivers in "android" package should receive it.
+        // Broadcast without explicit package to avoid dropping delivery when system_server receiver isn't bound to package.
         context.sendBroadcast(intent)
         XLog.i("Sent Broadcast ACTION_AUTO_INPUT with code: $text")
     }

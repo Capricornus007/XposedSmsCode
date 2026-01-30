@@ -79,7 +79,6 @@ android {
         debug {
             buildConfigField("int", "LOG_LEVEL", "2")
             buildConfigField("boolean", "LOG_TO_XPOSED", "true")
-            versionNameSuffix "-${randomHex8()}"
 
             if (isSigningInfoAvailable) {
                 signingConfig = signingConfigs.release
@@ -143,6 +142,12 @@ android {
 
 androidComponents {
     onVariants(selector().all()) { variant ->
+        if (variant.buildType == "debug") {
+            def suffixProvider = providers.provider { randomHex8() }
+            variant.outputs.each { output ->
+                output.versionName.set(suffixProvider.map { "${VERSION_NAME}-${it}" })
+            }
+        }
         variant.outputs.each { output ->
             def name = output.outputFileName.orNull
             if (name == null) {
