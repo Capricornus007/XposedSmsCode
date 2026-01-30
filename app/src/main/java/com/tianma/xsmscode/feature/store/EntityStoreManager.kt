@@ -33,8 +33,8 @@ object EntityStoreManager {
         return File(StorageUtils.getFilesDir(context), filename)
     }
 
-    @JvmStatic
-    fun <T> storeEntitiesToFile(context: Context, entityType: EntityType, entities: List<T>): Boolean {
+    //@JvmStatic // Removed for inline
+    inline fun <reified T> storeEntitiesToFile(context: Context, entityType: EntityType, entities: List<T>): Boolean {
         var osw: OutputStreamWriter? = null
         try {
             val storeFile = getStoreFile(context, entityType)
@@ -59,8 +59,8 @@ object EntityStoreManager {
         return false
     }
 
-    @JvmStatic
-    fun <T> storeEntityToFile(context: Context, entityType: EntityType, entity: T): Boolean {
+    //@JvmStatic // Removed for inline
+    inline fun <reified T> storeEntityToFile(context: Context, entityType: EntityType, entity: T): Boolean {
         val entities = ArrayList<T>()
         entities.add(entity)
         return storeEntitiesToFile(context, entityType, entities)

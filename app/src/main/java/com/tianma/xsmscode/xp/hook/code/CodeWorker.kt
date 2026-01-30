@@ -84,22 +84,16 @@ class CodeWorker(
         val killMeAction = KillMeAction(mPluginContext, mPhoneContext, smsMsg)
         mScheduledExecutor.schedule(killMeAction, 4000, TimeUnit.MILLISECONDS)
 
-        try {
-            // 清除通知
-                val bundle = notificationFuture.get()
-                if (bundle != null && bundle.containsKey(NotifyAction.NOTIFY_RETENTION_TIME)) {
-                    val delay = bundle.getLong(NotifyAction.NOTIFY_RETENTION_TIME, 0L)
-                    val notificationId = bundle.getInt(NotifyAction.NOTIFY_ID, 0)
-                    val cancelNotifyAction = CancelNotifyAction(mPluginContext, mPhoneContext, smsMsg)
-                    cancelNotifyAction.setNotificationId(notificationId)
+        // 自动清除通知
+        if (PrefsReader.autoCancelCodeNotification(mPluginContext)) {
+            val retentionTime = PrefsReader.getNotificationRetentionTime(mPluginContext) * 1000L
+            val notificationId = smsMsg.hashCode()
+            
+            val cancelNotifyAction = CancelNotifyAction(mPluginContext, mPhoneContext, smsMsg)
+            cancelNotifyAction.setNotificationId(notificationId)
 
-                    mScheduledExecutor.schedule(cancelNotifyAction, delay, TimeUnit.MILLISECONDS)
-                    XLog.d("Scheduled CancelNotifyAction with delay: ${delay}ms for ID: $notificationId")
-                } else {
-                    XLog.d("NotifyAction bundle mismatch or missing retention time")
-                }
-        } catch (e: Exception) {
-            XLog.e("Error in notification future get()", e)
+            mScheduledExecutor.schedule(cancelNotifyAction, retentionTime, TimeUnit.MILLISECONDS)
+            XLog.d("Scheduled CancelNotifyAction with delay: ${retentionTime}ms for ID: $notificationId")
         }
 
         mScheduledExecutor.shutdown()
