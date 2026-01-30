@@ -102,6 +102,7 @@ class CodeWorker(
             XLog.e("Error in notification future get()", e)
         }
 
+        mScheduledExecutor.shutdown()
         return buildParseResult()
     }
 

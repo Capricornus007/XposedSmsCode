@@ -45,7 +45,7 @@ class NotifyAction(
 
         val notificationId = smsMsg.hashCode()
 
-        val copyCodeIntent = CopyCodeReceiver.createIntent(smsCode)
+        val copyCodeIntent = CopyCodeReceiver.createIntent(smsCode, notificationId)
         val contentIntent = PendingIntent.getBroadcast(
             mPhoneContext, 0, copyCodeIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE or 0x01000000 // PendingIntent.FLAG_ALLOW_UNSAFE_IMPLICIT_INTENT
