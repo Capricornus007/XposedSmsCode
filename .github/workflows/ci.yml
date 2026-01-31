@@ -20,4 +20,9 @@ jobs:
           java-version: "25"
           cache: gradle
       - name: Build
-        run: ./gradlew --warning-mode all assembleDebug testDebugUnitTest
+        run: ./gradlew --warning-mode all assembleDebug testDebugUnitTest -PbuildSplits
+      - name: Upload Debug APKs
+        uses: actions/upload-artifact@v6
+        with:
+          name: XposedSmsCode-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
