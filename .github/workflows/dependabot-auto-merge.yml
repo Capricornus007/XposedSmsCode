@@ -22,7 +22,15 @@ jobs:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Enable auto-merge for Dependabot PRs
-        run: gh pr merge --merge --delete-branch "$PR_URL"
+        run: |
+          gh pr checkout "$PR_URL"
+          # Wait for CI to finish and check status
+          if gh pr view "$PR_URL" --json statusCheckRollup | grep -q '"status":"COMPLETED","conclusion":"SUCCESS"'; then
+            gh pr merge --auto --merge --delete-branch "$PR_URL"
+          else
+            echo "CI not pass yet or failed, setting auto-merge only."
+            gh pr merge --auto --merge --delete-branch "$PR_URL"
+          fi
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GH_PAT }}
