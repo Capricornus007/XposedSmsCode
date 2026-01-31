@@ -80,5 +80,7 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
           packageName: com.github.tianma8023.xposed.smscode
           releaseFiles: app/build/outputs/bundle/release/*.aab
+          mappingFile: app/build/outputs/mapping/release/mapping.txt
+          debugSymbols: app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip
           track: alpha
           status: completed
