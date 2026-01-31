@@ -39,7 +39,7 @@ android {
     ndkVersion = "28.2.13676358"
     defaultConfig {
         applicationId "com.github.tianma8023.xposed.smscode"
-        minSdkVersion 35
+        minSdkVersion 24
         targetSdk 36
         versionCode VERSION_CODE
         versionName VERSION_NAME
