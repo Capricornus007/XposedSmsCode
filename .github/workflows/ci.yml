@@ -21,8 +21,28 @@ jobs:
           cache: gradle
       - name: Build
         run: ./gradlew --warning-mode all assembleDebug testDebugUnitTest -PbuildSplits
-      - name: Upload Debug APKs
+      - name: Upload Debug APK (arm64-v8a)
         uses: actions/upload-artifact@v6
         with:
-          name: XposedSmsCode-debug-apks
-          path: app/build/outputs/apk/debug/*.apk
+          name: XposedSmsCode-debug-arm64-v8a
+          path: app/build/outputs/apk/debug/*arm64-v8a*.apk
+      - name: Upload Debug APK (armeabi-v7a)
+        uses: actions/upload-artifact@v6
+        with:
+          name: XposedSmsCode-debug-armeabi-v7a
+          path: app/build/outputs/apk/debug/*armeabi-v7a*.apk
+      - name: Upload Debug APK (x86)
+        uses: actions/upload-artifact@v6
+        with:
+          name: XposedSmsCode-debug-x86
+          path: app/build/outputs/apk/debug/*x86*.apk
+      - name: Upload Debug APK (x86_64)
+        uses: actions/upload-artifact@v6
+        with:
+          name: XposedSmsCode-debug-x86_64
+          path: app/build/outputs/apk/debug/*x86_64*.apk
+      - name: Upload Debug APK (universal)
+        uses: actions/upload-artifact@v6
+        with:
+          name: XposedSmsCode-debug-universal
+          path: app/build/outputs/apk/debug/*universal*.apk
