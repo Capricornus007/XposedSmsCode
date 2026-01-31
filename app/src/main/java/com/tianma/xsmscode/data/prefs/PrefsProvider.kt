@@ -1,5 +1,6 @@
 package com.tianma.xsmscode.data.prefs
 
+import android.content.Context
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.content.UriMatcher
