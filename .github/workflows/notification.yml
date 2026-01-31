@@ -15,42 +15,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build Release Note
-        id: release_note
-        env:
-          RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: |
-          git fetch --tags --force
-          PREV_TAG=$(git describe --tags --abbrev=0 "${RELEASE_TAG}^" 2>/dev/null || echo "v3.0.5")
-          if [ "$RELEASE_TAG" = "v3.0.6" ]; then
-            PREV_TAG="v3.0.5"
-          fi
-          NOTE_RAW=$(git log "${PREV_TAG}..${RELEASE_TAG}" --pretty=format:"%h|%s" || true)
-          NOTE=""
-          COUNT=0
-          while IFS='|' read -r sha subject; do
-            if [ -z "$sha" ]; then
-              continue
-            fi
-            COUNT=$((COUNT + 1))
-            if [ "$COUNT" -gt 30 ]; then
-              NOTE="${NOTE}\n... (更多提交请查看 release note)"
-              break
-            fi
-            esc_subject=$(printf '%s' "$subject" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
-            NOTE="${NOTE}<a href=\"https://github.com/magisk317/XposedSmsCode/commit/${sha}\">${sha}</a>: ${esc_subject}\n"
-          done <<EOF
-          $NOTE_RAW
-          EOF
-          if [ -z "$NOTE" ]; then
-            NOTE="(暂无变更记录)"
-          fi
-          {
-            echo "note<<EOF"
-            echo "$NOTE"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
       - name: Send Notification
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
@@ -59,7 +23,7 @@ jobs:
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
           TG_THREAD_ID: ${{ secrets.TG_THREAD_ID }}
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
-          RELEASE_NOTE: ${{ steps.release_note.outputs.note }}
+          
         run: |
           if [ -z "$TG_BOT_TOKEN" ]; then
             echo "TG_BOT_TOKEN not set, skip."
@@ -73,26 +37,54 @@ jobs:
           fi
 
           RELEASE_LINK="https://github.com/magisk317/XposedSmsCode/releases/tag/${RELEASE_TAG}"
-
-          FULL_MESSAGE="<b>📦 XposedSmsCode Release: ${RELEASE_TAG}</b>\n\n"
-          FULL_MESSAGE="${FULL_MESSAGE}<b>Release Note</b>\n${RELEASE_NOTE}\n\n"
-          FULL_MESSAGE="${FULL_MESSAGE}具体细节查看对应的release note在线地址：${RELEASE_LINK}"
+          CAPTION="<b>📦 XposedSmsCode Release: ${RELEASE_TAG}</b>\n\n"
+          CAPTION="${CAPTION}Release notes: ${RELEASE_LINK}"
 
           curl -s -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TG_CHAT_ID}" \
             $THREAD_PARAM_MSG \
-            --data-urlencode "text=${FULL_MESSAGE}" \
+            --data-urlencode "text=${CAPTION}" \
             -d "parse_mode=HTML" \
             -d "disable_web_page_preview=true"
 
-          mkdir -p downloads
-          echo "$ASSETS_JSON" | jq -r '.[] | .browser_download_url' | while read -r url; do
-            filename=$(basename "$url")
-            if [[ "$filename" == *.apk ]] || [[ "$filename" == *.aab ]]; then
-              echo "Downloading $filename..."
-              curl -L -s -o "downloads/$filename" "$url"
-              echo "Sending $filename to Telegram..."
-              curl -s -F chat_id="$TG_CHAT_ID" $THREAD_PARAM_DOC -F document=@"downloads/$filename" \
-                "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendDocument"
-            fi
-          done
+          # APK/AAB media group (disabled for now)
+          # mkdir -p downloads
+          # FILES=()
+          # echo "$ASSETS_JSON" | jq -r '.[] | .browser_download_url' | while read -r url; do
+          #   filename=$(basename "$url")
+          #   if [[ "$filename" == *.apk ]] || [[ "$filename" == *.aab ]]; then
+          #     echo "Downloading $filename..."
+          #     curl -L -s -o "downloads/$filename" "$url"
+          #     FILES+=("$filename")
+          #   fi
+          # done
+          #
+          # if [ "${#FILES[@]}" -eq 0 ]; then
+          #   echo "No APK/AAB assets found."
+          #   exit 0
+          # fi
+          #
+          # MEDIA_JSON=$(jq -n --arg caption "$CAPTION" '[]')
+          # idx=0
+          # for f in "${FILES[@]}"; do
+          #   idx=$((idx + 1))
+          #   if [ "$idx" -eq 1 ]; then
+          #     MEDIA_JSON=$(jq --arg name "file$idx" --arg caption "$CAPTION" '. + [{"type":"document","media":"attach://"+$name,"caption":$caption,"parse_mode":"HTML"}]' <<<"$MEDIA_JSON")
+          #   else
+          #     MEDIA_JSON=$(jq --arg name "file$idx" '. + [{"type":"document","media":"attach://"+$name}]' <<<"$MEDIA_JSON")
+          #   fi
+          # done
+          #
+          # CURL_ARGS=(-s -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMediaGroup" -F "chat_id=${TG_CHAT_ID}")
+          # if [ -n "$TG_THREAD_ID" ]; then
+          #   CURL_ARGS+=(-F "message_thread_id=${TG_THREAD_ID}")
+          # fi
+          # CURL_ARGS+=(-F "media=${MEDIA_JSON}")
+          #
+          # idx=0
+          # for f in "${FILES[@]}"; do
+          #   idx=$((idx + 1))
+          #   CURL_ARGS+=(-F "file$idx=@downloads/$f")
+          # done
+          #
+          # curl "${CURL_ARGS[@]}"
