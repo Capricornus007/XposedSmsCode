@@ -6,9 +6,10 @@ plugins {
 android {
     namespace = 'com.tianma.xsmscode.storage'
     compileSdk 36
+    compileSdkExtension 1
 
     defaultConfig {
-        minSdk 35
+        minSdk 24
     }
 
     compileOptions {
