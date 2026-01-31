@@ -85,9 +85,9 @@ class SystemInputInjectorHook : BaseHook() {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                             XposedHelpers.callMethod(this, "getSendingUid") as Int
                         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                            // On older versions, the field is often named mSendingUid in PendingResult
-                            // or accessed via internal methods.
-                            XposedHelpers.getObjectField(this, "mSendingUid") as Int
+                            // On older versions, it's stored in mPendingResult
+                            val pendingResult = XposedHelpers.getObjectField(this, "mPendingResult")
+                            XposedHelpers.getIntField(pendingResult, "mSendingUid")
                         } else {
                             -1
                         }
