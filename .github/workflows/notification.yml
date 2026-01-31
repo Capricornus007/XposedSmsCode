@@ -35,7 +35,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Send Notification
-        if: secrets.TG_BOT_TOKEN != ''
+        if: ${{ secrets.TG_BOT_TOKEN != '' }}
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           RELEASE_URL: ${{ github.event.release.html_url }}
