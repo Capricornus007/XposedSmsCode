@@ -28,6 +28,19 @@ def randomHex8() {
     return String.format("%08x", r.nextInt() & 0xffffffffL)
 }
 
+def releaseBaseName() {
+    return "XposedSmsCode_v${VERSION_NAME.replaceAll('\\s+', '_')}" +
+        "_${releaseTime()}"
+}
+
+def releaseApkName(buildType, abiSuffix) {
+    return "${releaseBaseName()}_${buildType}_${abiSuffix}.apk"
+}
+
+def releaseAabName() {
+    return "${releaseBaseName()}_release.aab"
+}
+
 def VERSION_NAME = "3.0.6"
 def VERSION_CODE = 71
 
@@ -160,11 +173,30 @@ androidComponents {
                 (name.contains("x86_64") ? "x86_64" :
                 (name.contains("x86") ? "x86" : "universal"))))
             output.outputFileName.set(
-                "XposedSmsCode_v${VERSION_NAME.replaceAll('\\s+', '_')}" +
-                    "_${releaseTime()}_${variant.buildType}_${abiSuffix}.apk"
+                releaseApkName(variant.buildType, abiSuffix)
             )
         }
     }
+}
+
+tasks.register("renameReleaseAab") {
+    dependsOn("bundleRelease")
+    doLast {
+        def bundleDir = file("$buildDir/outputs/bundle/release")
+        def bundleFile = file("$bundleDir/app-release.aab")
+        if (!bundleFile.exists()) {
+            return
+        }
+        def target = file("$bundleDir/${releaseAabName()}")
+        if (target.exists()) {
+            target.delete()
+        }
+        bundleFile.renameTo(target)
+    }
+}
+
+tasks.named("bundleRelease") {
+    finalizedBy("renameReleaseAab")
 }
 
 dependencies {
