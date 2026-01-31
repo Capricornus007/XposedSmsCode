@@ -28,27 +28,27 @@ def randomHex8() {
     return String.format("%08x", r.nextInt() & 0xffffffffL)
 }
 
-def releaseBaseName() {
-    return "XposedSmsCode_v${VERSION_NAME.replaceAll('\\s+', '_')}" +
+def VERSION_NAME = "3.0.6"
+def VERSION_CODE = 71
+
+def releaseBaseName = { String versionName ->
+    return "XposedSmsCode_v${versionName.replaceAll('\\s+', '_')}" +
         "_${releaseTime()}"
 }
 
-def releaseApkName(buildType, abiSuffix) {
-    return "${releaseBaseName()}_${buildType}_${abiSuffix}.apk"
+def releaseApkName = { String versionName, String buildType, String abiSuffix ->
+    return "${releaseBaseName(versionName)}_${buildType}_${abiSuffix}.apk"
 }
 
-def releaseAabName() {
-    return "${releaseBaseName()}_release.aab"
+def releaseAabName = { String versionName ->
+    return "${releaseBaseName(versionName)}_release.aab"
 }
-
-def VERSION_NAME = "3.0.6"
-def VERSION_CODE = 71
 
 android {
     namespace = 'com.github.tianma8023.xposed.smscode'
 
     compileSdk 36
-    compileSdkExtension 1
+    compileSdkExtension = 1
     ndkVersion = "28.2.13676358"
     defaultConfig {
         applicationId "com.github.tianma8023.xposed.smscode"
@@ -173,7 +173,7 @@ androidComponents {
                 (name.contains("x86_64") ? "x86_64" :
                 (name.contains("x86") ? "x86" : "universal"))))
             output.outputFileName.set(
-                releaseApkName(variant.buildType, abiSuffix)
+                releaseApkName(VERSION_NAME, variant.buildType, abiSuffix)
             )
         }
     }
@@ -187,7 +187,7 @@ tasks.register("renameReleaseAab") {
         if (!bundleFile.exists()) {
             return
         }
-        def target = file("$bundleDir/${releaseAabName()}")
+        def target = file("$bundleDir/${releaseAabName(VERSION_NAME)}")
         if (target.exists()) {
             target.delete()
         }
@@ -195,7 +195,7 @@ tasks.register("renameReleaseAab") {
     }
 }
 
-tasks.named("bundleRelease") {
+tasks.matching { it.name == "bundleRelease" }.configureEach {
     finalizedBy("renameReleaseAab")
 }
 

@@ -35,7 +35,6 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Send Notification
-        if: ${{ secrets.TG_BOT_TOKEN != '' }}
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
           RELEASE_URL: ${{ github.event.release.html_url }}
@@ -45,6 +44,10 @@ jobs:
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           RELEASE_NOTE: ${{ steps.release_note.outputs.note }}
         run: |
+          if [ -z "$TG_BOT_TOKEN" ]; then
+            echo "TG_BOT_TOKEN not set, skip."
+            exit 0
+          fi
           THREAD_PARAM=""
           if [ -n "$TG_THREAD_ID" ]; then
             THREAD_PARAM="-d message_thread_id=$TG_THREAD_ID"
