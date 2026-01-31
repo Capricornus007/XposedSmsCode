@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -34,6 +33,8 @@ import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.tianma.xsmscode.common.constant.Const
+import com.tianma.xsmscode.ui.app.base.UpdateSystemBars
+import com.tianma.xsmscode.ui.app.base.applyEdgeToEdge
 import com.tianma.xsmscode.ui.nav.SmsCodeNavHost
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.hypot
@@ -47,7 +48,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        applyEdgeToEdge(window)
         
         setContent {
             val viewModel: SettingsViewModel = koinViewModel()
@@ -180,6 +181,8 @@ class MainActivity : AppCompatActivity() {
             2 -> true
             else -> isSystemInDarkTheme()
         }
+
+        UpdateSystemBars(darkTheme)
         
         // Material 3 Expressive Theme Implementation
         // Note: MaterialExpressiveTheme uses its own shape and typography defaults
