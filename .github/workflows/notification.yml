@@ -1,0 +1,77 @@
+name: Telegram Notification
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  notification:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Build Release Note
+        id: release_note
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          git fetch --tags --force
+          PREV_TAG=$(git describe --tags --abbrev=0 "${RELEASE_TAG}^" 2>/dev/null || echo "v3.0.5")
+          if [ "$RELEASE_TAG" = "v3.0.6" ]; then
+            PREV_TAG="v3.0.5"
+          fi
+          NOTE=$(git log "${PREV_TAG}..${RELEASE_TAG}" --pretty=format:"%h | %s" || true)
+          if [ -z "$NOTE" ]; then
+            NOTE="(暂无变更记录)"
+          fi
+          {
+            echo "note<<EOF"
+            echo "$NOTE"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Send Notification
+        if: secrets.TG_BOT_TOKEN != ''
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_URL: ${{ github.event.release.html_url }}
+          ASSETS_JSON: ${{ toJson(github.event.release.assets) }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          TG_THREAD_ID: ${{ secrets.TG_THREAD_ID }}
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          RELEASE_NOTE: ${{ steps.release_note.outputs.note }}
+        run: |
+          THREAD_PARAM=""
+          if [ -n "$TG_THREAD_ID" ]; then
+            THREAD_PARAM="-d message_thread_id=$TG_THREAD_ID"
+          fi
+
+          ESCAPED_NOTE=$(echo "$RELEASE_NOTE" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
+          RELEASE_LINK="https://github.com/magisk317/XposedSmsCode/releases/tag/${RELEASE_TAG}"
+
+          FULL_MESSAGE="<b>📦 XposedSmsCode Release: ${RELEASE_TAG}</b>%0A%0A"
+          FULL_MESSAGE="${FULL_MESSAGE}<b>Release Note</b>%0A<pre>${ESCAPED_NOTE}</pre>%0A%0A"
+          FULL_MESSAGE="${FULL_MESSAGE}具体细节查看对应的release note在线地址：${RELEASE_LINK}"
+
+          curl -s -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
+            -d "chat_id=${TG_CHAT_ID}" \
+            $THREAD_PARAM \
+            --data-urlencode "text=${FULL_MESSAGE}" \
+            -d "parse_mode=HTML" \
+            -d "disable_web_page_preview=true"
+
+          mkdir -p downloads
+          echo "$ASSETS_JSON" | jq -r '.[] | .browser_download_url' | while read -r url; do
+            filename=$(basename "$url")
+            if [[ "$filename" == *.apk ]] || [[ "$filename" == *.aab ]]; then
+              echo "Downloading $filename..."
+              curl -L -s -o "downloads/$filename" "$url"
+              echo "Sending $filename to Telegram..."
+              curl -s -F chat_id="$TG_CHAT_ID" $THREAD_PARAM -F document=@"downloads/$filename" \
+                "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendDocument"
+            fi
+          done
