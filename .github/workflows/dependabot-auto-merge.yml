@@ -15,22 +15,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.user.login == 'magisk317' || github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'app/dependabot'
     steps:
-      - name: Dependabot metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@v2
-        with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-
-      - name: Enable auto-merge for Dependabot PRs
-        run: |
-          gh pr checkout "$PR_URL"
-          # Wait for CI to finish and check status
-          if gh pr view "$PR_URL" --json statusCheckRollup | grep -q '"status":"COMPLETED","conclusion":"SUCCESS"'; then
-            gh pr merge --auto --merge --delete-branch "$PR_URL"
-          else
-            echo "CI not pass yet or failed, setting auto-merge only."
-            gh pr merge --auto --merge --delete-branch "$PR_URL"
-          fi
+      - name: Enable auto-merge
+        run: gh pr merge --auto --merge --delete-branch "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
