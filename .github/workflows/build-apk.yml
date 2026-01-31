@@ -71,7 +71,7 @@ jobs:
             ## XposedSmsCode Release
             Automated build for version ${{ github.ref_name }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
       - name: Publish to Google Play
         uses: r0adkll/upload-google-play@v1

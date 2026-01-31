@@ -29,7 +29,7 @@ def randomHex8() {
 }
 
 def VERSION_NAME = "3.0.6"
-def VERSION_CODE = 71
+def VERSION_CODE = 72
 
 def releaseBaseName = { String versionName ->
     return "XposedSmsCode_v${versionName.replaceAll('\\s+', '_')}" +
@@ -181,13 +181,14 @@ androidComponents {
 
 tasks.register("renameReleaseAab") {
     dependsOn("bundleRelease")
+    def bundleFileProvider = layout.buildDirectory.file("outputs/bundle/release/app-release.aab")
+    def targetFileProvider = layout.buildDirectory.file("outputs/bundle/release/${releaseAabName(VERSION_NAME)}")
     doLast {
-        def bundleDir = file("$buildDir/outputs/bundle/release")
-        def bundleFile = file("$bundleDir/app-release.aab")
+        def bundleFile = bundleFileProvider.get().asFile
         if (!bundleFile.exists()) {
             return
         }
-        def target = file("$bundleDir/${releaseAabName(VERSION_NAME)}")
+        def target = targetFileProvider.get().asFile
         if (target.exists()) {
             target.delete()
         }
