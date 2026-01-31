@@ -35,11 +35,12 @@ android {
     namespace = 'com.github.tianma8023.xposed.smscode'
 
     compileSdk 36
+    compileSdkExtension 1
     ndkVersion = "28.2.13676358"
     defaultConfig {
         applicationId "com.github.tianma8023.xposed.smscode"
         minSdkVersion 35
-        targetSdkVersion 36
+        targetSdk 36
         versionCode VERSION_CODE
         versionName VERSION_NAME
 
