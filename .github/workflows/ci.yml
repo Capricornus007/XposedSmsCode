@@ -21,6 +21,23 @@ jobs:
           cache: gradle
       - name: Build
         run: ./gradlew --warning-mode all assembleDebug testDebugUnitTest -PbuildSplits
+      - name: Write build summary
+        if: always()
+        run: |
+          {
+            echo "## Debug APK summary"
+            echo ""
+            echo "| File | Size |"
+            echo "| --- | --- |"
+            for apk in app/build/outputs/apk/debug/*.apk; do
+              if [ ! -f "$apk" ]; then
+                continue
+              fi
+              size=$(du -h "$apk" | awk '{print $1}')
+              name=$(basename "$apk")
+              echo "| $name | $size |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload Debug APK (arm64-v8a)
         uses: actions/upload-artifact@v6
         with:
