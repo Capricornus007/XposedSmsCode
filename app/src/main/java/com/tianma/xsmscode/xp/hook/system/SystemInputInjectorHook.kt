@@ -82,8 +82,8 @@ class SystemInputInjectorHook : BaseHook() {
             val receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
                     val sendingUid = try {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                            this.sendingUid
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                            XposedHelpers.callMethod(this, "getSendingUid") as Int
                         } else {
                             -1
                         }
