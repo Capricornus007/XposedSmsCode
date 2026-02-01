@@ -2,6 +2,8 @@ package com.tianma.xsmscode.ui.block
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -72,6 +74,9 @@ fun AppBlockScreen(
     var showSortMenu by remember { mutableStateOf(false) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+        ),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (isSearchActive) {
@@ -203,12 +208,17 @@ fun AppBlockScreen(
     ) { padding ->
         // Main Content (only visible when search is NOT active, effectively)
         // But since SearchBar is full screen overlay, this is hidden when search is active.
-        Box(modifier = Modifier.padding(padding).fillMaxSize()) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
+        ) {
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 // Ensure list elements have stable keys and minimize recomposition
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     items(apps, key = { it.packageName }) { app ->
                         AppInfoItem(
                             appInfo = app,

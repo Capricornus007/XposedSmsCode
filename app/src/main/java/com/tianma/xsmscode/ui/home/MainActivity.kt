@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.tianma.xsmscode.common.constant.Const
+import com.tianma.xsmscode.ui.app.base.SystemBarsScrim
 import com.tianma.xsmscode.ui.app.base.UpdateSystemBars
 import com.tianma.xsmscode.ui.app.base.applyEdgeToEdge
 import com.tianma.xsmscode.ui.nav.SmsCodeNavHost
@@ -164,6 +165,8 @@ class MainActivity : AppCompatActivity() {
                                     }
                             )
                         }
+
+                        SystemBarsScrim()
                     }
                 }
             }

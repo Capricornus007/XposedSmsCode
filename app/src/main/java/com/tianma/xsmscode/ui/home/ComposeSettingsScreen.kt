@@ -6,6 +6,8 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -152,6 +154,9 @@ fun ComposeSettingsScreen(
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+        ),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
@@ -171,11 +176,13 @@ fun ComposeSettingsScreen(
     ) { padding ->
         Column(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
+            Spacer(modifier = Modifier.height(8.dp))
             SectionHeader(text = stringResource(id = R.string.pref_general_title))
             SwitchItem(
                 title = stringResource(id = R.string.pref_enable_title),
@@ -427,6 +434,8 @@ fun ComposeSettingsScreen(
                 title = stringResource(id = R.string.pref_privacy_policy_title),
                 summary = ""
             ) { Utils.showWebPage(context, Const.PRIVACY_POLICY_URL) }
+
+            Spacer(modifier = Modifier.height(padding.calculateBottomPadding() + 8.dp))
         }
     }
 

@@ -3,6 +3,8 @@ package com.tianma.xsmscode.ui.rule.edit
 import android.os.Bundle
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -94,6 +96,9 @@ fun RuleEditScreen(
     var showQuickChoose by remember { mutableStateOf(false) }
 
     Scaffold(
+        contentWindowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+        ),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
@@ -122,9 +127,9 @@ fun RuleEditScreen(
     ) { padding ->
         Column(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(padding)
                 .padding(16.dp)
-                .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -169,6 +174,7 @@ fun RuleEditScreen(
                     Text(stringResource(R.string.quick_choose))
                 }
             }
+            Spacer(modifier = Modifier.height(padding.calculateBottomPadding() + 80.dp))
         }
     }
 
