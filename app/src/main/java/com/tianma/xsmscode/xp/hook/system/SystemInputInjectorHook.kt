@@ -29,8 +29,8 @@ class SystemInputInjectorHook : BaseHook() {
     private var inputManagerGlobal: Any? = null
     @Volatile
     private var injectMethod: Method? = null
-
-    private val mainHandler = Handler(Looper.getMainLooper())
+    @Volatile
+    private var mainHandler: Handler? = null
 
     override fun hookInitZygote(): Boolean {
         return true
@@ -70,7 +70,7 @@ class SystemInputInjectorHook : BaseHook() {
 
     private fun scheduleRegister(context: Context) {
         if (receiverRegistered) return
-        mainHandler.postDelayed(
+        getMainHandler().postDelayed(
             { registerReceiver(context) },
             500L
         )
@@ -140,6 +140,27 @@ class SystemInputInjectorHook : BaseHook() {
                 val thread = HandlerThread("xsmscode-input")
                 thread.start()
                 Handler(thread.looper).also { inputHandler = it }
+            }
+        }
+    }
+
+    private fun getMainHandler(): Handler {
+        val cached = mainHandler
+        if (cached != null) return cached
+        return synchronized(this) {
+            val existing = mainHandler
+            if (existing != null) {
+                existing
+            } else {
+                val mainLooper = Looper.getMainLooper()
+                val handler = if (mainLooper != null) {
+                    Handler(mainLooper)
+                } else {
+                    // Fallback for early zygote stage when main looper isn't ready yet.
+                    getInputHandler()
+                }
+                mainHandler = handler
+                handler
             }
         }
     }
