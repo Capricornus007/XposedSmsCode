@@ -29,7 +29,7 @@ def randomHex8() {
 }
 
 def VERSION_NAME = "3.0.7"
-def VERSION_CODE = 75
+def VERSION_CODE = 76
 
 def releaseBaseName = { String versionName ->
     return "XposedSmsCode_v${versionName.replaceAll('\\s+', '_')}" +
