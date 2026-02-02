@@ -14,6 +14,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
@@ -46,13 +48,16 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.platform.LocalView
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComposeSettingsScreen(
-    onNavigateToRules: () -> Unit,
-    onNavigateToRecords: () -> Unit,
-    onNavigateToAppBlock: () -> Unit,
+    hazeState: HazeState,
+    hazeStyle: HazeStyle,
     viewModel: SettingsViewModel? = null,
     onExit: () -> Unit = {}
 ) {
@@ -73,8 +78,6 @@ fun ComposeSettingsScreen(
     var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
     var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
     var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
-    var showFaqDialog by remember { mutableStateOf(false) }
-    
     var showAutoInputDialog by remember { mutableStateOf(false) }
     var showRetentionDialog by remember { mutableStateOf(false) }
     var showSmsTestDialog by remember { mutableStateOf(false) }
@@ -153,36 +156,26 @@ fun ComposeSettingsScreen(
         }
     }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets.safeDrawing.only(
-            WindowInsetsSides.Horizontal + WindowInsetsSides.Top
-        ),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = stringResource(id = R.string.app_name))
-                        Text(
-                            text = if (isActivated) stringResource(R.string.module_status_active) else stringResource(R.string.module_status_inactive),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (isActivated) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors()
-            )
-        }
-    ) { padding ->
+    val scrollState = rememberScrollState()
+    val showTopDivider by remember {
+        derivedStateOf { scrollState.value > 0 }
+    }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp // TopBar height
+        
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState()),
+                .hazeSource(hazeState)
+                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            // Add top padding manually as the first item or Spacer
+            Spacer(modifier = Modifier.height(topPadding))
             SectionHeader(text = stringResource(id = R.string.pref_general_title))
             SwitchItem(
                 title = stringResource(id = R.string.pref_enable_title),
@@ -264,10 +257,6 @@ fun ComposeSettingsScreen(
                 title = stringResource(id = R.string.pref_smscode_test_title),
                 summary = stringResource(id = R.string.pref_smscode_test_summary)
             ) { showSmsTestDialog = true }
-            Item(
-                title = stringResource(id = R.string.pref_code_rules_title),
-                summary = stringResource(id = R.string.pref_code_rules_summary)
-            ) { onNavigateToRules() }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -285,10 +274,6 @@ fun ComposeSettingsScreen(
                 title = stringResource(id = R.string.pref_auto_input_code_delay_title),
                 summary = stringResource(id = R.string.pref_auto_input_code_delay_summary, autoInputDelay)
             ) { showAutoInputDialog = true }
-            Item(
-                title = stringResource(id = R.string.app_block_settings),
-                summary = stringResource(id = R.string.app_block_summary)
-            ) { onNavigateToAppBlock() }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -316,87 +301,6 @@ fun ComposeSettingsScreen(
                     if (index >= 0) entries[index] else retentionTime
                 }
             ) { showRetentionDialog = true }
-             Item(
-                title = stringResource(id = R.string.action_home_faq_title),
-                summary = ""
-            ) { showFaqDialog = true }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-            SectionHeader(text = stringResource(id = R.string.pref_code_records_title))
-            SwitchItem(
-                title = stringResource(id = R.string.pref_enable_code_records_title),
-                summary = "",
-                key = PrefConst.KEY_ENABLE_CODE_RECORDS,
-                defaultValue = true,
-                onSaved = markPrefsSaved
-            )
-            val recordCount by settingsViewModel.smsRecordCount.collectAsStateWithLifecycle()
-            Item(
-                title = stringResource(id = R.string.pref_entry_code_records_title),
-                summary = stringResource(id = R.string.pref_entry_code_records_summary, recordCount.toInt())
-            ) { onNavigateToRecords() }
-            
-            var historyLimit by remember { mutableStateOf("0") }
-            var showHistoryLimitDialog by remember { mutableStateOf(false) }
-            var showHistoryLimitInput by remember { mutableStateOf(false) }
-            
-            LaunchedEffect(Unit) {
-                 historyLimit = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT, "0")
-            }
-
-            Item(
-                title = stringResource(id = R.string.pref_history_limit_title),
-                summary = run {
-                    val entries = stringArrayResource(id = R.array.history_limit_entry_list)
-                    val values = stringArrayResource(id = R.array.history_limit_value_list)
-                    val index = values.indexOf(historyLimit)
-                    if (index >= 0) entries[index] else "$historyLimit ${stringResource(R.string.smscode_records)}" 
-                }
-            ) { showHistoryLimitDialog = true }
-
-            if (showHistoryLimitDialog) {
-                RetentionDialog(
-                    selectedValue = historyLimit,
-                    onDismiss = { showHistoryLimitDialog = false },
-                    titleId = R.string.pref_history_limit_title,
-                    entriesId = R.array.history_limit_entry_list,
-                    valuesId = R.array.history_limit_value_list
-                ) { value ->
-                    if (value == "-1") {
-                        showHistoryLimitInput = true
-                    } else {
-                        historyLimit = value
-                        scope.launch {
-                            AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value)
-                            AppPreferencesDataStore.syncToSharedPrefs(context)
-                            pendingSavedToast = true
-                        }
-                    }
-                    showHistoryLimitDialog = false
-                }
-            }
-            
-            if (showHistoryLimitInput) {
-                TextInputDialog(
-                    title = stringResource(id = R.string.history_limit_custom_entry),
-                    initialValue = if (historyLimit == "0" || historyLimit == "-1") "" else historyLimit,
-                    onDismiss = { showHistoryLimitInput = false }
-                ) { value ->
-                   if (value.all { it.isDigit() } && value.isNotEmpty()) {
-                       historyLimit = value
-                       scope.launch {
-                           AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value)
-                           AppPreferencesDataStore.syncToSharedPrefs(context)
-                           pendingSavedToast = true
-                       }
-                   }
-                   showHistoryLimitInput = false
-                }
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
             SectionHeader(text = stringResource(id = R.string.pref_others_title))
             SwitchItem(
                 title = stringResource(id = R.string.pref_verbose_log_mode_title),
@@ -406,37 +310,35 @@ fun ComposeSettingsScreen(
                 onToggle = { on -> XLog.setLogLevel(if (on) Log.VERBOSE else BuildConfig.LOG_LEVEL) },
                 onSaved = markPrefsSaved
             )
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-
-            SectionHeader(text = stringResource(id = R.string.pref_about_title))
-            Item(
-                title = stringResource(id = R.string.pref_version_title),
-                summary = stringResource(id = R.string.pref_version_summary, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)
-            ) { settingsViewModel.checkUpdate() }
-            Item(
-                title = stringResource(id = R.string.pref_join_qq_group_title),
-                summary = stringResource(id = R.string.pref_join_qq_group_summary)
-            ) { PackageUtils.joinQQGroup(context) }
-            Item(
-                title = stringResource(id = R.string.pref_join_telegram_group_title),
-                summary = stringResource(id = R.string.pref_join_telegram_group_summary)
-            ) { Utils.showWebPage(context, Const.TELEGRAM_GROUP_URL) }
-            Item(
-                title = stringResource(id = R.string.pref_source_code_title),
-                summary = stringResource(id = R.string.pref_source_code_summary)
-            ) { Utils.showWebPage(context, Const.PROJECT_SOURCE_CODE_URL) }
-            Item(
-                title = stringResource(id = R.string.pref_donate_by_alipay_title),
-                summary = stringResource(id = R.string.dialog_donate_content)
-            ) { showDonateDialog = true }
             Item(
                 title = stringResource(id = R.string.pref_privacy_policy_title),
                 summary = ""
             ) { Utils.showWebPage(context, Const.PRIVACY_POLICY_URL) }
 
-            Spacer(modifier = Modifier.height(padding.calculateBottomPadding() + 8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+        ) {
+            TopAppBar(
+                title = { Text(text = stringResource(id = R.string.pref_general_title)) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent
+                ),
+                scrollBehavior = scrollBehavior,
+                windowInsets = WindowInsets.statusBars,
+                modifier = Modifier
+                    .hazeEffect(hazeState, hazeStyle)
+            )
+        }
+        
+        SnackbarHost(
+             hostState = snackbarHostState,
+             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
+        )
     }
 
     if (showAutoInputDialog) {
@@ -501,10 +403,6 @@ fun ComposeSettingsScreen(
             }
             showKeywordsDialog = false
         }
-    }
-
-    if (showFaqDialog) {
-        FaqDialog(onDismiss = { showFaqDialog = false })
     }
 
     updateVersion?.let { version ->
@@ -929,42 +827,6 @@ fun PrivacyPolicyDialog(
             TextButton(onClick = onCancel) {
                 Text(stringResource(id = R.string.privacy_dialog_cancel))
             }
-        }
-    )
-}
-
-@Composable
-fun FaqDialog(onDismiss: () -> Unit) {
-    val questions = stringArrayResource(id = R.array.question_list)
-    val answers = stringArrayResource(id = R.array.answer_list)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(id = R.string.action_home_faq_title)) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                questions.forEachIndexed { index, question ->
-                    if (question != "empty" && index < answers.size && answers[index] != "empty") {
-                        Text(
-                            text = "Q: $question",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                        Text(
-                            text = "A: ${answers[index]}",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                lineBreak = androidx.compose.ui.text.style.LineBreak.Paragraph,
-                                hyphens = androidx.compose.ui.text.style.Hyphens.Auto
-                            ),
-                            modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-                        )
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.okay)) }
         }
     )
 }

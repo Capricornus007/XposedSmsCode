@@ -37,8 +37,7 @@ jobs:
           fi
 
           RELEASE_LINK="https://github.com/magisk317/XposedSmsCode/releases/tag/${RELEASE_TAG}"
-          CAPTION="<b>📦 XposedSmsCode Release: ${RELEASE_TAG}</b>\n\n"
-          CAPTION="${CAPTION}Release notes: ${RELEASE_LINK}"
+          CAPTION=$(printf '<b>📦 XposedSmsCode Release: %s</b>\n\nRelease notes: %s' "$RELEASE_TAG" "$RELEASE_LINK")
 
           curl -s -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TG_CHAT_ID}" \

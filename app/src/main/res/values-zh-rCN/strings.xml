@@ -122,12 +122,12 @@
     <string name="pref_about_title">关于</string>
     <string name="pref_version_title">版本</string>
     <string name="pref_version_summary"><![CDATA[当前版本: %1$s (%2$d)]]></string>
-    <string name="pref_join_qq_group_title">加入 QQ 群</string>
-    <string name="pref_join_qq_group_summary">点击申请加入</string>
+    <string name="pref_join_qq_group_title">QQ</string>
+    <string name="pref_join_qq_group_summary">点击加入</string>
     <string name="qq_group_number">1075934453</string>
     <string name="prompt_join_qq_group_failed">请先安装 QQ</string>
-    <string name="pref_join_telegram_group_title">加入 Telegram 群</string>
-    <string name="pref_join_telegram_group_summary">点击加入讨论组</string>
+    <string name="pref_join_telegram_group_title">Telegram</string>
+    <string name="pref_join_telegram_group_summary">点击加入</string>
     <string name="pref_source_code_title">源代码</string>
     <string name="browser_install_or_enable_prompt">请先安装或启用浏览器</string>
     <string name="pref_source_code_summary">欢迎 Star ♪(＾∀＾●)ﾉ</string>
@@ -140,7 +140,15 @@
     <!-- preference about end -->
 
     <!-- auto-input block settings -->
-    <string name="app_block_settings">应用屏蔽设置</string>
+    <string name="app_block_settings">禁用自动输入列表</string>
+    <string name="tab_overview">概览</string>
+    <string name="tab_blacklist">黑名单</string>
+    <string name="tab_faq">FAQ</string>
+    <string name="tab_records">记录</string>
+    <string name="tab_settings">设置</string>
+    <string name="action_sort_title">应用排序</string>
+    <string name="action_sort_reverse">倒序</string>
+    <string name="action_hide_system_apps">隐藏系统应用</string>
     <string name="app_block_summary">选取禁止自动输入的应用程序</string>
     <string name="action_sort">排序</string>
     <string name="action_sort_by_label">应用名称</string>
@@ -247,6 +255,7 @@
     <string name="alipay_red_packet_code_copied">红包口令已复制，快去白嫖吧: %s</string>
     <string name="get_red_packet">领个红包</string>
     <string name="dialog_donate_title">买杯咖啡吧 T_T</string>
+    <string name="dialog_donate_summary">点此查看详细说明</string>
     <string name="dialog_donate_content">开发者已经饿得快写不动代码了，求各位老板大发慈悲赏口饭吃吧！不管是微信还是支付宝，哪怕是一分钱也是对我的巨大救赎 ✿✿ヽ(°▽°)ノ✿</string>
     <string name="dialog_donate_wechat">咖啡 (微信)</string>
     <string name="dialog_donate_alipay">咖啡 (支付宝)</string>
@@ -265,6 +274,11 @@
 
     <!-- check update -->
     <string name="new_version_found">发现新版本！</string>
+    <string name="check_update_title">检查更新</string>
+    <string name="update_in_app">应用内更新</string>
+    <string name="update_manual_download">手动下载</string>
+    <string name="update_link_copied">下载链接已复制</string>
+    <string name="update_completed">更新完成</string>
     <string name="check_update_failed">检查更新失败。</string>
     <string name="network_error_http">HTTP %1$d</string>
     <string name="network_error_io">网络异常</string>

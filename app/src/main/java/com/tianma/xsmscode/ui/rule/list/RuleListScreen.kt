@@ -26,7 +26,6 @@ import com.tianma.xsmscode.feature.backup.ImportResult
 import com.tianma.xsmscode.feature.backup.ImportWarning
 import com.tianma.xsmscode.common.utils.Utils
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,9 +37,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
-import kotlinx.coroutines.flow.collectLatest
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
@@ -51,12 +50,12 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RuleListScreen(
-    onBack: () -> Unit,
+    onBack: (() -> Unit)? = null,
     onNavigateToEdit: (Int, SmsCodeRule?) -> Unit,
     viewModel: RuleListViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
-    val rules by viewModel.rulesLiveData.observeAsState(emptyList())
+    val rules by viewModel.rulesFlow.collectAsStateWithLifecycle()
     
     var showProgress by remember { mutableStateOf<String?>(null) }
     var showImportConfirm by remember { mutableStateOf<Uri?>(null) }
@@ -123,11 +122,13 @@ fun RuleListScreen(
                 CenterAlignedTopAppBar(
                     title = { Text(stringResource(R.string.rule_list)) },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack, 
-                                contentDescription = stringResource(R.string.action_back)
-                            )
+                        if (onBack != null) {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack, 
+                                    contentDescription = stringResource(R.string.action_back)
+                                )
+                            }
                         }
                     },
                     actions = {

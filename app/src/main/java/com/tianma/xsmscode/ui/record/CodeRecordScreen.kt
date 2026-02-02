@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
@@ -26,22 +27,36 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.tianma8023.xposed.smscode.R
+import com.tianma.xsmscode.common.constant.PrefConst
+import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.ui.common.AppIconImage
+import com.tianma.xsmscode.ui.home.Item
+import com.tianma.xsmscode.ui.home.RetentionDialog
+import com.tianma.xsmscode.ui.home.SectionHeader
+import com.tianma.xsmscode.ui.home.SwitchItem
+import com.tianma.xsmscode.ui.home.TextInputDialog
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 import java.text.SimpleDateFormat
@@ -50,7 +65,9 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
 @Composable
 fun CodeRecordScreen(
-    onBack: () -> Unit,
+    hazeState: HazeState,
+    hazeStyle: HazeStyle,
+    onBack: (() -> Unit)? = null,
     viewModel: CodeRecordViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -70,6 +87,15 @@ fun CodeRecordScreen(
     // Selection State
     var isSelectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(setOf<Long>()) }
+    var showSettingsSheet by remember { mutableStateOf(false) }
+
+    var historyLimit by remember { mutableStateOf("0") }
+    var showHistoryLimitDialog by remember { mutableStateOf(false) }
+    var showHistoryLimitInput by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        historyLimit = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT, "0")
+    }
 
     // Detail Dialog State
     var detailSmsMsg by remember { mutableStateOf<SmsMsg?>(null) }
@@ -93,22 +119,40 @@ fun CodeRecordScreen(
         isSelectionMode = false
         selectedIds = emptySet()
     }
-    
-    // Deletion Logic
+
+    // Move deleteAndUndo outside items block and remember it
+    val deleteAndUndo = remember(viewModel, scope, context, snackbarHostState) {
+        { target: SmsMsg ->
+            viewModel.removeSmsMsg(listOf(target))
+            scope.launch {
+                val result = snackbarHostState.showSnackbar(
+                    message = context.getString(R.string.some_items_removed, 1),
+                    actionLabel = context.getString(R.string.revoke),
+                    duration = SnackbarDuration.Long
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    viewModel.restoreSmsMsgList(listOf(target))
+                }
+            }
+        }
+    }
+
     fun deleteSelected() {
-        val toDelete = smsList.filter { selectedIds.contains(it.id) }
-        viewModel.removeSmsMsg(toDelete)
+        val deleteList = smsList.filter { sms -> sms.id != null && selectedIds.contains(sms.id) }
+        if (deleteList.isEmpty()) return
+
+        viewModel.removeSmsMsg(deleteList)
         isSelectionMode = false
         selectedIds = emptySet()
-        
+
         scope.launch {
             val result = snackbarHostState.showSnackbar(
-                message = context.getString(R.string.some_items_removed, toDelete.size),
+                message = context.getString(R.string.some_items_removed, deleteList.size),
                 actionLabel = context.getString(R.string.revoke),
                 duration = SnackbarDuration.Long
             )
             if (result == SnackbarResult.ActionPerformed) {
-                viewModel.restoreSmsMsgList(toDelete)
+                viewModel.restoreSmsMsgList(deleteList)
             }
         }
     }
@@ -163,66 +207,94 @@ fun CodeRecordScreen(
         )
     }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets.safeDrawing.only(
-            WindowInsetsSides.Horizontal + WindowInsetsSides.Top
-        ),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { 
-                    if (isSelectionMode) {
-                        Text(stringResource(R.string.selected_count, selectedIds.size))
-                    } else {
-                        Text(stringResource(R.string.smscode_records))
+    if (showSettingsSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showSettingsSheet = false }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                SectionHeader(text = stringResource(id = R.string.pref_code_records_title))
+                SwitchItem(
+                    title = stringResource(id = R.string.pref_enable_code_records_title),
+                    summary = "",
+                    key = PrefConst.KEY_ENABLE_CODE_RECORDS,
+                    defaultValue = true
+                )
+
+                Item(
+                    title = stringResource(id = R.string.pref_history_limit_title),
+                    summary = run {
+                        val entries = stringArrayResource(id = R.array.history_limit_entry_list)
+                        val values = stringArrayResource(id = R.array.history_limit_value_list)
+                        val index = values.indexOf(historyLimit)
+                        if (index >= 0) entries[index] else "$historyLimit ${stringResource(R.string.smscode_records)}"
                     }
-                },
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (isSelectionMode) {
-                            isSelectionMode = false
-                            selectedIds = emptySet()
-                        } else {
-                            onBack()
-                        }
-                    }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack, 
-                            contentDescription = stringResource(R.string.action_back)
-                        )
-                    }
-                },
-                actions = {
-                    if (isSelectionMode) {
-                        IconButton(onClick = {
-                            val allIds = smsList.mapNotNull { it.id }.toSet()
-                            if (selectedIds.size == allIds.size) {
-                                selectedIds = emptySet()
-                            } else {
-                                selectedIds = allIds
-                            }
-                        }) {
-                            Icon(Icons.Default.Check, contentDescription = stringResource(R.string.action_select_all))
-                        }
-                        IconButton(onClick = { deleteSelected() }) {
-                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete))
-                        }
-                    } else {
-                        IconButton(onClick = {
-                            val filename = "SmsCodeRecords_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.json"
-                            exportLauncher.launch(filename)
-                        }) {
-                            Icon(painterResource(R.drawable.ic_export), contentDescription = stringResource(R.string.action_export_rules))
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors()
-            )
+                ) { showHistoryLimitDialog = true }
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
-    ) { padding ->
+    }
+
+    if (showHistoryLimitDialog) {
+        RetentionDialog(
+            selectedValue = historyLimit,
+            onDismiss = { showHistoryLimitDialog = false },
+            titleId = R.string.pref_history_limit_title,
+            entriesId = R.array.history_limit_entry_list,
+            valuesId = R.array.history_limit_value_list
+        ) { value ->
+            if (value == "-1") {
+                showHistoryLimitInput = true
+            } else {
+                historyLimit = value
+                scope.launch {
+                    AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value)
+                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                }
+            }
+            showHistoryLimitDialog = false
+        }
+    }
+
+    if (showHistoryLimitInput) {
+        TextInputDialog(
+            title = stringResource(id = R.string.history_limit_custom_entry),
+            initialValue = if (historyLimit == "0" || historyLimit == "-1") "" else historyLimit,
+            onDismiss = { showHistoryLimitInput = false }
+        ) { value ->
+            if (value.all { it.isDigit() } && value.isNotEmpty()) {
+                historyLimit = value
+                scope.launch {
+                    AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value)
+                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                }
+            }
+            showHistoryLimitInput = false
+        }
+    }
+
+    val listState = rememberLazyListState()
+    val showTopDivider by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
+        }
+    }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
+        val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
+
         Box(modifier = Modifier
             .fillMaxSize()
-            .padding(padding)
+            .padding(top = 0.dp)
         ) {
             AnimatedContent(
                 targetState = Pair(isLoading, smsList),
@@ -256,24 +328,15 @@ fun CodeRecordScreen(
                     }
                 } else {
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 16.dp)
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .hazeSource(state = hazeState)
+                            .nestedScroll(scrollBehavior.nestedScrollConnection),
+                        state = listState,
+                        contentPadding = PaddingValues(top = topPadding, bottom = bottomPadding)
                     ) {
                         items(list, key = { it.id ?: 0 }) { smsMsg ->
                             val isSelected = selectedIds.contains(smsMsg.id)
-                            val deleteAndUndo: (SmsMsg) -> Unit = { target ->
-                                viewModel.removeSmsMsg(listOf(target))
-                                scope.launch {
-                                    val result = snackbarHostState.showSnackbar(
-                                        message = context.getString(R.string.some_items_removed, 1),
-                                        actionLabel = context.getString(R.string.revoke),
-                                        duration = SnackbarDuration.Long
-                                    )
-                                    if (result == SnackbarResult.ActionPerformed) {
-                                        viewModel.restoreSmsMsgList(listOf(target))
-                                    }
-                                }
-                            }
 
                             if (isSelectionMode) {
                                 CodeRecordItem(
@@ -284,9 +347,7 @@ fun CodeRecordScreen(
                                         toggleSelection(smsMsg.id ?: 0)
                                     },
                                     onLongClick = {},
-                                    onDetailClick = {
-                                        detailSmsMsg = smsMsg
-                                    },
+                                    onDetailClick = { detailSmsMsg = smsMsg },
                                     modifier = Modifier.animateItem()
                                 )
                             } else {
@@ -336,9 +397,7 @@ fun CodeRecordScreen(
                                                 isSelectionMode = true
                                                 toggleSelection(smsMsg.id ?: 0)
                                             },
-                                            onDetailClick = {
-                                                detailSmsMsg = smsMsg
-                                            },
+                                            onDetailClick = { detailSmsMsg = smsMsg },
                                             modifier = Modifier.animateItem()
                                         )
                                     }
@@ -350,6 +409,81 @@ fun CodeRecordScreen(
                 }
             }
         }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+        ) {
+            TopAppBar(
+                title = {
+                    if (isSelectionMode) {
+                        Text(stringResource(R.string.selected_count, selectedIds.size))
+                    } else {
+                        Text(stringResource(R.string.smscode_records))
+                    }
+                },
+                navigationIcon = {
+                    if (isSelectionMode) {
+                        IconButton(onClick = {
+                            isSelectionMode = false
+                            selectedIds = emptySet()
+                        }) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.action_back)
+                            )
+                        }
+                    } else if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.action_back)
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    if (isSelectionMode) {
+                        IconButton(onClick = {
+                            val allIds = smsList.mapNotNull { it.id }.toSet()
+                            if (selectedIds.size == allIds.size) {
+                                selectedIds = emptySet()
+                            } else {
+                                selectedIds = allIds
+                            }
+                        }) {
+                            Icon(Icons.Default.Check, contentDescription = stringResource(R.string.action_select_all))
+                        }
+                        IconButton(onClick = { deleteSelected() }) {
+                            Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete))
+                        }
+                    } else {
+                        IconButton(onClick = { showSettingsSheet = true }) {
+                            Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.pref_code_records_title))
+                        }
+                        IconButton(onClick = {
+                            val filename = "SmsCodeRecords_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.json"
+                            exportLauncher.launch(filename)
+                        }) {
+                            Icon(painterResource(R.drawable.ic_export), contentDescription = stringResource(R.string.action_export_rules))
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent
+                ),
+                scrollBehavior = scrollBehavior,
+                windowInsets = WindowInsets.statusBars,
+                modifier = Modifier
+                    .hazeEffect(hazeState, hazeStyle)
+            )
+        }
+        
+        SnackbarHost(
+             hostState = snackbarHostState,
+             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
+        )
     }
 }
 
@@ -386,19 +520,21 @@ fun CodeRecordItem(
         }
 
         // Left Side: Icon + App Name
+        val displayLabel = (smsMsg.company ?: smsMsg.sender ?: "Unknown").trim().trim('【', '】', '[', ']')
+        val iconLabel = displayLabel.replace(Regex("[【】\\[\\]]"), "").trim()
+
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(end = 16.dp)
         ) {
-            val label = smsMsg.company ?: smsMsg.sender ?: "Unknown"
             AppIconImage(
                 packageName = smsMsg.packageName,
-                label = label,
+                label = iconLabel,
                 contentDescription = stringResource(R.string.sms_icon_description)
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = label,
+                text = displayLabel,
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

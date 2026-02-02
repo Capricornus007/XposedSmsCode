@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -34,13 +35,42 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
 import com.tianma.xsmscode.common.constant.Const
 import com.tianma.xsmscode.ui.app.base.SystemBarsScrim
+import com.tianma.xsmscode.ui.app.base.rememberHazeStyle
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import com.tianma.xsmscode.ui.app.base.UpdateSystemBars
 import com.tianma.xsmscode.ui.app.base.applyEdgeToEdge
 import com.tianma.xsmscode.ui.nav.SmsCodeNavHost
+import com.github.tianma8023.xposed.smscode.R
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.appupdate.AppUpdateOptions
+import com.google.android.play.core.install.InstallStateUpdatedListener
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.InstallStatus
+import com.google.android.play.core.install.model.UpdateAvailability
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.hypot
 
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var appUpdateManager: AppUpdateManager
+    private val updateLauncher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result ->
+        if (result.resultCode != RESULT_OK) {
+            android.widget.Toast.makeText(
+                this,
+                getString(R.string.check_update_failed),
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+    private val installStateUpdatedListener = InstallStateUpdatedListener { state ->
+        if (state.installStatus() == InstallStatus.DOWNLOADED) {
+            appUpdateManager.completeUpdate()
+        }
+    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -50,6 +80,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyEdgeToEdge(window)
+        appUpdateManager = AppUpdateManagerFactory.create(this)
+        appUpdateManager.registerListener(installStateUpdatedListener)
         
         setContent {
             val viewModel: SettingsViewModel = koinViewModel()
@@ -63,6 +95,7 @@ class MainActivity : AppCompatActivity() {
             var isAnimating by remember { mutableStateOf(false) }
             var animationCenter by remember { mutableStateOf(Offset.Zero) }
             val view = LocalView.current
+            var requestedTab by remember { mutableStateOf<Any?>(null) }
 
             // Effect to trigger logic when ThemeState changes
             LaunchedEffect(themeState) {
@@ -114,8 +147,9 @@ class MainActivity : AppCompatActivity() {
             LaunchedEffect(viewModel.eventsFlow) {
                 viewModel.eventsFlow.collect { event ->
                     when (event) {
-                        is SettingsEvent.NavigateToRules -> navController.navigate(com.tianma.xsmscode.ui.nav.RulesListRoute)
-                        is SettingsEvent.NavigateToRecords -> navController.navigate(com.tianma.xsmscode.ui.nav.RecordsRoute)
+                        is SettingsEvent.NavigateToRules -> requestedTab = com.tianma.xsmscode.ui.nav.FaqRoute
+                        is SettingsEvent.NavigateToRecords -> requestedTab = com.tianma.xsmscode.ui.nav.RecordsRoute
+                        is SettingsEvent.StartPlayUpdate -> requestPlayUpdate()
                         else -> {}
                     }
                 }
@@ -131,9 +165,16 @@ class MainActivity : AppCompatActivity() {
                     }
                     
                     Box(modifier = Modifier.fillMaxSize()) {
-                         SmsCodeNavHost(
+                        val hazeState = remember { HazeState() }
+                        val hazeStyle = rememberHazeStyle()
+                        SmsCodeNavHost(
                             navController = navController,
-                            onBack = { finish() }
+                            onBack = { finish() },
+                            initialTab = requestedTab,
+                            onInitialTabConsumed = { requestedTab = null },
+                            modifier = Modifier,
+                            hazeState = hazeState,
+                            hazeStyle = hazeStyle
                         )
                         
                         // Overlay for Circular Reveal
@@ -165,11 +206,68 @@ class MainActivity : AppCompatActivity() {
                                     }
                             )
                         }
-
-                        SystemBarsScrim()
                     }
                 }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        appUpdateManager.appUpdateInfo.addOnSuccessListener { info ->
+            if (info.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
+                startUpdateFlow(info)
+            } else if (info.installStatus() == InstallStatus.DOWNLOADED) {
+                appUpdateManager.completeUpdate()
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        appUpdateManager.unregisterListener(installStateUpdatedListener)
+    }
+
+    private fun requestPlayUpdate() {
+        appUpdateManager.appUpdateInfo.addOnSuccessListener { info ->
+            when {
+                info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE &&
+                    info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE) -> {
+                    startUpdateFlow(info)
+                }
+                info.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS -> {
+                    startUpdateFlow(info)
+                }
+                else -> {
+                    android.widget.Toast.makeText(
+                        this,
+                        getString(R.string.app_already_newest),
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }.addOnFailureListener {
+            android.widget.Toast.makeText(
+                this,
+                getString(R.string.check_update_failed),
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    private fun startUpdateFlow(info: com.google.android.play.core.appupdate.AppUpdateInfo) {
+        try {
+            appUpdateManager.startUpdateFlowForResult(
+                info,
+                updateLauncher,
+                AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build()
+            )
+        } catch (e: Exception) {
+            android.widget.Toast.makeText(
+                this,
+                getString(R.string.check_update_failed),
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
         }
     }
 

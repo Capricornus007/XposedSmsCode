@@ -120,12 +120,12 @@
     <string name="pref_about_title">About</string>
     <string name="pref_version_title">Version</string>
     <string name="pref_version_summary"><![CDATA[Current version: %1$s (%2$d)]]></string>
-    <string name="pref_join_qq_group_title">Join QQ Group</string>
-    <string name="pref_join_qq_group_summary">Click to apply for joining</string>
+    <string name="pref_join_qq_group_title">QQ</string>
+    <string name="pref_join_qq_group_summary">Tap to join</string>
     <string name="qq_group_number">1075934453</string>
     <string name="prompt_join_qq_group_failed">Please install QQ first</string>
-    <string name="pref_join_telegram_group_title">Join Telegram Group</string>
-    <string name="pref_join_telegram_group_summary">Click to join discussion group</string>
+    <string name="pref_join_telegram_group_title">Telegram</string>
+    <string name="pref_join_telegram_group_summary">Tap to join</string>
     <string name="pref_source_code_title">Source code</string>
     <string name="browser_install_or_enable_prompt">Please install or enable browser first</string>
     <string name="pref_source_code_summary">Welcome to star ♪(＾∀＾●)ﾉ</string>
@@ -138,7 +138,15 @@
     <!-- preference about end -->
 
     <!-- auto-input block settings -->
-    <string name="app_block_settings">App Block Settings</string>
+    <string name="app_block_settings">Auto Input Block List</string>
+    <string name="tab_overview">Overview</string>
+    <string name="tab_blacklist">Blacklist</string>
+    <string name="tab_faq">FAQ</string>
+    <string name="tab_records">Records</string>
+    <string name="tab_settings">Settings</string>
+    <string name="action_sort_title">App sorting</string>
+    <string name="action_sort_reverse">Reverse order</string>
+    <string name="action_hide_system_apps">Hide system apps</string>
     <string name="app_block_summary">Choose Apps that auto-input banned</string>
     <string name="action_sort">Sort Order</string>
     <string name="action_sort_by_label">App name</string>
@@ -245,6 +253,7 @@
     <string name="alipay_red_packet_code_copied">Red packet token copied, go get it: %s</string>
     <string name="get_red_packet">Get red packet</string>
     <string name="dialog_donate_title">Buy me a coffee T_T</string>
+    <string name="dialog_donate_summary">Tap to view donation details</string>
     <string name="dialog_donate_content">I\'m starving and can barely code. Please show some mercy and buy me a coffee! Whether it\'s WeChat or Alipay, even a penny is a huge rescue for me ✿✿ヽ(°▽°)ノ✿</string>
     <string name="dialog_donate_wechat">Coffee (WeChat)</string>
     <string name="dialog_donate_alipay">Coffee (Alipay)</string>
@@ -263,6 +272,11 @@
 
     <!-- check update -->
     <string name="new_version_found">New version found!</string>
+    <string name="check_update_title">Check for updates</string>
+    <string name="update_in_app">In-app update</string>
+    <string name="update_manual_download">Manual download</string>
+    <string name="update_link_copied">Download link copied</string>
+    <string name="update_completed">Update completed</string>
     <string name="check_update_failed">Check update failed.</string>
     <string name="network_error_http">HTTP %1$d</string>
     <string name="network_error_io">Network error</string>

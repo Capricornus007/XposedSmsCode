@@ -2,22 +2,18 @@ package com.tianma.xsmscode.ui.block
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.ArrowDropUp
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -28,16 +24,26 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.data.db.entity.AppInfo
 import com.tianma.xsmscode.ui.common.AppIconImage
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppBlockScreen(
-    onBack: () -> Unit,
+    hazeState: HazeState,
+    hazeStyle: HazeStyle,
+    onBack: (() -> Unit)? = null,
     viewModel: AppBlockViewModel = koinViewModel()
 ) {
     val apps by viewModel.appsFlow.collectAsStateWithLifecycle()
     val isLoading by viewModel.loadingFlow.collectAsStateWithLifecycle()
+    val hideSystemApps by viewModel.hideSystemAppsFlow.collectAsStateWithLifecycle()
+    val hasChanges by viewModel.hasChangesFlow.collectAsStateWithLifecycle()
+    val currentSortOption by viewModel.sortOptionFlow.collectAsStateWithLifecycle()
+    val isAscending by viewModel.isAscendingFlow.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     
@@ -52,7 +58,7 @@ fun AppBlockScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is AppBlockViewModel.AppBlockEvent.SaveSuccess -> onBack()
+                is AppBlockViewModel.AppBlockEvent.SaveSuccess -> onBack?.invoke()
                 is AppBlockViewModel.AppBlockEvent.SaveFailed -> {
                     snackbarHostState.showSnackbar(context.getString(R.string.save_failed))
                 }
@@ -67,166 +73,207 @@ fun AppBlockScreen(
     }
 
     // Search State
-    var isSearchActive by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
-    
-    // Sort Menu State
-    var showSortMenu by remember { mutableStateOf(false) }
 
-    Scaffold(
-        contentWindowInsets = WindowInsets.safeDrawing.only(
-            WindowInsetsSides.Horizontal + WindowInsetsSides.Top
-        ),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            if (isSearchActive) {
-                SearchBar(
-                    inputField = {
-                        SearchBarDefaults.InputField(
-                            query = searchQuery,
-                            onQueryChange = { 
-                                searchQuery = it
-                                viewModel.doFilter(it)
-                            },
-                            onSearch = { /* Search is instant */ },
-                            expanded = true,
-                            onExpandedChange = { if (!it) { isSearchActive = false; searchQuery = ""; viewModel.doFilter("") } },
-                            placeholder = { Text(stringResource(R.string.action_search)) },
-                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                            trailingIcon = { 
-                                IconButton(onClick = { 
-                                    if (searchQuery.isNotEmpty()) {
-                                        searchQuery = ""
-                                        viewModel.doFilter("")
-                                    } else {
-                                        isSearchActive = false; searchQuery = ""; viewModel.doFilter("")
-                                    }
-                                }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Close search")
-                                } 
-                            }
-                        )
-                    },
-                    expanded = true,
-                    onExpandedChange = { if (!it) { isSearchActive = false; searchQuery = ""; viewModel.doFilter("") } }
-                ) {
-                    // Show valid content inside search view
-                    Box(modifier = Modifier.fillMaxSize()) {
-                         if (isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                        } else {
-                            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                                items(apps, key = { it.packageName }) { app ->
-                                    AppInfoItem(
-                                        appInfo = app,
-                                        onClick = { viewModel.doItemClicked(app) }
-                                    )
-                                    HorizontalDivider()
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                TopAppBar(
-                    title = { Text(stringResource(R.string.app_block_settings)) },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { isSearchActive = true }) {
-                            Icon(Icons.Default.Search, contentDescription = stringResource(R.string.action_search))
-                        }
-                        Box {
-                            IconButton(onClick = { showSortMenu = true }) {
-                                Icon(Icons.AutoMirrored.Filled.List, contentDescription = stringResource(R.string.action_sort))
-                            }
-                            DropdownMenu(
-                                expanded = showSortMenu,
-                                onDismissRequest = { showSortMenu = false }
-                            ) {
-                                // 1. App Name
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_sort_by_label)) },
-                                    trailingIcon = {
-                                        if (viewModel.currentSortOption == AppBlockViewModel.SortOption.LABEL) {
-                                            Icon(
-                                                imageVector = if (viewModel.isAscending) androidx.compose.material.icons.Icons.Filled.ArrowDropUp else androidx.compose.material.icons.Icons.Filled.ArrowDropDown,
-                                                contentDescription = null
-                                            )
-                                        }
-                                    },
-                                    onClick = { 
-                                        viewModel.doSort(AppBlockViewModel.SortOption.LABEL)
-                                        showSortMenu = false 
-                                    }
-                                )
-                                // 2. Package Name
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_sort_by_pkg)) },
-                                    trailingIcon = {
-                                        if (viewModel.currentSortOption == AppBlockViewModel.SortOption.PACKAGE) {
-                                            Icon(
-                                                imageVector = if (viewModel.isAscending) androidx.compose.material.icons.Icons.Filled.ArrowDropUp else androidx.compose.material.icons.Icons.Filled.ArrowDropDown,
-                                                contentDescription = null
-                                            )
-                                        }
-                                    },
-                                    onClick = { 
-                                        viewModel.doSort(AppBlockViewModel.SortOption.PACKAGE)
-                                        showSortMenu = false 
-                                    }
-                                )
-                                // 3. Usage Frequency
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_sort_by_usage)) },
-                                    trailingIcon = {
-                                        if (viewModel.currentSortOption == AppBlockViewModel.SortOption.USAGE) {
-                                            Icon(
-                                                imageVector = if (viewModel.isAscending) androidx.compose.material.icons.Icons.Filled.ArrowDropUp else androidx.compose.material.icons.Icons.Filled.ArrowDropDown,
-                                                contentDescription = null
-                                            )
-                                        }
-                                    },
-                                    onClick = { 
-                                        viewModel.doSort(AppBlockViewModel.SortOption.USAGE)
-                                        showSortMenu = false 
-                                    }
-                                )
-                            }
-                        }
-                        IconButton(onClick = { viewModel.saveData() }) {
-                            Icon(Icons.Default.Check, contentDescription = stringResource(R.string.action_accomplish))
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors()
-                )
-            }
+    // Settings Menu State
+    var showSettingsMenu by remember { mutableStateOf(false) }
+
+    val listState = rememberLazyListState()
+    val showTopDivider by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
         }
-    ) { padding ->
-        // Main Content (only visible when search is NOT active, effectively)
-        // But since SearchBar is full screen overlay, this is hidden when search is active.
+    }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 72.dp // TopBar(64) + SearchBox(72)
+        val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
+
         Box(modifier = Modifier
             .fillMaxSize()
-            .padding(padding)
+            .padding(top = 0.dp) // Content starts at top
         ) {
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
-                // Ensure list elements have stable keys and minimize recomposition
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .hazeSource(state = hazeState)
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    state = listState,
+                    contentPadding = PaddingValues(top = topPadding, bottom = bottomPadding)
                 ) {
                     items(apps, key = { it.packageName }) { app ->
                         AppInfoItem(
                             appInfo = app,
                             onClick = { viewModel.doItemClicked(app) }
                         )
-                        HorizontalDivider()
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                     }
                 }
+            }
+        }
+
+        // Header
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .hazeEffect(hazeState, hazeStyle)
+        ) {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.app_block_settings),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
+                scrollBehavior = scrollBehavior,
+                windowInsets = WindowInsets.statusBars,
+                modifier = Modifier,
+                navigationIcon = {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                },
+                actions = {
+                    Box {
+                        IconButton(onClick = { showSettingsMenu = true }) {
+                            Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.action_sort))
+                        }
+                        DropdownMenu(
+                            expanded = showSettingsMenu,
+                            onDismissRequest = { showSettingsMenu = false }
+                        ) {
+                            Text(
+                                text = stringResource(R.string.action_sort_title),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_sort_by_label)) },
+                                trailingIcon = {
+                                    RadioButton(
+                                        selected = currentSortOption == AppBlockViewModel.SortOption.LABEL,
+                                        onClick = null
+                                    )
+                                },
+                                onClick = {
+                                    viewModel.setSortOption(AppBlockViewModel.SortOption.LABEL)
+                                    showSettingsMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_sort_by_pkg)) },
+                                trailingIcon = {
+                                    RadioButton(
+                                        selected = currentSortOption == AppBlockViewModel.SortOption.PACKAGE,
+                                        onClick = null
+                                    )
+                                },
+                                onClick = {
+                                    viewModel.setSortOption(AppBlockViewModel.SortOption.PACKAGE)
+                                    showSettingsMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_sort_by_usage)) },
+                                trailingIcon = {
+                                    RadioButton(
+                                        selected = currentSortOption == AppBlockViewModel.SortOption.USAGE,
+                                        onClick = null
+                                    )
+                                },
+                                onClick = {
+                                    viewModel.setSortOption(AppBlockViewModel.SortOption.USAGE)
+                                    showSettingsMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_sort_reverse)) },
+                                trailingIcon = {
+                                    Checkbox(
+                                        checked = !isAscending,
+                                        onCheckedChange = null
+                                    )
+                                },
+                                onClick = {
+                                    viewModel.setAscending(!isAscending)
+                                }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_hide_system_apps)) },
+                                trailingIcon = {
+                                    Checkbox(
+                                        checked = hideSystemApps,
+                                        onCheckedChange = null
+                                    )
+                                },
+                                onClick = {
+                                    viewModel.setHideSystemApps(!hideSystemApps)
+                                }
+                            )
+                        }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent
+                )
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = {
+                        searchQuery = it
+                        viewModel.doFilter(it)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    singleLine = true,
+                    placeholder = { Text(stringResource(R.string.action_search)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = {
+                                searchQuery = ""
+                                viewModel.doFilter("")
+                            }) {
+                                Icon(Icons.Default.Close, contentDescription = null)
+                            }
+                        }
+                    }
+                )
+            }
+        }
+        
+        SnackbarHost(
+             hostState = snackbarHostState,
+             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
+        )
+        
+        if (hasChanges) {
+            FloatingActionButton(
+                onClick = { viewModel.saveData() },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp, end = 16.dp)
+            ) {
+                Icon(Icons.Default.Check, contentDescription = stringResource(R.string.action_accomplish))
             }
         }
     }

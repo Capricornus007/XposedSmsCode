@@ -1,0 +1,398 @@
+package com.tianma.xsmscode.ui.home
+
+import android.content.Intent
+import android.os.Build
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.Label
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.activity.ComponentActivity
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.tianma8023.xposed.smscode.BuildConfig
+import com.github.tianma8023.xposed.smscode.R
+import com.tianma.xsmscode.common.constant.Const
+import com.tianma.xsmscode.common.utils.ModuleUtils
+import com.tianma.xsmscode.common.utils.PackageUtils
+import com.tianma.xsmscode.common.utils.Utils
+import com.tianma.xsmscode.data.db.entity.ApkVersion
+import org.koin.compose.viewmodel.koinViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import android.widget.Toast
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun OverviewScreen(
+    hazeState: HazeState,
+    hazeStyle: HazeStyle
+) {
+    val context = LocalContext.current
+    val activityOwner = context as? ComponentActivity
+    val settingsViewModel = if (activityOwner != null) {
+        koinViewModel<SettingsViewModel>(viewModelStoreOwner = activityOwner)
+    } else {
+        koinViewModel()
+    }
+    val updateVersion by settingsViewModel.updateVersion.collectAsStateWithLifecycle(null)
+    var showDonateDialog by remember { mutableStateOf(false) }
+    var showAlipayChoiceDialog by remember { mutableStateOf(false) }
+    var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
+
+    val isEnabled = ModuleUtils.isModuleEnabled()
+    
+    val listState = rememberLazyListState()
+    val showTopDivider by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
+        }
+    }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val frameworkInfoState by produceState<Pair<String, String>?>(
+        initialValue = null
+    ) {
+        value = withContext(Dispatchers.IO) {
+            PackageUtils.getLsposedModuleInfo()
+        }
+    }
+    val frameworkType = frameworkInfoState?.first ?: "未知"
+    val frameworkVersion = frameworkInfoState?.second ?: run {
+        val lsposedVersion = PackageUtils.getPackageVersion(context, Const.LSPOSED_MANAGER_PACKAGE_NAME)
+        when {
+            lsposedVersion != null && lsposedVersion.first.isNotBlank() ->
+                "${lsposedVersion.first} (${lsposedVersion.second})"
+            PackageUtils.isPackageInstalled(context, Const.LSPOSED_MANAGER_PACKAGE_NAME) ->
+                "未知"
+            else -> "未安装"
+        }
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .hazeSource(state = hazeState)
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .padding(horizontal = 16.dp),
+            state = listState,
+            contentPadding = PaddingValues(
+                top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 8.dp,
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                StatusCard(
+                    isEnabled = isEnabled,
+                    onClick = if (isEnabled) null else {
+                        {
+                            val intent = Intent().apply {
+                                setClassName(
+                                    "org.lsposed.manager",
+                                    "org.lsposed.manager.ui.activity.MainActivity"
+                                )
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            try {
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                // Ignore if LSPosed manager is not installed.
+                            }
+                        }
+                    }
+                )
+            }
+
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 12.dp)) {
+                        InfoItem(Icons.AutoMirrored.Filled.Label, "版本名称", BuildConfig.VERSION_NAME)
+                        InfoItem(Icons.Default.Numbers, "版本代码", BuildConfig.VERSION_CODE.toString())
+                        val rootHint = "需要 Root 权限才能读取"
+                        InfoItem(
+                            Icons.Default.Extension,
+                            "框架类型",
+                            frameworkType,
+                            onClick = { Toast.makeText(context, rootHint, Toast.LENGTH_SHORT).show() }
+                        )
+                        InfoItem(
+                            Icons.Default.Verified,
+                            "框架版本",
+                            frameworkVersion,
+                            onClick = { Toast.makeText(context, rootHint, Toast.LENGTH_SHORT).show() }
+                        )
+                    }
+                }
+            }
+
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 12.dp)) {
+                        InfoItem(Icons.Default.Android, "Android 版本", Build.VERSION.RELEASE)
+                        InfoItem(Icons.Default.Code, "API 级别", Build.VERSION.SDK_INT.toString())
+                        InfoItem(Icons.Default.Business, "厂商", Build.MANUFACTURER)
+                        InfoItem(Icons.Default.Smartphone, "型号", Build.MODEL)
+                    }
+                }
+            }
+
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 12.dp)) {
+                        InfoItem(
+                            icon = Icons.Default.Info,
+                            label = stringResource(id = R.string.check_update_title),
+                            value = stringResource(id = R.string.pref_version_summary, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+                            onClick = {
+                                if (PackageUtils.isInstalledFromPlay(context)) {
+                                    settingsViewModel.requestPlayUpdate()
+                                } else {
+                                    settingsViewModel.checkUpdate()
+                                }
+                            }
+                        )
+                        InfoItem(
+                            icon = Icons.AutoMirrored.Filled.Chat,
+                            label = stringResource(id = R.string.pref_join_qq_group_title),
+                            value = stringResource(id = R.string.pref_join_qq_group_summary),
+                            onClick = { PackageUtils.joinQQGroup(context) }
+                        )
+                        InfoItem(
+                            icon = Icons.AutoMirrored.Filled.Send,
+                            label = stringResource(id = R.string.pref_join_telegram_group_title),
+                            value = stringResource(id = R.string.pref_join_telegram_group_summary),
+                            onClick = { Utils.showWebPage(context, Const.TELEGRAM_GROUP_URL) }
+                        )
+                        InfoItem(
+                            icon = Icons.Default.Code,
+                            label = stringResource(id = R.string.pref_source_code_title),
+                            value = stringResource(id = R.string.pref_source_code_summary),
+                            onClick = { Utils.showWebPage(context, Const.PROJECT_SOURCE_CODE_URL) }
+                        )
+                        InfoItem(
+                            icon = Icons.Default.Favorite,
+                            label = stringResource(id = R.string.pref_donate_by_alipay_title),
+                            value = stringResource(id = R.string.dialog_donate_summary),
+                            onClick = { showDonateDialog = true }
+                        )
+                    }
+                }
+            }
+        }
+
+        TopAppBar(
+            title = { Text(text = stringResource(id = R.string.app_name)) },
+            scrollBehavior = scrollBehavior,
+            windowInsets = WindowInsets.statusBars,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .hazeEffect(hazeState, hazeStyle),
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent
+            )
+        )
+    }
+
+    updateVersion?.let { version ->
+        UpdateChoiceDialog(
+            version = version,
+            onDismiss = { settingsViewModel.clearUpdateVersion() },
+            onInAppUpdate = {
+                settingsViewModel.startInAppUpdate(version)
+                settingsViewModel.clearUpdateVersion()
+            },
+            onManualDownload = {
+                settingsViewModel.startManualDownload(version)
+                settingsViewModel.clearUpdateVersion()
+            }
+        )
+    }
+
+    if (showDonateDialog) {
+        DonateDialog(
+            onDismiss = { showDonateDialog = false },
+            onAlipay = { showDonateDialog = false; showAlipayChoiceDialog = true },
+            onWechat = {
+                showDonateDialog = false
+                showQRCodeDialog = Pair(R.drawable.wx, "wechat")
+            }
+        )
+    }
+
+    if (showAlipayChoiceDialog) {
+        AlipayChoiceDialog(
+            onDismiss = { showAlipayChoiceDialog = false },
+            onQRCode = {
+                showAlipayChoiceDialog = false
+                showQRCodeDialog = Pair(R.drawable.alipay, "alipay")
+            },
+            onToken = {
+                showAlipayChoiceDialog = false
+                PackageUtils.copyAlipayPocketToken(context)
+                PackageUtils.startAlipayActivity(context)
+            }
+        )
+    }
+
+    showQRCodeDialog?.let { pair ->
+        QRCodeDialog(
+            resId = pair.first,
+            type = pair.second,
+            onDismiss = { showQRCodeDialog = null },
+            onSave = { Utils.saveImageToGallery(context, pair.first, "${pair.second}_qrcode") }
+        )
+    }
+}
+
+@Composable
+fun StatusCard(
+    isEnabled: Boolean,
+    onClick: (() -> Unit)? = null
+) {
+    val containerColor = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.errorContainer
+    val contentColor = if (isEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onErrorContainer
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor,
+            contentColor = contentColor
+        ),
+        onClick = { onClick?.invoke() }
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Icon(
+                imageVector = if (isEnabled) Icons.Default.CheckCircle else Icons.Default.Error,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp)
+            )
+            Column {
+                Text(
+                    text = if (isEnabled) "工作正常" else "未激活",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                if (!isEnabled) {
+                    Text(
+                        text = "请在管理器中启用并重启设备",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun InfoItem(
+    icon: ImageVector,
+    label: String,
+    value: String,
+    onClick: (() -> Unit)? = null
+) {
+    ListItem(
+        leadingContent = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+        headlineContent = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        },
+        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun UpdateChoiceDialog(
+    version: ApkVersion,
+    onDismiss: () -> Unit,
+    onInAppUpdate: () -> Unit,
+    onManualDownload: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.new_version_found)) },
+        text = { Text(version.versionInfo ?: "") },
+        confirmButton = {
+            TextButton(onClick = onInAppUpdate) {
+                Text(stringResource(id = R.string.update_in_app))
+            }
+            TextButton(onClick = onManualDownload) {
+                Text(stringResource(id = R.string.update_manual_download))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) }
+        }
+    )
+}

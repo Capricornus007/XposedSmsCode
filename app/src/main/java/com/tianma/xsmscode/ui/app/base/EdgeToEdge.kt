@@ -14,43 +14,59 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 
 fun applyEdgeToEdge(window: Window) {
     WindowCompat.setDecorFitsSystemWindows(window, false)
 }
 
+
+
 @Composable
 fun SystemBarsScrim(
-    color: Color = MaterialTheme.colorScheme.background.copy(alpha = 0.6f)
+    hazeState: HazeState,
+    hazeStyle: HazeStyle
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         Spacer(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(color, Color.Transparent)
-                    )
-                )
+                .windowInsetsTopHeight(WindowInsets.statusBars)
+                .hazeEffect(hazeState, hazeStyle)
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f))
         )
         Spacer(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
+                .windowInsetsBottomHeight(WindowInsets.navigationBars)
                 .align(Alignment.BottomStart)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, color)
-                    )
-                )
+                .hazeEffect(hazeState, hazeStyle)
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f))
         )
     }
+}
+
+@Composable
+fun rememberHazeStyle(): HazeStyle {
+    return HazeStyle(
+        backgroundColor = MaterialTheme.colorScheme.surface,
+        tint = HazeTint(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)),
+        blurRadius = 30.dp,
+        noiseFactor = 0f
+    )
 }
 
 @Composable

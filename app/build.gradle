@@ -243,6 +243,12 @@ dependencies {
     implementation libs.androidx.lifecycle.runtime.compose
     implementation libs.androidx.compose.runtime.livedata
     implementation libs.androidx.navigation.compose
+    implementation libs.androidx.compose.material3.adaptive
+    implementation libs.androidx.compose.material3.adaptive.layout
+    implementation libs.androidx.compose.material3.adaptive.navigation
+    implementation libs.androidx.compose.material3.windowSizeClass
+    implementation libs.play.app.update
+    implementation libs.haze.android
 
     // Room
     implementation libs.androidx.room.runtime
@@ -255,4 +261,5 @@ dependencies {
     implementation libs.koin.androidx.compose
     implementation libs.koin.compose.viewmodel
     implementation libs.androidx.datastore.preferences
+    implementation libs.kotlinx.collections.immutable
 }

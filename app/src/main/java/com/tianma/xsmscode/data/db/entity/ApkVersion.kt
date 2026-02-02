@@ -5,7 +5,11 @@ import kotlin.math.max
 /**
  * Apk version info
  */
-class ApkVersion(val versionName: String, val versionInfo: String?) : Comparable<ApkVersion> {
+class ApkVersion(
+    val versionName: String,
+    val versionInfo: String?,
+    val downloadUrl: String? = null
+) : Comparable<ApkVersion> {
 
     override fun toString(): String {
         return "ApkVersion{mVersionName='$versionName', mVersionInfo='$versionInfo'}"

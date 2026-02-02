@@ -42,6 +42,17 @@ object DataRepository {
         } else {
             body.replace(regex.toRegex(), "")
         }
-        return ApkVersion(release.name ?: "", versionInfo)
+        val downloadUrl = release.assets
+            ?.mapNotNull { it.browserDownloadUrl?.let { url -> it.name to url } }
+            ?.let { assets ->
+                assets.firstOrNull { (name, _) ->
+                    name?.endsWith(".apk", ignoreCase = true) == true &&
+                        name.contains("universal", ignoreCase = true)
+                } ?: assets.firstOrNull { (name, _) ->
+                    name?.endsWith(".apk", ignoreCase = true) == true
+                }
+            }?.second
+
+        return ApkVersion(release.name ?: "", versionInfo, downloadUrl)
     }
 }
