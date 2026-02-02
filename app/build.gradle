@@ -28,8 +28,8 @@ def randomHex8() {
     return String.format("%08x", r.nextInt() & 0xffffffffL)
 }
 
-def VERSION_NAME = "3.1.0"
-def VERSION_CODE = 80
+def VERSION_NAME = "3.0.7"
+def VERSION_CODE = 77
 
 def releaseBaseName = { String versionName ->
     return "XposedSmsCode_v${versionName.replaceAll('\\s+', '_')}" +
