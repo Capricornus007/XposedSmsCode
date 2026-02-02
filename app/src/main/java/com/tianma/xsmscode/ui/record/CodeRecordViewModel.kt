@@ -18,8 +18,14 @@ import kotlinx.coroutines.withContext
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
+import androidx.compose.runtime.Immutable
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
+
+@Immutable
 data class CodeRecordUiState(
-    val smsList: List<SmsMsg> = emptyList(),
+    val smsList: ImmutableList<SmsMsg> = persistentListOf(),
     val isLoading: Boolean = false
 )
 
@@ -30,7 +36,7 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
     val uiState: StateFlow<CodeRecordUiState> = DBManager.get(application)
         .queryAllSmsMsgFlow()
         .combine(_loading) { smsList, loading ->
-            CodeRecordUiState(smsList, loading)
+            CodeRecordUiState(smsList.toImmutableList(), loading)
         }
         .stateIn(
             scope = viewModelScope,

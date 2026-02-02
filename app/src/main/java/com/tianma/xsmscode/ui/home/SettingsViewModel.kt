@@ -37,6 +37,7 @@ sealed class SettingsEvent {
     data object AppAlreadyNewest : SettingsEvent()
     data object NavigateToRules : SettingsEvent()
     data object NavigateToRecords : SettingsEvent()
+    data object StartPlayUpdate : SettingsEvent()
 }
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -170,11 +171,46 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun requestPlayUpdate() {
+        viewModelScope.launch {
+            _eventsFlow.emit(SettingsEvent.StartPlayUpdate)
+        }
+    }
+
     fun updateFromGithub() {
         Utils.showWebPage(getApplication(), Const.PROJECT_GITHUB_LATEST_RELEASE_URL)
     }
 
     fun updateFromCoolApk() {
         PackageUtils.showAppDetailsInCoolApk(getApplication())
+    }
+
+    fun startInAppUpdate(version: ApkVersion) {
+        viewModelScope.launch {
+            val url = version.downloadUrl
+            val reachable = withContext(Dispatchers.IO) { PackageUtils.canReachGithub() }
+            if (!reachable || url.isNullOrBlank()) {
+                updateFromGithub()
+                return@launch
+            }
+            val ok = PackageUtils.startInAppUpdate(getApplication(), url, version.versionName)
+            if (!ok) {
+                updateFromGithub()
+            }
+        }
+    }
+
+    fun startManualDownload(version: ApkVersion) {
+        viewModelScope.launch {
+            val url = version.downloadUrl
+            if (url.isNullOrBlank()) {
+                updateFromGithub()
+                return@launch
+            }
+            val ok = PackageUtils.startManualDownload(getApplication(), url, version.versionName)
+            if (!ok) {
+                updateFromGithub()
+            }
+        }
     }
 }

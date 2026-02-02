@@ -33,6 +33,8 @@ object Const {
     const val DOC_SMS_CODE_RULE_HELP = "sms_code_rule_help"
     /* Xposed SmsCode end */
 
+    const val LSPOSED_MANAGER_PACKAGE_NAME = "org.lsposed.manager"
+
     /* Rule Edit Types */
     const val EDIT_TYPE_CREATE = 0
     const val EDIT_TYPE_EDIT = 1

@@ -1,22 +1,31 @@
 package com.tianma.xsmscode.ui.nav
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.tianma.xsmscode.ui.home.ComposeSettingsScreen
-import com.tianma.xsmscode.ui.rule.list.RuleListScreen
+import com.tianma.xsmscode.ui.home.MainScreen
 import com.tianma.xsmscode.ui.rule.edit.RuleEditScreen
 import com.tianma.xsmscode.ui.record.CodeRecordScreen
 import com.tianma.xsmscode.ui.block.AppBlockScreen
 import kotlinx.serialization.Serializable
 
 @Serializable
+object MainRoute
+
+@Serializable
+object OverviewRoute
+
+@Serializable
 object SettingsRoute
 
 @Serializable
-object RulesListRoute
+object FaqRoute
 
 @Serializable
 data class RuleEditRoute(
@@ -33,27 +42,27 @@ object AppBlockRoute
 @Composable
 fun SmsCodeNavHost(
     navController: NavHostController,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    initialTab: Any? = null,
+    onInitialTabConsumed: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    hazeState: HazeState,
+    hazeStyle: HazeStyle
 ) {
     NavHost(
         navController = navController,
-        startDestination = SettingsRoute
+        startDestination = MainRoute,
+        modifier = modifier
     ) {
-        composable<SettingsRoute> {
-            ComposeSettingsScreen(
-                onNavigateToRules = { navController.navigate(RulesListRoute) },
-                onNavigateToRecords = { navController.navigate(RecordsRoute) },
-                onNavigateToAppBlock = { navController.navigate(AppBlockRoute) },
-                onExit = onBack
-            )
-        }
-        
-        composable<RulesListRoute> {
-            RuleListScreen(
-                onBack = { navController.popBackStack() },
-                onNavigateToEdit = { type, rule ->
+        composable<MainRoute> {
+            MainScreen(
+                onNavigateToRuleEdit = { type, rule ->
                     navController.navigate(RuleEditRoute(editType = type, ruleId = rule?.id))
-                }
+                },
+                initialTab = initialTab,
+                onInitialTabConsumed = onInitialTabConsumed,
+                hazeState = hazeState,
+                hazeStyle = hazeStyle
             )
         }
         
@@ -62,18 +71,6 @@ fun SmsCodeNavHost(
             RuleEditScreen(
                 ruleEditType = route.editType,
                 initialRuleId = route.ruleId,
-                onBack = { navController.popBackStack() }
-            )
-        }
-        
-        composable<RecordsRoute> {
-            CodeRecordScreen(
-                onBack = { navController.popBackStack() }
-            )
-        }
-        
-        composable<AppBlockRoute> {
-            AppBlockScreen(
                 onBack = { navController.popBackStack() }
             )
         }

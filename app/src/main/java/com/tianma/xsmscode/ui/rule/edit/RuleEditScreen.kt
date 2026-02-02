@@ -15,7 +15,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.Modifier
@@ -30,6 +29,7 @@ import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.common.constant.Const
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 
@@ -57,7 +57,7 @@ fun RuleEditScreen(
         viewModel.handleArguments(args)
     }
 
-    val codeRule by viewModel.codeRuleLiveData.observeAsState(SmsCodeRule())
+    val codeRule by viewModel.codeRuleFlow.collectAsStateWithLifecycle()
     
     var validationErrorState by remember { mutableStateOf<RuleEditViewModel.ValidationResult?>(null) }
     val keyboardController = LocalSoftwareKeyboardController.current

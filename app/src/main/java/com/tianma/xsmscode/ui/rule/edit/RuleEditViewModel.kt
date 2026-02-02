@@ -3,12 +3,12 @@ package com.tianma.xsmscode.ui.rule.edit
 import android.app.Application
 import android.os.Bundle
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import androidx.core.os.BundleCompat
 import com.tianma.xsmscode.data.db.DBManager
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
@@ -28,14 +28,14 @@ sealed class RuleEditEvent {
 
 class RuleEditViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val mCodeRuleLiveData = MutableLiveData<SmsCodeRule>()
     private val _eventsFlow = MutableSharedFlow<RuleEditEvent>()
-    val eventsFlow: SharedFlow<RuleEditEvent> = _eventsFlow.asSharedFlow()
+    val eventsFlow = _eventsFlow.asSharedFlow()
+
+    private val _codeRuleFlow = MutableStateFlow(SmsCodeRule())
+    val codeRuleFlow: StateFlow<SmsCodeRule> = _codeRuleFlow.asStateFlow()
 
     private var mRuleEditType: Int = Const.EDIT_TYPE_CREATE
     private var mCodeRule: SmsCodeRule = SmsCodeRule()
-
-    val codeRuleLiveData: LiveData<SmsCodeRule> = mCodeRuleLiveData
 
     override fun onCleared() {
         super.onCleared()
@@ -54,7 +54,7 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
         val codeRule = BundleCompat.getParcelable(args, Const.KEY_CODE_RULE, SmsCodeRule::class.java)
         if (mRuleEditType == Const.EDIT_TYPE_EDIT && codeRule != null) {
             mCodeRule = codeRule
-            mCodeRuleLiveData.value = mCodeRule
+            _codeRuleFlow.value = mCodeRule
         } else {
             loadTemplate()
         }
@@ -69,7 +69,7 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
                 if (rule != null) {
                     mCodeRule = rule
                     mRuleEditType = Const.EDIT_TYPE_EDIT
-                    mCodeRuleLiveData.value = mCodeRule
+                    _codeRuleFlow.value = mCodeRule
                 } else {
                     loadTemplate()
                 }
@@ -88,7 +88,7 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
                     ) ?: SmsCodeRule()
                 }
                 mCodeRule = codeRule
-                mCodeRuleLiveData.value = mCodeRule
+                _codeRuleFlow.value = mCodeRule
             } catch (e: Throwable) {
                 // ignore
             }
@@ -132,7 +132,7 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
                     true
                 }
             }
-            mCodeRuleLiveData.postValue(mCodeRule)
+            _codeRuleFlow.value = mCodeRule
             _eventsFlow.emit(RuleEditEvent.CodeRuleSaved(success))
         }
     }

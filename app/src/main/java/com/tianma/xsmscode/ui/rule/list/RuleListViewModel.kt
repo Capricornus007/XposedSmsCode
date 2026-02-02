@@ -6,13 +6,18 @@ import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.github.tianma8023.xposed.smscode.BuildConfig
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.map
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import androidx.core.os.BundleCompat
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBManager
@@ -41,8 +46,15 @@ sealed class RuleListEvent {
 
 class RuleListViewModel(application: Application) : AndroidViewModel(application) {
 
-    // Flow-backed LiveData
-    val rulesLiveData: LiveData<List<SmsCodeRule>> = DBManager.get(application).queryAllSmsCodeRulesFlow().asLiveData()
+    // Flow-backed StateFlow with ImmutableList
+    val rulesFlow: StateFlow<ImmutableList<SmsCodeRule>> = DBManager.get(application)
+        .queryAllSmsCodeRulesFlow()
+        .map { it.toImmutableList() }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = persistentListOf()
+        )
 
     private val _eventsFlow = MutableSharedFlow<RuleListEvent>()
     val eventsFlow: SharedFlow<RuleListEvent> = _eventsFlow.asSharedFlow()

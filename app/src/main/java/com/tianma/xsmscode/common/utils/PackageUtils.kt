@@ -2,13 +2,18 @@ package com.tianma.xsmscode.common.utils
 
 import android.content.Context
 import android.content.Intent
+import android.app.DownloadManager
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
+import android.os.Environment
 import android.widget.Toast
 import androidx.annotation.IntDef
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.common.constant.Const
+import java.net.HttpURLConnection
+import java.net.URL
 import com.tianma.xsmscode.xp.hook.permission.PermissionGranterHook
 import com.tianma.xsmscode.xp.hook.code.SmsHandlerHook
 
@@ -73,6 +78,81 @@ object PackageUtils {
             appInfo.enabled
         } catch (e: PackageManager.NameNotFoundException) {
             false
+        }
+    }
+
+    @JvmStatic
+    fun getPackageVersion(context: Context, packageName: String): Pair<String, Long>? {
+        val pm = context.packageManager
+        return try {
+            val packageInfo = pm.getPackageInfo(packageName, 0)
+            val versionName = packageInfo.versionName ?: ""
+            val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                packageInfo.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.versionCode.toLong()
+            }
+            versionName to versionCode
+        } catch (e: PackageManager.NameNotFoundException) {
+            null
+        }
+    }
+
+    @JvmStatic
+    fun getLsposedModuleVersion(): String? {
+        val propPath = "/data/adb/modules/zygisk_lsposed/module.prop"
+        val output = runSuCommand("cat $propPath") ?: return null
+        val lines = output.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
+        val rawVersion = lines.firstOrNull { it.startsWith("version=") }
+            ?.substringAfter("version=")
+            ?.trim()
+        val versionCode = lines.firstOrNull { it.startsWith("versionCode=") }
+            ?.substringAfter("versionCode=")
+            ?.trim()
+        val normalized = rawVersion?.removePrefix("v")?.trim()
+        return when {
+            !normalized.isNullOrBlank() && !versionCode.isNullOrBlank() && !normalized.contains("(") ->
+                "$normalized ($versionCode)"
+            !normalized.isNullOrBlank() -> normalized
+            !versionCode.isNullOrBlank() -> versionCode
+            else -> null
+        }
+    }
+
+    @JvmStatic
+    fun getLsposedModuleInfo(): Pair<String, String>? {
+        val propPath = "/data/adb/modules/zygisk_lsposed/module.prop"
+        val output = runSuCommand("cat $propPath") ?: return null
+        val lines = output.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
+        val name = lines.firstOrNull { it.startsWith("name=") }
+            ?.substringAfter("name=")
+            ?.trim()
+        val rawVersion = lines.firstOrNull { it.startsWith("version=") }
+            ?.substringAfter("version=")
+            ?.trim()
+        val versionCode = lines.firstOrNull { it.startsWith("versionCode=") }
+            ?.substringAfter("versionCode=")
+            ?.trim()
+        val normalized = rawVersion?.removePrefix("v")?.trim()
+        val version = when {
+            !normalized.isNullOrBlank() && !versionCode.isNullOrBlank() && !normalized.contains("(") ->
+                "$normalized ($versionCode)"
+            !normalized.isNullOrBlank() -> normalized
+            !versionCode.isNullOrBlank() -> versionCode
+            else -> null
+        }
+        return if (!name.isNullOrBlank() && !version.isNullOrBlank()) name to version else null
+    }
+
+    private fun runSuCommand(command: String): String? {
+        return try {
+            val process = ProcessBuilder("su", "-c", command).start()
+            val output = process.inputStream.bufferedReader().use { it.readText() }
+            val exitCode = process.waitFor()
+            if (exitCode == 0 && output.isNotBlank()) output else null
+        } catch (e: Exception) {
+            null
         }
     }
 
@@ -149,6 +229,117 @@ object PackageUtils {
             PACKAGE_NOT_INSTALLED -> {
                 Toast.makeText(context, R.string.coolapk_install_prompt, Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    @JvmStatic
+    fun isInstalledFromPlay(context: Context): Boolean {
+        return try {
+            val pm = context.packageManager
+            val installer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                pm.getInstallSourceInfo(BuildConfig.APPLICATION_ID).installingPackageName
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getInstallerPackageName(BuildConfig.APPLICATION_ID)
+            }
+            installer == "com.android.vending"
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    @JvmStatic
+    fun showAppDetailsInPlayStore(context: Context) {
+        val packageName = BuildConfig.APPLICATION_ID
+        val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")).apply {
+            setPackage("com.android.vending")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            context.startActivity(marketIntent)
+        } catch (e: Exception) {
+            val webIntent = Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+            ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
+            context.startActivity(webIntent)
+        }
+    }
+
+    @JvmStatic
+    fun canReachGithub(): Boolean {
+        return try {
+            val url = URL("https://github.com")
+            val connection = (url.openConnection() as HttpURLConnection).apply {
+                connectTimeout = 3000
+                readTimeout = 3000
+                requestMethod = "HEAD"
+                instanceFollowRedirects = true
+            }
+            connection.connect()
+            connection.responseCode in 200..399
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    @JvmStatic
+    fun startInAppUpdate(context: Context, url: String, versionName: String): Boolean {
+        val downloadId = enqueueApkDownload(
+            context = context,
+            url = url,
+            versionName = versionName,
+            title = context.getString(R.string.check_update_title),
+            description = context.getString(R.string.update_in_app),
+            autoInstall = true
+        )
+        return downloadId != null
+    }
+
+    @JvmStatic
+    fun startManualDownload(context: Context, url: String, versionName: String): Boolean {
+        val downloadId = enqueueApkDownload(
+            context = context,
+            url = url,
+            versionName = versionName,
+            title = context.getString(R.string.check_update_title),
+            description = context.getString(R.string.update_manual_download),
+            autoInstall = false
+        )
+        return downloadId != null
+    }
+
+    private fun enqueueApkDownload(
+        context: Context,
+        url: String,
+        versionName: String,
+        title: String,
+        description: String,
+        autoInstall: Boolean
+    ): Long? {
+        return try {
+            val request = DownloadManager.Request(Uri.parse(url)).apply {
+                setTitle(title)
+                setDescription(description)
+                setMimeType("application/vnd.android.package-archive")
+                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                setDestinationInExternalPublicDir(
+                    Environment.DIRECTORY_DOWNLOADS,
+                    "XposedSmsCode_${versionName}.apk"
+                )
+                setAllowedOverMetered(true)
+                setAllowedOverRoaming(true)
+            }
+            val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            val downloadId = dm.enqueue(request)
+            val prefs = context.getSharedPreferences("update_prefs", Context.MODE_PRIVATE)
+            prefs.edit()
+                .putLong("download_id", downloadId)
+                .putBoolean("auto_install", autoInstall)
+                .apply()
+            downloadId
+        } catch (e: Exception) {
+            null
         }
     }
     private fun checkWechatExists(context: Context): Boolean {

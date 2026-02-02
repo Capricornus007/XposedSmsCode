@@ -48,12 +48,26 @@ fun AppIconImage(
                     finalPackageName = labelToPackageCache[label]
                     if (finalPackageName == null) {
                         val installedApps = pm.getInstalledApplications(PackageManager.MATCH_ALL)
+                        // Precise match first
                         for (app in installedApps) {
                             if (pm.getApplicationLabel(app).toString() == label) {
                                 finalPackageName = app.packageName
-                                labelToPackageCache[label] = finalPackageName
                                 break
                             }
+                        }
+                        // Fuzzy (contains) match as fallback
+                        if (finalPackageName == null) {
+                            for (app in installedApps) {
+                                val appLabel = pm.getApplicationLabel(app).toString()
+                                if (label.contains(appLabel) || appLabel.contains(label)) {
+                                    finalPackageName = app.packageName
+                                    break
+                                }
+                            }
+                        }
+                        
+                        if (finalPackageName != null) {
+                            labelToPackageCache[label] = finalPackageName
                         }
                     }
                 }

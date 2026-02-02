@@ -1,6 +1,7 @@
 package com.tianma.xsmscode.ui.block
 
 import android.app.Application
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
@@ -20,20 +21,37 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import androidx.compose.runtime.Immutable
 import java.util.ArrayList
 import java.util.Comparator
 
 class AppBlockViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val _appsFlow = MutableStateFlow<List<AppInfo>>(emptyList())
-    val appsFlow: StateFlow<List<AppInfo>> = _appsFlow.asStateFlow()
+    private val _appsFlow = MutableStateFlow<ImmutableList<AppInfo>>(persistentListOf())
+    val appsFlow: StateFlow<ImmutableList<AppInfo>> = _appsFlow.asStateFlow()
 
     private val _loadingFlow = MutableStateFlow(false)
     val loadingFlow: StateFlow<Boolean> = _loadingFlow.asStateFlow()
 
+    private val _hideSystemAppsFlow = MutableStateFlow(true)
+    val hideSystemAppsFlow: StateFlow<Boolean> = _hideSystemAppsFlow.asStateFlow()
+
+    private val _hasChangesFlow = MutableStateFlow(false)
+    val hasChangesFlow: StateFlow<Boolean> = _hasChangesFlow.asStateFlow()
+
+    private val _sortOptionFlow = MutableStateFlow(SortOption.LABEL)
+    val sortOptionFlow: StateFlow<SortOption> = _sortOptionFlow.asStateFlow()
+
+    private val _isAscendingFlow = MutableStateFlow(true)
+    val isAscendingFlow: StateFlow<Boolean> = _isAscendingFlow.asStateFlow()
+
     private val _events = MutableSharedFlow<AppBlockEvent>()
     val events: SharedFlow<AppBlockEvent> = _events.asSharedFlow()
 
+    @Immutable
     sealed class AppBlockEvent {
         data class Error(val throwable: Throwable) : AppBlockEvent()
         object SaveSuccess : AppBlockEvent()
@@ -41,9 +59,10 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
         object ShowUsageStatsPermission : AppBlockEvent()
     }
 
-    private var originalBlockedApps: List<AppInfo> = ArrayList()
-    private var apps: List<AppInfo> = ArrayList()
+    private var originalBlockedApps: ImmutableList<AppInfo> = persistentListOf()
+    private var apps: ImmutableList<AppInfo> = persistentListOf()
     private var isLoadSucceed = false
+    private val systemApps = HashSet<String>()
 
     private var filter = ""
     private var sortOption = SortOption.LABEL // Default sort by blocked status first? Actually user asked for simple sort. Let's keep blocked priority in comparator but allow sorting criteria.
@@ -81,25 +100,32 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
 
                 val appList = withContext(Dispatchers.IO) {
                     val pm = getApplication<Application>().packageManager
-                    originalBlockedApps = DBManager.get(getApplication()).queryAllBlockedAppsSuspend()
+                    originalBlockedApps = DBManager.get(getApplication()).queryAllBlockedAppsSuspend().toImmutableList()
                     
                     val installedApps = pm.getInstalledApplications(PackageManager.MATCH_ALL)
                     val blockedPkgNames = originalBlockedApps.map { it.packageName }.toSet()
 
+                    systemApps.clear()
                     installedApps.asSequence()
                         .map { app ->
                             val appInfo = AppInfoHelper.getAppInfo(pm, app)
+                            val isSystemApp = (app.flags and ApplicationInfo.FLAG_SYSTEM) != 0 ||
+                                (app.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+                            if (isSystemApp) {
+                                systemApps.add(appInfo.packageName)
+                            }
                             if (blockedPkgNames.contains(appInfo.packageName)) {
                                 appInfo.copy(blocked = true)
                             } else {
                                 appInfo
                             }
                         }
-                        .toList()
+                        .toImmutableList()
                 }
                 
                 apps = appList
                 isLoadSucceed = true
+                updateHasChanges()
                 applyFilterAndSort()
                 _loadingFlow.value = false
             } catch (t: Throwable) {
@@ -136,7 +162,7 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
         applyFilterAndSort()
     }
 
-    fun doSort(option: SortOption) {
+    fun setSortOption(option: SortOption) {
         if (option == SortOption.USAGE) {
             if (!hasUsageStatsPermission()) {
                 viewModelScope.launch { _events.emit(AppBlockEvent.ShowUsageStatsPermission) }
@@ -144,17 +170,23 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
             }
         }
 
-        if (currentSortOption == option) {
-            isAscending = !isAscending
-        } else {
+        if (currentSortOption != option) {
             currentSortOption = option
-            isAscending = true // Default to ASC when switching
-            // Usage matches DESC usually, but user toggles. logic below handles it: current sort is ASC means smaller first.
-            // For Usage, we might want default DESC.
-             if (option == SortOption.USAGE) {
-                isAscending = false
-            }
+            isAscending = option != SortOption.USAGE
+            _sortOptionFlow.value = currentSortOption
+            _isAscendingFlow.value = isAscending
         }
+        applyFilterAndSort()
+    }
+
+    fun setAscending(ascending: Boolean) {
+        isAscending = ascending
+        _isAscendingFlow.value = isAscending
+        applyFilterAndSort()
+    }
+
+    fun setHideSystemApps(hide: Boolean) {
+        _hideSystemAppsFlow.value = hide
         applyFilterAndSort()
     }
 
@@ -173,6 +205,9 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
             val filteredList = withContext(Dispatchers.Default) {
                 apps.asSequence()
                     .filter { appInfo ->
+                        if (_hideSystemAppsFlow.value && systemApps.contains(appInfo.packageName)) {
+                            return@filter false
+                        }
                         if (filter.isEmpty()) true else {
                             val lowerLabel = appInfo.label?.lowercase() ?: ""
                             val lowerPkg = appInfo.packageName.lowercase()
@@ -180,9 +215,9 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                         }
                     }
                     .sortedWith(mComparator)
-                    .toList()
+                    .toImmutableList()
             }
-            _appsFlow.value = ArrayList(filteredList)
+            _appsFlow.value = filteredList
         }
     }
 
@@ -193,8 +228,9 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
             } else {
                 appInfo
             }
-        }
+        }.toImmutableList()
         apps = updatedApps
+        updateHasChanges()
         // Re-apply sort/filter to keep consistency (e.g. if sorting by blocked status)
         // Optimization: simply update the flow with new blocked state, but we need to find it in the current filtered list.
         applyFilterAndSort()
@@ -223,12 +259,19 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                     )
                 }
                 // Update original checks
-                originalBlockedApps = blockedApps
+                originalBlockedApps = blockedApps.toImmutableList()
+                updateHasChanges()
                 _events.emit(AppBlockEvent.SaveSuccess)
             } catch (t: Throwable) {
                 _events.emit(AppBlockEvent.SaveFailed)
             }
         }
+    }
+
+    private fun updateHasChanges() {
+        val current = apps.asSequence().filter { it.blocked }.map { it.packageName }.toSet()
+        val original = originalBlockedApps.asSequence().map { it.packageName }.toSet()
+        _hasChangesFlow.value = current != original
     }
 
     private val mComparator = Comparator<AppInfo> { o1, o2 ->
