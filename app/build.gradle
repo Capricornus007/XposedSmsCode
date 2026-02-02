@@ -28,8 +28,8 @@ def randomHex8() {
     return String.format("%08x", r.nextInt() & 0xffffffffL)
 }
 
-def VERSION_NAME = "3.0.7"
-def VERSION_CODE = 77
+def VERSION_NAME = "3.1.0"
+def VERSION_CODE = 80
 
 def releaseBaseName = { String versionName ->
     return "XposedSmsCode_v${versionName.replaceAll('\\s+', '_')}" +
@@ -243,6 +243,12 @@ dependencies {
     implementation libs.androidx.lifecycle.runtime.compose
     implementation libs.androidx.compose.runtime.livedata
     implementation libs.androidx.navigation.compose
+    implementation libs.androidx.compose.material3.adaptive
+    implementation libs.androidx.compose.material3.adaptive.layout
+    implementation libs.androidx.compose.material3.adaptive.navigation
+    implementation libs.androidx.compose.material3.windowSizeClass
+    implementation libs.play.app.update
+    implementation libs.haze.android
 
     // Room
     implementation libs.androidx.room.runtime
@@ -255,4 +261,5 @@ dependencies {
     implementation libs.koin.androidx.compose
     implementation libs.koin.compose.viewmodel
     implementation libs.androidx.datastore.preferences
+    implementation libs.kotlinx.collections.immutable
 }
