@@ -282,66 +282,6 @@ object PackageUtils {
             false
         }
     }
-
-    @JvmStatic
-    fun startInAppUpdate(context: Context, url: String, versionName: String): Boolean {
-        val downloadId = enqueueApkDownload(
-            context = context,
-            url = url,
-            versionName = versionName,
-            title = context.getString(R.string.check_update_title),
-            description = context.getString(R.string.update_in_app),
-            autoInstall = true
-        )
-        return downloadId != null
-    }
-
-    @JvmStatic
-    fun startManualDownload(context: Context, url: String, versionName: String): Boolean {
-        val downloadId = enqueueApkDownload(
-            context = context,
-            url = url,
-            versionName = versionName,
-            title = context.getString(R.string.check_update_title),
-            description = context.getString(R.string.update_manual_download),
-            autoInstall = false
-        )
-        return downloadId != null
-    }
-
-    private fun enqueueApkDownload(
-        context: Context,
-        url: String,
-        versionName: String,
-        title: String,
-        description: String,
-        autoInstall: Boolean
-    ): Long? {
-        return try {
-            val request = DownloadManager.Request(Uri.parse(url)).apply {
-                setTitle(title)
-                setDescription(description)
-                setMimeType("application/vnd.android.package-archive")
-                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                setDestinationInExternalPublicDir(
-                    Environment.DIRECTORY_DOWNLOADS,
-                    "XposedSmsCode_${versionName}.apk"
-                )
-                setAllowedOverMetered(true)
-                setAllowedOverRoaming(true)
-            }
-            val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            val downloadId = dm.enqueue(request)
-            val prefs = context.getSharedPreferences("update_prefs", Context.MODE_PRIVATE)
-            prefs.edit()
-                .putLong("download_id", downloadId)
-                .putBoolean("auto_install", autoInstall)
-                .apply()
-            downloadId
-        } catch (e: Exception) {
-            null
-        }
-    }
     private fun checkWechatExists(context: Context): Boolean {
         val packageState = checkPackageState(context, Const.WECHAT_PACKAGE_NAME)
         return when (packageState) {

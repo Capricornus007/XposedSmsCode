@@ -184,33 +184,4 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateFromCoolApk() {
         PackageUtils.showAppDetailsInCoolApk(getApplication())
     }
-
-    fun startInAppUpdate(version: ApkVersion) {
-        viewModelScope.launch {
-            val url = version.downloadUrl
-            val reachable = withContext(Dispatchers.IO) { PackageUtils.canReachGithub() }
-            if (!reachable || url.isNullOrBlank()) {
-                updateFromGithub()
-                return@launch
-            }
-            val ok = PackageUtils.startInAppUpdate(getApplication(), url, version.versionName)
-            if (!ok) {
-                updateFromGithub()
-            }
-        }
-    }
-
-    fun startManualDownload(version: ApkVersion) {
-        viewModelScope.launch {
-            val url = version.downloadUrl
-            if (url.isNullOrBlank()) {
-                updateFromGithub()
-                return@launch
-            }
-            val ok = PackageUtils.startManualDownload(getApplication(), url, version.versionName)
-            if (!ok) {
-                updateFromGithub()
-            }
-        }
-    }
 }

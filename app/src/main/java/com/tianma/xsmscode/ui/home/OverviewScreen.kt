@@ -241,15 +241,15 @@ fun OverviewScreen(
     }
 
     updateVersion?.let { version ->
-        UpdateChoiceDialog(
+        UpdateSourceDialog(
             version = version,
             onDismiss = { settingsViewModel.clearUpdateVersion() },
-            onInAppUpdate = {
-                settingsViewModel.startInAppUpdate(version)
+            onUpdateCoolApk = {
+                settingsViewModel.updateFromCoolApk()
                 settingsViewModel.clearUpdateVersion()
             },
-            onManualDownload = {
-                settingsViewModel.startManualDownload(version)
+            onUpdateGithub = {
+                settingsViewModel.updateFromGithub()
                 settingsViewModel.clearUpdateVersion()
             }
         )
@@ -373,22 +373,22 @@ fun InfoItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun UpdateChoiceDialog(
+fun UpdateSourceDialog(
     version: ApkVersion,
     onDismiss: () -> Unit,
-    onInAppUpdate: () -> Unit,
-    onManualDownload: () -> Unit
+    onUpdateCoolApk: () -> Unit,
+    onUpdateGithub: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.new_version_found)) },
         text = { Text(version.versionInfo ?: "") },
         confirmButton = {
-            TextButton(onClick = onInAppUpdate) {
-                Text(stringResource(id = R.string.update_in_app))
+            TextButton(onClick = onUpdateCoolApk) {
+                Text(stringResource(id = R.string.source_coolapk))
             }
-            TextButton(onClick = onManualDownload) {
-                Text(stringResource(id = R.string.update_manual_download))
+            TextButton(onClick = onUpdateGithub) {
+                Text(stringResource(id = R.string.source_github))
             }
         },
         dismissButton = {
