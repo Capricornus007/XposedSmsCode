@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 
 jobs:
-jobs:
   build-apk:
     name: Build APKs
     runs-on: ubuntu-latest
