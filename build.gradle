@@ -14,6 +14,22 @@ buildscript {
         classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.3.20-Beta2"
         classpath "com.google.devtools.ksp:com.google.devtools.ksp.gradle.plugin:2.3.5"
     }
+    configurations.all {
+        resolutionStrategy {
+            force 'org.bitbucket.b_c:jose4j:0.9.6'
+            force 'org.jdom:jdom2:2.0.6.1'
+            force 'org.apache.commons:commons-lang3:3.17.0'
+            force 'org.apache.httpcomponents:httpclient:4.5.13'
+            force 'io.netty:netty-codec-http:4.1.129.Final'
+            force 'io.netty:netty-codec:4.1.129.Final'
+            force 'io.netty:netty-codec-http2:4.1.129.Final'
+            force 'io.netty:netty-common:4.1.129.Final'
+            force 'io.netty:netty-handler:4.1.129.Final'
+            force 'io.netty:netty-resolver:4.1.129.Final'
+            force 'io.netty:netty-transport:4.1.129.Final'
+            force 'io.netty:netty-buffer:4.1.129.Final'
+        }
+    }
 }
 
 plugins {
