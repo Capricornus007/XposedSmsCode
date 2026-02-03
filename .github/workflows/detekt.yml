@@ -55,20 +55,27 @@ jobs:
           chmod +x gradlew
           ./gradlew detekt --continue
 
-      - name: Collect SARIF reports
+      - name: Upload Scan results (app)
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
-        run: |
-          mkdir -p detekt-results
-          find . -name "detekt.sarif" -exec cp --parents {} detekt-results/ \;
+        continue-on-error: true
+        with:
+          sarif_file: app/build/reports/detekt/detekt.sarif
+          category: app
 
-      - name: Upload SARIF reports
+      - name: Upload Scan results (core)
+        uses: github/codeql-action/upload-sarif@v3
         if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          for file in $(find detekt-results -name "*.sarif"); do
-            module=$(echo $file | cut -d'/' -f2)
-            echo "Uploading SARIF for module: $module ($file)"
-            gh code-scanning upload-sarif --sarif-file="$file" --category="$module" --commit="${{ github.sha }}" --ref="${{ github.ref }}"
-          done
+        continue-on-error: true
+        with:
+          sarif_file: core/build/reports/detekt/detekt.sarif
+          category: core
+
+      - name: Upload Scan results (storage)
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        continue-on-error: true
+        with:
+          sarif_file: storage/build/reports/detekt/detekt.sarif
+          category: storage
 
