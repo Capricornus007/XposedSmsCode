@@ -91,12 +91,29 @@ object AppPreferencesDataStore {
             .first()
     }
 
-    suspend fun setString(context: Context, key: String, value: String) {
+    suspend fun getStringOrNull(context: Context, key: String): String? {
+        val prefKey = stringPreferencesKey(key)
+        return getInstance(context).data
+            .map { prefs: Preferences -> prefs[prefKey] }
+            .first()
+    }
+
+    suspend fun setString(context: Context, key: String, value: String?) {
         val prefKey = stringPreferencesKey(key)
         getInstance(context).edit { prefs ->
-            prefs[prefKey] = value
+            if (value == null) {
+                prefs.remove(prefKey)
+            } else {
+                prefs[prefKey] = value
+            }
         }
-        getSharedPrefs(context).edit().putString(key, value).apply()
+        val editor = getSharedPrefs(context).edit()
+        if (value == null) {
+            editor.remove(key)
+        } else {
+            editor.putString(key, value)
+        }
+        editor.apply()
         ensureDataStoreReadable(context)
         ensureSharedPrefsReadable(context)
     }
