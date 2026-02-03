@@ -4,7 +4,8 @@ buildscript {
     
     repositories {
         google()
-        mavenCentral() // add repository
+        mavenCentral()
+        gradlePluginPortal()
         maven { url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/eap" }
     }
     dependencies {
@@ -43,6 +44,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        gradlePluginPortal()
         maven { url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/eap" }
         maven { url = "https://api.xposed.info/" }
         maven { url = "https://jitpack.io" }
