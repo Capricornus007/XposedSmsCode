@@ -12,4 +12,8 @@ data class BackupPayload(
     val appVersion: String = "",
     @SerialName(BackupConst.KEY_RULES)
     val rules: List<BackupRule> = emptyList(),
+    @SerialName(BackupConst.KEY_PREFERENCES)
+    val preferences: Map<String, String?>? = null,
+    @SerialName(BackupConst.KEY_RECORDS)
+    val records: List<BackupSmsRecord>? = null,
 )

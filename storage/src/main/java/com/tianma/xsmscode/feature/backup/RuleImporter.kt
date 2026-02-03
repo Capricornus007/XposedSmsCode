@@ -7,9 +7,11 @@ import com.tianma.xsmscode.feature.backup.exception.VersionMissedException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import java.io.Closeable
 import java.io.File
 import java.io.FileInputStream
@@ -42,12 +44,19 @@ class RuleImporter(private val mJsonStream: InputStream?) : Closeable {
 
             val schemaVersion = readSchemaVersion(jsonObject)
             val appVersion = readAppVersion(jsonObject)
-            val rules = if (schemaVersion == BackupConst.BACKUP_VERSION) {
+            val rules = if (schemaVersion >= BackupConst.BACKUP_VERSION) {
                 readRuleList(jsonObject)
             } else {
-                emptyList()
+                if (schemaVersion == 1) {
+                   readRuleList(jsonObject)
+                } else {
+                    emptyList()
+                }
             }
-            return BackupParseResult(schemaVersion, appVersion, rules)
+            val preferences = if (schemaVersion >= 2) readPreferences(jsonObject) else null
+            val records = if (schemaVersion >= 2) readRecords(jsonObject) else null
+
+            return BackupParseResult(schemaVersion, appVersion, rules, preferences, records)
         } catch (ex: SerializationException) {
             throw BackupInvalidException(ex)
         } catch (ex: VersionInvalidException) {
@@ -91,6 +100,44 @@ class RuleImporter(private val mJsonStream: InputStream?) : Closeable {
 
     private fun readAppVersion(jsonObject: JsonObject): String =
         jsonObject[BackupConst.KEY_APP_VERSION]?.jsonPrimitive?.content ?: ""
+
+    private fun readPreferences(jsonObject: JsonObject): Map<String, String?>? = try {
+        val prefObject = jsonObject[BackupConst.KEY_PREFERENCES]?.jsonObject
+        prefObject?.let { obj ->
+            val map = HashMap<String, String?>()
+            for ((key, element) in obj) {
+                if (element.jsonPrimitive.isString) {
+                     map[key] = element.jsonPrimitive.content
+                } else {
+                     // Convert other types to string for simplicity, or handle nulls
+                     map[key] = element.jsonPrimitive.contentOrNull
+                }
+            }
+            map
+        }
+    } catch (e: Exception) {
+        null
+    }
+
+    private fun readRecords(jsonObject: JsonObject): List<BackupSmsRecord>? = try {
+        val recordArray = jsonObject[BackupConst.KEY_RECORDS]?.jsonArray
+        recordArray?.map { element ->
+             val obj = element.jsonObject
+             val datePrimitive = obj["date"]?.jsonPrimitive
+             BackupSmsRecord(
+                 sender = obj["sender"]?.jsonPrimitive?.contentOrNull,
+                 body = obj["body"]?.jsonPrimitive?.contentOrNull,
+                 date = datePrimitive?.longOrNull
+                     ?: datePrimitive?.contentOrNull?.toLongOrNull()
+                     ?: 0L,
+                 company = obj["company"]?.jsonPrimitive?.contentOrNull,
+                 smsCode = obj["code"]?.jsonPrimitive?.contentOrNull,
+                 packageName = obj["packageName"]?.jsonPrimitive?.contentOrNull,
+             )
+        }
+    } catch (e: Exception) {
+        null
+    }
 
     override fun close() {
         if (mJsonStream != null) {

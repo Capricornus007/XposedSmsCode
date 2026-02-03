@@ -18,12 +18,19 @@ class RuleExporter(out: OutputStream?) : Closeable {
     constructor(file: File?) : this(FileOutputStream(file))
 
     @Throws(IOException::class)
-    fun doExport(ruleList: List<BackupRule>, appVersion: String) {
+    fun doExport(
+        ruleList: List<BackupRule>,
+        appVersion: String,
+        preferences: Map<String, String?>? = null,
+        records: List<BackupSmsRecord>? = null,
+    ) {
         val payload = BackupPayload(
             version = BackupConst.BACKUP_VERSION,
             schemaVersion = BackupConst.BACKUP_VERSION,
             appVersion = appVersion,
             rules = ruleList,
+            preferences = preferences,
+            records = records,
         )
         writer.write(JsonUtils.json.encodeToString(BackupPayload.serializer(), payload))
         writer.flush()

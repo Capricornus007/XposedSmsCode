@@ -86,16 +86,28 @@ object BackupManager {
     }
 
     @JvmStatic
-    fun exportRuleList(context: Context, uri: Uri, ruleList: List<BackupRule>, appVersion: String): ExportResult {
+    fun exportBackup(
+        context: Context,
+        uri: Uri,
+        ruleList: List<BackupRule>,
+        preferences: Map<String, String?>?,
+        records: List<BackupSmsRecord>?,
+        appVersion: String
+    ): ExportResult {
         try {
             RuleExporter(context.contentResolver.openOutputStream(uri)).use { exporter ->
-                exporter.doExport(ruleList, appVersion)
+                exporter.doExport(ruleList, appVersion, preferences, records)
                 return ExportResult.SUCCESS
             }
         } catch (e: IOException) {
-            Log.e("BackupManager", "Export SmsCode rules failed", e)
+            Log.e("BackupManager", "Export SmsCode backup failed", e)
             return ExportResult.FAILED
         }
+    }
+
+    @JvmStatic
+    fun exportRuleList(context: Context, uri: Uri, ruleList: List<BackupRule>, appVersion: String): ExportResult {
+        return exportBackup(context, uri, ruleList, null, null, appVersion)
     }
 
     /**
@@ -125,7 +137,13 @@ object BackupManager {
                 return BackupImportResult(ImportResult.VERSION_TOO_OLD)
             }
             val warning = resolveWarning(payload.appVersion, currentAppVersion)
-            return BackupImportResult(ImportResult.SUCCESS, payload.rules, warning)
+            return BackupImportResult(
+                ImportResult.SUCCESS,
+                payload.rules,
+                payload.preferences,
+                payload.records,
+                warning
+            )
         } catch (e: IOException) {
             Log.e("BackupManager", "Error occurs in importRuleList", e)
             return BackupImportResult(ImportResult.READ_FAILED)
