@@ -67,8 +67,10 @@ jobs:
           detekt --input ${{ github.workspace }} --auto-correct
           
       - name: Create Pull Request
+        id: cpr
         uses: peter-evans/create-pull-request@v6
         with:
+          token: ${{ secrets.GH_PAT }}
           commit-message: "style: auto-fix detekt issues"
           title: "style: auto-fix detekt issues"
           body: |
@@ -80,3 +82,11 @@ jobs:
           delete-branch: true
           author: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
           committer: "github-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+
+      - name: Enable Auto Merge
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh pr merge "${{ steps.cpr.outputs.pull-request-number }}" --auto --merge --delete-branch
+
