@@ -37,7 +37,9 @@ fun SystemBarsScrim(hazeState: HazeState, hazeStyle: HazeStyle) {
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsTopHeight(WindowInsets.statusBars)
-                .hazeEffect(hazeState, hazeStyle)
+                .hazeEffect(hazeState, hazeStyle) {
+                    forceInvalidateOnPreDraw = true
+                }
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f)),
         )
         Spacer(
@@ -45,7 +47,9 @@ fun SystemBarsScrim(hazeState: HazeState, hazeStyle: HazeStyle) {
                 .fillMaxWidth()
                 .windowInsetsBottomHeight(WindowInsets.navigationBars)
                 .align(Alignment.BottomStart)
-                .hazeEffect(hazeState, hazeStyle)
+                .hazeEffect(hazeState, hazeStyle) {
+                    forceInvalidateOnPreDraw = true
+                }
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f)),
         )
     }

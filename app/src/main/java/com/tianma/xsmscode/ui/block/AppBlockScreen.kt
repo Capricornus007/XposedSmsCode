@@ -131,7 +131,9 @@ fun AppBlockScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
-                .hazeEffect(hazeState, hazeStyle),
+                .hazeEffect(hazeState, hazeStyle) {
+                    forceInvalidateOnPreDraw = true
+                },
         ) {
             TopAppBar(
                 title = {

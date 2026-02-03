@@ -180,7 +180,9 @@ fun MainScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .hazeEffect(hazeState, hazeStyle)
+                    .hazeEffect(hazeState, hazeStyle) {
+                        forceInvalidateOnPreDraw = true
+                    }
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f)),
             ) {
                 NavigationBar(

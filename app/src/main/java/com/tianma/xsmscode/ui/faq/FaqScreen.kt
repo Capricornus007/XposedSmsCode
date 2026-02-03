@@ -91,7 +91,9 @@ fun FaqScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
                 scrollBehavior = scrollBehavior,
                 windowInsets = WindowInsets.statusBars,
                 modifier = Modifier
-                    .hazeEffect(hazeState, hazeStyle),
+                    .hazeEffect(hazeState, hazeStyle) {
+                        forceInvalidateOnPreDraw = true
+                    },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
                     scrolledContainerColor = Color.Transparent,

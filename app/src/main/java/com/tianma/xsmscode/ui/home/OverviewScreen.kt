@@ -236,7 +236,9 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
             windowInsets = WindowInsets.statusBars,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .hazeEffect(hazeState, hazeStyle),
+                .hazeEffect(hazeState, hazeStyle) {
+                    forceInvalidateOnPreDraw = true
+                },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent,
                 scrolledContainerColor = Color.Transparent,
