@@ -1,8 +1,8 @@
 package com.tianma.xsmscode.data.prefs
 
-import android.content.Context
 import android.content.ContentProvider
 import android.content.ContentValues
+import android.content.Context
 import android.content.UriMatcher
 import android.database.Cursor
 import android.database.MatrixCursor
@@ -93,8 +93,10 @@ class PrefsProvider : ContentProvider() {
 
         @JvmField
         val BOOL_URI: Uri = Uri.parse("content://$AUTHORITY/$PATH_BOOL")
+
         @JvmField
         val STRING_URI: Uri = Uri.parse("content://$AUTHORITY/$PATH_STRING")
+
         @JvmField
         val INT_URI: Uri = Uri.parse("content://$AUTHORITY/$PATH_INT")
     }

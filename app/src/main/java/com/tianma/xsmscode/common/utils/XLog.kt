@@ -7,6 +7,7 @@ import timber.log.Timber
 object XLog {
 
     private val LOG_TAG = BuildConfig.LOG_TAG
+
     @Volatile
     private var sLogLevel = BuildConfig.LOG_LEVEL
     private const val LOG_TO_XPOSED = BuildConfig.LOG_TO_XPOSED

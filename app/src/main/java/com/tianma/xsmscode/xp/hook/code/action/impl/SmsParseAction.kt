@@ -5,10 +5,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
 import com.github.tianma8023.xposed.smscode.BuildConfig
+import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.common.utils.SmsCodeUtils
 import com.tianma.xsmscode.common.utils.StringUtils
 import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.feature.store.EntityStoreManager
 import com.tianma.xsmscode.feature.store.EntityType
@@ -37,15 +37,15 @@ class SmsParseAction(
     private fun parseSmsMsg(): Bundle? {
         val intent = mSmsIntent ?: return null
         val smsMsg = SmsMsg.fromIntent(intent)
-        // Update the member variable of super class if possible, but it's val. 
+        // Update the member variable of super class if possible, but it's val.
         // Actually, CallableAction should have var mSmsMsg or we use the local one.
         // Wait, CallableAction has @JvmField protected val mSmsMsg.
         // I'll use a local variable and update fields of mSmsMsg if it's not final in Java.
         // But in Kotlin it's val.
-        
+
         val sender = smsMsg.sender
         val msgBody = smsMsg.body
-        
+
         if (BuildConfig.DEBUG) {
             XLog.d("Sender: %s", sender)
             XLog.d("Body: %s", msgBody)
@@ -59,13 +59,16 @@ class SmsParseAction(
         }
 
         val msgBodyNotNull = msgBody ?: ""
-        val smsCode = kotlinx.coroutines.runBlocking { SmsCodeUtils.parseSmsCodeIfExists(mPluginContext, msgBodyNotNull) }
+        val smsCode = kotlinx.coroutines.runBlocking { SmsCodeUtils.parseSmsCodeIfExists(
+            mPluginContext,
+            msgBodyNotNull
+        ) }
         if (TextUtils.isEmpty(smsCode)) { // isn't code message
             return null
         }
 
         val timestamp = if (smsMsg.date > 0) smsMsg.date else System.currentTimeMillis()
-        
+
         // Update mSmsMsg using copy() to maintain immutability pattern
         val company = SmsCodeUtils.parseCompany(msgBodyNotNull)
         mSmsMsg = smsMsg.copy(
@@ -82,12 +85,14 @@ class SmsParseAction(
         var duplicated = false
         if (PrefsReader.deduplicateSms(mPluginContext)) {
             val prevSmsMsg = EntityStoreManager.loadEntityFromFile(
-                mPluginContext, EntityType.PREV_SMS_MSG, SmsMsg::class.java
+                mPluginContext,
+                EntityType.PREV_SMS_MSG,
+                SmsMsg::class.java
             )
             if (prevSmsMsg != null) {
                 if (abs(timestamp - prevSmsMsg.date) <= 15000) {
-                    if ((sender == prevSmsMsg.sender && smsCode == prevSmsMsg.smsCode)
-                        || msgBody == prevSmsMsg.body
+                    if ((sender == prevSmsMsg.sender && smsCode == prevSmsMsg.smsCode) ||
+                        msgBody == prevSmsMsg.body
                     ) {
                         duplicated = true
                         XLog.d("Duplicated message, ignore")

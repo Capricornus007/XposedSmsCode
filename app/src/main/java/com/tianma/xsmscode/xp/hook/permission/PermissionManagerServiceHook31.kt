@@ -33,12 +33,15 @@ class PermissionManagerServiceHook31(classLoader: ClassLoader) : BaseSubHook(cla
             XLog.e("Cannot find the method to grant relevant permission")
             return
         }
-        XposedBridge.hookMethod(method, object : MethodHookWrapper() {
-            @Throws(Throwable::class)
-            override fun after(param: MethodHookParam) {
-                afterGrantPermissionsSinceAndroid12(param)
+        XposedBridge.hookMethod(
+            method,
+            object : MethodHookWrapper() {
+                @Throws(Throwable::class)
+                override fun after(param: MethodHookParam) {
+                    afterGrantPermissionsSinceAndroid12(param)
+                }
             }
-        })
+        )
     }
 
     private fun findTargetMethod(): Method? {
@@ -48,23 +51,35 @@ class PermissionManagerServiceHook31(classLoader: ClassLoader) : BaseSubHook(cla
 
         // 精确匹配
         var method = XposedHelpers.findMethodExactIfExists(
-            pmsClass, "restorePermissionState",
-            /* AndroidPackage pkg          */ androidPackageClass,
-            /* boolean replace             */ Boolean::class.javaPrimitiveType,
-            /* String packageOfInterest    */ String::class.java,
-            /* PermissionCallback callback */ callbackClass,
-            /* int filterUserId            */ Int::class.javaPrimitiveType
+            pmsClass,
+            "restorePermissionState",
+            /* AndroidPackage pkg          */
+            androidPackageClass,
+            /* boolean replace             */
+            Boolean::class.javaPrimitiveType,
+            /* String packageOfInterest    */
+            String::class.java,
+            /* PermissionCallback callback */
+            callbackClass,
+            /* int filterUserId            */
+            Int::class.javaPrimitiveType
         )
 
         if (method == null) { // method restorePermissionState() not found
             // 参数类型精确匹配
             val methods = XposedHelpers.findMethodsByExactParameters(
-                pmsClass, Void.TYPE,
-                /* AndroidPackage pkg          */ androidPackageClass,
-                /* boolean replace             */ Boolean::class.javaPrimitiveType,
-                /* String packageOfInterest    */ String::class.java,
-                /* PermissionCallback callback */ callbackClass,
-                /* int filterUserId            */ Int::class.javaPrimitiveType
+                pmsClass,
+                Void.TYPE,
+                /* AndroidPackage pkg          */
+                androidPackageClass,
+                /* boolean replace             */
+                Boolean::class.javaPrimitiveType,
+                /* String packageOfInterest    */
+                String::class.java,
+                /* PermissionCallback callback */
+                callbackClass,
+                /* int filterUserId            */
+                Int::class.javaPrimitiveType
             )
             if (methods != null && methods.isNotEmpty()) {
                 method = methods[0]
@@ -120,7 +135,11 @@ class PermissionManagerServiceHook31(classLoader: ClassLoader) : BaseSubHook(cla
 
                     for (permissionToGrant in permissionsToGrant) {
                         if (!requestedPermissions.contains(permissionToGrant)) {
-                            val granted = XposedHelpers.callMethod(uidState, "isPermissionGranted", permissionToGrant) as Boolean
+                            val granted = XposedHelpers.callMethod(
+                                uidState,
+                                "isPermissionGranted",
+                                permissionToGrant
+                            ) as Boolean
                             if (!granted) {
                                 // permission not grant before
                                 val bpToGrant = XposedHelpers.callMethod(mRegistry, "getPermission", permissionToGrant)

@@ -10,8 +10,10 @@ object Const {
     /* Alipay begin */
     const val ALIPAY_PACKAGE_NAME = "com.eg.android.AlipayGphone"
     const val ALIPAY_QRCODE_URI_PREFIX = "alipayqr://platformapi/startapp?saId=10000007&qrcode="
+
     // 收款码 URL
     const val ALIPAY_QRCODE_URL = "HTTPS://QR.ALIPAY.COM/FKX074142EKXD0OIMV8B60"
+
     // 红包口令
     const val ALIPAY_POCKET_TOKEN = "J:/wkSIPXL689C 或📸復 zhi📸此消息打开🔍吱.f`u宝🔎，得幸福宏饱，天天等着你  s:/r HU6311 $801"
     /* Alipay end */
@@ -43,12 +45,10 @@ object Const {
     const val KEY_RULE_ID = "key_rule_id"
     const val EXTRA_IMPORT_URI = "extra_import_uri"
 
-
-
     /* CoolApk */
     const val COOL_MARKET_PACKAGE_NAME = "com.coolapk.market"
     /* CoolApk end */
- 
+
     /* Wechat */
     const val WECHAT_PACKAGE_NAME = "com.tencent.mm"
 }

@@ -24,10 +24,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.data.db.entity.AppInfo
 import com.tianma.xsmscode.ui.common.AppIconImage
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,7 +46,7 @@ fun AppBlockScreen(
     val isAscending by viewModel.isAscendingFlow.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
-    
+
     // Initial Load
     LaunchedEffect(Unit) {
         viewModel.refreshData()
@@ -92,9 +92,10 @@ fun AppBlockScreen(
         val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 72.dp // TopBar(64) + SearchBox(72)
         val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
 
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 0.dp) // Content starts at top
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 0.dp) // Content starts at top
         ) {
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -112,7 +113,11 @@ fun AppBlockScreen(
                             appInfo = app,
                             onClick = { viewModel.doItemClicked(app) }
                         )
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
                     }
                 }
             }
@@ -260,18 +265,21 @@ fun AppBlockScreen(
                 )
             }
         }
-        
+
         SnackbarHost(
-             hostState = snackbarHostState,
-             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
         )
-        
+
         if (hasChanges) {
             FloatingActionButton(
                 onClick = { viewModel.saveData() },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp, end = 16.dp)
+                    .padding(
+                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp,
+                        end = 16.dp
+                    )
             ) {
                 Icon(Icons.Default.Check, contentDescription = stringResource(R.string.action_accomplish))
             }
@@ -287,7 +295,9 @@ fun AppBlockScreen(
                 TextButton(onClick = {
                     showUsagePermissionDialog = false
                     try {
-                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                        context.startActivity(
+                            android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                        )
                     } catch (e: Exception) {
                         // Fallback or toast
                     }
@@ -321,16 +331,16 @@ fun AppInfoItem(
             )
         },
         trailingContent = {
-             Checkbox(
-                 checked = appInfo.blocked,
-                 onCheckedChange = { onClick() },
-                 modifier = Modifier.semantics {
-                     contentDescription = context.getString(
-                         if (appInfo.blocked) R.string.action_unblock_app else R.string.action_block_app,
-                         appInfo.label ?: ""
-                     )
-                 }
-             )
+            Checkbox(
+                checked = appInfo.blocked,
+                onCheckedChange = { onClick() },
+                modifier = Modifier.semantics {
+                    contentDescription = context.getString(
+                        if (appInfo.blocked) R.string.action_unblock_app else R.string.action_block_app,
+                        appInfo.label ?: ""
+                    )
+                }
+            )
         },
         modifier = modifier.clickable(onClick = onClick)
     )

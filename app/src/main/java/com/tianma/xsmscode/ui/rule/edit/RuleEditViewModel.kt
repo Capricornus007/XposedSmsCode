@@ -2,20 +2,20 @@ package com.tianma.xsmscode.ui.rule.edit
 
 import android.app.Application
 import android.os.Bundle
+import androidx.core.os.BundleCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import androidx.core.os.BundleCompat
+import com.tianma.xsmscode.common.constant.Const
 import com.tianma.xsmscode.data.db.DBManager
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.feature.store.EntityStoreManager
 import com.tianma.xsmscode.feature.store.EntityType
-import com.tianma.xsmscode.common.constant.Const
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -99,7 +99,10 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             val success = withContext(Dispatchers.IO) {
                 EntityStoreManager.storeEntityToFile(
-                    getApplication(), EntityType.CODE_RULE_TEMPLATE, template, SmsCodeRule::class.java
+                    getApplication(),
+                    EntityType.CODE_RULE_TEMPLATE,
+                    template,
+                    SmsCodeRule::class.java
                 )
             }
             _eventsFlow.emit(RuleEditEvent.TemplateSaved(success))

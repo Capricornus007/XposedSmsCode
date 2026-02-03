@@ -1,8 +1,8 @@
 package com.tianma.xsmscode.data.db.entity
 
-import androidx.compose.runtime.Immutable
 import android.content.Intent
 import android.os.Parcelable
+import androidx.compose.runtime.Immutable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -56,7 +56,7 @@ data class SmsMsg(
         fun fromIntent(intent: Intent): SmsMsg {
             val smsMessageParts = SmsMessageUtils.fromIntent(intent)
             if (smsMessageParts.isEmpty()) return SmsMsg()
-            
+
             var sender = smsMessageParts[0].displayOriginatingAddress
             var body = SmsMessageUtils.getMessageBody(smsMessageParts)
             val date = smsMessageParts[0].timestampMillis

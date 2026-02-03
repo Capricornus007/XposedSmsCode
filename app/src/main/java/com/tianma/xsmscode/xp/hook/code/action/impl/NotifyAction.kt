@@ -5,17 +5,16 @@ import android.app.AlarmManager
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
 import android.graphics.BitmapFactory
-import android.os.Bundle
 import android.os.Build
+import android.os.Bundle
 import android.text.TextUtils
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.common.constant.NotificationConst
-import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.common.utils.PrefsReader
+import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.xp.hook.code.AutoCancelReceiver
 import com.tianma.xsmscode.xp.hook.code.CopyCodeReceiver
@@ -50,7 +49,9 @@ class NotifyAction(
 
         val copyCodeIntent = CopyCodeReceiver.createIntent(smsCode, notificationId)
         val contentIntent = PendingIntent.getBroadcast(
-            mPhoneContext, 0, copyCodeIntent,
+            mPhoneContext,
+            0,
+            copyCodeIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE or 0x01000000 // PendingIntent.FLAG_ALLOW_UNSAFE_IMPLICIT_INTENT
         )
 
@@ -64,7 +65,7 @@ class NotifyAction(
             .setAutoCancel(true)
             .setColor(ContextCompat.getColor(mPluginContext, R.color.ic_launcher_background))
             .setGroup(NotificationConst.GROUP_KEY_SMSCODE_NOTIFICATION)
-        
+
         val autoCancelEnabled = PrefsReader.autoCancelCodeNotification(mPluginContext)
         if (autoCancelEnabled) {
             val retentionTime = PrefsReader.getNotificationRetentionTime(mPluginContext) * 1000L

@@ -2,17 +2,14 @@ package com.tianma.xsmscode.ui.nav
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
-import com.tianma.xsmscode.ui.home.ComposeSettingsScreen
 import com.tianma.xsmscode.ui.home.MainScreen
 import com.tianma.xsmscode.ui.rule.edit.RuleEditScreen
-import com.tianma.xsmscode.ui.record.CodeRecordScreen
-import com.tianma.xsmscode.ui.block.AppBlockScreen
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -65,7 +62,7 @@ fun SmsCodeNavHost(
                 hazeStyle = hazeStyle
             )
         }
-        
+
         composable<RuleEditRoute> { backStackEntry ->
             val route: RuleEditRoute = backStackEntry.toRoute()
             RuleEditScreen(

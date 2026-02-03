@@ -2,11 +2,9 @@ package com.tianma.xsmscode.common.utils
 
 import android.content.Context
 import android.content.Intent
-import android.app.DownloadManager
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
-import android.os.Environment
 import android.widget.Toast
 import androidx.annotation.IntDef
 import com.github.tianma8023.xposed.smscode.BuildConfig
@@ -14,8 +12,6 @@ import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.common.constant.Const
 import java.net.HttpURLConnection
 import java.net.URL
-import com.tianma.xsmscode.xp.hook.permission.PermissionGranterHook
-import com.tianma.xsmscode.xp.hook.code.SmsHandlerHook
 
 /**
  * 包相关工具类
@@ -196,7 +192,6 @@ object PackageUtils {
         }
     }
 
-
     /**
      * Join QQ group
      */
@@ -210,7 +205,6 @@ object PackageUtils {
             Toast.makeText(context, R.string.prompt_join_qq_group_failed, Toast.LENGTH_SHORT).show()
         }
     }
-
 
     @JvmStatic
     fun showAppDetailsInCoolApk(context: Context) {

@@ -5,7 +5,6 @@ package com.tianma.xsmscode.common.constant
  */
 object PrefConst {
 
-
     // General
     const val KEY_ENABLE = "pref_enable"
     const val KEY_HIDE_LAUNCHER_ICON = "pref_hide_launcher_icon"
@@ -22,13 +21,11 @@ object PrefConst {
     const val KEY_BLOCK_SMS = "pref_block_sms"
     const val KEY_DEDUPLICATE_SMS = "pref_deduplicate_sms"
 
-
     // Code Notification
     const val KEY_SHOW_CODE_NOTIFICATION = "pref_show_code_notification"
     const val KEY_AUTO_CANCEL_CODE_NOTIFICATION = "pref_auto_cancel_code_notification"
     const val KEY_NOTIFICATION_RETENTION_TIME = "pref_notification_retention_time"
     const val NOTIFICATION_RETENTION_TIME_DEFAULT = "5"
-
 
     // Code Record
     const val KEY_ENABLE_CODE_RECORDS = "pref_enable_code_records"

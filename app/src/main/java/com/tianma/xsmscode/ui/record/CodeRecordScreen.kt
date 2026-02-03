@@ -7,12 +7,10 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -21,13 +19,13 @@ import androidx.compose.material.DismissDirection
 import androidx.compose.material.DismissValue
 import androidx.compose.material.ExperimentalMaterialApi
 import androidx.compose.material.SwipeToDismiss
-import androidx.compose.material.rememberDismissState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.rememberDismissState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -53,10 +51,10 @@ import com.tianma.xsmscode.ui.home.RetentionDialog
 import com.tianma.xsmscode.ui.home.SectionHeader
 import com.tianma.xsmscode.ui.home.SwitchItem
 import com.tianma.xsmscode.ui.home.TextInputDialog
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 import java.text.SimpleDateFormat
@@ -76,6 +74,7 @@ fun CodeRecordScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
     @Suppress("DEPRECATION")
     val clipboardManager = LocalClipboardManager.current
 
@@ -122,7 +121,8 @@ fun CodeRecordScreen(
 
     // Move deleteAndUndo outside items block and remember it
     val deleteAndUndo = remember(viewModel, scope, context, snackbarHostState) {
-        { target: SmsMsg ->
+        {
+                target: SmsMsg ->
             viewModel.removeSmsMsg(listOf(target))
             scope.launch {
                 val result = snackbarHostState.showSnackbar(
@@ -157,11 +157,12 @@ fun CodeRecordScreen(
         }
     }
 
-    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
-        if (uri != null) {
-            viewModel.exportRecords(context, uri)
+    val exportLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+            if (uri != null) {
+                viewModel.exportRecords(context, uri)
+            }
         }
-    }
 
     if (detailSmsMsg != null) {
         AlertDialog(
@@ -189,7 +190,7 @@ fun CodeRecordScreen(
                 }
             },
             dismissButton = {
-                 TextButton(
+                TextButton(
                     onClick = {
                         val body = detailSmsMsg?.body
                         if (!body.isNullOrEmpty()) {
@@ -292,9 +293,10 @@ fun CodeRecordScreen(
         val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
         val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
 
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 0.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = 0.dp)
         ) {
             AnimatedContent(
                 targetState = Pair(isLoading, smsList),
@@ -389,7 +391,9 @@ fun CodeRecordScreen(
                                                 if (!code.isNullOrEmpty()) {
                                                     clipboardManager.setText(AnnotatedString(code))
                                                     scope.launch {
-                                                        snackbarHostState.showSnackbar(context.getString(R.string.prompt_sms_code_copied, code))
+                                                        snackbarHostState.showSnackbar(
+                                                            context.getString(R.string.prompt_sms_code_copied, code)
+                                                        )
                                                     }
                                                 }
                                             },
@@ -459,13 +463,22 @@ fun CodeRecordScreen(
                         }
                     } else {
                         IconButton(onClick = { showSettingsSheet = true }) {
-                            Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.pref_code_records_title))
+                            Icon(
+                                Icons.Default.Tune,
+                                contentDescription = stringResource(R.string.pref_code_records_title)
+                            )
                         }
                         IconButton(onClick = {
-                            val filename = "SmsCodeRecords_${SimpleDateFormat("yyyyMMdd_HHmm", Locale.getDefault()).format(Date())}.json"
+                            val filename = "SmsCodeRecords_${SimpleDateFormat(
+                                "yyyyMMdd_HHmm",
+                                Locale.getDefault()
+                            ).format(Date())}.json"
                             exportLauncher.launch(filename)
                         }) {
-                            Icon(painterResource(R.drawable.ic_export), contentDescription = stringResource(R.string.action_export_rules))
+                            Icon(
+                                painterResource(R.drawable.ic_export),
+                                contentDescription = stringResource(R.string.action_export_rules)
+                            )
                         }
                     }
                 },
@@ -479,10 +492,10 @@ fun CodeRecordScreen(
                     .hazeEffect(hazeState, hazeStyle)
             )
         }
-        
+
         SnackbarHost(
-             hostState = snackbarHostState,
-             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
         )
     }
 }
@@ -507,7 +520,9 @@ fun CodeRecordItem(
                 onClick = onClick,
                 onLongClick = onLongClick
             )
-            .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+            )
             .padding(vertical = 12.dp, horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -1,9 +1,9 @@
 package com.tianma.xsmscode.common.utils
 
 import android.content.Context
-import android.net.Uri
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -99,9 +99,19 @@ object Utils {
                     contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
                     resolver.update(imageUri, contentValues, null, null)
                 }
-                val appNameResId = if (fileName.contains("alipay")) R.string.dialog_donate_alipay else R.string.dialog_donate_wechat
+                val appNameResId = if (fileName.contains(
+                        "alipay"
+                    )) {
+                    R.string.dialog_donate_alipay
+                } else {
+                    R.string.dialog_donate_wechat
+                }
                 val appName = context.getString(appNameResId).replace(Regex("\\(.*?\\)"), "").trim()
-                Toast.makeText(context, context.getString(R.string.save_to_gallery_success, appName), Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.save_to_gallery_success, appName),
+                    Toast.LENGTH_SHORT
+                ).show()
                 if (fileName.contains("alipay")) {
                     PackageUtils.startAlipayActivity(context)
                 } else if (fileName.contains("wechat")) {

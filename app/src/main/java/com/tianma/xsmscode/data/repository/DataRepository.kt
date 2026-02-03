@@ -1,14 +1,11 @@
 package com.tianma.xsmscode.data.repository
 
-import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.data.db.entity.ApkVersion
 import com.tianma.xsmscode.data.http.ApiConst
-import com.tianma.xsmscode.data.http.NetworkError
 import com.tianma.xsmscode.data.http.NetworkResult
-import com.tianma.xsmscode.data.http.toNetworkError
-
 import com.tianma.xsmscode.data.http.service.GithubService
 import com.tianma.xsmscode.data.http.service.ServiceGenerator
+import com.tianma.xsmscode.data.http.toNetworkError
 import java.util.Locale
 
 object DataRepository {
@@ -21,7 +18,7 @@ object DataRepository {
 
     suspend fun getLatestVersion(): NetworkResult<ApkVersion> {
         val isInChina = isInChina()
-        
+
         val githubService = ServiceGenerator.getInstance()
             .createService(ApiConst.GITHUB_BASE_URL, GithubService::class.java)
 

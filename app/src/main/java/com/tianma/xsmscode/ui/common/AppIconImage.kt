@@ -1,6 +1,6 @@
 package com.tianma.xsmscode.ui.common
 
-import android.graphics.drawable.Drawable
+import android.content.pm.PackageManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -16,7 +16,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
-import android.content.pm.PackageManager
 import com.tianma.xsmscode.common.utils.XLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -36,13 +35,13 @@ fun AppIconImage(
 ) {
     val context = LocalContext.current
     var iconBitmap by remember(packageName, label) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
-    
+
     LaunchedEffect(packageName, label) {
         withContext(Dispatchers.IO) {
             try {
                 val pm = context.packageManager
                 var finalPackageName = packageName
-                
+
                 // Fallback to label search if package name is missing
                 if (finalPackageName.isNullOrBlank() && !label.isNullOrBlank()) {
                     finalPackageName = labelToPackageCache[label]
@@ -65,7 +64,7 @@ fun AppIconImage(
                                 }
                             }
                         }
-                        
+
                         if (finalPackageName != null) {
                             labelToPackageCache[label] = finalPackageName
                         }

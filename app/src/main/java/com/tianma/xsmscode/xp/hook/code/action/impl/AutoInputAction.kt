@@ -2,8 +2,6 @@ package com.tianma.xsmscode.xp.hook.code.action.impl
 
 import android.app.ActivityManager
 import android.content.Context
-import android.database.Cursor
-import android.net.Uri
 import android.os.Bundle
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBProvider
@@ -70,7 +68,9 @@ class AutoInputAction(
                 XLog.d("Get blocked apps by content provider")
             } catch (e: Exception) {
                 val appInfoList = EntityStoreManager.loadEntitiesFromFile(
-                    mPluginContext, EntityType.BLOCKED_APP, AppInfo::class.java
+                    mPluginContext,
+                    EntityType.BLOCKED_APP,
+                    AppInfo::class.java
                 )
                 for (appInfo in appInfoList) {
                     blockedAppList.add(appInfo.packageName)

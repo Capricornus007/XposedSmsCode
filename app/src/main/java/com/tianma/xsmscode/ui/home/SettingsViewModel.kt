@@ -6,25 +6,24 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.TextUtils
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
+import androidx.lifecycle.viewModelScope
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.constant.Const
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import com.tianma.xsmscode.common.utils.*
+import com.tianma.xsmscode.data.db.DBManager
 import com.tianma.xsmscode.data.db.entity.ApkVersion
 import com.tianma.xsmscode.data.http.NetworkError
 import com.tianma.xsmscode.data.http.NetworkResult
 import com.tianma.xsmscode.data.repository.DataRepository
-import androidx.lifecycle.viewModelScope
-import com.tianma.xsmscode.data.db.DBManager
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -108,7 +107,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-
     fun hideOrShowLauncherIcon(hide: Boolean) {
         val pm = getApplication<Application>().packageManager
         val launcherCN = ComponentName(getApplication(), Const.HOME_ACTIVITY_ALIAS)
@@ -118,7 +116,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             val flags = if (hide) 0 else PackageManager.DONT_KILL_APP
             pm.setComponentEnabledSetting(launcherCN, state, flags)
             if (hide) {
-                pm.setComponentEnabledSetting(mainCN, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
+                pm.setComponentEnabledSetting(
+                    mainCN,
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP
+                )
             }
         }
     }
@@ -126,8 +128,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun performSmsCodeTest(msgBody: String) {
         viewModelScope.launch {
             val code = withContext(Dispatchers.IO) {
-                if (TextUtils.isEmpty(msgBody)) "" else
+                if (TextUtils.isEmpty(msgBody)) {
+                    ""
+                } else {
                     SmsCodeUtils.parseSmsCodeIfExists(getApplication(), msgBody)
+                }
             }
             _eventsFlow.emit(SettingsEvent.SmsCodeTestResult(code))
         }

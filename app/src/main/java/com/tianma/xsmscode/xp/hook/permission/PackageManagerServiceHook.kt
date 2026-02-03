@@ -33,30 +33,40 @@ class PackageManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(classLoa
             // Android 5.0 +
             XLog.d("Hooking grantPermissionsLPw() for Android 21+")
             XposedHelpers.findMethodExact(
-                pmsClass, "grantPermissionsLPw",
-                /* PackageParser.Package pkg */ CLASS_PACKAGE_PARSER_PACKAGE,
-                /* boolean replace           */ Boolean::class.javaPrimitiveType,
-                /* String packageOfInterest  */ String::class.java
+                pmsClass,
+                "grantPermissionsLPw",
+                /* PackageParser.Package pkg */
+                CLASS_PACKAGE_PARSER_PACKAGE,
+                /* boolean replace           */
+                Boolean::class.javaPrimitiveType,
+                /* String packageOfInterest  */
+                String::class.java
             )
         } else {
             // Android 4.4 +
             XLog.d("Hooking grantPermissionsLPw() for Android 19+")
             XposedHelpers.findMethodExact(
-                pmsClass, "grantPermissionsLPw",
-                /* PackageParser.Package pkg */ CLASS_PACKAGE_PARSER_PACKAGE,
-                /* boolean replace           */ Boolean::class.javaPrimitiveType
+                pmsClass,
+                "grantPermissionsLPw",
+                /* PackageParser.Package pkg */
+                CLASS_PACKAGE_PARSER_PACKAGE,
+                /* boolean replace           */
+                Boolean::class.javaPrimitiveType
             )
         }
 
-        XposedBridge.hookMethod(method, object : MethodHookWrapper() {
-            override fun after(param: MethodHookParam) {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    grantPermissionsLPwSinceM(param)
-                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                    grantPermissionsLPwSinceK(param)
+        XposedBridge.hookMethod(
+            method,
+            object : MethodHookWrapper() {
+                override fun after(param: MethodHookParam) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        grantPermissionsLPwSinceM(param)
+                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                        grantPermissionsLPwSinceK(param)
+                    }
                 }
             }
-        })
+        )
     }
 
     companion object {
@@ -81,10 +91,18 @@ class PackageManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(classLoa
                     val permissionsToGrant = PACKAGE_PERMISSIONS[packageName] ?: continue
                     for (permissionToGrant in permissionsToGrant) {
                         if (!requestedPermissions.contains(permissionToGrant)) {
-                            val granted = XposedHelpers.callMethod(permissionsState, "hasInstallPermission", permissionToGrant) as Boolean
+                            val granted = XposedHelpers.callMethod(
+                                permissionsState,
+                                "hasInstallPermission",
+                                permissionToGrant
+                            ) as Boolean
                             if (!granted) {
                                 val bpToGrant = XposedHelpers.callMethod(permissions, "get", permissionToGrant)
-                                val result = XposedHelpers.callMethod(permissionsState, "grantInstallPermission", bpToGrant) as Int
+                                val result = XposedHelpers.callMethod(
+                                    permissionsState,
+                                    "grantInstallPermission",
+                                    bpToGrant
+                                ) as Int
                                 XLog.d("Add $bpToGrant; result = $result")
                             } else {
                                 XLog.d("Already have $permissionToGrant permission")
@@ -105,7 +123,10 @@ class PackageManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(classLoa
                 if (packageName == packageNameInPkg) {
                     XLog.d("PackageName: %s", packageName)
                     val extra = XposedHelpers.getObjectField(pkg, "mExtras")
-                    val grantedPermissions = XposedHelpers.getObjectField(extra, "grantedPermissions") as MutableSet<String>
+                    val grantedPermissions = XposedHelpers.getObjectField(
+                        extra,
+                        "grantedPermissions"
+                    ) as MutableSet<String>
                     val settings = XposedHelpers.getObjectField(param.thisObject, "mSettings")
                     val permissions = XposedHelpers.getObjectField(settings, "mPermissions")
 

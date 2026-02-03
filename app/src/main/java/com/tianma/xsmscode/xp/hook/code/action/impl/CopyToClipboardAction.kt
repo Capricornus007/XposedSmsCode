@@ -26,7 +26,7 @@ class CopyToClipboardAction(
 
     private fun copyToClipboard() {
         try {
-            XLog.d("Attempting to copy code to clipboard with context: ${mPhoneContext}")
+            XLog.d("Attempting to copy code to clipboard with context: $mPhoneContext")
             ClipboardUtils.copyToClipboard(mPhoneContext, mSmsMsg.smsCode)
         } catch (e: Exception) {
             XLog.e("Failed to copy to clipboard", e)

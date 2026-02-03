@@ -89,14 +89,16 @@ class DBProvider : ContentProvider() {
         private const val PATH_SMS_MSG = "sms_msg"
         private const val PATH_SMS_CODE_RULE = "sms_code_rule"
         private const val PATH_APP_INFO = "app_info"
-        
+
         @JvmField
         val SMS_MSG_CONTENT_URI: Uri = Uri.parse("content://$AUTHORITY/$PATH_SMS_MSG")
+
         @JvmField
         val SMS_CODE_RULE_URI: Uri = Uri.parse("content://$AUTHORITY/$PATH_SMS_CODE_RULE")
+
         @JvmField
         val APP_INFO_URI: Uri = Uri.parse("content://$AUTHORITY/$PATH_APP_INFO")
-        
+
         private const val SMS_MSG_DIR = 0
         private const val SMS_MSG_ID = 1
         private const val SMS_CODE_RULE_DIR = 2

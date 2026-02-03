@@ -2,8 +2,8 @@ package com.tianma.xsmscode.serialization
 
 import com.tianma.xsmscode.common.utils.JsonUtils
 import com.tianma.xsmscode.data.http.entity.GithubRelease
-import com.tianma.xsmscode.feature.backup.BackupRule
 import com.tianma.xsmscode.feature.backup.BackupPayload
+import com.tianma.xsmscode.feature.backup.BackupRule
 import com.tianma.xsmscode.feature.backup.RuleExporter
 import com.tianma.xsmscode.feature.backup.RuleImporter
 import kotlinx.serialization.decodeFromString
@@ -33,7 +33,9 @@ class SerializationSmokeTest {
 
     @Test
     fun backupImportParsesRules() {
-        val payload = BackupPayload(rules = listOf(BackupRule(company = "ACME", codeKeyword = "code", codeRegex = "\\d{6}")))
+        val payload = BackupPayload(
+            rules = listOf(BackupRule(company = "ACME", codeKeyword = "code", codeRegex = "\\d{6}"))
+        )
         val json = JsonUtils.json.encodeToString(BackupPayload.serializer(), payload)
         val input = ByteArrayInputStream(json.toByteArray(Charsets.UTF_8))
 

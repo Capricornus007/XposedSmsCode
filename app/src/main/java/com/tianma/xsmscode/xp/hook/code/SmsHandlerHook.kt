@@ -6,17 +6,14 @@ import android.content.Context
 import android.content.Intent
 import android.os.Binder
 import android.os.Build
-import android.os.Bundle
-import android.os.UserHandle
 import android.provider.Telephony
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.common.constant.NotificationConst
-import androidx.core.content.ContextCompat
+import com.tianma.xsmscode.common.utils.ModuleActivationStore
 import com.tianma.xsmscode.common.utils.NotificationUtils
 import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.common.utils.ModuleActivationStore
 import com.tianma.xsmscode.xp.helper.XposedWrapper
 import com.tianma.xsmscode.xp.hook.BaseHook
 import de.robv.android.xposed.XC_MethodHook
@@ -80,14 +77,10 @@ class SmsHandlerHook : BaseHook() {
         }
     }
 
-
-
     private fun hookDispatchIntent(classloader: ClassLoader) {
         // minSdkVersion 35: Only hook for Android 10+ / 15+
         hookDispatchIntent29(classloader)
     }
-
-
 
     // Android 10+
     private fun hookDispatchIntent29(classLoader: ClassLoader) {
@@ -161,7 +154,9 @@ class SmsHandlerHook : BaseHook() {
         mPhoneContext?.let {
             NotificationUtils.createNotificationChannel(
                 it,
-                channelId, channelName, NotificationManager.IMPORTANCE_HIGH
+                channelId,
+                channelName,
+                NotificationManager.IMPORTANCE_HIGH
             )
             XLog.d("Init notification channel succeed")
         }
@@ -191,7 +186,7 @@ class SmsHandlerHook : BaseHook() {
     private fun beforeDispatchIntentHandler(param: XC_MethodHook.MethodHookParam, receiverIndex: Int) {
         val intent = param.args.getOrNull(0) as? Intent ?: return
         val action = intent.action
-        
+
         if (BuildConfig.DEBUG) {
             XLog.d("SmsHandlerHook: Received intent action: $action")
             intent.extras?.let { bundle ->
@@ -249,7 +244,6 @@ class SmsHandlerHook : BaseHook() {
         deleteFromRawTable24(inboundSmsHandler, smsReceiver)
     }
 
-
     @Throws(ReflectiveOperationException::class)
     private fun deleteFromRawTable24(inboundSmsHandler: Any, smsReceiver: Any) {
         XLog.d("Delete raw SMS data from database on Android 24+")
@@ -258,7 +252,9 @@ class SmsHandlerHook : BaseHook() {
         val MARK_DELETED = 2
 
         callDeclaredMethod(
-            SMS_HANDLER_CLASS, inboundSmsHandler, "deleteFromRawTable",
+            SMS_HANDLER_CLASS,
+            inboundSmsHandler,
+            "deleteFromRawTable",
             deleteWhere,
             deleteWhereArgs,
             MARK_DELETED

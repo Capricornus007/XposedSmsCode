@@ -5,8 +5,8 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import java.io.Reader
 import kotlinx.serialization.serializer
+import java.io.Reader
 
 /**
  * Json utils using Kotlin Serialization
@@ -26,27 +26,43 @@ object JsonUtils {
     }
 
     @JvmStatic
-    inline fun <reified T> entityFromJson(jsonString: String?, typeClass: Class<T>? = null, excludeExposeAnnotation: Boolean = true): T? {
+    inline fun <reified T> entityFromJson(
+        jsonString: String?,
+        typeClass: Class<T>? = null,
+        excludeExposeAnnotation: Boolean = true
+    ): T? {
         if (jsonString.isNullOrEmpty()) return null
         // typeClass is ignored in KOS reified, kept for compatibility if needed, but nullable
         return json.decodeFromString<T>(jsonString)
     }
 
     @JvmStatic
-    inline fun <reified T> entityFromJson(reader: Reader?, typeClass: Class<T>? = null, excludeExposeAnnotation: Boolean = true): T? {
+    inline fun <reified T> entityFromJson(
+        reader: Reader?,
+        typeClass: Class<T>? = null,
+        excludeExposeAnnotation: Boolean = true
+    ): T? {
         if (reader == null) return null
         val jsonString = reader.readText()
         return json.decodeFromString<T>(jsonString)
     }
 
     @JvmStatic
-    inline fun <reified T> listFromJson(jsonString: String?, typeClass: Class<T>? = null, excludeExposeAnnotation: Boolean = true): List<T> {
+    inline fun <reified T> listFromJson(
+        jsonString: String?,
+        typeClass: Class<T>? = null,
+        excludeExposeAnnotation: Boolean = true
+    ): List<T> {
         if (jsonString.isNullOrEmpty()) return emptyList()
         return json.decodeFromString(jsonString)
     }
 
     @JvmStatic
-    inline fun <reified T> listFromJson(reader: Reader?, typeClass: Class<T>? = null, excludeExposeAnnotation: Boolean = true): List<T> {
+    inline fun <reified T> listFromJson(
+        reader: Reader?,
+        typeClass: Class<T>? = null,
+        excludeExposeAnnotation: Boolean = true
+    ): List<T> {
         if (reader == null) return emptyList()
         val jsonString = reader.readText()
         return json.decodeFromString(jsonString)
@@ -65,6 +81,7 @@ object JsonUtils {
         val jsonString = reader.readText()
         return listFromJson(jsonString, entityClass)
     }
+
     @JvmStatic
     fun <T : Any> listToJson(list: List<T>, entityClass: Class<T>): String {
         @Suppress("UNCHECKED_CAST")

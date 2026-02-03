@@ -1,12 +1,11 @@
 package com.tianma.xsmscode.xp
 
-import android.util.Log
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.xp.hook.BaseHook
+import com.tianma.xsmscode.xp.hook.code.SmsHandlerHook
 import com.tianma.xsmscode.xp.hook.me.ModuleUtilsHook
 import com.tianma.xsmscode.xp.hook.permission.PermissionGranterHook
-import com.tianma.xsmscode.xp.hook.code.SmsHandlerHook
 import com.tianma.xsmscode.xp.hook.system.SystemInputInjectorHook
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.IXposedHookZygoteInit

@@ -2,7 +2,6 @@ package com.tianma.xsmscode.xp.hook.code
 
 import android.content.Context
 import android.content.Intent
-import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
