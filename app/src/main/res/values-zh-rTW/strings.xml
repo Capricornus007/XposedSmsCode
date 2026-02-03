@@ -332,4 +332,24 @@
     <string name="action_block_app">封鎖 %s</string>
     <string name="action_unblock_app">允許 %s</string>
     <string name="action_back">返回</string>
+
+    <!-- backup and restore -->
+    <string name="pref_backup_restore_title">備份與還原</string>
+    <string name="pref_backup_title">備份</string>
+    <string name="pref_backup_summary">匯出設定、規則和記錄</string>
+    <string name="pref_restore_title">還原</string>
+    <string name="pref_restore_summary">從備份檔案還原資料</string>
+    <string name="dialog_backup_title">備份選擇</string>
+    <string name="dialog_restore_title">還原確認</string>
+    <string name="dialog_backup_msg">選擇要備份的資料：</string>
+    <string name="dialog_restore_msg">選擇要還原的資料：</string>
+    <string name="backup_success">備份成功</string>
+    <string name="backup_failed">備份失敗</string>
+    <string name="restore_success">還原成功</string>
+    <string name="restore_failed">還原失敗</string>
+    <string name="item_config">設定</string>
+    <string name="item_rules">規則</string>
+    <string name="item_records">記錄</string>
+    <string name="restore_warning_msg">現有資料將被合併或覆蓋。</string>
+    <!-- backup and restore end -->
 </resources>

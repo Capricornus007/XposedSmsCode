@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
@@ -37,11 +38,14 @@ import com.google.android.play.core.install.InstallStateUpdatedListener
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
+import com.tianma.xsmscode.common.utils.SPUtils
 import com.tianma.xsmscode.ui.app.base.UpdateSystemBars
 import com.tianma.xsmscode.ui.app.base.applyEdgeToEdge
 import com.tianma.xsmscode.ui.app.base.rememberHazeStyle
 import com.tianma.xsmscode.ui.nav.SmsCodeNavHost
+import com.tianma.xsmscode.ui.privacy.PrivacyPolicyPage
 import dev.chrisbanes.haze.HazeState
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.hypot
 
@@ -80,6 +84,10 @@ class MainActivity : AppCompatActivity() {
             val viewModel: SettingsViewModel = koinViewModel()
             val themeState by viewModel.themeState.collectAsStateWithLifecycle()
             val navController = rememberNavController()
+            val context = LocalContext.current
+            val scope = rememberCoroutineScope()
+            var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
+            var showPrivacyPolicyPage by remember { mutableStateOf(false) }
 
             // Circular Reveal Animation State
             var currentThemeMode by remember { mutableIntStateOf(themeState.mode) }
@@ -89,6 +97,12 @@ class MainActivity : AppCompatActivity() {
             var animationCenter by remember { mutableStateOf(Offset.Zero) }
             val view = LocalView.current
             var requestedTab by remember { mutableStateOf<Any?>(null) }
+
+            LaunchedEffect(Unit) {
+                if (!SPUtils.isPrivacyPolicyAccepted(context)) {
+                    showPrivacyPolicyDialog = true
+                }
+            }
 
             // Effect to trigger logic when ThemeState changes
             LaunchedEffect(themeState) {
@@ -140,6 +154,7 @@ class MainActivity : AppCompatActivity() {
             LaunchedEffect(viewModel.eventsFlow) {
                 viewModel.eventsFlow.collect { event ->
                     when (event) {
+                        is SettingsEvent.ShowPrivacyPolicy -> showPrivacyPolicyDialog = true
                         is SettingsEvent.NavigateToRules -> requestedTab = com.tianma.xsmscode.ui.nav.FaqRoute
                         is SettingsEvent.NavigateToRecords -> requestedTab = com.tianma.xsmscode.ui.nav.RecordsRoute
                         is SettingsEvent.StartPlayUpdate -> requestPlayUpdate()
@@ -169,6 +184,26 @@ class MainActivity : AppCompatActivity() {
                             hazeState = hazeState,
                             hazeStyle = hazeStyle,
                         )
+
+                        if (showPrivacyPolicyDialog) {
+                            PrivacyPolicyDialog(
+                                onDismiss = { showPrivacyPolicyDialog = false },
+                                onConfirm = {
+                                    scope.launch { SPUtils.setPrivacyPolicyAccepted(context, true) }
+                                    showPrivacyPolicyDialog = false
+                                },
+                                onCancel = {
+                                    scope.launch { SPUtils.setPrivacyPolicyAccepted(context, false) }
+                                    showPrivacyPolicyDialog = false
+                                    finish()
+                                },
+                                onViewPolicy = { showPrivacyPolicyPage = true },
+                            )
+                        }
+
+                        if (showPrivacyPolicyPage) {
+                            PrivacyPolicyPage(onDismiss = { showPrivacyPolicyPage = false })
+                        }
 
                         // Overlay for Circular Reveal
                         if (isAnimating && screenshotBitmap != null) {

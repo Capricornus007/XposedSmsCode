@@ -324,4 +324,24 @@
     <string name="action_block_app">Block %s</string>
     <string name="action_unblock_app">Unblock %s</string>
     <string name="action_back">Back</string>
+
+    <!-- backup and restore -->
+    <string name="pref_backup_restore_title">Backup &amp; Restore</string>
+    <string name="pref_backup_title">Backup</string>
+    <string name="pref_backup_summary">Export settings, rules and records</string>
+    <string name="pref_restore_title">Restore</string>
+    <string name="pref_restore_summary">Restore data from backup file</string>
+    <string name="dialog_backup_title">Backup Selection</string>
+    <string name="dialog_restore_title">Confirm Restore</string>
+    <string name="dialog_backup_msg">Select data to backup:</string>
+    <string name="dialog_restore_msg">Select data to restore:</string>
+    <string name="backup_success">Backup success</string>
+    <string name="backup_failed">Backup failed</string>
+    <string name="restore_success">Restore success</string>
+    <string name="restore_failed">Restore failed</string>
+    <string name="item_config">Configuration</string>
+    <string name="item_rules">Rules</string>
+    <string name="item_records">Records</string>
+    <string name="restore_warning_msg">Existing data will be merged or overwritten.</string>
+    <!-- backup and restore end -->
 </resources>

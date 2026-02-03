@@ -2,7 +2,11 @@ package com.tianma.xsmscode.ui.home
 
 import android.util.Log
 import android.widget.Toast
+import android.app.Activity
+import android.content.Intent
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -49,6 +53,7 @@ import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
+import com.tianma.xsmscode.ui.privacy.PrivacyPolicyPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,9 +89,31 @@ fun ComposeSettingsScreen(
     var showAlipayChoiceDialog by remember { mutableStateOf(false) }
     var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
+    var showPrivacyPolicyPage by remember { mutableStateOf(false) }
     var showKeywordsDialog by remember { mutableStateOf(false) }
     var isActivated by remember { mutableStateOf(ModuleUtils.isModuleEnabled()) }
     var pendingSavedToast by remember { mutableStateOf(false) }
+
+    var showBackupDialog by remember { mutableStateOf(false) }
+    var showRestoreDialog by remember { mutableStateOf(false) }
+    var restoreUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var backupFlags by remember { mutableStateOf(Triple(true, true, true)) } // config, rules, records
+
+    val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                settingsViewModel.performBackup(uri, backupFlags.first, backupFlags.second, backupFlags.third)
+            }
+        }
+    }
+
+    val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+               settingsViewModel.handleBackupArguments(uri)
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         if (!SPUtils.isPrivacyPolicyAccepted(context)) {
@@ -162,6 +189,39 @@ fun ComposeSettingsScreen(
 
                     is SettingsEvent.AppAlreadyNewest -> {
                         snackbarHostState.showSnackbar(context.getString(R.string.app_already_newest))
+                    }
+
+                    is SettingsEvent.BackupResultEvent -> {
+                         val msg = if (event.success) R.string.backup_success else R.string.backup_failed
+                         snackbarHostState.showSnackbar(context.getString(msg))
+                    }
+
+                    is SettingsEvent.RestoreResultEvent -> {
+                         val msg = if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) 
+                             R.string.restore_success else R.string.restore_failed
+                         snackbarHostState.showSnackbar(context.getString(msg))
+
+                         if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
+                             Toast.makeText(context, context.getString(R.string.restore_success), Toast.LENGTH_SHORT).show()
+                             scope.launch {
+                                 delay(1200L)
+                                 val activity = activityOwner ?: (context as? Activity)
+                                 if (activity != null) {
+                                     val intent = activity.packageManager.getLaunchIntentForPackage(activity.packageName)
+                                     if (intent != null) {
+                                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                                         activity.startActivity(intent)
+                                     }
+                                     activity.finish()
+                                 }
+                                 android.os.Process.killProcess(android.os.Process.myPid())
+                             }
+                         }
+                    }
+
+                    is SettingsEvent.ImportDialogConfirm -> {
+                        restoreUri = event.uri
+                        showRestoreDialog = true
                     }
 
                     else -> Unit
@@ -319,6 +379,23 @@ fun ComposeSettingsScreen(
                     if (index >= 0) entries[index] else retentionTime
                 },
             ) { showRetentionDialog = true }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+            SectionHeader(text = stringResource(id = R.string.pref_backup_restore_title))
+            Item(
+                title = stringResource(id = R.string.pref_backup_title),
+                summary = stringResource(id = R.string.pref_backup_summary),
+            ) { showBackupDialog = true }
+            Item(
+                title = stringResource(id = R.string.pref_restore_title),
+                summary = stringResource(id = R.string.pref_restore_summary),
+            ) { 
+                val intent = com.tianma.xsmscode.feature.backup.BackupManager.getImportRuleListSAFIntent(context)
+                restoreLauncher.launch(intent)
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             SectionHeader(text = stringResource(id = R.string.pref_others_title))
             SwitchItem(
                 title = stringResource(id = R.string.pref_verbose_log_mode_title),
@@ -331,7 +408,7 @@ fun ComposeSettingsScreen(
             Item(
                 title = stringResource(id = R.string.pref_privacy_policy_title),
                 summary = "",
-            ) { Utils.showWebPage(context, Const.PRIVACY_POLICY_URL) }
+            ) { showPrivacyPolicyPage = true }
 
             Spacer(modifier = Modifier.height(8.dp))
         }
@@ -496,7 +573,33 @@ fun ComposeSettingsScreen(
                 onExit()
             },
             onViewPolicy = {
-                Utils.showWebPage(context, Const.PRIVACY_POLICY_URL)
+                showPrivacyPolicyPage = true
+            },
+        )
+    }
+
+    if (showPrivacyPolicyPage) {
+        PrivacyPolicyPage(onDismiss = { showPrivacyPolicyPage = false })
+    }
+
+    if (showBackupDialog) {
+        BackupDialog(
+            onDismiss = { showBackupDialog = false },
+            onConfirm = { config, rules, records ->
+                backupFlags = Triple(config, rules, records)
+                showBackupDialog = false
+                val intent = com.tianma.xsmscode.feature.backup.BackupManager.getExportRuleListSAFIntent(context)
+                backupLauncher.launch(intent)
+            },
+        )
+    }
+
+    if (showRestoreDialog && restoreUri != null) {
+        RestoreConfirmDialog(
+            onDismiss = { showRestoreDialog = false },
+            onConfirm = { config, rules, records ->
+                settingsViewModel.performRestore(restoreUri!!, config, rules, records)
+                showRestoreDialog = false
             },
         )
     }
@@ -857,6 +960,96 @@ fun PrivacyPolicyDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, onCancel: 
         dismissButton = {
             TextButton(onClick = onCancel) {
                 Text(stringResource(id = R.string.privacy_dialog_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+fun BackupDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (Boolean, Boolean, Boolean) -> Unit
+) {
+    var checkConfig by remember { mutableStateOf(true) }
+    var checkRules by remember { mutableStateOf(true) }
+    var checkRecords by remember { mutableStateOf(true) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.dialog_backup_title)) },
+        text = {
+            Column {
+                Text(stringResource(id = R.string.dialog_backup_msg), modifier = Modifier.padding(bottom = 8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig }) {
+                    Checkbox(checked = checkConfig, onCheckedChange = { checkConfig = it })
+                    Text(stringResource(id = R.string.item_config))
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkRules = !checkRules }) {
+                     Checkbox(checked = checkRules, onCheckedChange = { checkRules = it })
+                     Text(stringResource(id = R.string.item_rules))
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkRecords = !checkRecords }) {
+                     Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
+                     Text(stringResource(id = R.string.item_records))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(checkConfig, checkRules, checkRecords) }) {
+                Text(stringResource(id = R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(id = R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+fun RestoreConfirmDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (Boolean, Boolean, Boolean) -> Unit
+) {
+    var checkConfig by remember { mutableStateOf(true) }
+    var checkRules by remember { mutableStateOf(true) }
+    var checkRecords by remember { mutableStateOf(true) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.dialog_restore_title)) },
+        text = {
+            Column {
+                Text(stringResource(id = R.string.dialog_restore_msg), modifier = Modifier.padding(bottom = 8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig }) {
+                    Checkbox(checked = checkConfig, onCheckedChange = { checkConfig = it })
+                    Text(stringResource(id = R.string.item_config))
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkRules = !checkRules }) {
+                     Checkbox(checked = checkRules, onCheckedChange = { checkRules = it })
+                     Text(stringResource(id = R.string.item_rules))
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkRecords = !checkRecords }) {
+                     Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
+                     Text(stringResource(id = R.string.item_records))
+                }
+                 Text(
+                     text = stringResource(id = R.string.restore_warning_msg),
+                     style = MaterialTheme.typography.bodySmall,
+                     color = MaterialTheme.colorScheme.error,
+                     modifier = Modifier.padding(top = 8.dp)
+                 )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(checkConfig, checkRules, checkRecords) }) {
+                Text(stringResource(id = R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(id = R.string.cancel))
             }
         },
     )
