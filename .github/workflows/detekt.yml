@@ -55,9 +55,17 @@ jobs:
           chmod +x gradlew
           ./gradlew detekt --continue
 
+      - name: Check reports existence
+        id: check
+        if: always()
+        run: |
+          if [ -f app/build/reports/detekt/detekt.sarif ]; then echo "app=true" >> $GITHUB_OUTPUT; fi
+          if [ -f core/build/reports/detekt/detekt.sarif ]; then echo "core=true" >> $GITHUB_OUTPUT; fi
+          if [ -f storage/build/reports/detekt/detekt.sarif ]; then echo "storage=true" >> $GITHUB_OUTPUT; fi
+
       - name: Upload Scan results (app)
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && steps.check.outputs.app == 'true'
         continue-on-error: true
         with:
           sarif_file: app/build/reports/detekt/detekt.sarif
@@ -65,7 +73,7 @@ jobs:
 
       - name: Upload Scan results (core)
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && steps.check.outputs.core == 'true'
         continue-on-error: true
         with:
           sarif_file: core/build/reports/detekt/detekt.sarif
@@ -73,7 +81,7 @@ jobs:
 
       - name: Upload Scan results (storage)
         uses: github/codeql-action/upload-sarif@v3
-        if: always()
+        if: always() && steps.check.outputs.storage == 'true'
         continue-on-error: true
         with:
           sarif_file: storage/build/reports/detekt/detekt.sarif
