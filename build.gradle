@@ -38,8 +38,19 @@ plugins {
     id "nl.littlerobots.version-catalog-update" version "1.0.1"
 }
 
-allprojects {
-    apply plugin: "io.gitlab.arturbosch.detekt"
+subprojects {
+    plugins.withId("org.jetbrains.kotlin.android") {
+        apply plugin: "dev.detekt"
+        dependencies {
+            detektPlugins "dev.detekt:detekt-rules-ktlint-wrapper:2.0.0-alpha.2"
+        }
+    }
+    plugins.withId("org.jetbrains.kotlin.jvm") {
+        apply plugin: "dev.detekt"
+        dependencies {
+            detektPlugins "dev.detekt:detekt-rules-ktlint-wrapper:2.0.0-alpha.2"
+        }
+    }
 
     repositories {
         google()
@@ -51,10 +62,6 @@ allprojects {
         maven {
             url = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
         }
-    }
-
-    dependencies {
-        detektPlugins "dev.detekt:detekt-formatting:2.0.0-alpha.2"
     }
 }
 
