@@ -98,6 +98,7 @@ fun ComposeSettingsScreen(
     var showRestoreDialog by remember { mutableStateOf(false) }
     var restoreUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var backupFlags by remember { mutableStateOf(Triple(true, true, true)) } // config, rules, records
+    var fcmToken by remember { mutableStateOf<String?>(null) }
 
     val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
@@ -138,6 +139,7 @@ fun ComposeSettingsScreen(
             PrefConst.SMSCODE_KEYWORDS_DEFAULT,
         )
         settingsViewModel.setInternalFilesWritable()
+        fcmToken = SPUtils.getFcmToken(context)
     }
 
     LaunchedEffect(lifecycleOwner) {
@@ -409,6 +411,18 @@ fun ComposeSettingsScreen(
                 title = stringResource(id = R.string.pref_privacy_policy_title),
                 summary = "",
             ) { showPrivacyPolicyPage = true }
+            
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            SectionHeader(text = "FCM (Experimental)")
+            Item(
+                title = "FCM Token",
+                summary = fcmToken ?: "Not registered",
+            ) {
+                fcmToken?.let {
+                    Utils.copyToClipboard(context, it)
+                    Toast.makeText(context, "Token copied", Toast.LENGTH_SHORT).show()
+                }
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
         }

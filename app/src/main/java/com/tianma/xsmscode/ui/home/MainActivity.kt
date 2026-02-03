@@ -155,7 +155,7 @@ class MainActivity : AppCompatActivity() {
                 viewModel.eventsFlow.collect { event ->
                     when (event) {
                         is SettingsEvent.ShowPrivacyPolicy -> showPrivacyPolicyDialog = true
-                        is SettingsEvent.NavigateToRules -> requestedTab = com.tianma.xsmscode.ui.nav.FaqRoute
+                        is SettingsEvent.NavigateToRules -> requestedTab = com.tianma.xsmscode.ui.nav.FCMRoute
                         is SettingsEvent.NavigateToRecords -> requestedTab = com.tianma.xsmscode.ui.nav.RecordsRoute
                         is SettingsEvent.StartPlayUpdate -> requestPlayUpdate()
                         else -> {}

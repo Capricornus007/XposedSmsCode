@@ -29,7 +29,7 @@ import androidx.navigation.compose.rememberNavController
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.ui.block.AppBlockScreen
-import com.tianma.xsmscode.ui.faq.FaqScreen
+// import com.tianma.xsmscode.ui.faq.FaqScreen
 import com.tianma.xsmscode.ui.nav.*
 import com.tianma.xsmscode.ui.record.CodeRecordScreen
 import dev.chrisbanes.haze.HazeState
@@ -55,7 +55,7 @@ fun MainScreen(
         TabItem(stringResource(R.string.tab_overview), Icons.Default.Home, OverviewRoute),
         TabItem(stringResource(R.string.tab_blacklist), Icons.Default.Widgets, AppBlockRoute),
         TabItem(stringResource(R.string.tab_records), Icons.Default.History, RecordsRoute),
-        TabItem(stringResource(R.string.tab_faq), Icons.AutoMirrored.Filled.Help, FaqRoute),
+        TabItem(stringResource(R.string.tab_fcm), Icons.Default.CloudSync, FCMRoute),
         TabItem(stringResource(R.string.tab_settings), Icons.Default.Settings, SettingsRoute),
     )
     val selectedIndex = tabs.indexOfFirst { tab ->
@@ -72,7 +72,7 @@ fun MainScreen(
         when (initialTab) {
             is OverviewRoute -> navController.navigate(OverviewRoute)
             is AppBlockRoute -> navController.navigate(AppBlockRoute)
-            is FaqRoute -> navController.navigate(FaqRoute)
+            is FCMRoute -> navController.navigate(FCMRoute)
             is RecordsRoute -> navController.navigate(RecordsRoute)
             is SettingsRoute -> navController.navigate(SettingsRoute)
             else -> Unit
@@ -159,8 +159,8 @@ fun MainScreen(
                     composable<AppBlockRoute> {
                         AppBlockScreen(hazeState = hazeState, hazeStyle = hazeStyle, onBack = null)
                     }
-                    composable<FaqRoute> {
-                        FaqScreen(hazeState = hazeState, hazeStyle = hazeStyle)
+                    composable<FCMRoute> {
+                        com.tianma.xsmscode.ui.fcm.FCMScreen(hazeState = hazeState, hazeStyle = hazeStyle)
                     }
                     composable<RecordsRoute> {
                         CodeRecordScreen(hazeState = hazeState, hazeStyle = hazeStyle, onBack = null)

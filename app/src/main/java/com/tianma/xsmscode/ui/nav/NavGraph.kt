@@ -22,7 +22,7 @@ object OverviewRoute
 object SettingsRoute
 
 @Serializable
-object FaqRoute
+object FCMRoute
 
 @Serializable
 data class RuleEditRoute(val editType: Int, val ruleId: Long? = null)
