@@ -18,18 +18,18 @@ buildscript {
     }
     configurations.all {
         resolutionStrategy {
-            force 'org.bitbucket.b_c:jose4j:0.9.6'
-            force 'org.jdom:jdom2:2.0.6.1'
-            force 'org.apache.commons:commons-lang3:3.17.0'
-            force 'org.apache.httpcomponents:httpclient:4.5.13'
-            force 'io.netty:netty-codec-http:4.1.129.Final'
-            force 'io.netty:netty-codec:4.1.129.Final'
-            force 'io.netty:netty-codec-http2:4.1.129.Final'
-            force 'io.netty:netty-common:4.1.129.Final'
-            force 'io.netty:netty-handler:4.1.129.Final'
-            force 'io.netty:netty-resolver:4.1.129.Final'
-            force 'io.netty:netty-transport:4.1.129.Final'
-            force 'io.netty:netty-buffer:4.1.129.Final'
+            force libs.jose4j
+            force libs.jdom2
+            force libs.apache.commons.lang3
+            force libs.apache.httpclient
+            force libs.netty.codec.http
+            force libs.netty.codec
+            force libs.netty.codec.http2
+            force libs.netty.common
+            force libs.netty.handler
+            force libs.netty.resolver
+            force libs.netty.transport
+            force libs.netty.buffer
         }
     }
 }
@@ -39,18 +39,22 @@ plugins {
 }
 
 subprojects {
-    plugins.withId("org.jetbrains.kotlin.android") {
+    def applyDetekt = {
         apply plugin: "dev.detekt"
+        detekt {
+            autoCorrect = true
+            parallel = true
+            buildUponDefaultConfig = true
+        }
         dependencies {
             detektPlugins "dev.detekt:detekt-rules-ktlint-wrapper:2.0.0-alpha.2"
         }
     }
-    plugins.withId("org.jetbrains.kotlin.jvm") {
-        apply plugin: "dev.detekt"
-        dependencies {
-            detektPlugins "dev.detekt:detekt-rules-ktlint-wrapper:2.0.0-alpha.2"
-        }
-    }
+
+    plugins.withId("com.android.application") { applyDetekt() }
+    plugins.withId("com.android.library") { applyDetekt() }
+    plugins.withId("org.jetbrains.kotlin.jvm") { applyDetekt() }
+    plugins.withId("org.jetbrains.kotlin.android") { applyDetekt() }
 
     repositories {
         google()
