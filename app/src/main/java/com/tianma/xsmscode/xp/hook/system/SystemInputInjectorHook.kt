@@ -10,7 +10,6 @@ import android.os.HandlerThread
 import android.os.Looper
 import android.os.Process
 import android.view.KeyCharacterMap
-import android.view.KeyEvent
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.xp.hook.BaseHook
 import de.robv.android.xposed.XC_MethodHook
@@ -21,14 +20,19 @@ import java.lang.reflect.Method
 class SystemInputInjectorHook : BaseHook() {
     @Volatile
     private var receiverRegistered = false
+
     @Volatile
     private var registerAttempts = 0
+
     @Volatile
     private var inputHandler: Handler? = null
+
     @Volatile
     private var inputManagerGlobal: Any? = null
+
     @Volatile
     private var injectMethod: Method? = null
+
     @Volatile
     private var mainHandler: Handler? = null
 

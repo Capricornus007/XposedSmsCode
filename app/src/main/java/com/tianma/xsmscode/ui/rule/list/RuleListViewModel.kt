@@ -5,20 +5,11 @@ import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import android.os.Bundle
+import androidx.core.os.BundleCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.tianma8023.xposed.smscode.BuildConfig
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.map
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import androidx.core.os.BundleCompat
+import com.tianma.xsmscode.common.constant.Const
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBManager
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
@@ -29,8 +20,17 @@ import com.tianma.xsmscode.feature.backup.ImportResult
 import com.tianma.xsmscode.feature.backup.ImportWarning
 import com.tianma.xsmscode.feature.store.EntityStoreManager
 import com.tianma.xsmscode.feature.store.EntityType
-import com.tianma.xsmscode.common.constant.Const
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -94,13 +94,13 @@ class RuleListViewModel(application: Application) : AndroidViewModel(application
             _eventsFlow.emit(RuleListEvent.ShowProgress(progressMsg))
             try {
                 val result = withContext(Dispatchers.IO) {
-                     BackupManager.exportRuleList(context, uri, rules.toBackupRules(), BuildConfig.VERSION_NAME)
+                    BackupManager.exportRuleList(context, uri, rules.toBackupRules(), BuildConfig.VERSION_NAME)
                 }
                 _eventsFlow.emit(RuleListEvent.ExportResultEvent(result == ExportResult.SUCCESS))
                 _eventsFlow.emit(RuleListEvent.CancelProgress)
             } catch (t: Throwable) {
-                 XLog.e("Export failed", t)
-                 _eventsFlow.emit(RuleListEvent.CancelProgress)
+                XLog.e("Export failed", t)
+                _eventsFlow.emit(RuleListEvent.CancelProgress)
             }
         }
     }
@@ -139,7 +139,10 @@ class RuleListViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 EntityStoreManager.storeEntitiesToFile(
-                    getApplication(), EntityType.CODE_RULES, rules, SmsCodeRule::class.java
+                    getApplication(),
+                    EntityType.CODE_RULES,
+                    rules,
+                    SmsCodeRule::class.java
                 )
             }
         }

@@ -1,27 +1,24 @@
 package com.tianma.xsmscode.ui.record
 
 import android.app.Application
+import android.content.Context
+import android.net.Uri
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
+import com.tianma.xsmscode.common.utils.JsonUtils
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBManager
 import com.tianma.xsmscode.data.db.entity.SmsMsg
-import android.content.Context
-import android.net.Uri
-import androidx.lifecycle.viewModelScope
-import com.tianma.xsmscode.common.utils.JsonUtils
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
-
-import androidx.compose.runtime.Immutable
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 
 @Immutable
 data class CodeRecordUiState(
@@ -32,7 +29,7 @@ data class CodeRecordUiState(
 class CodeRecordViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _loading = MutableStateFlow(false)
-    
+
     val uiState: StateFlow<CodeRecordUiState> = DBManager.get(application)
         .queryAllSmsMsgFlow()
         .combine(_loading) { smsList, loading ->

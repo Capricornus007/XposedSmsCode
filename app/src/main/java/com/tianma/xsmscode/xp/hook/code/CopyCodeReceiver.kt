@@ -5,9 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.tianma8023.xposed.smscode.R
-import androidx.core.content.ContextCompat
 import com.tianma.xsmscode.common.utils.ClipboardUtils
 
 /**
@@ -25,7 +25,9 @@ class CopyCodeReceiver private constructor() : BroadcastReceiver() {
 
             // cancel notification
             if (notificationId != -1) {
-                val manager = phoneContext.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager?
+                val manager = phoneContext.getSystemService(
+                    Context.NOTIFICATION_SERVICE
+                ) as android.app.NotificationManager?
                 manager?.cancel(notificationId)
             }
             // copy to clipboard

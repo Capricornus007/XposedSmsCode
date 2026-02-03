@@ -17,7 +17,7 @@ class ServiceGenerator private constructor() {
         private val instanceDelegate = lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
             ServiceGenerator()
         }
-        
+
         @JvmStatic
         fun getInstance(): ServiceGenerator = instanceDelegate.value
     }

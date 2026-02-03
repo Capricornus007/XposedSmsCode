@@ -2,6 +2,8 @@ package com.tianma.xsmscode.ui.home
 
 import android.content.Intent
 import android.os.Build
+import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,9 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,9 +29,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.activity.ComponentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.tianma8023.xposed.smscode.R
@@ -38,14 +38,13 @@ import com.tianma.xsmscode.common.utils.ModuleUtils
 import com.tianma.xsmscode.common.utils.PackageUtils
 import com.tianma.xsmscode.common.utils.Utils
 import com.tianma.xsmscode.data.db.entity.ApkVersion
-import org.koin.compose.viewmodel.koinViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import android.widget.Toast
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,7 +65,7 @@ fun OverviewScreen(
     var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
 
     val isEnabled = ModuleUtils.isModuleEnabled()
-    
+
     val listState = rememberLazyListState()
     val showTopDivider by remember {
         derivedStateOf {
@@ -112,7 +111,9 @@ fun OverviewScreen(
             item {
                 StatusCard(
                     isEnabled = isEnabled,
-                    onClick = if (isEnabled) null else {
+                    onClick = if (isEnabled) {
+                        null
+                    } else {
                         {
                             val intent = Intent().apply {
                                 setClassName(
@@ -188,7 +189,11 @@ fun OverviewScreen(
                         InfoItem(
                             icon = Icons.Default.Info,
                             label = stringResource(id = R.string.check_update_title),
-                            value = stringResource(id = R.string.pref_version_summary, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+                            value = stringResource(
+                                id = R.string.pref_version_summary,
+                                BuildConfig.VERSION_NAME,
+                                BuildConfig.VERSION_CODE
+                            ),
                             onClick = {
                                 if (PackageUtils.isInstalledFromPlay(context)) {
                                     settingsViewModel.requestPlayUpdate()
@@ -258,7 +263,10 @@ fun OverviewScreen(
     if (showDonateDialog) {
         DonateDialog(
             onDismiss = { showDonateDialog = false },
-            onAlipay = { showDonateDialog = false; showAlipayChoiceDialog = true },
+            onAlipay = {
+                showDonateDialog = false;
+                showAlipayChoiceDialog = true
+            },
             onWechat = {
                 showDonateDialog = false
                 showQRCodeDialog = Pair(R.drawable.wx, "wechat")

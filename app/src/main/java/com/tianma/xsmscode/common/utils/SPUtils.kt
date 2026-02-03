@@ -3,7 +3,6 @@ package com.tianma.xsmscode.common.utils
 import android.content.Context
 import com.tianma.xsmscode.common.constant.PrefConst
 
-
 object SPUtils {
 
     // 本地的版本号

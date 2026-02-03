@@ -11,7 +11,6 @@ import com.tianma.xsmscode.data.db.entity.SmsMsg
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
-import java.util.concurrent.Callable
 
 /**
  * Database Manager for Room (Migrated from GreenDao)
@@ -22,7 +21,9 @@ class DBManager private constructor(context: Context) {
     private val mSmsMsgDao: SmsMsgDao = mDatabase.smsMsgDao()
     private val mAppInfoDao: AppInfoDao = mDatabase.appInfoDao()
 
-    @Deprecated("Use Room DAOs directly if possible. This returns a raw SQLiteDatabase for legacy ContentProvider support.")
+    @Deprecated(
+        "Use Room DAOs directly if possible. This returns a raw SQLiteDatabase for legacy ContentProvider support."
+    )
     fun getSQLiteDatabase(): SQLiteDatabase {
         // Warning: Room uses SupportSQLiteDatabase, but DBProvider expects android.database.sqlite.SQLiteDatabase
         // We will try to open the database file directly for raw SQL if needed,
@@ -54,11 +55,9 @@ class DBManager private constructor(context: Context) {
         return mSmsCodeRuleDao.insert(smsCodeRule)
     }
 
-
     fun addSmsCodeRules(smsCodeRules: List<SmsCodeRule>) {
         mSmsCodeRuleDao.insertAll(smsCodeRules)
     }
-
 
     suspend fun addSmsCodeRulesSuspend(smsCodeRules: List<SmsCodeRule>): List<SmsCodeRule> {
         return withContext(Dispatchers.IO) {
@@ -71,11 +70,9 @@ class DBManager private constructor(context: Context) {
         mSmsCodeRuleDao.update(smsCodeRule)
     }
 
-
     fun queryAllSmsCodeRules(): List<SmsCodeRule> {
         return mSmsCodeRuleDao.getAll()
     }
-
 
     suspend fun queryAllSmsCodeRulesSuspend(): List<SmsCodeRule> {
         return withContext(Dispatchers.IO) { mSmsCodeRuleDao.getAll() }
@@ -94,16 +91,13 @@ class DBManager private constructor(context: Context) {
         return mSmsCodeRuleDao.queryRules(criteria.company, criteria.codeKeyword, criteria.codeRegex)
     }
 
-
     fun isExists(codeRule: SmsCodeRule): Boolean {
         return querySmsCodeRules(codeRule).isNotEmpty()
     }
 
-
     fun removeSmsCodeRule(smsCodeRule: SmsCodeRule) {
         mSmsCodeRuleDao.delete(smsCodeRule)
     }
-
 
     suspend fun removeSmsCodeRuleSuspend(smsCodeRule: SmsCodeRule): SmsCodeRule {
         return withContext(Dispatchers.IO) {
@@ -116,10 +110,9 @@ class DBManager private constructor(context: Context) {
         mSmsCodeRuleDao.clearAll()
     }
 
-
     suspend fun removeAllSmsCodeRulesSuspend() {
         withContext(Dispatchers.IO) {
-             mSmsCodeRuleDao.clearAll()
+            mSmsCodeRuleDao.clearAll()
         }
     }
 
@@ -127,16 +120,13 @@ class DBManager private constructor(context: Context) {
         mSmsMsgDao.insert(smsMsg)
     }
 
-
     fun addSmsMsgList(smsMsgList: List<SmsMsg>) {
         mSmsMsgDao.insertAll(smsMsgList)
     }
 
-
     fun queryAllSmsMsg(): List<SmsMsg> {
         return mSmsMsgDao.getAll()
     }
-
 
     fun queryAllSmsMsgFlow(): Flow<List<SmsMsg>> {
         return mSmsMsgDao.getAllFlow()
@@ -149,7 +139,6 @@ class DBManager private constructor(context: Context) {
     fun removeSmsMsgList(smsMsgList: List<SmsMsg>) {
         mSmsMsgDao.deleteInTx(smsMsgList)
     }
-
 
     suspend fun removeSmsMsgListSuspend(smsMsgList: List<SmsMsg>) {
         withContext(Dispatchers.IO) {
@@ -167,11 +156,9 @@ class DBManager private constructor(context: Context) {
         return mAppInfoDao.getAll()
     }
 
-
     suspend fun queryAllBlockedAppsSuspend(): List<AppInfo> {
         return withContext(Dispatchers.IO) { mAppInfoDao.getAll() }
     }
-    
 
     suspend fun removeBlockedAppsSuspend(appList: List<AppInfo>): List<AppInfo> {
         return withContext(Dispatchers.IO) {
@@ -179,7 +166,6 @@ class DBManager private constructor(context: Context) {
             appList
         }
     }
-
 
     suspend fun addBlockedAppsSuspend(appList: List<AppInfo>): List<AppInfo> {
         return withContext(Dispatchers.IO) {

@@ -4,13 +4,12 @@ import android.Manifest
 import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
 import android.provider.Telephony
 import androidx.annotation.IntDef
 import androidx.core.content.ContextCompat
-import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.common.utils.PrefsReader
+import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.xp.hook.code.action.CallableAction
 

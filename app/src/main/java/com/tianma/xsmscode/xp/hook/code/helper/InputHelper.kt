@@ -1,8 +1,6 @@
 package com.tianma.xsmscode.xp.hook.code.helper
 
 import com.tianma.xsmscode.common.utils.XLog
-import java.io.DataOutputStream
-import java.io.IOException
 
 object InputHelper {
 

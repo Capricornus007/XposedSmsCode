@@ -18,10 +18,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.tianma8023.xposed.smscode.R
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +31,7 @@ fun FaqScreen(
 ) {
     val questions = stringArrayResource(id = R.array.question_list)
     val answers = stringArrayResource(id = R.array.answer_list)
-    
+
     val listState = rememberLazyListState()
     val showTopDivider by remember {
         derivedStateOf {
@@ -42,7 +42,7 @@ fun FaqScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
-        
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()

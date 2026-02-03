@@ -1,17 +1,17 @@
 package com.tianma.xsmscode.ui.app
 
 import android.app.Application
-import com.tianma.xsmscode.feature.migrate.TransitionTask
 import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
+import com.tianma.xsmscode.di.appModule
+import com.tianma.xsmscode.feature.migrate.TransitionTask
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
-import com.tianma.xsmscode.di.appModule
+import timber.log.Timber
 
 class SmsCodeApplication : Application() {
 

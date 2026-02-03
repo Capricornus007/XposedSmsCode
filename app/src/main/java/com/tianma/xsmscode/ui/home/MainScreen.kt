@@ -1,24 +1,22 @@
 package com.tianma.xsmscode.ui.home
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.background
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -28,16 +26,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.ui.block.AppBlockScreen
 import com.tianma.xsmscode.ui.faq.FaqScreen
 import com.tianma.xsmscode.ui.nav.*
 import com.tianma.xsmscode.ui.record.CodeRecordScreen
-import com.github.tianma8023.xposed.smscode.R
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
 
 @Immutable
 data class TabItem<T : Any>(
@@ -98,11 +95,11 @@ fun MainScreen(
             if (!isCompact) {
                 NavigationRail(
                     header = {
-                         Icon(
-                             imageVector = Icons.Default.Sms,
-                             contentDescription = null,
-                             modifier = Modifier.padding(vertical = 12.dp)
-                         )
+                        Icon(
+                            imageVector = Icons.Default.Sms,
+                            contentDescription = null,
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        )
                     },
                     modifier = Modifier.fillMaxHeight()
                 ) {
@@ -180,7 +177,6 @@ fun MainScreen(
                         )
                     }
                 }
-
             }
         }
 

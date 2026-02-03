@@ -32,12 +32,15 @@ class PermissionManagerServiceHook30(classLoader: ClassLoader) : BaseSubHook(cla
             XLog.e("Cannot find the method to grant relevant permission")
             return
         }
-        XposedBridge.hookMethod(method, object : MethodHookWrapper() {
-            @Throws(Throwable::class)
-            override fun after(param: MethodHookParam) {
-                afterGrantPermissionsSinceAndroid11(param)
+        XposedBridge.hookMethod(
+            method,
+            object : MethodHookWrapper() {
+                @Throws(Throwable::class)
+                override fun after(param: MethodHookParam) {
+                    afterGrantPermissionsSinceAndroid11(param)
+                }
             }
-        })
+        )
     }
 
     private fun findTargetMethod(): Method? {
@@ -46,20 +49,30 @@ class PermissionManagerServiceHook30(classLoader: ClassLoader) : BaseSubHook(cla
         val callbackClass = XposedHelpers.findClassIfExists(CLASS_PERMISSION_CALLBACK, mClassLoader)
 
         var method = XposedHelpers.findMethodExactIfExists(
-            pmsClass, "restorePermissionState",
-            /* AndroidPackage pkg   */ androidPackageClass,
-            /* boolean replace             */ Boolean::class.javaPrimitiveType,
-            /* String packageOfInterest    */ String::class.java,
-            /* PermissionCallback callback */ callbackClass
+            pmsClass,
+            "restorePermissionState",
+            /* AndroidPackage pkg   */
+            androidPackageClass,
+            /* boolean replace             */
+            Boolean::class.javaPrimitiveType,
+            /* String packageOfInterest    */
+            String::class.java,
+            /* PermissionCallback callback */
+            callbackClass
         )
 
         if (method == null) { // method restorePermissionState() not found
             val methods = XposedHelpers.findMethodsByExactParameters(
-                pmsClass, Void.TYPE,
-                /* AndroidPackage pkg   */ androidPackageClass,
-                /* boolean replace             */ Boolean::class.javaPrimitiveType,
-                /* String packageOfInterest    */ String::class.java,
-                /* PermissionCallback callback */ callbackClass
+                pmsClass,
+                Void.TYPE,
+                /* AndroidPackage pkg   */
+                androidPackageClass,
+                /* boolean replace             */
+                Boolean::class.javaPrimitiveType,
+                /* String packageOfInterest    */
+                String::class.java,
+                /* PermissionCallback callback */
+                callbackClass
             )
             if (methods != null && methods.isNotEmpty()) {
                 method = methods[0]
@@ -100,10 +113,18 @@ class PermissionManagerServiceHook30(classLoader: ClassLoader) : BaseSubHook(cla
                 val permissionsToGrant = PACKAGE_PERMISSIONS[packageName] ?: continue
                 for (permissionToGrant in permissionsToGrant) {
                     if (!requestedPermissions.contains(permissionToGrant)) {
-                        val granted = XposedHelpers.callMethod(permissionsState, "hasInstallPermission", permissionToGrant) as Boolean
+                        val granted = XposedHelpers.callMethod(
+                            permissionsState,
+                            "hasInstallPermission",
+                            permissionToGrant
+                        ) as Boolean
                         if (!granted) {
                             val bpToGrant = XposedHelpers.callMethod(permissions, "get", permissionToGrant)
-                            val result = XposedHelpers.callMethod(permissionsState, "grantInstallPermission", bpToGrant) as Int
+                            val result = XposedHelpers.callMethod(
+                                permissionsState,
+                                "grantInstallPermission",
+                                bpToGrant
+                            ) as Int
                             XLog.d("Add $bpToGrant; result = $result")
                         } else {
                             XLog.d("Already have $permissionToGrant permission")

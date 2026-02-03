@@ -28,7 +28,8 @@ class ModuleUtilsHook : BaseHook() {
     private fun hookModuleUtils(lpparam: XC_LoadPackage.LoadPackageParam) {
         val className = ModuleUtils::class.java.name
         XposedHelpers.findAndHookMethod(
-            className, lpparam.classLoader,
+            className,
+            lpparam.classLoader,
             "getModuleVersion",
             XC_MethodReplacement.returnConstant(MODULE_VERSION)
         )

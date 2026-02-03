@@ -4,11 +4,9 @@ import android.content.ContentProviderOperation
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
-import android.net.Uri
 import android.os.Bundle
-import com.tianma.xsmscode.common.constant.PrefConst
-import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.common.utils.PrefsReader
+import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBProvider
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.ui.record.CodeRecordRestoreManager

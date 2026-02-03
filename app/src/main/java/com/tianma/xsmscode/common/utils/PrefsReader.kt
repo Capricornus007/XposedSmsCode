@@ -3,9 +3,6 @@ package com.tianma.xsmscode.common.utils
 import android.content.Context
 import com.tianma.xsmscode.common.constant.PrefConst
 
-import kotlinx.coroutines.runBlocking
-import com.tianma.xsmscode.common.utils.XLog
-
 object PrefsReader {
     private fun getBooleanViaProvider(context: Context, key: String, defaultValue: Boolean): Boolean {
         return try {

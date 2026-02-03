@@ -3,15 +3,17 @@ package com.tianma.xsmscode.ui.block
 import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBManager
 import com.tianma.xsmscode.data.db.entity.AppInfo
 import com.tianma.xsmscode.feature.store.EntityStoreManager
 import com.tianma.xsmscode.feature.store.EntityType
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,11 +23,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import androidx.compose.runtime.Immutable
-import java.util.ArrayList
 import java.util.Comparator
 
 class AppBlockViewModel(application: Application) : AndroidViewModel(application) {
@@ -101,7 +98,7 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                 val appList = withContext(Dispatchers.IO) {
                     val pm = getApplication<Application>().packageManager
                     originalBlockedApps = DBManager.get(getApplication()).queryAllBlockedAppsSuspend().toImmutableList()
-                    
+
                     val installedApps = pm.getInstalledApplications(PackageManager.MATCH_ALL)
                     val blockedPkgNames = originalBlockedApps.map { it.packageName }.toSet()
 
@@ -122,7 +119,7 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                         }
                         .toImmutableList()
                 }
-                
+
                 apps = appList
                 isLoadSucceed = true
                 updateHasChanges()
@@ -143,7 +140,7 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
             val usageStatsManager = context.getSystemService(android.app.usage.UsageStatsManager::class.java)
             val endTime = System.currentTimeMillis()
             val startTime = endTime - 1000 * 3600 * 24 * 30L // Last 30 days
-            
+
             // We use queryUsageStats to get detailed stats, or queryAndAggregateUsageStats
             val stats = usageStatsManager.queryAndAggregateUsageStats(startTime, endTime)
             usageStatsMap.clear()
@@ -191,7 +188,9 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
     }
 
     private fun hasUsageStatsPermission(): Boolean {
-        val appOps = getApplication<Application>().getSystemService(android.content.Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+        val appOps = getApplication<Application>().getSystemService(
+            android.content.Context.APP_OPS_SERVICE
+        ) as android.app.AppOpsManager
         val mode = appOps.checkOpNoThrow(
             android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
             android.os.Process.myUid(),
@@ -208,7 +207,9 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                         if (_hideSystemAppsFlow.value && systemApps.contains(appInfo.packageName)) {
                             return@filter false
                         }
-                        if (filter.isEmpty()) true else {
+                        if (filter.isEmpty()) {
+                            true
+                        } else {
                             val lowerLabel = appInfo.label?.lowercase() ?: ""
                             val lowerPkg = appInfo.packageName.lowercase()
                             lowerLabel.contains(filter) || lowerPkg.contains(filter)
@@ -253,9 +254,12 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                     val dbManager = DBManager.get(getApplication())
                     dbManager.deleteAllSuspend(AppInfo::class.java)
                     dbManager.insertOrReplaceInTxSuspend(AppInfo::class.java, blockedApps)
-                    
+
                     EntityStoreManager.storeEntitiesToFile(
-                        getApplication(), EntityType.BLOCKED_APP, blockedApps, AppInfo::class.java
+                        getApplication(),
+                        EntityType.BLOCKED_APP,
+                        blockedApps,
+                        AppInfo::class.java
                     )
                 }
                 // Update original checks
@@ -290,7 +294,7 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                 u1.compareTo(u2)
             }
         }
-        
+
         if (isAscending) result else -result
     }
 

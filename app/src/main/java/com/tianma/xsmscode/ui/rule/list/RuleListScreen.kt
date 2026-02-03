@@ -4,6 +4,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,19 +14,13 @@ import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
-import androidx.compose.material.icons.filled.Delete
-import android.widget.Toast
-import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
-import com.tianma.xsmscode.feature.backup.ImportResult
-import com.tianma.xsmscode.feature.backup.ImportWarning
-import com.tianma.xsmscode.common.utils.Utils
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,14 +33,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.tianma8023.xposed.smscode.R
-import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.common.constant.Const
-
+import com.tianma.xsmscode.data.db.entity.SmsCodeRule
+import com.tianma.xsmscode.feature.backup.ImportResult
+import com.tianma.xsmscode.feature.backup.ImportWarning
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -56,7 +53,7 @@ fun RuleListScreen(
 ) {
     val context = LocalContext.current
     val rules by viewModel.rulesFlow.collectAsStateWithLifecycle()
-    
+
     var showProgress by remember { mutableStateOf<String?>(null) }
     var showImportConfirm by remember { mutableStateOf<Uri?>(null) }
 
@@ -70,7 +67,11 @@ fun RuleListScreen(
                 when (event) {
                     is RuleListEvent.ShowProgress -> showProgress = event.msg
                     is RuleListEvent.CancelProgress -> showProgress = null
-                    is RuleListEvent.ImportDirect -> viewModel.importRules(event.uri, true, context.getString(R.string.importing))
+                    is RuleListEvent.ImportDirect -> viewModel.importRules(
+                        event.uri,
+                        true,
+                        context.getString(R.string.importing)
+                    )
                     is RuleListEvent.ImportDialogConfirm -> showImportConfirm = event.uri
                     is RuleListEvent.ExportResultEvent -> {
                         val msg = if (event.success) R.string.export_success_simple else R.string.export_failed
@@ -82,7 +83,9 @@ fun RuleListScreen(
                     }
                     is RuleListEvent.ImportWarningEvent -> {
                         val msg = when (event.warning) {
-                            ImportWarning.APP_VERSION_MISMATCH -> context.getString(R.string.import_warning_app_version_mismatch)
+                            ImportWarning.APP_VERSION_MISMATCH -> context.getString(
+                                R.string.import_warning_app_version_mismatch
+                            )
                         }
                         snackbarHostState.showSnackbar(msg, duration = SnackbarDuration.Long)
                     }
@@ -90,7 +93,7 @@ fun RuleListScreen(
             }
         }
     }
-    
+
     // Import/Export Launchers
     val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
@@ -105,9 +108,11 @@ fun RuleListScreen(
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
                 // Trigger import confirmation dialog logic via ViewModel or local state
-                viewModel.handleArguments(android.os.Bundle().apply {
-                    putParcelable(Const.EXTRA_IMPORT_URI, uri)
-                })
+                viewModel.handleArguments(
+                    android.os.Bundle().apply {
+                        putParcelable(Const.EXTRA_IMPORT_URI, uri)
+                    }
+                )
             }
         }
     }
@@ -125,7 +130,7 @@ fun RuleListScreen(
                         if (onBack != null) {
                             IconButton(onClick = onBack) {
                                 Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack, 
+                                    Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = stringResource(R.string.action_back)
                                 )
                             }
@@ -139,7 +144,10 @@ fun RuleListScreen(
                             }
                             importLauncher.launch(intent)
                         }) {
-                            Icon(Icons.Default.FileDownload, contentDescription = stringResource(R.string.action_import_rules))
+                            Icon(
+                                Icons.Default.FileDownload,
+                                contentDescription = stringResource(R.string.action_import_rules)
+                            )
                         }
                         IconButton(onClick = {
                             val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
@@ -149,7 +157,10 @@ fun RuleListScreen(
                             }
                             exportLauncher.launch(intent)
                         }) {
-                            Icon(Icons.Default.FileUpload, contentDescription = stringResource(R.string.action_export_rules))
+                            Icon(
+                                Icons.Default.FileUpload,
+                                contentDescription = stringResource(R.string.action_export_rules)
+                            )
                         }
                     }
                 )
@@ -164,16 +175,17 @@ fun RuleListScreen(
             }
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { 
-                onNavigateToEdit(Const.EDIT_TYPE_CREATE, SmsCodeRule()) 
+            FloatingActionButton(onClick = {
+                onNavigateToEdit(Const.EDIT_TYPE_CREATE, SmsCodeRule())
             }) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_rule))
             }
         }
     ) { padding ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
         ) {
             AnimatedContent(
                 targetState = rules,
@@ -239,7 +251,7 @@ fun RuleListItem(
 ) {
     var showMenu by remember { mutableStateOf(false) }
     val dismissState = rememberSwipeToDismissBoxState()
-    
+
     LaunchedEffect(dismissState.currentValue) {
         if (dismissState.currentValue == SwipeToDismissBoxValue.EndToStart) {
             onDelete()
@@ -273,11 +285,16 @@ fun RuleListItem(
         content = {
             ListItem(
                 headlineContent = { Text(rule.company ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                supportingContent = { 
+                supportingContent = {
                     Column {
                         Text(
                             text = buildAnnotatedString {
-                                withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)) {
+                                withStyle(
+                                    SpanStyle(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                    )
+                                ) {
                                     append(stringResource(R.string.rule_keyword_prefix))
                                 }
                                 append(rule.codeKeyword)
@@ -286,7 +303,12 @@ fun RuleListItem(
                         )
                         Text(
                             text = buildAnnotatedString {
-                                withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)) {
+                                withStyle(
+                                    SpanStyle(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                    )
+                                ) {
                                     append(stringResource(R.string.rule_regex_prefix))
                                 }
                                 append(rule.codeRegex)
@@ -300,7 +322,7 @@ fun RuleListItem(
                     Box {
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
-                                Icons.Default.MoreVert, 
+                                Icons.Default.MoreVert,
                                 contentDescription = stringResource(R.string.actions)
                             )
                         }
@@ -316,7 +338,10 @@ fun RuleListItem(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error) },
+                                text = { Text(
+                                    stringResource(R.string.remove),
+                                    color = MaterialTheme.colorScheme.error
+                                ) },
                                 onClick = {
                                     showMenu = false
                                     onDelete()

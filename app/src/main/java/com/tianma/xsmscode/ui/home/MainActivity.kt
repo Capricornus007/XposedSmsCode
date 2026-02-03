@@ -3,8 +3,6 @@ package com.tianma.xsmscode.ui.home
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
-import android.view.View
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -27,20 +25,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
-import com.tianma.xsmscode.common.constant.Const
-import com.tianma.xsmscode.ui.app.base.SystemBarsScrim
-import com.tianma.xsmscode.ui.app.base.rememberHazeStyle
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
-import com.tianma.xsmscode.ui.app.base.UpdateSystemBars
-import com.tianma.xsmscode.ui.app.base.applyEdgeToEdge
-import com.tianma.xsmscode.ui.nav.SmsCodeNavHost
 import com.github.tianma8023.xposed.smscode.R
 import com.google.android.play.core.appupdate.AppUpdateManager
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
@@ -49,6 +37,11 @@ import com.google.android.play.core.install.InstallStateUpdatedListener
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
+import com.tianma.xsmscode.ui.app.base.UpdateSystemBars
+import com.tianma.xsmscode.ui.app.base.applyEdgeToEdge
+import com.tianma.xsmscode.ui.app.base.rememberHazeStyle
+import com.tianma.xsmscode.ui.nav.SmsCodeNavHost
+import dev.chrisbanes.haze.HazeState
 import org.koin.androidx.compose.koinViewModel
 import kotlin.math.hypot
 
@@ -82,7 +75,7 @@ class MainActivity : AppCompatActivity() {
         applyEdgeToEdge(window)
         appUpdateManager = AppUpdateManagerFactory.create(this)
         appUpdateManager.registerListener(installStateUpdatedListener)
-        
+
         setContent {
             val viewModel: SettingsViewModel = koinViewModel()
             val themeState by viewModel.themeState.collectAsStateWithLifecycle()
@@ -102,36 +95,36 @@ class MainActivity : AppCompatActivity() {
                 if (themeState.mode != currentThemeMode) {
                     // 1. Capture Screenshot of current state (Old Theme)
                     try {
-                         // We need to verify if the view is laid out.
-                         if (view.width > 0 && view.height > 0) {
-                             val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-                             val canvas = android.graphics.Canvas(bitmap)
-                             view.draw(canvas)
-                             screenshotBitmap = bitmap
-                             
-                             // 2. Setup Animation Parameters
-                             val centerX = if (themeState.centerX >= 0) themeState.centerX else view.width / 2f
-                             val centerY = if (themeState.centerY >= 0) themeState.centerY else view.height / 2f
-                             animationCenter = Offset(centerX, centerY)
-                             
-                             // 3. Update Theme to NEW Mode (Re-renders UI behind)
-                             isAnimating = true
-                             currentThemeMode = themeState.mode
-                             
-                             // 4. Start Animation
-                             revealAnim.snapTo(0f)
-                             revealAnim.animateTo(
-                                 targetValue = 1f,
-                                 animationSpec = tween(durationMillis = 600)
-                             )
-                             
-                             // 5. Cleanup
-                             isAnimating = false
-                             screenshotBitmap = null
-                         } else {
-                             // Fallback if view not ready
-                             currentThemeMode = themeState.mode
-                         }
+                        // We need to verify if the view is laid out.
+                        if (view.width > 0 && view.height > 0) {
+                            val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
+                            val canvas = android.graphics.Canvas(bitmap)
+                            view.draw(canvas)
+                            screenshotBitmap = bitmap
+
+                            // 2. Setup Animation Parameters
+                            val centerX = if (themeState.centerX >= 0) themeState.centerX else view.width / 2f
+                            val centerY = if (themeState.centerY >= 0) themeState.centerY else view.height / 2f
+                            animationCenter = Offset(centerX, centerY)
+
+                            // 3. Update Theme to NEW Mode (Re-renders UI behind)
+                            isAnimating = true
+                            currentThemeMode = themeState.mode
+
+                            // 4. Start Animation
+                            revealAnim.snapTo(0f)
+                            revealAnim.animateTo(
+                                targetValue = 1f,
+                                animationSpec = tween(durationMillis = 600)
+                            )
+
+                            // 5. Cleanup
+                            isAnimating = false
+                            screenshotBitmap = null
+                        } else {
+                            // Fallback if view not ready
+                            currentThemeMode = themeState.mode
+                        }
                     } catch (e: Exception) {
                         e.printStackTrace()
                         // Fallback on error
@@ -142,7 +135,7 @@ class MainActivity : AppCompatActivity() {
                     currentThemeMode = themeState.mode
                 }
             }
-            
+
             // Collect navigation events
             LaunchedEffect(viewModel.eventsFlow) {
                 viewModel.eventsFlow.collect { event ->
@@ -163,7 +156,7 @@ class MainActivity : AppCompatActivity() {
                     LaunchedEffect(intent) {
                         viewModel.handleArguments(intent.extras)
                     }
-                    
+
                     Box(modifier = Modifier.fillMaxSize()) {
                         val hazeState = remember { HazeState() }
                         val hazeStyle = rememberHazeStyle()
@@ -176,7 +169,7 @@ class MainActivity : AppCompatActivity() {
                             hazeState = hazeState,
                             hazeStyle = hazeStyle
                         )
-                        
+
                         // Overlay for Circular Reveal
                         if (isAnimating && screenshotBitmap != null) {
                             val bitmap = screenshotBitmap!!.asImageBitmap()
@@ -191,11 +184,11 @@ class MainActivity : AppCompatActivity() {
                                     }
                                     .drawWithContent {
                                         drawContent() // Draw the Old Screenshot
-                                        
+
                                         // Calculate specific radius for time t
                                         val maxRadius = hypot(size.width.toDouble(), size.height.toDouble()).toFloat()
                                         val radius = maxRadius * revealAnim.value
-                                        
+
                                         // Draw a transparent circle to reveal the new content underneath
                                         drawCircle(
                                             color = androidx.compose.ui.graphics.Color.Transparent,
@@ -284,7 +277,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         UpdateSystemBars(darkTheme)
-        
+
         // Material 3 Expressive Theme Implementation
         // Note: MaterialExpressiveTheme uses its own shape and typography defaults
         MaterialExpressiveTheme(

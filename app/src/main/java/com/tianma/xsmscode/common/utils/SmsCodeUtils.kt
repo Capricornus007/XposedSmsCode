@@ -2,8 +2,6 @@ package com.tianma.xsmscode.common.utils
 
 import android.content.Context
 import android.text.TextUtils
-import com.github.tianma8023.xposed.smscode.BuildConfig
-import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.data.db.DBProvider
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.feature.store.EntityStoreManager
@@ -171,8 +169,8 @@ object SmsCodeUtils {
         val rules = queryAllSmsCodeRules(context)
         val lowerContent = content.lowercase()
         for (rule in rules) {
-            if (lowerContent.contains(rule.company?.lowercase() ?: "")
-                && lowerContent.contains(rule.codeKeyword.lowercase())
+            if (lowerContent.contains(rule.company?.lowercase() ?: "") &&
+                lowerContent.contains(rule.codeKeyword.lowercase())
             ) {
                 val pattern = Pattern.compile(rule.codeRegex)
                 val matcher = pattern.matcher(content)

@@ -34,9 +34,14 @@ object EntityStoreManager {
         return File(StorageUtils.getFilesDir(context), filename)
     }
 
-    //@JvmStatic // Removed for inline
+    // @JvmStatic // Removed for inline
     @JvmStatic
-    fun <T : Any> storeEntitiesToFile(context: Context, entityType: EntityType, entities: List<T>, clazz: Class<T>): Boolean {
+    fun <T : Any> storeEntitiesToFile(
+        context: Context,
+        entityType: EntityType,
+        entities: List<T>,
+        clazz: Class<T>
+    ): Boolean {
         var osw: OutputStreamWriter? = null
         try {
             val storeFile = getStoreFile(context, entityType)
@@ -47,13 +52,15 @@ object EntityStoreManager {
                 JsonUtils.listToJson(entities, clazz)
             }
             if (jsonString.isEmpty()) {
-                XLog.e("store entities to file failed: empty json, type=$entityType size=${entities.size} clazz=${clazz.name}")
+                XLog.e(
+                    "store entities to file failed: empty json, type=$entityType size=${entities.size} clazz=${clazz.name}"
+                )
                 return false
             }
 
             osw = OutputStreamWriter(FileOutputStream(storeFile), StandardCharsets.UTF_8)
             osw.write(jsonString)
-            
+
             // set file world writable
             StorageUtils.setFileWorldWritable(storeFile, 0)
             return true
@@ -71,7 +78,7 @@ object EntityStoreManager {
         return false
     }
 
-    //@JvmStatic // Removed for inline
+    // @JvmStatic // Removed for inline
     @JvmStatic
     fun <T : Any> storeEntityToFile(context: Context, entityType: EntityType, entity: T, clazz: Class<T>): Boolean {
         val entities = ArrayList<T>()
@@ -114,6 +121,8 @@ object EntityStoreManager {
         val entities = loadEntitiesFromFile(context, entityType, entityClass)
         return if (entities.isNotEmpty()) {
             entities[0]
-        } else null
+        } else {
+            null
+        }
     }
 }

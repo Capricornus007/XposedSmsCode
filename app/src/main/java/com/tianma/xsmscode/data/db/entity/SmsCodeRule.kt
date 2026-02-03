@@ -1,12 +1,12 @@
 package com.tianma.xsmscode.data.db.entity
 
-import androidx.compose.runtime.Immutable
 import android.os.Parcelable
+import androidx.compose.runtime.Immutable
 import androidx.room.*
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import com.tianma.xsmscode.feature.backup.BackupConst
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 @Immutable
 @Entity(

@@ -1,13 +1,11 @@
 package com.tianma.xsmscode.ui.home
 
-import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.WindowInsetsSides
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -16,42 +14,40 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.common.constant.Const
 import com.tianma.xsmscode.common.constant.PrefConst
-import com.tianma.xsmscode.common.utils.ModuleUtils
+import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
 import com.tianma.xsmscode.common.utils.ModuleActivationStore
+import com.tianma.xsmscode.common.utils.ModuleUtils
 import com.tianma.xsmscode.common.utils.PackageUtils
+import com.tianma.xsmscode.common.utils.SPUtils
 import com.tianma.xsmscode.common.utils.Utils
 import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
-import com.tianma.xsmscode.common.utils.SPUtils
 import com.tianma.xsmscode.data.db.entity.ApkVersion
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
-
-import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.platform.LocalView
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,11 +66,11 @@ fun ComposeSettingsScreen(
     }
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
-    
+
     val themeState by settingsViewModel.themeState.collectAsStateWithLifecycle()
     val themeMode = themeState.mode
     val updateVersion by settingsViewModel.updateVersion.collectAsStateWithLifecycle(null)
-    
+
     var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
     var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
     var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
@@ -164,7 +160,7 @@ fun ComposeSettingsScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp // TopBar height
-        
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -196,13 +192,13 @@ fun ComposeSettingsScreen(
                 title = stringResource(id = R.string.pref_choose_theme_title),
                 summary = stringResource(id = R.string.pref_choose_theme_summary)
             ) { showThemeDialog = true }
-            
+
             var showLanguageDialog by remember { mutableStateOf(false) }
             Item(
                 title = stringResource(id = R.string.pref_language_title),
                 summary = stringResource(id = R.string.pref_language_summary)
             ) { showLanguageDialog = true }
- 
+
             if (showLanguageDialog) {
                 LanguageChooserDialog(
                     onDismiss = { showLanguageDialog = false },
@@ -217,7 +213,7 @@ fun ComposeSettingsScreen(
                     }
                 )
             }
-            
+
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             SectionHeader(text = stringResource(id = R.string.pref_sms_code_title))
@@ -334,10 +330,10 @@ fun ComposeSettingsScreen(
                     .hazeEffect(hazeState, hazeStyle)
             )
         }
-        
+
         SnackbarHost(
-             hostState = snackbarHostState,
-             modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
         )
     }
 
@@ -426,14 +422,17 @@ fun ComposeSettingsScreen(
     }
 
     if (showDonateDialog) {
-         DonateDialog(
-             onDismiss = { showDonateDialog = false },
-             onAlipay = { showDonateDialog = false; showAlipayChoiceDialog = true },
-             onWechat = {
-                 showDonateDialog = false
-                 showQRCodeDialog = Pair(R.drawable.wx, "wechat")
-             }
-         )
+        DonateDialog(
+            onDismiss = { showDonateDialog = false },
+            onAlipay = {
+                showDonateDialog = false;
+                showAlipayChoiceDialog = true
+            },
+            onWechat = {
+                showDonateDialog = false
+                showQRCodeDialog = Pair(R.drawable.wx, "wechat")
+            }
+        )
     }
 
     if (showAlipayChoiceDialog) {
@@ -504,8 +503,16 @@ fun Item(
     ListItem(
         headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
         supportingContent = if (summary.isNotEmpty()) {
-            { Text(text = summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        } else null,
+            {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            null
+        },
         modifier = modifier.clickable(onClick = onClick)
     )
 }
@@ -538,8 +545,16 @@ fun SwitchItem(
     ListItem(
         headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
         supportingContent = if (summary.isNotEmpty()) {
-            { Text(text = summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        } else null,
+            {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            null
+        },
         trailingContent = {
             Switch(checked = checkedState.value, onCheckedChange = { toggle(it) })
         },
@@ -669,10 +684,10 @@ fun ThemeChooserDialog(
         text = {
             Column {
                 modes.forEach { (label, mode) ->
-                   var rowCoords: LayoutCoordinates? by remember { mutableStateOf(null) }
-                   val view = LocalView.current
-                   
-                   Row(
+                    var rowCoords: LayoutCoordinates? by remember { mutableStateOf(null) }
+                    val view = LocalView.current
+
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 12.dp)
@@ -682,13 +697,13 @@ fun ThemeChooserDialog(
                                     onTap = { tapOffset ->
                                         val locationOnScreen = IntArray(2)
                                         view.getLocationOnScreen(locationOnScreen)
-                                        
+
                                         val rootCoords = rowCoords?.positionInRoot() ?: androidx.compose.ui.geometry.Offset.Zero
-                                        
+
                                         // Dialog Window Offset + Item Offset in Dialog + Tap Offset
                                         val finalX = locationOnScreen[0] + rootCoords.x + tapOffset.x
                                         val finalY = locationOnScreen[1] + rootCoords.y + tapOffset.y
-                                        
+
                                         onThemeSelected(mode, finalX, finalY)
                                     }
                                 )
@@ -777,12 +792,20 @@ fun AlipayChoiceDialog(onDismiss: () -> Unit, onQRCode: () -> Unit, onToken: () 
 fun QRCodeDialog(resId: Int, type: String, onDismiss: () -> Unit, onSave: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (type == "alipay") stringResource(id = R.string.dialog_donate_alipay) else stringResource(id = R.string.dialog_donate_wechat)) },
+        title = {
+            Text(
+                if (type == "alipay") stringResource(
+                    id = R.string.dialog_donate_alipay
+                ) else stringResource(id = R.string.dialog_donate_wechat)
+            )
+        },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 androidx.compose.foundation.Image(
                     painter = painterResource(id = resId),
-                    contentDescription = if (type == "alipay") stringResource(id = R.string.dialog_donate_alipay) else stringResource(id = R.string.dialog_donate_wechat),
+                    contentDescription = if (type == "alipay") stringResource(
+                        id = R.string.dialog_donate_alipay
+                    ) else stringResource(id = R.string.dialog_donate_wechat),
                     modifier = Modifier.size(200.dp)
                 )
             }
