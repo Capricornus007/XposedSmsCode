@@ -18,53 +18,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Get Detekt download URL
-        id: detekt_info
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh api graphql --field tagName=$DETEKT_RELEASE_TAG --raw-field query='
-            query getReleaseAssetDownloadUrl($tagName: String!) {
-              repository(name: "detekt", owner: "detekt") {
-                release(tagName: $tagName) {
-                  releaseAssets(name: "detekt", first: 1) {
-                    nodes {
-                      downloadUrl
-                    }
-                  }
-                  tagCommit {
-                    oid
-                  }
-                }
-              }
-            }
-          ' 1> gh_response.json
-  
-          DETEKT_RELEASE_SHA=$(jq --raw-output '.data.repository.release.tagCommit.oid' gh_response.json)
-          if [ $DETEKT_RELEASE_SHA != "37f0a1d006977512f1f216506cd695039607c3e5" ]; then
-            echo "Release tag doesn't match expected commit SHA"
-            exit 1
-          fi
-  
-          DETEKT_DOWNLOAD_URL=$(jq --raw-output '.data.repository.release.releaseAssets.nodes[0].downloadUrl' gh_response.json)
-          echo "download_url=$DETEKT_DOWNLOAD_URL" >> $GITHUB_OUTPUT
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-      - name: Setup Detekt
-        run: |
-          dest=$( mktemp -d )
-          curl --request GET \
-            --url ${{ steps.detekt_info.outputs.download_url }} \
-            --silent \
-            --location \
-            --output $dest/detekt
-          chmod a+x $dest/detekt
-          echo $dest >> $GITHUB_PATH
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
       - name: Run Detekt with Auto Correct
         continue-on-error: true
         run: |
-          # 使用 --auto-correct 参数自动修复格式问题
-          detekt --input ${{ github.workspace }} --auto-correct
+          chmod +x gradlew
+          ./gradlew detekt --auto-correct
           
       - name: Create Pull Request
         id: cpr
