@@ -11,5 +11,5 @@ data class BackupPayload(
     @SerialName(BackupConst.KEY_APP_VERSION)
     val appVersion: String = "",
     @SerialName(BackupConst.KEY_RULES)
-    val rules: List<BackupRule> = emptyList()
+    val rules: List<BackupRule> = emptyList(),
 )

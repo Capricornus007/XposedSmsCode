@@ -70,16 +70,14 @@ class RuleImporter(private val mJsonStream: InputStream?) : Closeable {
     }
 
     @Throws(BackupInvalidException::class)
-    private fun readRule(ruleObject: JsonObject): BackupRule {
-        return try {
-            val company = ruleObject[BackupConst.KEY_COMPANY]?.jsonPrimitive?.content
-            val codeKeyword = ruleObject[BackupConst.KEY_CODE_KEYWORD]?.jsonPrimitive?.content ?: ""
-            val codeRegex = ruleObject[BackupConst.KEY_CODE_REGEX]?.jsonPrimitive?.content ?: ""
+    private fun readRule(ruleObject: JsonObject): BackupRule = try {
+        val company = ruleObject[BackupConst.KEY_COMPANY]?.jsonPrimitive?.content
+        val codeKeyword = ruleObject[BackupConst.KEY_CODE_KEYWORD]?.jsonPrimitive?.content ?: ""
+        val codeRegex = ruleObject[BackupConst.KEY_CODE_REGEX]?.jsonPrimitive?.content ?: ""
 
-            BackupRule(company = company, codeKeyword = codeKeyword, codeRegex = codeRegex)
-        } catch (e: Exception) {
-            throw BackupInvalidException(e)
-        }
+        BackupRule(company = company, codeKeyword = codeKeyword, codeRegex = codeRegex)
+    } catch (e: Exception) {
+        throw BackupInvalidException(e)
     }
 
     private fun readSchemaVersion(jsonObject: JsonObject): Int {
@@ -91,9 +89,8 @@ class RuleImporter(private val mJsonStream: InputStream?) : Closeable {
             ?: throw VersionInvalidException("Invalid backup version")
     }
 
-    private fun readAppVersion(jsonObject: JsonObject): String {
-        return jsonObject[BackupConst.KEY_APP_VERSION]?.jsonPrimitive?.content ?: ""
-    }
+    private fun readAppVersion(jsonObject: JsonObject): String =
+        jsonObject[BackupConst.KEY_APP_VERSION]?.jsonPrimitive?.content ?: ""
 
     override fun close() {
         if (mJsonStream != null) {

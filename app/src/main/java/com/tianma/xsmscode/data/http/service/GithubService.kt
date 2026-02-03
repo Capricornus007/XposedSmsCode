@@ -10,8 +10,5 @@ import retrofit2.http.Path
 interface GithubService {
 
     @GET("/repos/{username}/{repoName}/releases/latest")
-    suspend fun getLatestRelease(
-        @Path("username") username: String,
-        @Path("repoName") repoName: String
-    ): GithubRelease
+    suspend fun getLatestRelease(@Path("username") username: String, @Path("repoName") repoName: String): GithubRelease
 }

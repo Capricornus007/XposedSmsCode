@@ -34,5 +34,5 @@ enum class ImportResult {
     /**
      * Read error
      */
-    READ_FAILED
+    READ_FAILED,
 }

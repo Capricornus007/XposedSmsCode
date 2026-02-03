@@ -11,20 +11,16 @@ open class BaseItemCallback<E> : ItemCallback<E> {
 
     protected open fun onItemClicked(item: E, position: Int) {}
 
-    override fun onItemLongClicked(itemView: View, item: E, position: Int): Boolean {
-        return onItemLongClicked(item, position)
-    }
+    override fun onItemLongClicked(itemView: View, item: E, position: Int): Boolean = onItemLongClicked(item, position)
 
-    protected open fun onItemLongClicked(item: E, position: Int): Boolean {
-        return false
-    }
+    protected open fun onItemLongClicked(item: E, position: Int): Boolean = false
 
     override fun onCreateItemContextMenu(
         menu: ContextMenu,
         v: View,
         menuInfo: ContextMenuInfo?,
         item: E,
-        position: Int
+        position: Int,
     ) {
     }
 }

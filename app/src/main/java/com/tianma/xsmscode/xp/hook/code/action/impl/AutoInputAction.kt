@@ -16,11 +16,8 @@ import java.util.*
 /**
  * 自动输入验证码
  */
-class AutoInputAction(
-    pluginContext: Context,
-    phoneContext: Context,
-    smsMsg: SmsMsg
-) : CallableAction(pluginContext, phoneContext, smsMsg) {
+class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg) :
+    CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
         prepareAutoInputCode(mSmsMsg.smsCode)
@@ -34,6 +31,7 @@ class AutoInputAction(
     }
 
     // auto-input
+    @Suppress("TooGenericExceptionCaught")
     private fun autoInputCode(code: String?) {
         try {
             InputHelper.sendText(mPhoneContext, code)
@@ -44,6 +42,7 @@ class AutoInputAction(
     }
 
     // 是否屏蔽自动输入
+    @Suppress("TooGenericExceptionCaught")
     private fun autoInputBlockedHere(): Boolean {
         var result = false
         try {
@@ -70,7 +69,7 @@ class AutoInputAction(
                 val appInfoList = EntityStoreManager.loadEntitiesFromFile(
                     mPluginContext,
                     EntityType.BLOCKED_APP,
-                    AppInfo::class.java
+                    AppInfo::class.java,
                 )
                 for (appInfo in appInfoList) {
                     blockedAppList.add(appInfo.packageName)

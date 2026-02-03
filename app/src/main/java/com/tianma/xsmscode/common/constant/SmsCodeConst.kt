@@ -67,7 +67,7 @@ object SmsCodeConst {
     val VERIFICATION_KEY_WORDS_EN = arrayOf(
         "Code",
         "code",
-        "CODE"
+        "CODE",
     )
 
     const val PHONE_NUMBER_KEYWORDS =

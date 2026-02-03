@@ -57,7 +57,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = 0L
+            initialValue = 0L,
         )
 
     init {
@@ -119,7 +119,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 pm.setComponentEnabledSetting(
                     mainCN,
                     PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                    PackageManager.DONT_KILL_APP
+                    PackageManager.DONT_KILL_APP,
                 )
             }
         }
@@ -166,6 +166,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                             _eventsFlow.emit(SettingsEvent.AppAlreadyNewest)
                         }
                     }
+
                     is NetworkResult.Error -> {
                         _eventsFlow.emit(SettingsEvent.CheckUpdateError(result.error))
                     }

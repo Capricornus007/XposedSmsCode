@@ -18,7 +18,7 @@ interface SmsCodeRuleDao {
     fun getAllFlow(): Flow<List<SmsCodeRule>>
 
     @Query(
-        "SELECT * FROM sms_code_rule WHERE company = :company AND code_keyword = :codeKeyword AND code_regex = :codeRegex"
+        "SELECT * FROM sms_code_rule WHERE company = :company AND code_keyword = :codeKeyword AND code_regex = :codeRegex",
     )
     fun queryRules(company: String?, codeKeyword: String, codeRegex: String): List<SmsCodeRule>
 

@@ -26,7 +26,7 @@ class CopyCodeReceiver private constructor() : BroadcastReceiver() {
             // cancel notification
             if (notificationId != -1) {
                 val manager = phoneContext.getSystemService(
-                    Context.NOTIFICATION_SERVICE
+                    Context.NOTIFICATION_SERVICE,
                 ) as android.app.NotificationManager?
                 manager?.cancel(notificationId)
             }
@@ -45,7 +45,7 @@ class CopyCodeReceiver private constructor() : BroadcastReceiver() {
             try {
                 mPluginContext = phoneContext.createPackageContext(
                     BuildConfig.APPLICATION_ID,
-                    Context.CONTEXT_IGNORE_SECURITY
+                    Context.CONTEXT_IGNORE_SECURITY,
                 )
             } catch (e: Exception) {
                 // ignore

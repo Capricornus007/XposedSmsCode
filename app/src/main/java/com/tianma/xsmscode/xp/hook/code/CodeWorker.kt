@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 class CodeWorker(
     private val mPluginContext: Context,
     private val mPhoneContext: Context,
-    private val mSmsIntent: Intent
+    private val mSmsIntent: Intent,
 ) {
     private val mUIHandler: Handler = Handler(Looper.getMainLooper())
     private val mScheduledExecutor = Executors.newSingleThreadScheduledExecutor()

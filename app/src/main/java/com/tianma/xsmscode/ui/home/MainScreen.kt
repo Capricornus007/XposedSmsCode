@@ -37,11 +37,7 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 
 @Immutable
-data class TabItem<T : Any>(
-    val label: String,
-    val icon: ImageVector,
-    val route: T
-)
+data class TabItem<T : Any>(val label: String, val icon: ImageVector, val route: T)
 
 @Composable
 fun MainScreen(
@@ -49,7 +45,7 @@ fun MainScreen(
     initialTab: Any? = null,
     onInitialTabConsumed: (() -> Unit)? = null,
     hazeState: HazeState,
-    hazeStyle: HazeStyle
+    hazeStyle: HazeStyle,
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -60,7 +56,7 @@ fun MainScreen(
         TabItem(stringResource(R.string.tab_blacklist), Icons.Default.Widgets, AppBlockRoute),
         TabItem(stringResource(R.string.tab_records), Icons.Default.History, RecordsRoute),
         TabItem(stringResource(R.string.tab_faq), Icons.AutoMirrored.Filled.Help, FaqRoute),
-        TabItem(stringResource(R.string.tab_settings), Icons.Default.Settings, SettingsRoute)
+        TabItem(stringResource(R.string.tab_settings), Icons.Default.Settings, SettingsRoute),
     )
     val selectedIndex = tabs.indexOfFirst { tab ->
         currentDestination?.hierarchy?.any { it.hasRoute(tab.route::class) } == true
@@ -87,10 +83,10 @@ fun MainScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
     ) {
         Row(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         ) {
             if (!isCompact) {
                 NavigationRail(
@@ -98,10 +94,10 @@ fun MainScreen(
                         Icon(
                             imageVector = Icons.Default.Sms,
                             contentDescription = null,
-                            modifier = Modifier.padding(vertical = 12.dp)
+                            modifier = Modifier.padding(vertical = 12.dp),
                         )
                     },
-                    modifier = Modifier.fillMaxHeight()
+                    modifier = Modifier.fillMaxHeight(),
                 ) {
                     tabs.forEach { tab ->
                         val selected = currentDestination?.hierarchy?.any { it.hasRoute(tab.route::class) } == true
@@ -118,7 +114,7 @@ fun MainScreen(
                                     launchSingleTop = true
                                     restoreState = true
                                 }
-                            }
+                            },
                         )
                     }
                 }
@@ -139,7 +135,7 @@ fun MainScreen(
 
                         slideInHorizontally(
                             animationSpec = tween(300),
-                            initialOffsetX = { fullWidth -> direction * fullWidth }
+                            initialOffsetX = { fullWidth -> direction * fullWidth },
                         ) + fadeIn(animationSpec = tween(300))
                     },
                     exitTransition = {
@@ -153,9 +149,9 @@ fun MainScreen(
 
                         slideOutHorizontally(
                             animationSpec = tween(300),
-                            targetOffsetX = { fullWidth -> -direction * fullWidth }
+                            targetOffsetX = { fullWidth -> -direction * fullWidth },
                         ) + fadeOut(animationSpec = tween(300))
-                    }
+                    },
                 ) {
                     composable<OverviewRoute> {
                         OverviewScreen(hazeState = hazeState, hazeStyle = hazeStyle)
@@ -173,7 +169,7 @@ fun MainScreen(
                         ComposeSettingsScreen(
                             hazeState = hazeState,
                             hazeStyle = hazeStyle,
-                            onExit = { /* In tab, ignore exit */ }
+                            onExit = { /* In tab, ignore exit */ },
                         )
                     }
                 }
@@ -185,11 +181,11 @@ fun MainScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .hazeEffect(hazeState, hazeStyle)
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f)),
             ) {
                 NavigationBar(
                     containerColor = Color.Transparent,
-                    tonalElevation = 0.dp
+                    tonalElevation = 0.dp,
                 ) {
                     tabs.forEach { tab ->
                         val selected = currentDestination?.hierarchy?.any { it.hasRoute(tab.route::class) } == true
@@ -198,7 +194,7 @@ fun MainScreen(
                             label = { Text(tab.label) },
                             selected = selected,
                             colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
                             ),
                             alwaysShowLabel = false,
                             onClick = {
@@ -209,7 +205,7 @@ fun MainScreen(
                                     launchSingleTop = true
                                     restoreState = true
                                 }
-                            }
+                            },
                         )
                     }
                 }

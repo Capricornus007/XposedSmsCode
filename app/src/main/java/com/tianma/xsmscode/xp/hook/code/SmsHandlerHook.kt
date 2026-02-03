@@ -133,7 +133,7 @@ class SmsHandlerHook : BaseHook() {
             try {
                 mPluginContext = mPhoneContext?.createPackageContext(
                     SMSCODE_PACKAGE,
-                    Context.CONTEXT_IGNORE_SECURITY
+                    Context.CONTEXT_IGNORE_SECURITY,
                 )
                 if (mPluginContext != null) {
                     initNotificationChannel()
@@ -156,7 +156,7 @@ class SmsHandlerHook : BaseHook() {
                 it,
                 channelId,
                 channelName,
-                NotificationManager.IMPORTANCE_HIGH
+                NotificationManager.IMPORTANCE_HIGH,
             )
             XLog.d("Init notification channel succeed")
         }
@@ -249,7 +249,7 @@ class SmsHandlerHook : BaseHook() {
         XLog.d("Delete raw SMS data from database on Android 24+")
         val deleteWhere = XposedHelpers.getObjectField(smsReceiver, "mDeleteWhere")
         val deleteWhereArgs = XposedHelpers.getObjectField(smsReceiver, "mDeleteWhereArgs")
-        val MARK_DELETED = 2
+        val markDeleted = 2
 
         callDeclaredMethod(
             SMS_HANDLER_CLASS,
@@ -257,7 +257,7 @@ class SmsHandlerHook : BaseHook() {
             "deleteFromRawTable",
             deleteWhere,
             deleteWhereArgs,
-            MARK_DELETED
+            markDeleted,
         )
     }
 
@@ -266,7 +266,7 @@ class SmsHandlerHook : BaseHook() {
             try {
                 mPluginContext = mPhoneContext?.createPackageContext(
                     SMSCODE_PACKAGE,
-                    Context.CONTEXT_IGNORE_SECURITY
+                    Context.CONTEXT_IGNORE_SECURITY,
                 )
             } catch (e: Exception) {
                 XLog.e("Create plugin context failed: %s", e)

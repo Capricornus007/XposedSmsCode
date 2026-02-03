@@ -31,17 +31,14 @@ fun applyEdgeToEdge(window: Window) {
 }
 
 @Composable
-fun SystemBarsScrim(
-    hazeState: HazeState,
-    hazeStyle: HazeStyle
-) {
+fun SystemBarsScrim(hazeState: HazeState, hazeStyle: HazeStyle) {
     Box(modifier = Modifier.fillMaxSize()) {
         Spacer(
             modifier = Modifier
                 .fillMaxWidth()
                 .windowInsetsTopHeight(WindowInsets.statusBars)
                 .hazeEffect(hazeState, hazeStyle)
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f)),
         )
         Spacer(
             modifier = Modifier
@@ -49,20 +46,18 @@ fun SystemBarsScrim(
                 .windowInsetsBottomHeight(WindowInsets.navigationBars)
                 .align(Alignment.BottomStart)
                 .hazeEffect(hazeState, hazeStyle)
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f)),
         )
     }
 }
 
 @Composable
-fun rememberHazeStyle(): HazeStyle {
-    return HazeStyle(
-        backgroundColor = MaterialTheme.colorScheme.surface,
-        tint = HazeTint(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)),
-        blurRadius = 30.dp,
-        noiseFactor = 0f
-    )
-}
+fun rememberHazeStyle(): HazeStyle = HazeStyle(
+    backgroundColor = MaterialTheme.colorScheme.surface,
+    tint = HazeTint(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)),
+    blurRadius = 30.dp,
+    noiseFactor = 0f,
+)
 
 @Composable
 fun UpdateSystemBars(darkTheme: Boolean) {

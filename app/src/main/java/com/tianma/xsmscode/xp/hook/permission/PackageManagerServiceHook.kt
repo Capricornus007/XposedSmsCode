@@ -40,7 +40,7 @@ class PackageManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(classLoa
                 /* boolean replace           */
                 Boolean::class.javaPrimitiveType,
                 /* String packageOfInterest  */
-                String::class.java
+                String::class.java,
             )
         } else {
             // Android 4.4 +
@@ -51,7 +51,7 @@ class PackageManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(classLoa
                 /* PackageParser.Package pkg */
                 CLASS_PACKAGE_PARSER_PACKAGE,
                 /* boolean replace           */
-                Boolean::class.javaPrimitiveType
+                Boolean::class.javaPrimitiveType,
             )
         }
 
@@ -65,7 +65,7 @@ class PackageManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(classLoa
                         grantPermissionsLPwSinceK(param)
                     }
                 }
-            }
+            },
         )
     }
 
@@ -94,14 +94,14 @@ class PackageManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(classLoa
                             val granted = XposedHelpers.callMethod(
                                 permissionsState,
                                 "hasInstallPermission",
-                                permissionToGrant
+                                permissionToGrant,
                             ) as Boolean
                             if (!granted) {
                                 val bpToGrant = XposedHelpers.callMethod(permissions, "get", permissionToGrant)
                                 val result = XposedHelpers.callMethod(
                                     permissionsState,
                                     "grantInstallPermission",
-                                    bpToGrant
+                                    bpToGrant,
                                 ) as Int
                                 XLog.d("Add $bpToGrant; result = $result")
                             } else {
@@ -125,7 +125,7 @@ class PackageManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(classLoa
                     val extra = XposedHelpers.getObjectField(pkg, "mExtras")
                     val grantedPermissions = XposedHelpers.getObjectField(
                         extra,
-                        "grantedPermissions"
+                        "grantedPermissions",
                     ) as MutableSet<String>
                     val settings = XposedHelpers.getObjectField(param.thisObject, "mSettings")
                     val permissions = XposedHelpers.getObjectField(settings, "mPermissions")

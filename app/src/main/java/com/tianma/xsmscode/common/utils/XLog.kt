@@ -21,7 +21,11 @@ object XLog {
             message + '\n' + Log.getStackTraceString(lastArg)
         } else {
             if (args.isNotEmpty()) {
-                try { String.format(message, *args) } catch (e: Exception) { message }
+                try {
+                    String.format(message, *args)
+                } catch (e: Exception) {
+                    message
+                }
             } else {
                 message
             }

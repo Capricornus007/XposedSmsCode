@@ -11,11 +11,8 @@ import com.tianma.xsmscode.xp.hook.code.action.RunnableAction
 /**
  * 显示验证码Toast
  */
-class ToastAction(
-    pluginContext: Context,
-    phoneContext: Context,
-    smsMsg: SmsMsg
-) : RunnableAction(pluginContext, phoneContext, smsMsg) {
+class ToastAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg) :
+    RunnableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
         if (PrefsReader.shouldShowToast(mPluginContext)) {

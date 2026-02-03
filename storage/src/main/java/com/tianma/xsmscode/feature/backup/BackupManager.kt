@@ -31,9 +31,7 @@ object BackupManager {
     }
 
     @JvmStatic
-    fun getBackupFileExtension(): String {
-        return BACKUP_FILE_EXTENSION
-    }
+    fun getBackupFileExtension(): String = BACKUP_FILE_EXTENSION
 
     @JvmStatic
     fun getDefaultBackupFilename(context: Context): String {

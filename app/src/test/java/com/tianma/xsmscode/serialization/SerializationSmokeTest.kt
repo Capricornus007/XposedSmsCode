@@ -34,7 +34,7 @@ class SerializationSmokeTest {
     @Test
     fun backupImportParsesRules() {
         val payload = BackupPayload(
-            rules = listOf(BackupRule(company = "ACME", codeKeyword = "code", codeRegex = "\\d{6}"))
+            rules = listOf(BackupRule(company = "ACME", codeKeyword = "code", codeRegex = "\\d{6}")),
         )
         val json = JsonUtils.json.encodeToString(BackupPayload.serializer(), payload)
         val input = ByteArrayInputStream(json.toByteArray(Charsets.UTF_8))

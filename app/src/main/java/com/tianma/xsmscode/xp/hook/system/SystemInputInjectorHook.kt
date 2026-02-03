@@ -36,9 +36,7 @@ class SystemInputInjectorHook : BaseHook() {
     @Volatile
     private var mainHandler: Handler? = null
 
-    override fun hookInitZygote(): Boolean {
-        return true
-    }
+    override fun hookInitZygote(): Boolean = true
 
     override fun initZygote(startupParam: de.robv.android.xposed.IXposedHookZygoteInit.StartupParam) {
         try {
@@ -51,7 +49,7 @@ class SystemInputInjectorHook : BaseHook() {
                         val activityThreadClass = XposedHelpers.findClass("android.app.ActivityThread", null)
                         val activityThread = XposedHelpers.callStaticMethod(
                             activityThreadClass,
-                            "currentActivityThread"
+                            "currentActivityThread",
                         )
                         val systemContext = XposedHelpers.callMethod(activityThread, "getSystemContext") as? Context
                         if (systemContext != null) {
@@ -60,7 +58,7 @@ class SystemInputInjectorHook : BaseHook() {
                             XposedBridge.log("XSmsCode: systemContext is null in ActivityThread.systemMain hook")
                         }
                     }
-                }
+                },
             )
             XLog.w("SystemInputInjectorHook: hooked ActivityThread.systemMain in zygote")
             XposedBridge.log("XSmsCode: hooked ActivityThread.systemMain in zygote")
@@ -76,10 +74,11 @@ class SystemInputInjectorHook : BaseHook() {
         if (receiverRegistered) return
         getMainHandler().postDelayed(
             { registerReceiver(context) },
-            500L
+            DELAY_REGISTER,
         )
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun registerReceiver(context: Context) {
         try {
             if (receiverRegistered) return
@@ -99,7 +98,9 @@ class SystemInputInjectorHook : BaseHook() {
                         -1
                     }
                     val appUid = context.applicationInfo.uid
-                    if (sendingUid != -1 && sendingUid != Process.SYSTEM_UID && sendingUid != Process.PHONE_UID && sendingUid != appUid) {
+                    if (sendingUid != -1 && sendingUid != Process.SYSTEM_UID && sendingUid != Process.PHONE_UID &&
+                        sendingUid != appUid
+                    ) {
                         XLog.w("SystemServer input request rejected from uid=%d", sendingUid)
                         return
                     }
@@ -125,7 +126,7 @@ class SystemInputInjectorHook : BaseHook() {
             registerAttempts += 1
             XLog.e("Failed to register receiver", t)
             XposedBridge.log("XSmsCode: Failed to register receiver: ${t.message}")
-            if (registerAttempts < 10) {
+            if (registerAttempts < MAX_REGISTER_ATTEMPTS) {
                 scheduleRegister(context)
             } else {
                 XposedBridge.log("XSmsCode: registerReceiver give up after $registerAttempts attempts")
@@ -182,17 +183,17 @@ class SystemInputInjectorHook : BaseHook() {
                 try {
                     val inputManagerGlobalClass = XposedHelpers.findClass(
                         "android.hardware.input.InputManagerGlobal",
-                        null
+                        null,
                     )
                     val instance = XposedHelpers.callStaticMethod(
                         inputManagerGlobalClass,
-                        "getInstance"
+                        "getInstance",
                     )
                     val inject = XposedHelpers.findMethodBestMatch(
                         inputManagerGlobalClass,
                         "injectInputEvent",
                         android.view.InputEvent::class.java,
-                        Int::class.javaPrimitiveType
+                        Int::class.javaPrimitiveType,
                     )
                     inputManagerGlobal = instance
                     injectMethod = inject
@@ -228,5 +229,13 @@ class SystemInputInjectorHook : BaseHook() {
                 XLog.e("Failed to inject text from System Server", t)
             }
         }
+    }
+
+    companion object {
+        private const val DELAY_REGISTER = 500L
+        private const val MAX_REGISTER_ATTEMPTS = 10
+
+        @Suppress("unused")
+        const val ACTION_AUTO_INPUT = "com.tianma.xsmscode.ACTION_AUTO_INPUT"
     }
 }

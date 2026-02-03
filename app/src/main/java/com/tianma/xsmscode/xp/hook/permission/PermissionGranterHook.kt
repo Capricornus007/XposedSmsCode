@@ -18,18 +18,23 @@ class PermissionGranterHook : BaseHook() {
                 sdkInt >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
                     PermissionManagerServiceHook34(classLoader).startHook()
                 }
+
                 sdkInt >= Build.VERSION_CODES.TIRAMISU -> { // Android 13+
                     PermissionManagerServiceHook33(classLoader).startHook()
                 }
+
                 sdkInt >= Build.VERSION_CODES.S -> { // Android 12~12L
                     PermissionManagerServiceHook31(classLoader).startHook()
                 }
+
                 sdkInt >= Build.VERSION_CODES.R -> { // Android 11
                     PermissionManagerServiceHook30(classLoader).startHook()
                 }
+
                 sdkInt >= Build.VERSION_CODES.P -> { // Android 9.0~10
                     PermissionManagerServiceHook(classLoader).startHook()
                 }
+
                 else -> { // Android 5.0 ~ 8.1
                     PackageManagerServiceHook(classLoader).startHook()
                 }

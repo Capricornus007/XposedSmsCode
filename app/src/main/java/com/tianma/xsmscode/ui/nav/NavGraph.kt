@@ -25,10 +25,7 @@ object SettingsRoute
 object FaqRoute
 
 @Serializable
-data class RuleEditRoute(
-    val editType: Int,
-    val ruleId: Long? = null
-)
+data class RuleEditRoute(val editType: Int, val ruleId: Long? = null)
 
 @Serializable
 object RecordsRoute
@@ -44,12 +41,12 @@ fun SmsCodeNavHost(
     onInitialTabConsumed: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
     hazeState: HazeState,
-    hazeStyle: HazeStyle
+    hazeStyle: HazeStyle,
 ) {
     NavHost(
         navController = navController,
         startDestination = MainRoute,
-        modifier = modifier
+        modifier = modifier,
     ) {
         composable<MainRoute> {
             MainScreen(
@@ -59,7 +56,7 @@ fun SmsCodeNavHost(
                 initialTab = initialTab,
                 onInitialTabConsumed = onInitialTabConsumed,
                 hazeState = hazeState,
-                hazeStyle = hazeStyle
+                hazeStyle = hazeStyle,
             )
         }
 
@@ -68,7 +65,7 @@ fun SmsCodeNavHost(
             RuleEditScreen(
                 ruleEditType = route.editType,
                 initialRuleId = route.ruleId,
-                onBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() },
             )
         }
     }

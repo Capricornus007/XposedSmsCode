@@ -82,7 +82,7 @@ object PrefsReader {
         val value = getStringViaProvider(
             context,
             PrefConst.KEY_AUTO_INPUT_CODE_DELAY,
-            PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT
+            PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT,
         )
         return try {
             value.toLong()
@@ -98,13 +98,11 @@ object PrefsReader {
     }
 
     @JvmStatic
-    fun getSMSCodeKeywords(context: Context): String? {
-        return getStringViaProvider(
-            context,
-            PrefConst.KEY_SMSCODE_KEYWORDS,
-            PrefConst.SMSCODE_KEYWORDS_DEFAULT
-        )
-    }
+    fun getSMSCodeKeywords(context: Context): String? = getStringViaProvider(
+        context,
+        PrefConst.KEY_SMSCODE_KEYWORDS,
+        PrefConst.SMSCODE_KEYWORDS_DEFAULT,
+    )
 
     @JvmStatic
     fun markAsReadEnabled(context: Context): Boolean {
@@ -159,7 +157,7 @@ object PrefsReader {
         val value = getStringViaProvider(
             context,
             PrefConst.KEY_NOTIFICATION_RETENTION_TIME,
-            PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT
+            PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT,
         )
         return try {
             value.toInt()
@@ -179,7 +177,7 @@ object PrefsReader {
         val value = getStringViaProvider(
             context,
             PrefConst.KEY_HISTORY_LIMIT,
-            "0"
+            "0",
         )
         return try {
             value.toInt()

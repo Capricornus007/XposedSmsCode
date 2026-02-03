@@ -24,19 +24,14 @@ class PrefsProvider : ContentProvider() {
 
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<String>?): Int = 0
 
-    override fun update(
-        uri: Uri,
-        values: ContentValues?,
-        selection: String?,
-        selectionArgs: Array<String>?
-    ): Int = 0
+    override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<String>?): Int = 0
 
     override fun query(
         uri: Uri,
         projection: Array<String>?,
         selection: String?,
         selectionArgs: Array<String>?,
-        sortOrder: String?
+        sortOrder: String?,
     ): Cursor? {
         val ctx = context ?: return null
         if (!isCallerAllowed(ctx)) {
@@ -54,16 +49,19 @@ class PrefsProvider : ContentProvider() {
                 val value = runBlocking { AppPreferencesDataStore.getBoolean(ctx, key, def) }
                 cursor.addRow(arrayOf(if (value) "1" else "0"))
             }
+
             TYPE_STRING -> {
                 val def = defaultValue ?: ""
                 val value = runBlocking { AppPreferencesDataStore.getString(ctx, key, def) }
                 cursor.addRow(arrayOf(value))
             }
+
             TYPE_INT -> {
                 val def = defaultValue?.toIntOrNull() ?: 0
                 val value = runBlocking { AppPreferencesDataStore.getInt(ctx, key, def) }
                 cursor.addRow(arrayOf(value.toString()))
             }
+
             else -> return null
         }
         return cursor

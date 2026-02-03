@@ -12,7 +12,7 @@ data class GithubRelease(
     @SerialName("body")
     val body: String? = null,
     @SerialName("assets")
-    val assets: List<GithubReleaseAsset>? = null
+    val assets: List<GithubReleaseAsset>? = null,
 )
 
 @Serializable
@@ -22,5 +22,5 @@ data class GithubReleaseAsset(
     @SerialName("browser_download_url")
     val browserDownloadUrl: String? = null,
     @SerialName("content_type")
-    val contentType: String? = null
+    val contentType: String? = null,
 )

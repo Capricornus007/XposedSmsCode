@@ -41,7 +41,7 @@ class PermissionManagerServiceHook33(classLoader: ClassLoader) : BaseSubHook(cla
                 override fun after(param: MethodHookParam) {
                     afterRestorePermissionStateSinceAndroid13(param)
                 }
-            }
+            },
         )
     }
 
@@ -63,7 +63,7 @@ class PermissionManagerServiceHook33(classLoader: ClassLoader) : BaseSubHook(cla
             /* PermissionCallback callback */
             callbackClass,
             /* int filterUserId            */
-            Int::class.javaPrimitiveType
+            Int::class.javaPrimitiveType,
         )
 
         if (method == null) { // method restorePermissionState() not found
@@ -80,7 +80,7 @@ class PermissionManagerServiceHook33(classLoader: ClassLoader) : BaseSubHook(cla
                 /* PermissionCallback callback */
                 callbackClass,
                 /* int filterUserId            */
-                Int::class.javaPrimitiveType
+                Int::class.javaPrimitiveType,
             )
             if (methods != null && methods.isNotEmpty()) {
                 method = methods[0]
@@ -140,7 +140,7 @@ class PermissionManagerServiceHook33(classLoader: ClassLoader) : BaseSubHook(cla
                             val granted = XposedHelpers.callMethod(
                                 uidState,
                                 "isPermissionGranted",
-                                permissionToGrant
+                                permissionToGrant,
                             ) as Boolean
                             if (!granted) {
                                 // permission not grant before

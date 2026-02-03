@@ -24,10 +24,9 @@ class AutoCancelReceiver : BroadcastReceiver() {
         const val EXTRA_NOTIFICATION_ID = "extra_notification_id"
         private const val NOTIFICATION_NONE = -0xff
 
-        fun createIntent(context: Context, notificationId: Int): Intent {
-            return Intent(context, AutoCancelReceiver::class.java).apply {
+        fun createIntent(context: Context, notificationId: Int): Intent =
+            Intent(context, AutoCancelReceiver::class.java).apply {
                 putExtra(EXTRA_NOTIFICATION_ID, notificationId)
             }
-        }
     }
 }

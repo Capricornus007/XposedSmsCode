@@ -10,12 +10,10 @@ import java.lang.reflect.Method
 object ReflectionUtils {
 
     @JvmStatic
-    fun getClass(classLoader: ClassLoader, name: String): Class<*> {
-        return try {
-            Class.forName(name, true, classLoader)
-        } catch (e: ClassNotFoundException) {
-            throw RuntimeException(e)
-        }
+    fun getClass(classLoader: ClassLoader, name: String): Class<*> = try {
+        Class.forName(name, true, classLoader)
+    } catch (e: ClassNotFoundException) {
+        throw RuntimeException(e)
     }
 
     @JvmStatic
@@ -41,12 +39,10 @@ object ReflectionUtils {
     }
 
     @JvmStatic
-    fun getFieldValue(field: Field, `object`: Any?): Any? {
-        return try {
-            field.get(`object`)
-        } catch (e: IllegalAccessException) {
-            throw RuntimeException(e)
-        }
+    fun getFieldValue(field: Field, `object`: Any?): Any? = try {
+        field.get(`object`)
+    } catch (e: IllegalAccessException) {
+        throw RuntimeException(e)
     }
 
     @JvmStatic
@@ -81,18 +77,16 @@ object ReflectionUtils {
     }
 
     @JvmStatic
-    fun invoke(method: Method, thisObject: Any?, vararg params: Any?): Any? {
-        return try {
-            method.invoke(thisObject, *params)
-        } catch (e: InvocationTargetException) {
-            val cause = e.cause
-            if (cause is RuntimeException) {
-                throw cause
-            } else {
-                throw RuntimeException(e)
-            }
-        } catch (e: IllegalAccessException) {
+    fun invoke(method: Method, thisObject: Any?, vararg params: Any?): Any? = try {
+        method.invoke(thisObject, *params)
+    } catch (e: InvocationTargetException) {
+        val cause = e.cause
+        if (cause is RuntimeException) {
+            throw cause
+        } else {
             throw RuntimeException(e)
         }
+    } catch (e: IllegalAccessException) {
+        throw RuntimeException(e)
     }
 }

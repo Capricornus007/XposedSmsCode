@@ -11,7 +11,5 @@ data class RecordItem(val smsMsg: SmsMsg) {
         return smsMsg == other.smsMsg
     }
 
-    override fun hashCode(): Int {
-        return smsMsg.hashCode()
-    }
+    override fun hashCode(): Int = smsMsg.hashCode()
 }

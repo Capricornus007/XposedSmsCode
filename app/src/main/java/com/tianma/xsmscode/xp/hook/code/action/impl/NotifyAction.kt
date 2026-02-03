@@ -23,11 +23,8 @@ import com.tianma.xsmscode.xp.hook.code.action.CallableAction
 /**
  * 显示验证码通知
  */
-class NotifyAction(
-    pluginContext: Context,
-    phoneContext: Context,
-    smsMsg: SmsMsg
-) : CallableAction(pluginContext, phoneContext, smsMsg) {
+class NotifyAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg) :
+    CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
         if (PrefsReader.showCodeNotification(mPluginContext)) {
@@ -38,7 +35,9 @@ class NotifyAction(
 
     @SuppressLint("UnspecifiedImmutableFlag", "NotificationPermission")
     private fun showCodeNotification(smsMsg: SmsMsg): Bundle? {
-        val manager = mPhoneContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager? ?: return null
+        val manager = mPhoneContext.getSystemService(
+            Context.NOTIFICATION_SERVICE,
+        ) as NotificationManager? ?: return null
 
         val company = smsMsg.company
         val smsCode = smsMsg.smsCode
@@ -52,7 +51,7 @@ class NotifyAction(
             mPhoneContext,
             0,
             copyCodeIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE or 0x01000000 // PendingIntent.FLAG_ALLOW_UNSAFE_IMPLICIT_INTENT
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE or 0x01000000, // PendingIntent.FLAG_ALLOW_UNSAFE_IMPLICIT_INTENT
         )
 
         val builder = NotificationCompat.Builder(mPluginContext, NotificationConst.CHANNEL_ID_SMSCODE_NOTIFICATION)
@@ -106,7 +105,7 @@ class NotifyAction(
             mPluginContext,
             notificationId,
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val triggerAt = System.currentTimeMillis() + retentionTimeMs
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

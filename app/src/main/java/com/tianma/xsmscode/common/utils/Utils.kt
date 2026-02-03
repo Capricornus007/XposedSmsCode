@@ -52,9 +52,7 @@ object Utils {
     }
 
     @JvmStatic
-    fun getProjectDocUrl(docBaseUrl: String, docPath: String): String {
-        return "$docBaseUrl/${getLanguagePath()}/$docPath"
-    }
+    fun getProjectDocUrl(docBaseUrl: String, docPath: String): String = "$docBaseUrl/${getLanguagePath()}/$docPath"
 
     @JvmStatic
     fun isValidFilename(filename: String?): Boolean {
@@ -100,7 +98,7 @@ object Utils {
                     resolver.update(imageUri, contentValues, null, null)
                 }
                 val appNameResId = if (fileName.contains(
-                        "alipay"
+                        "alipay",
                     )
                 ) {
                     R.string.dialog_donate_alipay
@@ -111,7 +109,7 @@ object Utils {
                 Toast.makeText(
                     context,
                     context.getString(R.string.save_to_gallery_success, appName),
-                    Toast.LENGTH_SHORT
+                    Toast.LENGTH_SHORT,
                 ).show()
                 if (fileName.contains("alipay")) {
                     PackageUtils.startAlipayActivity(context)

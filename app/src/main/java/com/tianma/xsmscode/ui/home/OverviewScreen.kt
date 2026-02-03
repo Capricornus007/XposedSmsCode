@@ -48,10 +48,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OverviewScreen(
-    hazeState: HazeState,
-    hazeStyle: HazeStyle
-) {
+fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
     val context = LocalContext.current
     val activityOwner = context as? ComponentActivity
     val settingsViewModel = if (activityOwner != null) {
@@ -74,7 +71,7 @@ fun OverviewScreen(
     }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val frameworkInfoState by produceState<Pair<String, String>?>(
-        initialValue = null
+        initialValue = null,
     ) {
         value = withContext(Dispatchers.IO) {
             PackageUtils.getLsposedModuleInfo()
@@ -86,14 +83,16 @@ fun OverviewScreen(
         when {
             lsposedVersion != null && lsposedVersion.first.isNotBlank() ->
                 "${lsposedVersion.first} (${lsposedVersion.second})"
+
             PackageUtils.isPackageInstalled(context, Const.LSPOSED_MANAGER_PACKAGE_NAME) ->
                 "未知"
+
             else -> "未安装"
         }
     }
 
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
     ) {
         LazyColumn(
             modifier = Modifier
@@ -104,9 +103,9 @@ fun OverviewScreen(
             state = listState,
             contentPadding = PaddingValues(
                 top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 8.dp,
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp,
             ),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
                 StatusCard(
@@ -118,7 +117,7 @@ fun OverviewScreen(
                             val intent = Intent().apply {
                                 setClassName(
                                     "org.lsposed.manager",
-                                    "org.lsposed.manager.ui.activity.MainActivity"
+                                    "org.lsposed.manager.ui.activity.MainActivity",
                                 )
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             }
@@ -128,7 +127,7 @@ fun OverviewScreen(
                                 // Ignore if LSPosed manager is not installed.
                             }
                         }
-                    }
+                    },
                 )
             }
 
@@ -137,8 +136,8 @@ fun OverviewScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
                 ) {
                     Column(modifier = Modifier.padding(vertical = 12.dp)) {
                         InfoItem(Icons.AutoMirrored.Filled.Label, "版本名称", BuildConfig.VERSION_NAME)
@@ -148,13 +147,13 @@ fun OverviewScreen(
                             Icons.Default.Extension,
                             "框架类型",
                             frameworkType,
-                            onClick = { Toast.makeText(context, rootHint, Toast.LENGTH_SHORT).show() }
+                            onClick = { Toast.makeText(context, rootHint, Toast.LENGTH_SHORT).show() },
                         )
                         InfoItem(
                             Icons.Default.Verified,
                             "框架版本",
                             frameworkVersion,
-                            onClick = { Toast.makeText(context, rootHint, Toast.LENGTH_SHORT).show() }
+                            onClick = { Toast.makeText(context, rootHint, Toast.LENGTH_SHORT).show() },
                         )
                     }
                 }
@@ -165,8 +164,8 @@ fun OverviewScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
                 ) {
                     Column(modifier = Modifier.padding(vertical = 12.dp)) {
                         InfoItem(Icons.Default.Android, "Android 版本", Build.VERSION.RELEASE)
@@ -182,8 +181,8 @@ fun OverviewScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = MaterialTheme.shapes.extraLarge,
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                    )
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
                 ) {
                     Column(modifier = Modifier.padding(vertical = 12.dp)) {
                         InfoItem(
@@ -192,7 +191,7 @@ fun OverviewScreen(
                             value = stringResource(
                                 id = R.string.pref_version_summary,
                                 BuildConfig.VERSION_NAME,
-                                BuildConfig.VERSION_CODE
+                                BuildConfig.VERSION_CODE,
                             ),
                             onClick = {
                                 if (PackageUtils.isInstalledFromPlay(context)) {
@@ -200,31 +199,31 @@ fun OverviewScreen(
                                 } else {
                                     settingsViewModel.checkUpdate()
                                 }
-                            }
+                            },
                         )
                         InfoItem(
                             icon = Icons.AutoMirrored.Filled.Chat,
                             label = stringResource(id = R.string.pref_join_qq_group_title),
                             value = stringResource(id = R.string.pref_join_qq_group_summary),
-                            onClick = { PackageUtils.joinQQGroup(context) }
+                            onClick = { PackageUtils.joinQQGroup(context) },
                         )
                         InfoItem(
                             icon = Icons.AutoMirrored.Filled.Send,
                             label = stringResource(id = R.string.pref_join_telegram_group_title),
                             value = stringResource(id = R.string.pref_join_telegram_group_summary),
-                            onClick = { Utils.showWebPage(context, Const.TELEGRAM_GROUP_URL) }
+                            onClick = { Utils.showWebPage(context, Const.TELEGRAM_GROUP_URL) },
                         )
                         InfoItem(
                             icon = Icons.Default.Code,
                             label = stringResource(id = R.string.pref_source_code_title),
                             value = stringResource(id = R.string.pref_source_code_summary),
-                            onClick = { Utils.showWebPage(context, Const.PROJECT_SOURCE_CODE_URL) }
+                            onClick = { Utils.showWebPage(context, Const.PROJECT_SOURCE_CODE_URL) },
                         )
                         InfoItem(
                             icon = Icons.Default.Favorite,
                             label = stringResource(id = R.string.pref_donate_by_alipay_title),
                             value = stringResource(id = R.string.dialog_donate_summary),
-                            onClick = { showDonateDialog = true }
+                            onClick = { showDonateDialog = true },
                         )
                     }
                 }
@@ -240,8 +239,8 @@ fun OverviewScreen(
                 .hazeEffect(hazeState, hazeStyle),
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = Color.Transparent,
-                scrolledContainerColor = Color.Transparent
-            )
+                scrolledContainerColor = Color.Transparent,
+            ),
         )
     }
 
@@ -256,7 +255,7 @@ fun OverviewScreen(
             onUpdateGithub = {
                 settingsViewModel.updateFromGithub()
                 settingsViewModel.clearUpdateVersion()
-            }
+            },
         )
     }
 
@@ -270,7 +269,7 @@ fun OverviewScreen(
             onWechat = {
                 showDonateDialog = false
                 showQRCodeDialog = Pair(R.drawable.wx, "wechat")
-            }
+            },
         )
     }
 
@@ -285,7 +284,7 @@ fun OverviewScreen(
                 showAlipayChoiceDialog = false
                 PackageUtils.copyAlipayPocketToken(context)
                 PackageUtils.startAlipayActivity(context)
-            }
+            },
         )
     }
 
@@ -294,16 +293,13 @@ fun OverviewScreen(
             resId = pair.first,
             type = pair.second,
             onDismiss = { showQRCodeDialog = null },
-            onSave = { Utils.saveImageToGallery(context, pair.first, "${pair.second}_qrcode") }
+            onSave = { Utils.saveImageToGallery(context, pair.first, "${pair.second}_qrcode") },
         )
     }
 }
 
 @Composable
-fun StatusCard(
-    isEnabled: Boolean,
-    onClick: (() -> Unit)? = null
-) {
+fun StatusCard(isEnabled: Boolean, onClick: (() -> Unit)? = null) {
     val containerColor = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.errorContainer
     val contentColor = if (isEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onErrorContainer
 
@@ -312,32 +308,32 @@ fun StatusCard(
         shape = MaterialTheme.shapes.extraLarge,
         colors = CardDefaults.cardColors(
             containerColor = containerColor,
-            contentColor = contentColor
+            contentColor = contentColor,
         ),
-        onClick = { onClick?.invoke() }
+        onClick = { onClick?.invoke() },
     ) {
         Row(
             modifier = Modifier
                 .padding(24.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Icon(
                 imageVector = if (isEnabled) Icons.Default.CheckCircle else Icons.Default.Error,
                 contentDescription = null,
-                modifier = Modifier.size(48.dp)
+                modifier = Modifier.size(48.dp),
             )
             Column {
                 Text(
                     text = if (isEnabled) "工作正常" else "未激活",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
                 if (!isEnabled) {
                     Text(
                         text = "请在管理器中启用并重启设备",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             }
@@ -346,36 +342,31 @@ fun StatusCard(
 }
 
 @Composable
-fun InfoItem(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    onClick: (() -> Unit)? = null
-) {
+fun InfoItem(icon: ImageVector, label: String, value: String, onClick: (() -> Unit)? = null) {
     ListItem(
         leadingContent = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
         headlineContent = {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = label,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
                 Text(
                     text = value,
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
             }
         },
         modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     )
 }
 
@@ -385,7 +376,7 @@ fun UpdateSourceDialog(
     version: ApkVersion,
     onDismiss: () -> Unit,
     onUpdateCoolApk: () -> Unit,
-    onUpdateGithub: () -> Unit
+    onUpdateGithub: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -401,6 +392,6 @@ fun UpdateSourceDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) }
-        }
+        },
     )
 }

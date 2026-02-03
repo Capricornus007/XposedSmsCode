@@ -16,11 +16,8 @@ import com.tianma.xsmscode.xp.hook.code.action.CallableAction
 /**
  * 将验证码短信删除或者标记为已读
  */
-class OperateSmsAction(
-    pluginContext: Context,
-    phoneContext: Context,
-    smsMsg: SmsMsg
-) : CallableAction(pluginContext, phoneContext, smsMsg) {
+class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg) :
+    CallableAction(pluginContext, phoneContext, smsMsg) {
 
     @IntDef(OP_DELETE, OP_MARK_AS_READ)
     @Retention(AnnotationRetention.SOURCE)
@@ -71,7 +68,7 @@ class OperateSmsAction(
                 Telephony.Sms.ADDRESS,
                 Telephony.Sms.BODY,
                 Telephony.Sms.READ,
-                Telephony.Sms.DATE
+                Telephony.Sms.DATE,
             )
             // 查看最近5条短信
             val sortOrder = Telephony.Sms.DATE + " desc limit 5"

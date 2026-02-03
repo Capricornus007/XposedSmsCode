@@ -37,7 +37,7 @@ class PermissionManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(class
                 override fun after(param: MethodHookParam) {
                     afterGrantPermissionsSinceP(param)
                 }
-            }
+            },
         )
     }
 
@@ -60,13 +60,14 @@ class PermissionManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(class
             /* String packageOfInterest    */
             String::class.java,
             /* PermissionCallback callback */
-            callbackClass
+            callbackClass,
         )
 
         if (method == null) { // method grantPermissions() not found
             // Android Q
             method = XposedHelpers.findMethodExactIfExists(
-                pmsClass, "restorePermissionState",
+                pmsClass,
+                "restorePermissionState",
                 /* PackageParser.Package pkg   */
                 packageClass,
                 /* boolean replace             */
@@ -74,7 +75,7 @@ class PermissionManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(class
                 /* String packageOfInterest    */
                 String::class.java,
                 /* PermissionCallback callback */
-                callbackClass
+                callbackClass,
             )
             if (method == null) { // method restorePermissionState() not found
                 val methods = XposedHelpers.findMethodsByExactParameters(
@@ -87,7 +88,7 @@ class PermissionManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(class
                     /* String packageOfInterest    */
                     String::class.java,
                     /* PermissionCallback callback */
-                    callbackClass
+                    callbackClass,
                 )
                 if (methods != null && methods.isNotEmpty()) {
                     method = methods[0]
@@ -118,14 +119,14 @@ class PermissionManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(class
                         val granted = XposedHelpers.callMethod(
                             permissionsState,
                             "hasInstallPermission",
-                            permissionToGrant
+                            permissionToGrant,
                         ) as Boolean
                         if (!granted) {
                             val bpToGrant = XposedHelpers.callMethod(permissions, "get", permissionToGrant)
                             val result = XposedHelpers.callMethod(
                                 permissionsState,
                                 "grantInstallPermission",
-                                bpToGrant
+                                bpToGrant,
                             ) as Int
                             XLog.d("Add $bpToGrant; result = $result")
                         } else {

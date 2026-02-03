@@ -38,35 +38,33 @@ object CodeRecordRestoreManager {
     }
 
     @JvmStatic
-    fun importToDatabase(context: Context): Boolean {
-        return try {
-            val recordFiles = getRecordFiles(context)
-            val smsMsgList = mutableListOf<SmsMsg>()
-            recordFiles?.forEach { recordFile ->
-                val smsMsg = loadFromFile(recordFile)
-                if (smsMsg != null) {
-                    smsMsgList.add(smsMsg)
-                    recordFile.delete()
-                }
+    fun importToDatabase(context: Context): Boolean = try {
+        val recordFiles = getRecordFiles(context)
+        val smsMsgList = mutableListOf<SmsMsg>()
+        recordFiles?.forEach { recordFile ->
+            val smsMsg = loadFromFile(recordFile)
+            if (smsMsg != null) {
+                smsMsgList.add(smsMsg)
+                recordFile.delete()
             }
-
-            if (smsMsgList.isNotEmpty()) {
-                val dbManager = DBManager.get(context)
-                dbManager.addSmsMsgList(smsMsgList)
-                XLog.d("Import code records to database succeed")
-
-                val allMsgList = dbManager.queryAllSmsMsg()
-                if (allMsgList.size > PrefConst.MAX_SMS_RECORDS_COUNT_DEFAULT) {
-                    val outdatedMsgList = allMsgList.subList(PrefConst.MAX_SMS_RECORDS_COUNT_DEFAULT, allMsgList.size)
-                    dbManager.removeSmsMsgList(outdatedMsgList)
-                    XLog.d("Remove outdated code records succeed")
-                }
-            }
-            true
-        } catch (t: Throwable) {
-            XLog.e("Import code records to database failed.", t)
-            false
         }
+
+        if (smsMsgList.isNotEmpty()) {
+            val dbManager = DBManager.get(context)
+            dbManager.addSmsMsgList(smsMsgList)
+            XLog.d("Import code records to database succeed")
+
+            val allMsgList = dbManager.queryAllSmsMsg()
+            if (allMsgList.size > PrefConst.MAX_SMS_RECORDS_COUNT_DEFAULT) {
+                val outdatedMsgList = allMsgList.subList(PrefConst.MAX_SMS_RECORDS_COUNT_DEFAULT, allMsgList.size)
+                dbManager.removeSmsMsgList(outdatedMsgList)
+                XLog.d("Remove outdated code records succeed")
+            }
+        }
+        true
+    } catch (t: Throwable) {
+        XLog.e("Import code records to database failed.", t)
+        false
     }
 
     @JvmStatic

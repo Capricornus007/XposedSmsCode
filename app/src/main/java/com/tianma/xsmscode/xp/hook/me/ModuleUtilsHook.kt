@@ -31,7 +31,7 @@ class ModuleUtilsHook : BaseHook() {
             className,
             lpparam.classLoader,
             "getModuleVersion",
-            XC_MethodReplacement.returnConstant(MODULE_VERSION)
+            XC_MethodReplacement.returnConstant(MODULE_VERSION),
         )
     }
 

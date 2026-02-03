@@ -15,11 +15,8 @@ import com.tianma.xsmscode.xp.hook.code.action.CallableAction
 /**
  * 记录验证码短信
  */
-class RecordSmsAction(
-    pluginContext: Context,
-    phoneContext: Context,
-    smsMsg: SmsMsg
-) : CallableAction(pluginContext, phoneContext, smsMsg) {
+class RecordSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg) :
+    CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
         if (PrefsReader.recordSmsCodeEnabled(mPluginContext)) {

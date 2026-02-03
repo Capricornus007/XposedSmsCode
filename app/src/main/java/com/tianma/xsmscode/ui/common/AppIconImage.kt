@@ -31,7 +31,7 @@ fun AppIconImage(
     label: String? = null,
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
-    contentDescription: String? = null
+    contentDescription: String? = null,
 ) {
     val context = LocalContext.current
     var iconBitmap by remember(packageName, label) { mutableStateOf<androidx.compose.ui.graphics.ImageBitmap?>(null) }
@@ -95,14 +95,14 @@ fun AppIconImage(
                 contentDescription = contentDescription,
                 modifier = Modifier
                     .size(size)
-                    .clip(MaterialTheme.shapes.small)
+                    .clip(MaterialTheme.shapes.small),
             )
         } else {
             Icon(
                 imageVector = Icons.Default.Android,
                 contentDescription = contentDescription,
                 modifier = Modifier.size(size),
-                tint = MaterialTheme.colorScheme.outline
+                tint = MaterialTheme.colorScheme.outline,
             )
         }
     }

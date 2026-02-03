@@ -43,9 +43,7 @@ object SmsCodeUtils {
         }
     }
 
-    private suspend fun loadCodeKeywordsBySP(context: Context): String? {
-        return SPUtils.getSMSCodeKeywords(context)
-    }
+    private suspend fun loadCodeKeywordsBySP(context: Context): String? = SPUtils.getSMSCodeKeywords(context)
 
     /**
      * 解析文本中的验证码并返回，如果不存在返回空字符
@@ -104,9 +102,7 @@ object SmsCodeUtils {
     /**
      * Remove all white spaces.
      */
-    private fun removeAllWhiteSpaces(content: String): String {
-        return content.replace("\\s*".toRegex(), "")
-    }
+    private fun removeAllWhiteSpaces(content: String): String = content.replace("\\s*".toRegex(), "")
 
     /**
      * Parse SMS code
@@ -145,19 +141,16 @@ object SmsCodeUtils {
         return smsCode
     }
 
-    private fun getMatchLevel(matchedStr: String): Int {
-        return when {
-            matchedStr.matches("^[0-9]{6}$".toRegex()) -> LEVEL_DIGITAL_6
-            matchedStr.matches("^[0-9]{4}$".toRegex()) -> LEVEL_DIGITAL_4
-            matchedStr.matches("^[0-9]*$".toRegex()) -> LEVEL_DIGITAL_OTHERS
-            matchedStr.matches("^[a-zA-Z]*$".toRegex()) -> LEVEL_CHARACTER
-            else -> LEVEL_TEXT
-        }
+    private fun getMatchLevel(matchedStr: String): Int = when {
+        matchedStr.matches("^[0-9]{6}$".toRegex()) -> LEVEL_DIGITAL_6
+        matchedStr.matches("^[0-9]{4}$".toRegex()) -> LEVEL_DIGITAL_4
+        matchedStr.matches("^[0-9]*$".toRegex()) -> LEVEL_DIGITAL_OTHERS
+        matchedStr.matches("^[a-zA-Z]*$".toRegex()) -> LEVEL_CHARACTER
+        else -> LEVEL_TEXT
     }
 
-    private fun isNearToKeyword(keyword: String, possibleCode: String, content: String): Boolean {
-        return distanceToKeyword(keyword, possibleCode, content) <= 30
-    }
+    private fun isNearToKeyword(keyword: String, possibleCode: String, content: String): Boolean =
+        distanceToKeyword(keyword, possibleCode, content) <= 30
 
     private fun distanceToKeyword(keyword: String, possibleCode: String, content: String): Int {
         val keywordIdx = content.indexOf(keyword)
@@ -201,7 +194,7 @@ object SmsCodeUtils {
                     val rule = SmsCodeRule(
                         company = cursor.getString(cursor.getColumnIndexOrThrow(companyColumn)),
                         codeKeyword = cursor.getString(cursor.getColumnIndexOrThrow(keywordColumn)),
-                        codeRegex = cursor.getString(cursor.getColumnIndexOrThrow(regexColumn))
+                        codeRegex = cursor.getString(cursor.getColumnIndexOrThrow(regexColumn)),
                     )
                     resultRules.add(rule)
                 }
@@ -213,7 +206,9 @@ object SmsCodeUtils {
             }
         } catch (e: Throwable) {
             rules = EntityStoreManager.loadEntitiesFromFile(
-                context, EntityType.CODE_RULES, SmsCodeRule::class.java
+                context,
+                EntityType.CODE_RULES,
+                SmsCodeRule::class.java,
             )
             XLog.d("Load SmsCode rules by file")
         }

@@ -11,13 +11,15 @@ import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.IXposedHookZygoteInit
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 
-class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
+class HookEntry :
+    IXposedHookLoadPackage,
+    IXposedHookZygoteInit {
 
     private val mHookList: List<BaseHook> = listOf(
         SmsHandlerHook(), // InBoundsSmsHandler Hook
         ModuleUtilsHook(), // ModuleUtils Hook
         PermissionGranterHook(), // PackageManagerService Hook
-        SystemInputInjectorHook() // System Server Input Injection Hook
+        SystemInputInjectorHook(), // System Server Input Injection Hook
     )
 
     @Throws(Throwable::class)
@@ -42,7 +44,7 @@ class HookEntry : IXposedHookLoadPackage, IXposedHookZygoteInit {
             XLog.w(
                 "HookEntry: Android/system package loaded: pkg=%s process=%s",
                 lpparam.packageName,
-                lpparam.processName
+                lpparam.processName,
             )
         }
         for (hook in mHookList) {

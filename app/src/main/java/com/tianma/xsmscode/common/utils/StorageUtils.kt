@@ -20,45 +20,34 @@ object StorageUtils {
      * 获取日志路径
      */
     @JvmStatic
-    fun getLogDir(context: Context): File? {
-        return if (isSDCardMounted()) {
-            context.getExternalFilesDir("log")
-        } else {
-            File(context.filesDir, "log")
-        }
+    fun getLogDir(context: Context): File? = if (isSDCardMounted()) {
+        context.getExternalFilesDir("log")
+    } else {
+        File(context.filesDir, "log")
     }
 
     /**
      * 获取Crash日志路径
      */
     @JvmStatic
-    fun getCrashLogDir(context: Context): File? {
-        return if (isSDCardMounted()) {
-            context.getExternalFilesDir("crash")
-        } else {
-            File(context.filesDir, "crash")
-        }
+    fun getCrashLogDir(context: Context): File? = if (isSDCardMounted()) {
+        context.getExternalFilesDir("crash")
+    } else {
+        File(context.filesDir, "crash")
     }
 
     @JvmStatic
-    fun getPublicDocumentsDir(context: Context): File {
-        return context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS) ?: context.filesDir
-    }
+    fun getPublicDocumentsDir(context: Context): File =
+        context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS) ?: context.filesDir
 
     @JvmStatic
-    fun getInternalDataDir(context: Context): File {
-        return context.dataDir
-    }
+    fun getInternalDataDir(context: Context): File = context.dataDir
 
     @JvmStatic
-    fun getInternalFilesDir(context: Context): File {
-        return File(getInternalDataDir(context), "files")
-    }
+    fun getInternalFilesDir(context: Context): File = File(getInternalDataDir(context), "files")
 
     @JvmStatic
-    fun getExternalFilesDir(context: Context): File {
-        return context.getExternalFilesDir(null) ?: context.filesDir
-    }
+    fun getExternalFilesDir(context: Context): File = context.getExternalFilesDir(null) ?: context.filesDir
 
     @JvmStatic
     fun getFilesDir(context: Context): File {

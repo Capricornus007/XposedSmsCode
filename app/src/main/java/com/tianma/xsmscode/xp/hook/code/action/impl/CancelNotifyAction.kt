@@ -7,11 +7,8 @@ import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.xp.hook.code.action.CallableAction
 
-class CancelNotifyAction(
-    pluginContext: Context,
-    phoneContext: Context,
-    smsMsg: SmsMsg
-) : CallableAction(pluginContext, phoneContext, smsMsg) {
+class CancelNotifyAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg) :
+    CallableAction(pluginContext, phoneContext, smsMsg) {
 
     private var mNotificationId = NOTIFICATION_NONE
 

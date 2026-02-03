@@ -23,27 +23,21 @@ object AppPreferencesDataStore {
     @Volatile
     private var INSTANCE: DataStore<Preferences>? = null
 
-    private fun getInstance(context: Context): DataStore<Preferences> {
-        return INSTANCE ?: synchronized(this) {
-            val instance = PreferenceDataStoreFactory.create {
-                File(context.dataDir, "datastore/$DATASTORE_FILE_NAME")
-            }
-            INSTANCE = instance
-            instance
+    private fun getInstance(context: Context): DataStore<Preferences> = INSTANCE ?: synchronized(this) {
+        val instance = PreferenceDataStoreFactory.create {
+            File(context.dataDir, "datastore/$DATASTORE_FILE_NAME")
         }
+        INSTANCE = instance
+        instance
     }
 
-    private fun getDataStoreFile(context: Context): File {
-        return File(context.dataDir, "datastore/$DATASTORE_FILE_NAME")
-    }
+    private fun getDataStoreFile(context: Context): File = File(context.dataDir, "datastore/$DATASTORE_FILE_NAME")
 
-    private fun getSharedPrefsFile(context: Context): File {
-        return File(context.dataDir, "shared_prefs/$SHARED_PREFS_FILE_NAME.xml")
-    }
+    private fun getSharedPrefsFile(context: Context): File =
+        File(context.dataDir, "shared_prefs/$SHARED_PREFS_FILE_NAME.xml")
 
-    private fun getSharedPrefs(context: Context): SharedPreferences {
-        return context.getSharedPreferences(SHARED_PREFS_FILE_NAME, Context.MODE_PRIVATE)
-    }
+    private fun getSharedPrefs(context: Context): SharedPreferences =
+        context.getSharedPreferences(SHARED_PREFS_FILE_NAME, Context.MODE_PRIVATE)
 
     private fun ensureDataStoreReadable(context: Context) {
         val file = getDataStoreFile(context)
@@ -60,11 +54,9 @@ object AppPreferencesDataStore {
         ensureSharedPrefsReadable(context)
     }
 
-    suspend fun isBackupCompatTipShown(context: Context): Boolean {
-        return getInstance(context).data
-            .map { prefs: Preferences -> prefs[backupCompatTipShownKey] ?: false }
-            .first()
-    }
+    suspend fun isBackupCompatTipShown(context: Context): Boolean = getInstance(context).data
+        .map { prefs: Preferences -> prefs[backupCompatTipShownKey] ?: false }
+        .first()
 
     suspend fun setBackupCompatTipShown(context: Context, shown: Boolean) {
         getInstance(context).edit { prefs ->
@@ -159,37 +151,37 @@ object AppPreferencesDataStore {
         editor.putBoolean(PrefConst.KEY_VERBOSE_LOG_MODE, getBoolean(context, PrefConst.KEY_VERBOSE_LOG_MODE, false))
         editor.putBoolean(
             PrefConst.KEY_ENABLE_AUTO_INPUT_CODE,
-            getBoolean(context, PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, true)
+            getBoolean(context, PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, true),
         )
         editor.putString(
             PrefConst.KEY_AUTO_INPUT_CODE_DELAY,
-            getString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT)
+            getString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT),
         )
         editor.putBoolean(PrefConst.KEY_SHOW_TOAST, getBoolean(context, PrefConst.KEY_SHOW_TOAST, true))
         editor.putString(
             PrefConst.KEY_SMSCODE_KEYWORDS,
-            getString(context, PrefConst.KEY_SMSCODE_KEYWORDS, PrefConst.SMSCODE_KEYWORDS_DEFAULT)
+            getString(context, PrefConst.KEY_SMSCODE_KEYWORDS, PrefConst.SMSCODE_KEYWORDS_DEFAULT),
         )
         editor.putBoolean(PrefConst.KEY_MARK_AS_READ, getBoolean(context, PrefConst.KEY_MARK_AS_READ, false))
         editor.putBoolean(PrefConst.KEY_DELETE_SMS, getBoolean(context, PrefConst.KEY_DELETE_SMS, false))
         editor.putBoolean(PrefConst.KEY_COPY_TO_CLIPBOARD, getBoolean(context, PrefConst.KEY_COPY_TO_CLIPBOARD, true))
         editor.putBoolean(
             PrefConst.KEY_ENABLE_CODE_RECORDS,
-            getBoolean(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true)
+            getBoolean(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true),
         )
         editor.putBoolean(PrefConst.KEY_BLOCK_SMS, getBoolean(context, PrefConst.KEY_BLOCK_SMS, false))
         editor.putBoolean(PrefConst.KEY_KILL_ME, getBoolean(context, PrefConst.KEY_KILL_ME, false))
         editor.putBoolean(
             PrefConst.KEY_SHOW_CODE_NOTIFICATION,
-            getBoolean(context, PrefConst.KEY_SHOW_CODE_NOTIFICATION, true)
+            getBoolean(context, PrefConst.KEY_SHOW_CODE_NOTIFICATION, true),
         )
         editor.putBoolean(
             PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
-            getBoolean(context, PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION, false)
+            getBoolean(context, PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION, false),
         )
         editor.putString(
             PrefConst.KEY_NOTIFICATION_RETENTION_TIME,
-            getString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT)
+            getString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT),
         )
         editor.putBoolean(PrefConst.KEY_DEDUPLICATE_SMS, getBoolean(context, PrefConst.KEY_DEDUPLICATE_SMS, true))
         editor.putString(PrefConst.KEY_HISTORY_LIMIT, getString(context, PrefConst.KEY_HISTORY_LIMIT, "0"))

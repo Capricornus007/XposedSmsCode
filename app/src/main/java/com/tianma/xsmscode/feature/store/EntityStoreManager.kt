@@ -40,7 +40,7 @@ object EntityStoreManager {
         context: Context,
         entityType: EntityType,
         entities: List<T>,
-        clazz: Class<T>
+        clazz: Class<T>,
     ): Boolean {
         var osw: OutputStreamWriter? = null
         try {
@@ -53,7 +53,7 @@ object EntityStoreManager {
             }
             if (jsonString.isEmpty()) {
                 XLog.e(
-                    "store entities to file failed: empty json, type=$entityType size=${entities.size} clazz=${clazz.name}"
+                    "store entities to file failed: empty json, type=$entityType size=${entities.size} clazz=${clazz.name}",
                 )
                 return false
             }
@@ -98,7 +98,8 @@ object EntityStoreManager {
         var isr: InputStreamReader? = null
         try {
             isr = InputStreamReader(
-                FileInputStream(storeFile), StandardCharsets.UTF_8
+                FileInputStream(storeFile),
+                StandardCharsets.UTF_8,
             )
 
             return JsonUtils.listFromJson(isr, entityClass)

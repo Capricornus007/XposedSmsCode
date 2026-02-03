@@ -14,9 +14,7 @@ class PreferencesTransition(private val mContext: Context) : ITransition {
         return false
     }
 
-    override suspend fun doTransition(): Boolean {
-        return false
-    }
+    override suspend fun doTransition(): Boolean = false
 
     companion object {
         private const val VERSION_CODE_16 = 16

@@ -16,9 +16,7 @@ object JsonUtils {
     val json = JsonConfig.json
 
     @JvmStatic
-    inline fun <reified T> toJson(obj: T): String {
-        return json.encodeToString(obj)
-    }
+    inline fun <reified T> toJson(obj: T): String = json.encodeToString(obj)
 
     @JvmStatic
     inline fun <reified T> toJson(obj: T, writer: Appendable, excludeExposeAnnotation: Boolean = true) {
@@ -29,7 +27,7 @@ object JsonUtils {
     inline fun <reified T> entityFromJson(
         jsonString: String?,
         typeClass: Class<T>? = null,
-        excludeExposeAnnotation: Boolean = true
+        excludeExposeAnnotation: Boolean = true,
     ): T? {
         if (jsonString.isNullOrEmpty()) return null
         // typeClass is ignored in KOS reified, kept for compatibility if needed, but nullable
@@ -40,7 +38,7 @@ object JsonUtils {
     inline fun <reified T> entityFromJson(
         reader: Reader?,
         typeClass: Class<T>? = null,
-        excludeExposeAnnotation: Boolean = true
+        excludeExposeAnnotation: Boolean = true,
     ): T? {
         if (reader == null) return null
         val jsonString = reader.readText()
@@ -51,7 +49,7 @@ object JsonUtils {
     inline fun <reified T> listFromJson(
         jsonString: String?,
         typeClass: Class<T>? = null,
-        excludeExposeAnnotation: Boolean = true
+        excludeExposeAnnotation: Boolean = true,
     ): List<T> {
         if (jsonString.isNullOrEmpty()) return emptyList()
         return json.decodeFromString(jsonString)
@@ -61,7 +59,7 @@ object JsonUtils {
     inline fun <reified T> listFromJson(
         reader: Reader?,
         typeClass: Class<T>? = null,
-        excludeExposeAnnotation: Boolean = true
+        excludeExposeAnnotation: Boolean = true,
     ): List<T> {
         if (reader == null) return emptyList()
         val jsonString = reader.readText()

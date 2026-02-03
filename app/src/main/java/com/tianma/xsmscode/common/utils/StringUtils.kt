@@ -11,13 +11,22 @@ object StringUtils {
         for (c in str) {
             when (c) {
                 '\t' -> sb.append("\\t")
+
                 '\b' -> sb.append("\\b")
+
                 '\n' -> sb.append("\\n")
+
                 '\r' -> sb.append("\\r")
-                '\u000C' -> sb.append("\\f") // '\f' is not allowed in Kotlin character literal sometimes, using unicode
+
+                '\u000C' -> sb.append("\\f")
+
+                // '\f' is not allowed in Kotlin character literal sometimes, using unicode
                 '\\' -> sb.append("\\\\")
+
                 '\'' -> sb.append("\\'")
+
                 '\"' -> sb.append("\\\"")
+
                 else -> {
                     if (c.code < 32 || c.code >= 127) {
                         sb.append(String.format("\\u%04x", c.code))

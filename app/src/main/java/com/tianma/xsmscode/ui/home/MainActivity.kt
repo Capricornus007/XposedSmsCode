@@ -49,13 +49,13 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var appUpdateManager: AppUpdateManager
     private val updateLauncher = registerForActivityResult(
-        ActivityResultContracts.StartIntentSenderForResult()
+        ActivityResultContracts.StartIntentSenderForResult(),
     ) { result ->
         if (result.resultCode != RESULT_OK) {
             android.widget.Toast.makeText(
                 this,
                 getString(R.string.check_update_failed),
-                android.widget.Toast.LENGTH_SHORT
+                android.widget.Toast.LENGTH_SHORT,
             ).show()
         }
     }
@@ -115,7 +115,7 @@ class MainActivity : AppCompatActivity() {
                             revealAnim.snapTo(0f)
                             revealAnim.animateTo(
                                 targetValue = 1f,
-                                animationSpec = tween(durationMillis = 600)
+                                animationSpec = tween(durationMillis = 600),
                             )
 
                             // 5. Cleanup
@@ -167,7 +167,7 @@ class MainActivity : AppCompatActivity() {
                             onInitialTabConsumed = { requestedTab = null },
                             modifier = Modifier,
                             hazeState = hazeState,
-                            hazeStyle = hazeStyle
+                            hazeStyle = hazeStyle,
                         )
 
                         // Overlay for Circular Reveal
@@ -194,9 +194,9 @@ class MainActivity : AppCompatActivity() {
                                             color = androidx.compose.ui.graphics.Color.Transparent,
                                             radius = radius,
                                             center = animationCenter,
-                                            blendMode = BlendMode.Clear
+                                            blendMode = BlendMode.Clear,
                                         )
-                                    }
+                                    },
                             )
                         }
                     }
@@ -228,14 +228,16 @@ class MainActivity : AppCompatActivity() {
                     info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE) -> {
                     startUpdateFlow(info)
                 }
+
                 info.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS -> {
                     startUpdateFlow(info)
                 }
+
                 else -> {
                     android.widget.Toast.makeText(
                         this,
                         getString(R.string.app_already_newest),
-                        android.widget.Toast.LENGTH_SHORT
+                        android.widget.Toast.LENGTH_SHORT,
                     ).show()
                 }
             }
@@ -243,7 +245,7 @@ class MainActivity : AppCompatActivity() {
             android.widget.Toast.makeText(
                 this,
                 getString(R.string.check_update_failed),
-                android.widget.Toast.LENGTH_SHORT
+                android.widget.Toast.LENGTH_SHORT,
             ).show()
         }
     }
@@ -253,23 +255,20 @@ class MainActivity : AppCompatActivity() {
             appUpdateManager.startUpdateFlowForResult(
                 info,
                 updateLauncher,
-                AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build()
+                AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build(),
             )
         } catch (e: Exception) {
             android.widget.Toast.makeText(
                 this,
                 getString(R.string.check_update_failed),
-                android.widget.Toast.LENGTH_SHORT
+                android.widget.Toast.LENGTH_SHORT,
             ).show()
         }
     }
 
     @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     @Composable
-    fun AppTheme(
-        themeMode: Int,
-        content: @Composable () -> Unit
-    ) {
+    fun AppTheme(themeMode: Int, content: @Composable () -> Unit) {
         val darkTheme = when (themeMode) {
             1 -> false
             2 -> true
@@ -282,7 +281,7 @@ class MainActivity : AppCompatActivity() {
         // Note: MaterialExpressiveTheme uses its own shape and typography defaults
         MaterialExpressiveTheme(
             colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme(),
-            content = content
+            content = content,
         )
     }
 }

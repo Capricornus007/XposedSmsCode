@@ -69,7 +69,9 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
     // "Also add Usage Frequency".
 
     enum class SortOption {
-        LABEL, PACKAGE, USAGE
+        LABEL,
+        PACKAGE,
+        USAGE,
     }
 
     var currentSortOption = SortOption.LABEL
@@ -189,12 +191,12 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
 
     private fun hasUsageStatsPermission(): Boolean {
         val appOps = getApplication<Application>().getSystemService(
-            android.content.Context.APP_OPS_SERVICE
+            android.content.Context.APP_OPS_SERVICE,
         ) as android.app.AppOpsManager
         val mode = appOps.checkOpNoThrow(
             android.app.AppOpsManager.OPSTR_GET_USAGE_STATS,
             android.os.Process.myUid(),
-            getApplication<Application>().packageName
+            getApplication<Application>().packageName,
         )
         return mode == android.app.AppOpsManager.MODE_ALLOWED
     }
@@ -259,7 +261,7 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                         getApplication(),
                         EntityType.BLOCKED_APP,
                         blockedApps,
-                        AppInfo::class.java
+                        AppInfo::class.java,
                     )
                 }
                 // Update original checks
@@ -287,7 +289,9 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
 
         val result = when (currentSortOption) {
             SortOption.LABEL -> compareString(o1.label, o2.label)
+
             SortOption.PACKAGE -> compareString(o1.packageName, o2.packageName)
+
             SortOption.USAGE -> {
                 val u1 = usageStatsMap[o1.packageName] ?: 0L
                 val u2 = usageStatsMap[o2.packageName] ?: 0L

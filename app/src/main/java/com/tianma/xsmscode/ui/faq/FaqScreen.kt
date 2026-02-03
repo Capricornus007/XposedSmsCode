@@ -25,10 +25,7 @@ import dev.chrisbanes.haze.hazeSource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FaqScreen(
-    hazeState: HazeState,
-    hazeStyle: HazeStyle
-) {
+fun FaqScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
     val questions = stringArrayResource(id = R.array.question_list)
     val answers = stringArrayResource(id = R.array.answer_list)
 
@@ -53,9 +50,9 @@ fun FaqScreen(
                 start = 16.dp,
                 end = 16.dp,
                 top = topPadding + 8.dp,
-                bottom = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                bottom = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
             ),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             itemsIndexed(questions.toList()) { index, question ->
                 if (question != "empty" && index < answers.size && answers[index] != "empty") {
@@ -63,21 +60,21 @@ fun FaqScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.large,
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        )
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        ),
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = question,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.primary,
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = answers[index],
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -87,7 +84,7 @@ fun FaqScreen(
 
         Column(
             modifier = Modifier
-                .align(Alignment.TopCenter)
+                .align(Alignment.TopCenter),
         ) {
             TopAppBar(
                 title = { Text(stringResource(R.string.action_home_faq_title)) },
@@ -97,8 +94,8 @@ fun FaqScreen(
                     .hazeEffect(hazeState, hazeStyle),
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent
-                )
+                    scrolledContainerColor = Color.Transparent,
+                ),
             )
         }
     }

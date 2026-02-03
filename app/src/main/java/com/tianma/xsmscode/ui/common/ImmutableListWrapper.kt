@@ -8,6 +8,4 @@ import androidx.compose.runtime.Immutable
  * the Compose compiler.
  */
 @Immutable
-data class ImmutableListWrapper<T>(
-    val items: List<T> = emptyList()
-)
+data class ImmutableListWrapper<T>(val items: List<T> = emptyList())

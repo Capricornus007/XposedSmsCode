@@ -53,7 +53,7 @@ class RuleListViewModel(application: Application) : AndroidViewModel(application
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = persistentListOf()
+            initialValue = persistentListOf(),
         )
 
     private val _eventsFlow = MutableSharedFlow<RuleListEvent>()
@@ -142,29 +142,25 @@ class RuleListViewModel(application: Application) : AndroidViewModel(application
                     getApplication(),
                     EntityType.CODE_RULES,
                     rules,
-                    SmsCodeRule::class.java
+                    SmsCodeRule::class.java,
                 )
             }
         }
     }
 
-    private fun List<SmsCodeRule>.toBackupRules(): List<BackupRule> {
-        return map { rule ->
-            BackupRule(
-                company = rule.company,
-                codeKeyword = rule.codeKeyword,
-                codeRegex = rule.codeRegex
-            )
-        }
+    private fun List<SmsCodeRule>.toBackupRules(): List<BackupRule> = map { rule ->
+        BackupRule(
+            company = rule.company,
+            codeKeyword = rule.codeKeyword,
+            codeRegex = rule.codeRegex,
+        )
     }
 
-    private fun List<BackupRule>.toSmsCodeRules(): List<SmsCodeRule> {
-        return map { rule ->
-            SmsCodeRule(
-                company = rule.company,
-                codeKeyword = rule.codeKeyword,
-                codeRegex = rule.codeRegex
-            )
-        }
+    private fun List<BackupRule>.toSmsCodeRules(): List<SmsCodeRule> = map { rule ->
+        SmsCodeRule(
+            company = rule.company,
+            codeKeyword = rule.codeKeyword,
+            codeRegex = rule.codeRegex,
+        )
     }
 }

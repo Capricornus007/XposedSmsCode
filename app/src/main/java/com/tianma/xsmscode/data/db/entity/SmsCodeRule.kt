@@ -12,8 +12,8 @@ import kotlinx.serialization.Serializable
 @Entity(
     tableName = "sms_code_rule",
     indices = [
-        Index(value = ["company", "code_keyword", "code_regex"], unique = true)
-    ]
+        Index(value = ["company", "code_keyword", "code_regex"], unique = true),
+    ],
 )
 @Serializable
 @Parcelize
@@ -31,5 +31,5 @@ data class SmsCodeRule @JvmOverloads constructor(
     val codeRegex: String = "",
 
     @PrimaryKey(autoGenerate = true)
-    val id: Long? = null
+    val id: Long? = null,
 ) : Parcelable

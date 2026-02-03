@@ -21,10 +21,7 @@ import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
 @Immutable
-data class CodeRecordUiState(
-    val smsList: ImmutableList<SmsMsg> = persistentListOf(),
-    val isLoading: Boolean = false
-)
+data class CodeRecordUiState(val smsList: ImmutableList<SmsMsg> = persistentListOf(), val isLoading: Boolean = false)
 
 class CodeRecordViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -38,7 +35,7 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = CodeRecordUiState(isLoading = true)
+            initialValue = CodeRecordUiState(isLoading = true),
         )
 
     fun loadData() {

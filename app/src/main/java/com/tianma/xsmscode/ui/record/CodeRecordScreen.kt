@@ -66,7 +66,7 @@ fun CodeRecordScreen(
     hazeState: HazeState,
     hazeStyle: HazeStyle,
     onBack: (() -> Unit)? = null,
-    viewModel: CodeRecordViewModel = koinViewModel()
+    viewModel: CodeRecordViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val smsList = uiState.smsList
@@ -121,14 +121,13 @@ fun CodeRecordScreen(
 
     // Move deleteAndUndo outside items block and remember it
     val deleteAndUndo = remember(viewModel, scope, context, snackbarHostState) {
-        {
-                target: SmsMsg ->
+        { target: SmsMsg ->
             viewModel.removeSmsMsg(listOf(target))
             scope.launch {
                 val result = snackbarHostState.showSnackbar(
                     message = context.getString(R.string.some_items_removed, 1),
                     actionLabel = context.getString(R.string.revoke),
-                    duration = SnackbarDuration.Long
+                    duration = SnackbarDuration.Long,
                 )
                 if (result == SnackbarResult.ActionPerformed) {
                     viewModel.restoreSmsMsgList(listOf(target))
@@ -149,7 +148,7 @@ fun CodeRecordScreen(
             val result = snackbarHostState.showSnackbar(
                 message = context.getString(R.string.some_items_removed, deleteList.size),
                 actionLabel = context.getString(R.string.revoke),
-                duration = SnackbarDuration.Long
+                duration = SnackbarDuration.Long,
             )
             if (result == SnackbarResult.ActionPerformed) {
                 viewModel.restoreSmsMsgList(deleteList)
@@ -184,7 +183,7 @@ fun CodeRecordScreen(
                             }
                         }
                         detailSmsMsg = null
-                    }
+                    },
                 ) {
                     Text(stringResource(R.string.copy_smscode))
                 }
@@ -200,30 +199,30 @@ fun CodeRecordScreen(
                             }
                         }
                         detailSmsMsg = null
-                    }
+                    },
                 ) {
                     Text(stringResource(R.string.copy_sms))
                 }
-            }
+            },
         )
     }
 
     if (showSettingsSheet) {
         ModalBottomSheet(
-            onDismissRequest = { showSettingsSheet = false }
+            onDismissRequest = { showSettingsSheet = false },
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 SectionHeader(text = stringResource(id = R.string.pref_code_records_title))
                 SwitchItem(
                     title = stringResource(id = R.string.pref_enable_code_records_title),
                     summary = "",
                     key = PrefConst.KEY_ENABLE_CODE_RECORDS,
-                    defaultValue = true
+                    defaultValue = true,
                 )
 
                 Item(
@@ -233,7 +232,7 @@ fun CodeRecordScreen(
                         val values = stringArrayResource(id = R.array.history_limit_value_list)
                         val index = values.indexOf(historyLimit)
                         if (index >= 0) entries[index] else "$historyLimit ${stringResource(R.string.smscode_records)}"
-                    }
+                    },
                 ) { showHistoryLimitDialog = true }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -247,7 +246,7 @@ fun CodeRecordScreen(
             onDismiss = { showHistoryLimitDialog = false },
             titleId = R.string.pref_history_limit_title,
             entriesId = R.array.history_limit_entry_list,
-            valuesId = R.array.history_limit_value_list
+            valuesId = R.array.history_limit_value_list,
         ) { value ->
             if (value == "-1") {
                 showHistoryLimitInput = true
@@ -266,7 +265,7 @@ fun CodeRecordScreen(
         TextInputDialog(
             title = stringResource(id = R.string.history_limit_custom_entry),
             initialValue = if (historyLimit == "0" || historyLimit == "-1") "" else historyLimit,
-            onDismiss = { showHistoryLimitInput = false }
+            onDismiss = { showHistoryLimitInput = false },
         ) { value ->
             if (value.all { it.isDigit() } && value.isNotEmpty()) {
                 historyLimit = value
@@ -288,7 +287,7 @@ fun CodeRecordScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
     ) {
         val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
         val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
@@ -296,14 +295,14 @@ fun CodeRecordScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 0.dp)
+                .padding(top = 0.dp),
         ) {
             AnimatedContent(
                 targetState = Pair(isLoading, smsList),
                 transitionSpec = {
                     fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
                 },
-                label = "CodeRecordState"
+                label = "CodeRecordState",
             ) { (loading, list) ->
                 if (loading && list.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -314,18 +313,18 @@ fun CodeRecordScreen(
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalArrangement = Arrangement.Center,
                     ) {
                         Icon(
                             imageVector = Icons.Default.Email,
                             contentDescription = null,
                             modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
                             text = stringResource(R.string.list_empty_prompt),
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 } else {
@@ -335,7 +334,7 @@ fun CodeRecordScreen(
                             .hazeSource(state = hazeState)
                             .nestedScroll(scrollBehavior.nestedScrollConnection),
                         state = listState,
-                        contentPadding = PaddingValues(top = topPadding, bottom = bottomPadding)
+                        contentPadding = PaddingValues(top = topPadding, bottom = bottomPadding),
                     ) {
                         items(list, key = { it.id ?: 0 }) { smsMsg ->
                             val isSelected = selectedIds.contains(smsMsg.id)
@@ -350,11 +349,13 @@ fun CodeRecordScreen(
                                     },
                                     onLongClick = {},
                                     onDetailClick = { detailSmsMsg = smsMsg },
-                                    modifier = Modifier.animateItem()
+                                    modifier = Modifier.animateItem(),
                                 )
                             } else {
                                 val dismissState = rememberDismissState(confirmStateChange = { value ->
-                                    if (value == DismissValue.DismissedToEnd || value == DismissValue.DismissedToStart) {
+                                    if (value == DismissValue.DismissedToEnd ||
+                                        value == DismissValue.DismissedToStart
+                                    ) {
                                         deleteAndUndo(smsMsg)
                                     }
                                     true
@@ -368,16 +369,18 @@ fun CodeRecordScreen(
                                                 .fillMaxSize()
                                                 .background(MaterialTheme.colorScheme.errorContainer)
                                                 .padding(horizontal = 24.dp),
-                                            contentAlignment = if (dismissState.dismissDirection == DismissDirection.StartToEnd) {
+                                            contentAlignment = if (dismissState.dismissDirection ==
+                                                DismissDirection.StartToEnd
+                                            ) {
                                                 Alignment.CenterStart
                                             } else {
                                                 Alignment.CenterEnd
-                                            }
+                                            },
                                         ) {
                                             Icon(
                                                 imageVector = Icons.Default.Delete,
                                                 contentDescription = stringResource(R.string.remove),
-                                                tint = MaterialTheme.colorScheme.onErrorContainer
+                                                tint = MaterialTheme.colorScheme.onErrorContainer,
                                             )
                                         }
                                     },
@@ -392,7 +395,7 @@ fun CodeRecordScreen(
                                                     clipboardManager.setText(AnnotatedString(code))
                                                     scope.launch {
                                                         snackbarHostState.showSnackbar(
-                                                            context.getString(R.string.prompt_sms_code_copied, code)
+                                                            context.getString(R.string.prompt_sms_code_copied, code),
                                                         )
                                                     }
                                                 }
@@ -402,9 +405,9 @@ fun CodeRecordScreen(
                                                 toggleSelection(smsMsg.id ?: 0)
                                             },
                                             onDetailClick = { detailSmsMsg = smsMsg },
-                                            modifier = Modifier.animateItem()
+                                            modifier = Modifier.animateItem(),
                                         )
-                                    }
+                                    },
                                 )
                             }
                             HorizontalDivider()
@@ -416,7 +419,7 @@ fun CodeRecordScreen(
 
         Column(
             modifier = Modifier
-                .align(Alignment.TopCenter)
+                .align(Alignment.TopCenter),
         ) {
             TopAppBar(
                 title = {
@@ -434,14 +437,14 @@ fun CodeRecordScreen(
                         }) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.action_back)
+                                contentDescription = stringResource(R.string.action_back),
                             )
                         }
                     } else if (onBack != null) {
                         IconButton(onClick = onBack) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.action_back)
+                                contentDescription = stringResource(R.string.action_back),
                             )
                         }
                     }
@@ -465,37 +468,37 @@ fun CodeRecordScreen(
                         IconButton(onClick = { showSettingsSheet = true }) {
                             Icon(
                                 Icons.Default.Tune,
-                                contentDescription = stringResource(R.string.pref_code_records_title)
+                                contentDescription = stringResource(R.string.pref_code_records_title),
                             )
                         }
                         IconButton(onClick = {
                             val filename = "SmsCodeRecords_${SimpleDateFormat(
                                 "yyyyMMdd_HHmm",
-                                Locale.getDefault()
+                                Locale.getDefault(),
                             ).format(Date())}.json"
                             exportLauncher.launch(filename)
                         }) {
                             Icon(
                                 painterResource(R.drawable.ic_export),
-                                contentDescription = stringResource(R.string.action_export_rules)
+                                contentDescription = stringResource(R.string.action_export_rules),
                             )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent
+                    scrolledContainerColor = Color.Transparent,
                 ),
                 scrollBehavior = scrollBehavior,
                 windowInsets = WindowInsets.statusBars,
                 modifier = Modifier
-                    .hazeEffect(hazeState, hazeStyle)
+                    .hazeEffect(hazeState, hazeStyle),
             )
         }
 
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
         )
     }
 }
@@ -509,7 +512,7 @@ fun CodeRecordItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onDetailClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val dateFormatter = remember { SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()) }
 
@@ -518,19 +521,19 @@ fun CodeRecordItem(
             .fillMaxWidth()
             .combinedClickable(
                 onClick = onClick,
-                onLongClick = onLongClick
+                onLongClick = onLongClick,
             )
             .background(
-                if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+                if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
             )
             .padding(vertical = 12.dp, horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         if (isSelectionMode) {
             Checkbox(
                 checked = isSelected,
                 onCheckedChange = { onClick() },
-                modifier = Modifier.padding(end = 16.dp)
+                modifier = Modifier.padding(end = 16.dp),
             )
         }
 
@@ -540,12 +543,12 @@ fun CodeRecordItem(
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(end = 16.dp)
+            modifier = Modifier.padding(end = 16.dp),
         ) {
             AppIconImage(
                 packageName = smsMsg.packageName,
                 label = iconLabel,
-                contentDescription = stringResource(R.string.sms_icon_description)
+                contentDescription = stringResource(R.string.sms_icon_description),
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -553,7 +556,7 @@ fun CodeRecordItem(
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.basicMarquee()
+                modifier = Modifier.basicMarquee(),
             )
         }
 
@@ -563,18 +566,18 @@ fun CodeRecordItem(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = smsMsg.smsCode ?: "",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 )
                 Text(
                     text = dateFormatter.format(Date(smsMsg.date)),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
@@ -585,7 +588,7 @@ fun CodeRecordItem(
                     style = MaterialTheme.typography.bodyMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.clickable { onDetailClick() }
+                    modifier = Modifier.clickable { onDetailClick() },
                 )
             }
         }

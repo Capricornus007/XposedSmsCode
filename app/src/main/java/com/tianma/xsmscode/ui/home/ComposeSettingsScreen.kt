@@ -56,7 +56,7 @@ fun ComposeSettingsScreen(
     hazeState: HazeState,
     hazeStyle: HazeStyle,
     viewModel: SettingsViewModel? = null,
-    onExit: () -> Unit = {}
+    onExit: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val activityOwner = context as? ComponentActivity
@@ -95,9 +95,21 @@ fun ComposeSettingsScreen(
     }
 
     LaunchedEffect(Unit) {
-        autoInputDelay = AppPreferencesDataStore.getString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT)
-        retentionTime = AppPreferencesDataStore.getString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT)
-        smsCodeKeywords = AppPreferencesDataStore.getString(context, PrefConst.KEY_SMSCODE_KEYWORDS, PrefConst.SMSCODE_KEYWORDS_DEFAULT)
+        autoInputDelay = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_AUTO_INPUT_CODE_DELAY,
+            PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT,
+        )
+        retentionTime = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_NOTIFICATION_RETENTION_TIME,
+            PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT,
+        )
+        smsCodeKeywords = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_SMSCODE_KEYWORDS,
+            PrefConst.SMSCODE_KEYWORDS_DEFAULT,
+        )
         settingsViewModel.setInternalFilesWritable()
     }
 
@@ -135,18 +147,23 @@ fun ComposeSettingsScreen(
                         }
                         snackbarHostState.showSnackbar(text, duration = SnackbarDuration.Long)
                     }
+
                     is SettingsEvent.ShowPrivacyPolicy -> {
                         showPrivacyPolicyDialog = true
                     }
+
                     is SettingsEvent.ShowAlipayPacket -> {
                         showDonateDialog = true
                     }
+
                     is SettingsEvent.CheckUpdateError -> {
                         snackbarHostState.showSnackbar(context.getString(R.string.check_update_failed))
                     }
+
                     is SettingsEvent.AppAlreadyNewest -> {
                         snackbarHostState.showSnackbar(context.getString(R.string.app_already_newest))
                     }
+
                     else -> Unit
                 }
             }
@@ -170,10 +187,10 @@ fun ComposeSettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .hazeSource(hazeState)
-                .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding())
+                .padding(bottom = bottomPadding)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             // Add top padding manually as the first item or Spacer
             Spacer(modifier = Modifier.height(topPadding))
@@ -183,7 +200,7 @@ fun ComposeSettingsScreen(
                 summary = stringResource(id = R.string.pref_enable_summary),
                 key = PrefConst.KEY_ENABLE,
                 defaultValue = true,
-                onSaved = markPrefsSaved
+                onSaved = markPrefsSaved,
             )
             SwitchItem(
                 title = stringResource(id = R.string.pref_hide_launcher_icon_title),
@@ -191,17 +208,17 @@ fun ComposeSettingsScreen(
                 key = PrefConst.KEY_HIDE_LAUNCHER_ICON,
                 defaultValue = false,
                 onToggle = { enabled -> settingsViewModel.hideOrShowLauncherIcon(enabled) },
-                onSaved = markPrefsSaved
+                onSaved = markPrefsSaved,
             )
             Item(
                 title = stringResource(id = R.string.pref_choose_theme_title),
-                summary = stringResource(id = R.string.pref_choose_theme_summary)
+                summary = stringResource(id = R.string.pref_choose_theme_summary),
             ) { showThemeDialog = true }
 
             var showLanguageDialog by remember { mutableStateOf(false) }
             Item(
                 title = stringResource(id = R.string.pref_language_title),
-                summary = stringResource(id = R.string.pref_language_summary)
+                summary = stringResource(id = R.string.pref_language_summary),
             ) { showLanguageDialog = true }
 
             if (showLanguageDialog) {
@@ -215,7 +232,7 @@ fun ComposeSettingsScreen(
                         }
                         androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(locales)
                         showLanguageDialog = false
-                    }
+                    },
                 )
             }
 
@@ -227,36 +244,36 @@ fun ComposeSettingsScreen(
                 summary = stringResource(id = R.string.pref_show_toast_summary),
                 key = PrefConst.KEY_SHOW_TOAST,
                 defaultValue = true,
-                onSaved = markPrefsSaved
+                onSaved = markPrefsSaved,
             )
             SwitchItem(
                 title = stringResource(id = R.string.pref_copy_to_clipboard_title),
                 summary = stringResource(id = R.string.pref_copy_to_clipboard_summary),
                 key = PrefConst.KEY_COPY_TO_CLIPBOARD,
                 defaultValue = false,
-                onSaved = markPrefsSaved
+                onSaved = markPrefsSaved,
             )
             SwitchItem(
                 title = stringResource(id = R.string.pref_block_sms_title),
                 summary = stringResource(id = R.string.pref_block_sms_summary),
                 key = PrefConst.KEY_BLOCK_SMS,
                 defaultValue = false,
-                onSaved = markPrefsSaved
+                onSaved = markPrefsSaved,
             )
             SwitchItem(
                 title = stringResource(id = R.string.pref_deduplicate_sms_title),
                 summary = stringResource(id = R.string.pref_deduplicate_sms_summary),
                 key = PrefConst.KEY_DEDUPLICATE_SMS,
                 defaultValue = false,
-                onSaved = markPrefsSaved
+                onSaved = markPrefsSaved,
             )
             Item(
                 title = stringResource(id = R.string.pref_smscode_keywords_title),
-                summary = stringResource(id = R.string.pref_smscode_keywords_summary)
+                summary = stringResource(id = R.string.pref_smscode_keywords_summary),
             ) { showKeywordsDialog = true }
             Item(
                 title = stringResource(id = R.string.pref_smscode_test_title),
-                summary = stringResource(id = R.string.pref_smscode_test_summary)
+                summary = stringResource(id = R.string.pref_smscode_test_summary),
             ) { showSmsTestDialog = true }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -269,11 +286,11 @@ fun ComposeSettingsScreen(
                 key = PrefConst.KEY_ENABLE_AUTO_INPUT_CODE,
                 defaultValue = true,
                 stateOverride = autoInputEnabled,
-                onSaved = markPrefsSaved
+                onSaved = markPrefsSaved,
             )
             Item(
                 title = stringResource(id = R.string.pref_auto_input_code_delay_title),
-                summary = stringResource(id = R.string.pref_auto_input_code_delay_summary, autoInputDelay)
+                summary = stringResource(id = R.string.pref_auto_input_code_delay_summary, autoInputDelay),
             ) { showAutoInputDialog = true }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
@@ -284,14 +301,14 @@ fun ComposeSettingsScreen(
                 summary = stringResource(id = R.string.pref_show_code_notification_summary),
                 key = PrefConst.KEY_SHOW_CODE_NOTIFICATION,
                 defaultValue = true,
-                onSaved = markPrefsSaved
+                onSaved = markPrefsSaved,
             )
             SwitchItem(
                 title = stringResource(id = R.string.pref_auto_cancel_notification_title),
                 summary = stringResource(id = R.string.pref_auto_cancel_notification_summary),
                 key = PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
                 defaultValue = false,
-                onSaved = markPrefsSaved
+                onSaved = markPrefsSaved,
             )
             Item(
                 title = stringResource(id = R.string.pref_notification_retention_time_title),
@@ -300,7 +317,7 @@ fun ComposeSettingsScreen(
                     val values = stringArrayResource(id = R.array.notification_retention_time_list)
                     val index = values.indexOf(retentionTime)
                     if (index >= 0) entries[index] else retentionTime
-                }
+                },
             ) { showRetentionDialog = true }
             SectionHeader(text = stringResource(id = R.string.pref_others_title))
             SwitchItem(
@@ -309,11 +326,11 @@ fun ComposeSettingsScreen(
                 key = PrefConst.KEY_VERBOSE_LOG_MODE,
                 defaultValue = false,
                 onToggle = { on -> XLog.setLogLevel(if (on) Log.VERBOSE else BuildConfig.LOG_LEVEL) },
-                onSaved = markPrefsSaved
+                onSaved = markPrefsSaved,
             )
             Item(
                 title = stringResource(id = R.string.pref_privacy_policy_title),
-                summary = ""
+                summary = "",
             ) { Utils.showWebPage(context, Const.PRIVACY_POLICY_URL) }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -321,24 +338,24 @@ fun ComposeSettingsScreen(
 
         Column(
             modifier = Modifier
-                .align(Alignment.TopCenter)
+                .align(Alignment.TopCenter),
         ) {
             TopAppBar(
                 title = { Text(text = stringResource(id = R.string.pref_general_title)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent
+                    scrolledContainerColor = Color.Transparent,
                 ),
                 scrollBehavior = scrollBehavior,
                 windowInsets = WindowInsets.statusBars,
                 modifier = Modifier
-                    .hazeEffect(hazeState, hazeStyle)
+                    .hazeEffect(hazeState, hazeStyle),
             )
         }
 
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
         )
     }
 
@@ -346,7 +363,7 @@ fun ComposeSettingsScreen(
         TextInputDialog(
             title = stringResource(id = R.string.pref_auto_input_code_delay_title),
             initialValue = autoInputDelay,
-            onDismiss = { showAutoInputDialog = false }
+            onDismiss = { showAutoInputDialog = false },
         ) { value ->
             autoInputDelay = value
             scope.launch {
@@ -361,7 +378,7 @@ fun ComposeSettingsScreen(
     if (showRetentionDialog) {
         RetentionDialog(
             selectedValue = retentionTime,
-            onDismiss = { showRetentionDialog = false }
+            onDismiss = { showRetentionDialog = false },
         ) { value ->
             retentionTime = value
             scope.launch {
@@ -379,7 +396,7 @@ fun ComposeSettingsScreen(
             initialValue = smsTestInput,
             onDismiss = { showSmsTestDialog = false },
             singleLine = false,
-            maxLines = 8
+            maxLines = 8,
         ) { value ->
             smsTestInput = value
             settingsViewModel.performSmsCodeTest(value)
@@ -393,7 +410,7 @@ fun ComposeSettingsScreen(
             initialValue = smsCodeKeywords,
             onDismiss = { showKeywordsDialog = false },
             singleLine = false,
-            maxLines = 10
+            maxLines = 10,
         ) { value ->
             val updated = if (value.isBlank()) PrefConst.SMSCODE_KEYWORDS_DEFAULT else value
             smsCodeKeywords = updated
@@ -411,7 +428,7 @@ fun ComposeSettingsScreen(
             version = version,
             onDismiss = { settingsViewModel.clearUpdateVersion() },
             onUpdateCoolApk = { settingsViewModel.updateFromCoolApk() },
-            onUpdateGithub = { settingsViewModel.updateFromGithub() }
+            onUpdateGithub = { settingsViewModel.updateFromGithub() },
         )
     }
 
@@ -422,7 +439,7 @@ fun ComposeSettingsScreen(
             onThemeSelected = { mode, x, y ->
                 settingsViewModel.setThemeMode(mode, x, y)
                 showThemeDialog = false
-            }
+            },
         )
     }
 
@@ -436,7 +453,7 @@ fun ComposeSettingsScreen(
             onWechat = {
                 showDonateDialog = false
                 showQRCodeDialog = Pair(R.drawable.wx, "wechat")
-            }
+            },
         )
     }
 
@@ -451,7 +468,7 @@ fun ComposeSettingsScreen(
                 showAlipayChoiceDialog = false
                 PackageUtils.copyAlipayPocketToken(context)
                 PackageUtils.startAlipayActivity(context)
-            }
+            },
         )
     }
 
@@ -460,7 +477,7 @@ fun ComposeSettingsScreen(
             resId = pair.first,
             type = pair.second,
             onDismiss = { showQRCodeDialog = null },
-            onSave = { Utils.saveImageToGallery(context, pair.first, "${pair.second}_qrcode") }
+            onSave = { Utils.saveImageToGallery(context, pair.first, "${pair.second}_qrcode") },
         )
     }
 
@@ -478,7 +495,7 @@ fun ComposeSettingsScreen(
             },
             onViewPolicy = {
                 Utils.showWebPage(context, Const.PRIVACY_POLICY_URL)
-            }
+            },
         )
     }
 }
@@ -486,25 +503,17 @@ fun ComposeSettingsScreen(
 // Helper Composables (extracted and made standalone)
 
 @Composable
-fun SectionHeader(
-    text: String,
-    modifier: Modifier = Modifier
-) {
+fun SectionHeader(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(horizontal = Const.PADDING_MEDIUM.dp, vertical = 8.dp)
+        modifier = modifier.padding(horizontal = Const.PADDING_MEDIUM.dp, vertical = 8.dp),
     )
 }
 
 @Composable
-fun Item(
-    title: String,
-    summary: String,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
+fun Item(title: String, summary: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     ListItem(
         headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
         supportingContent = if (summary.isNotEmpty()) {
@@ -512,13 +521,13 @@ fun Item(
                 Text(
                     text = summary,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         } else {
             null
         },
-        modifier = modifier.clickable(onClick = onClick)
+        modifier = modifier.clickable(onClick = onClick),
     )
 }
 
@@ -531,7 +540,7 @@ fun SwitchItem(
     modifier: Modifier = Modifier,
     stateOverride: MutableState<Boolean>? = null,
     onToggle: ((Boolean) -> Unit)? = null,
-    onSaved: (() -> Unit)? = null
+    onSaved: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -554,7 +563,7 @@ fun SwitchItem(
                 Text(
                     text = summary,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         } else {
@@ -563,7 +572,7 @@ fun SwitchItem(
         trailingContent = {
             Switch(checked = checkedState.value, onCheckedChange = { toggle(it) })
         },
-        modifier = modifier.clickable { toggle(!checkedState.value) }
+        modifier = modifier.clickable { toggle(!checkedState.value) },
     )
 }
 
@@ -585,7 +594,7 @@ fun TextInputDialog(
     modifier: Modifier = Modifier,
     singleLine: Boolean = true,
     maxLines: Int = if (singleLine) 1 else 6,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit,
 ) {
     var text by remember { mutableStateOf(initialValue) }
     AlertDialog(
@@ -598,7 +607,7 @@ fun TextInputDialog(
                 onValueChange = { text = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = singleLine,
-                maxLines = maxLines
+                maxLines = maxLines,
             )
         },
         confirmButton = {
@@ -610,7 +619,7 @@ fun TextInputDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(id = R.string.cancel))
             }
-        }
+        },
     )
 }
 
@@ -622,7 +631,7 @@ fun RetentionDialog(
     titleId: Int = R.string.pref_notification_retention_time_title,
     entriesId: Int = R.array.notification_retention_time_entry_list,
     valuesId: Int = R.array.notification_retention_time_list,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit,
 ) {
     val entries = stringArrayResource(id = entriesId)
     val values = stringArrayResource(id = valuesId)
@@ -639,7 +648,7 @@ fun RetentionDialog(
                             .fillMaxWidth()
                             .clickable { onConfirm(value) }
                             .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(selected = value == selectedValue, onClick = { onConfirm(value) })
                         Text(text = entry, modifier = Modifier.padding(start = 16.dp))
@@ -647,17 +656,12 @@ fun RetentionDialog(
                 }
             }
         },
-        confirmButton = {}
+        confirmButton = {},
     )
 }
 
 @Composable
-fun UpdateDialog(
-    version: ApkVersion,
-    onDismiss: () -> Unit,
-    onUpdateCoolApk: () -> Unit,
-    onUpdateGithub: () -> Unit
-) {
+fun UpdateDialog(version: ApkVersion, onDismiss: () -> Unit, onUpdateCoolApk: () -> Unit, onUpdateGithub: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.pref_version_title)) },
@@ -668,20 +672,16 @@ fun UpdateDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) }
-        }
+        },
     )
 }
 
 @Composable
-fun ThemeChooserDialog(
-    currentMode: Int,
-    onDismiss: () -> Unit,
-    onThemeSelected: (Int, Float, Float) -> Unit
-) {
+fun ThemeChooserDialog(currentMode: Int, onDismiss: () -> Unit, onThemeSelected: (Int, Float, Float) -> Unit) {
     val modes = listOf(
         stringResource(id = R.string.theme_follow_system) to 0,
         stringResource(id = R.string.theme_light) to 1,
-        stringResource(id = R.string.theme_dark) to 2
+        stringResource(id = R.string.theme_dark) to 2,
     )
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -703,17 +703,18 @@ fun ThemeChooserDialog(
                                         val locationOnScreen = IntArray(2)
                                         view.getLocationOnScreen(locationOnScreen)
 
-                                        val rootCoords = rowCoords?.positionInRoot() ?: androidx.compose.ui.geometry.Offset.Zero
+                                        val rootCoords =
+                                            rowCoords?.positionInRoot() ?: androidx.compose.ui.geometry.Offset.Zero
 
                                         // Dialog Window Offset + Item Offset in Dialog + Tap Offset
                                         val finalX = locationOnScreen[0] + rootCoords.x + tapOffset.x
                                         val finalY = locationOnScreen[1] + rootCoords.y + tapOffset.y
 
                                         onThemeSelected(mode, finalX, finalY)
-                                    }
+                                    },
                                 )
                             },
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(selected = mode == currentMode, onClick = null)
                         Text(text = label, modifier = Modifier.padding(start = 16.dp))
@@ -721,15 +722,12 @@ fun ThemeChooserDialog(
                 }
             }
         },
-        confirmButton = {}
+        confirmButton = {},
     )
 }
 
 @Composable
-fun LanguageChooserDialog(
-    onDismiss: () -> Unit,
-    onLanguageSelected: (String) -> Unit
-) {
+fun LanguageChooserDialog(onDismiss: () -> Unit, onLanguageSelected: (String) -> Unit) {
     val context = LocalContext.current
     val currentLocales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
     val currentTag = if (currentLocales.isEmpty) "" else currentLocales.get(0)?.toLanguageTag() ?: ""
@@ -738,7 +736,7 @@ fun LanguageChooserDialog(
         stringResource(id = R.string.language_follow_system) to "",
         stringResource(id = R.string.language_en) to "en",
         stringResource(id = R.string.language_zh_cn) to "zh-CN",
-        stringResource(id = R.string.language_zh_tw) to "zh-TW"
+        stringResource(id = R.string.language_zh_tw) to "zh-TW",
     )
 
     AlertDialog(
@@ -753,18 +751,18 @@ fun LanguageChooserDialog(
                             .fillMaxWidth()
                             .clickable { onLanguageSelected(tag) }
                             .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(
                             selected = selected,
-                            onClick = { onLanguageSelected(tag) }
+                            onClick = { onLanguageSelected(tag) },
                         )
                         Text(text = label, modifier = Modifier.padding(start = 16.dp))
                     }
                 }
             }
         },
-        confirmButton = {}
+        confirmButton = {},
     )
 }
 
@@ -777,7 +775,7 @@ fun DonateDialog(onDismiss: () -> Unit, onAlipay: () -> Unit, onWechat: () -> Un
         confirmButton = {
             TextButton(onClick = onAlipay) { Text(stringResource(id = R.string.dialog_donate_alipay)) }
             TextButton(onClick = onWechat) { Text(stringResource(id = R.string.dialog_donate_wechat)) }
-        }
+        },
     )
 }
 
@@ -789,7 +787,7 @@ fun AlipayChoiceDialog(onDismiss: () -> Unit, onQRCode: () -> Unit, onToken: () 
         confirmButton = {
             TextButton(onClick = onQRCode) { Text(stringResource(id = R.string.dialog_donate_alipay_qrcode)) }
             TextButton(onClick = onToken) { Text(stringResource(id = R.string.dialog_donate_alipay_token)) }
-        }
+        },
     )
 }
 
@@ -801,11 +799,11 @@ fun QRCodeDialog(resId: Int, type: String, onDismiss: () -> Unit, onSave: () -> 
             Text(
                 if (type == "alipay") {
                     stringResource(
-                        id = R.string.dialog_donate_alipay
+                        id = R.string.dialog_donate_alipay,
                     )
                 } else {
                     stringResource(id = R.string.dialog_donate_wechat)
-                }
+                },
             )
         },
         text = {
@@ -814,12 +812,12 @@ fun QRCodeDialog(resId: Int, type: String, onDismiss: () -> Unit, onSave: () -> 
                     painter = painterResource(id = resId),
                     contentDescription = if (type == "alipay") {
                         stringResource(
-                            id = R.string.dialog_donate_alipay
+                            id = R.string.dialog_donate_alipay,
                         )
                     } else {
                         stringResource(id = R.string.dialog_donate_wechat)
                     },
-                    modifier = Modifier.size(200.dp)
+                    modifier = Modifier.size(200.dp),
                 )
             }
         },
@@ -828,17 +826,12 @@ fun QRCodeDialog(resId: Int, type: String, onDismiss: () -> Unit, onSave: () -> 
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) }
-        }
+        },
     )
 }
 
 @Composable
-fun PrivacyPolicyDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit,
-    onViewPolicy: () -> Unit
-) {
+fun PrivacyPolicyDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, onCancel: () -> Unit, onViewPolicy: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.privacy_dialog_title)) },
@@ -848,7 +841,7 @@ fun PrivacyPolicyDialog(
                 Spacer(modifier = Modifier.height(16.dp))
                 TextButton(
                     onClick = onViewPolicy,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
                 ) {
                     Text(stringResource(id = R.string.privacy_policy_button))
                 }
@@ -863,6 +856,6 @@ fun PrivacyPolicyDialog(
             TextButton(onClick = onCancel) {
                 Text(stringResource(id = R.string.privacy_dialog_cancel))
             }
-        }
+        },
     )
 }

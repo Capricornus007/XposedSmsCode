@@ -7,5 +7,5 @@ enum class SortType {
     LABEL_ASC,
     PACKAGE_ASC,
     LABEL_DESC,
-    PACKAGE_DESC
+    PACKAGE_DESC,
 }

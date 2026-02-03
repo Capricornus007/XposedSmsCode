@@ -14,9 +14,8 @@ import com.github.tianma8023.xposed.smscode.BuildConfig
  */
 object SettingsUtils {
 
-    private fun getSecureString(context: Context, key: String): String? {
-        return Settings.Secure.getString(context.contentResolver, key)
-    }
+    private fun getSecureString(context: Context, key: String): String? =
+        Settings.Secure.getString(context.contentResolver, key)
 
     /**
      * Get system default SMS app package

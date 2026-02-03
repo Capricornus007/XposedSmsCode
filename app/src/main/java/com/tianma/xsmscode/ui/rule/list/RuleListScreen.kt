@@ -4,13 +4,26 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -20,8 +33,33 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,7 +87,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun RuleListScreen(
     onBack: (() -> Unit)? = null,
     onNavigateToEdit: (Int, SmsCodeRule?) -> Unit,
-    viewModel: RuleListViewModel = koinViewModel()
+    viewModel: RuleListViewModel = koinViewModel(),
 ) {
     val context = LocalContext.current
     val rules by viewModel.rulesFlow.collectAsStateWithLifecycle()
@@ -66,25 +104,37 @@ fun RuleListScreen(
             viewModel.eventsFlow.collect { event ->
                 when (event) {
                     is RuleListEvent.ShowProgress -> showProgress = event.msg
+
                     is RuleListEvent.CancelProgress -> showProgress = null
+
                     is RuleListEvent.ImportDirect -> viewModel.importRules(
                         event.uri,
                         true,
-                        context.getString(R.string.importing)
+                        context.getString(R.string.importing),
                     )
+
                     is RuleListEvent.ImportDialogConfirm -> showImportConfirm = event.uri
+
                     is RuleListEvent.ExportResultEvent -> {
                         val msg = if (event.success) R.string.export_success_simple else R.string.export_failed
                         snackbarHostState.showSnackbar(context.getString(msg))
                     }
+
                     is RuleListEvent.ImportResultEvent -> {
-                        val msg = if (event.result == ImportResult.SUCCESS) R.string.import_succeed else R.string.import_failed
+                        val msg = if (event.result ==
+                            ImportResult.SUCCESS
+                        ) {
+                                R.string.import_succeed
+                            } else {
+                                R.string.import_failed
+                            }
                         snackbarHostState.showSnackbar(context.getString(msg))
                     }
+
                     is RuleListEvent.ImportWarningEvent -> {
                         val msg = when (event.warning) {
                             ImportWarning.APP_VERSION_MISMATCH -> context.getString(
-                                R.string.import_warning_app_version_mismatch
+                                R.string.import_warning_app_version_mismatch,
                             )
                         }
                         snackbarHostState.showSnackbar(msg, duration = SnackbarDuration.Long)
@@ -111,7 +161,7 @@ fun RuleListScreen(
                 viewModel.handleArguments(
                     android.os.Bundle().apply {
                         putParcelable(Const.EXTRA_IMPORT_URI, uri)
-                    }
+                    },
                 )
             }
         }
@@ -119,7 +169,7 @@ fun RuleListScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing.only(
-            WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+            WindowInsetsSides.Horizontal + WindowInsetsSides.Top,
         ),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -131,7 +181,7 @@ fun RuleListScreen(
                             IconButton(onClick = onBack) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.action_back)
+                                    contentDescription = stringResource(R.string.action_back),
                                 )
                             }
                         }
@@ -146,7 +196,7 @@ fun RuleListScreen(
                         }) {
                             Icon(
                                 Icons.Default.FileDownload,
-                                contentDescription = stringResource(R.string.action_import_rules)
+                                contentDescription = stringResource(R.string.action_import_rules),
                             )
                         }
                         IconButton(onClick = {
@@ -159,16 +209,16 @@ fun RuleListScreen(
                         }) {
                             Icon(
                                 Icons.Default.FileUpload,
-                                contentDescription = stringResource(R.string.action_export_rules)
+                                contentDescription = stringResource(R.string.action_export_rules),
                             )
                         }
-                    }
+                    },
                 )
                 // Linear Progress Implementation
                 AnimatedVisibility(
                     visible = showProgress != null,
                     enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
+                    exit = shrinkVertically() + fadeOut(),
                 ) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
@@ -180,19 +230,19 @@ fun RuleListScreen(
             }) {
                 Icon(Icons.Default.Add, contentDescription = stringResource(R.string.create_rule))
             }
-        }
+        },
     ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
+                .padding(padding),
         ) {
             AnimatedContent(
                 targetState = rules,
                 transitionSpec = {
                     fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
                 },
-                label = "RuleListState"
+                label = "RuleListState",
             ) { targetRules ->
                 if (targetRules.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -201,14 +251,14 @@ fun RuleListScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = Const.BOTTOM_SPACE_HEIGHT.dp)
+                        contentPadding = PaddingValues(bottom = Const.BOTTOM_SPACE_HEIGHT.dp),
                     ) {
                         items(targetRules, key = { it.id ?: 0 }) { rule ->
                             RuleListItem(
                                 rule = rule,
                                 onClick = { onNavigateToEdit(Const.EDIT_TYPE_EDIT, rule) },
                                 onDelete = { viewModel.removeRule(rule) },
-                                modifier = Modifier.animateItem()
+                                modifier = Modifier.animateItem(),
                             )
                             HorizontalDivider()
                         }
@@ -236,19 +286,14 @@ fun RuleListScreen(
                 TextButton(onClick = { showImportConfirm = null }) {
                     Text(stringResource(R.string.cancel))
                 }
-            }
+            },
         )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun RuleListItem(
-    rule: SmsCodeRule,
-    onClick: () -> Unit,
-    onDelete: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun RuleListItem(rule: SmsCodeRule, onClick: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     var showMenu by remember { mutableStateOf(false) }
     val dismissState = rememberSwipeToDismissBoxState()
 
@@ -273,12 +318,12 @@ fun RuleListItem(
                     .fillMaxSize()
                     .background(color)
                     .padding(horizontal = Const.PADDING_MEDIUM.dp),
-                contentAlignment = Alignment.CenterEnd
+                contentAlignment = Alignment.CenterEnd,
             ) {
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = stringResource(R.string.action_delete),
-                    tint = MaterialTheme.colorScheme.onErrorContainer
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
         },
@@ -292,28 +337,28 @@ fun RuleListItem(
                                 withStyle(
                                     SpanStyle(
                                         color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                                    )
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    ),
                                 ) {
                                     append(stringResource(R.string.rule_keyword_prefix))
                                 }
                                 append(rule.codeKeyword)
                             },
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
                         )
                         Text(
                             text = buildAnnotatedString {
                                 withStyle(
                                     SpanStyle(
                                         color = MaterialTheme.colorScheme.primary,
-                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                                    )
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                    ),
                                 ) {
                                     append(stringResource(R.string.rule_regex_prefix))
                                 }
                                 append(rule.codeRegex)
                             },
-                            style = MaterialTheme.typography.bodySmall
+                            style = MaterialTheme.typography.bodySmall,
                         )
                     }
                 },
@@ -323,36 +368,36 @@ fun RuleListItem(
                         IconButton(onClick = { showMenu = true }) {
                             Icon(
                                 Icons.Default.MoreVert,
-                                contentDescription = stringResource(R.string.actions)
+                                contentDescription = stringResource(R.string.actions),
                             )
                         }
                         DropdownMenu(
                             expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
+                            onDismissRequest = { showMenu = false },
                         ) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.edit)) },
                                 onClick = {
                                     showMenu = false
                                     onClick()
-                                }
+                                },
                             )
                             DropdownMenuItem(
                                 text = {
                                     Text(
                                         stringResource(R.string.remove),
-                                        color = MaterialTheme.colorScheme.error
+                                        color = MaterialTheme.colorScheme.error,
                                     )
                                 },
                                 onClick = {
                                     showMenu = false
                                     onDelete()
-                                }
+                                },
                             )
                         }
                     }
-                }
+                },
             )
-        }
+        },
     )
 }

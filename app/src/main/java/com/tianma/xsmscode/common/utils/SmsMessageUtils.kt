@@ -9,20 +9,16 @@ object SmsMessageUtils {
     private const val SMS_CHARACTER_LIMIT = 160
 
     @JvmStatic
-    fun fromIntent(intent: Intent): Array<SmsMessage> {
-        return Telephony.Sms.Intents.getMessagesFromIntent(intent)
-    }
+    fun fromIntent(intent: Intent): Array<SmsMessage> = Telephony.Sms.Intents.getMessagesFromIntent(intent)
 
     @JvmStatic
-    fun getMessageBody(messageParts: Array<SmsMessage>): String {
-        return if (messageParts.size == 1) {
-            messageParts[0].displayMessageBody
-        } else {
-            val sb = StringBuilder(SMS_CHARACTER_LIMIT * messageParts.size)
-            for (messagePart in messageParts) {
-                sb.append(messagePart.displayMessageBody)
-            }
-            sb.toString()
+    fun getMessageBody(messageParts: Array<SmsMessage>): String = if (messageParts.size == 1) {
+        messageParts[0].displayMessageBody
+    } else {
+        val sb = StringBuilder(SMS_CHARACTER_LIMIT * messageParts.size)
+        for (messagePart in messageParts) {
+            sb.append(messagePart.displayMessageBody)
         }
+        sb.toString()
     }
 }

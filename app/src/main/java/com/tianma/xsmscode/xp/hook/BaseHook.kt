@@ -9,15 +9,11 @@ open class BaseHook : IHook {
     override fun initZygote(startupParam: IXposedHookZygoteInit.StartupParam) {
     }
 
-    open fun hookInitZygote(): Boolean {
-        return false
-    }
+    open fun hookInitZygote(): Boolean = false
 
     @Throws(Throwable::class)
     override fun onLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
     }
 
-    open fun hookOnLoadPackage(): Boolean {
-        return true
-    }
+    open fun hookOnLoadPackage(): Boolean = true
 }

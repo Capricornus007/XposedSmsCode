@@ -18,11 +18,8 @@ import kotlin.math.abs
 /**
  * 解析短信中的验证码
  */
-class SmsParseAction(
-    pluginContext: Context,
-    phoneContext: Context,
-    smsMsg: SmsMsg?
-) : CallableAction(pluginContext, phoneContext, smsMsg ?: SmsMsg()) {
+class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg?) :
+    CallableAction(pluginContext, phoneContext, smsMsg ?: SmsMsg()) {
 
     private var mSmsIntent: Intent? = null
 
@@ -30,9 +27,7 @@ class SmsParseAction(
         mSmsIntent = smsIntent
     }
 
-    override fun action(): Bundle? {
-        return parseSmsMsg()
-    }
+    override fun action(): Bundle? = parseSmsMsg()
 
     private fun parseSmsMsg(): Bundle? {
         val intent = mSmsIntent ?: return null
@@ -62,7 +57,7 @@ class SmsParseAction(
         val smsCode = kotlinx.coroutines.runBlocking {
             SmsCodeUtils.parseSmsCodeIfExists(
                 mPluginContext,
-                msgBodyNotNull
+                msgBodyNotNull,
             )
         }
         if (TextUtils.isEmpty(smsCode)) { // isn't code message
@@ -77,7 +72,7 @@ class SmsParseAction(
             smsCode = smsCode,
             company = company,
             date = timestamp,
-            packageName = SmsCodeUtils.findPackageNameByLabel(mPhoneContext, company)
+            packageName = SmsCodeUtils.findPackageNameByLabel(mPhoneContext, company),
         )
 
         val bundle = Bundle()
@@ -89,7 +84,7 @@ class SmsParseAction(
             val prevSmsMsg = EntityStoreManager.loadEntityFromFile(
                 mPluginContext,
                 EntityType.PREV_SMS_MSG,
-                SmsMsg::class.java
+                SmsMsg::class.java,
             )
             if (prevSmsMsg != null) {
                 if (abs(timestamp - prevSmsMsg.date) <= 15000) {

@@ -26,5 +26,5 @@ data class AppInfo @JvmOverloads constructor(
     @ColumnInfo(name = "blocked")
     @SerialName("blocked")
     @get:JvmName("isBlocked")
-    val blocked: Boolean = false
+    val blocked: Boolean = false,
 ) : Parcelable

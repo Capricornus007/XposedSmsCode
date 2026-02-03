@@ -1,10 +1,24 @@
 package com.tianma.xsmscode.ui.rule.edit
 
 import android.os.Bundle
-import androidx.compose.animation.*
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -12,8 +26,31 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -39,7 +76,7 @@ fun RuleEditScreen(
     initialRule: SmsCodeRule? = null,
     initialRuleId: Long? = null,
     onBack: () -> Unit,
-    viewModel: RuleEditViewModel = koinViewModel()
+    viewModel: RuleEditViewModel = koinViewModel(),
 ) {
     val context = LocalContext.current
 
@@ -69,7 +106,9 @@ fun RuleEditScreen(
             viewModel.eventsFlow.collect { event ->
                 when (event) {
                     is RuleEditEvent.HideSoftInput -> keyboardController?.hide()
+
                     is RuleEditEvent.ValidationError -> validationErrorState = event.result
+
                     is RuleEditEvent.CodeRuleSaved -> {
                         if (event.success) {
                             onBack()
@@ -77,6 +116,7 @@ fun RuleEditScreen(
                             snackbarHostState.showSnackbar(context.getString(R.string.rule_duplicated_prompt))
                         }
                     }
+
                     is RuleEditEvent.TemplateSaved -> {
                         val msg = if (event.success) R.string.save_template_succeed else R.string.save_template_failed
                         snackbarHostState.showSnackbar(context.getString(msg))
@@ -96,7 +136,7 @@ fun RuleEditScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing.only(
-            WindowInsetsSides.Horizontal + WindowInsetsSides.Top
+            WindowInsetsSides.Horizontal + WindowInsetsSides.Top,
         ),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -113,7 +153,7 @@ fun RuleEditScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
                     }
-                }
+                },
             )
         },
         floatingActionButton = {
@@ -123,7 +163,7 @@ fun RuleEditScreen(
             }) {
                 Icon(Icons.Default.Check, contentDescription = stringResource(R.string.save))
             }
-        }
+        },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -131,7 +171,7 @@ fun RuleEditScreen(
                 .padding(padding)
                 .padding(Const.PADDING_MEDIUM.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(Const.PADDING_MEDIUM.dp)
+            verticalArrangement = Arrangement.spacedBy(Const.PADDING_MEDIUM.dp),
         ) {
             OutlinedTextField(
                 value = company,
@@ -140,7 +180,7 @@ fun RuleEditScreen(
                 modifier = Modifier.fillMaxWidth(),
                 isError = validationErrorState?.companyValid == false,
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             )
 
             OutlinedTextField(
@@ -151,7 +191,7 @@ fun RuleEditScreen(
                 modifier = Modifier.fillMaxWidth(),
                 isError = validationErrorState?.keywordValid == false,
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
             )
 
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -167,7 +207,7 @@ fun RuleEditScreen(
                     keyboardActions = KeyboardActions(onDone = {
                         val ruleToSave = SmsCodeRule(company, keyword, regex, id = codeRule.id)
                         viewModel.saveIfValid(ruleToSave)
-                    })
+                    }),
                 )
                 Spacer(modifier = Modifier.width(Const.PADDING_SMALL.dp))
                 Button(onClick = { showQuickChoose = true }) {
@@ -183,17 +223,13 @@ fun RuleEditScreen(
         onConfirm = { generatedRegex ->
             regex = generatedRegex
             showQuickChoose = false
-        }
+        },
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun QuickChooseDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun QuickChooseDialog(onDismiss: () -> Unit, onConfirm: (String) -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val codeTypes = stringArrayResource(R.array.sms_code_type_list)
     var selectedTypeIndex by remember { mutableIntStateOf(0) }
@@ -209,7 +245,7 @@ fun QuickChooseDialog(
                 var expanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(
                     expanded = expanded,
-                    onExpandedChange = { expanded = it }
+                    onExpandedChange = { expanded = it },
                 ) {
                     OutlinedTextField(
                         value = codeTypes[selectedTypeIndex],
@@ -220,12 +256,12 @@ fun QuickChooseDialog(
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
                         modifier = Modifier.menuAnchor(
                             ExposedDropdownMenuAnchorType.PrimaryNotEditable,
-                            true
-                        ).fillMaxWidth()
+                            true,
+                        ).fillMaxWidth(),
                     )
                     ExposedDropdownMenu(
                         expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        onDismissRequest = { expanded = false },
                     ) {
                         codeTypes.forEachIndexed { index, type ->
                             DropdownMenuItem(
@@ -234,7 +270,7 @@ fun QuickChooseDialog(
                                     selectedTypeIndex = index
                                     expanded = false
                                 },
-                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding,
                             )
                         }
                     }
@@ -252,13 +288,13 @@ fun QuickChooseDialog(
                     isError = lengthError,
                     modifier = Modifier.fillMaxWidth(),
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number
-                    )
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Number,
+                    ),
                 )
                 AnimatedVisibility(
                     visible = lengthError,
                     enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
+                    exit = shrinkVertically() + fadeOut(),
                 ) {
                     Text(stringResource(R.string.code_length_empty_prompt), color = MaterialTheme.colorScheme.error)
                 }
@@ -282,6 +318,6 @@ fun QuickChooseDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(R.string.cancel))
             }
-        }
+        },
     )
 }

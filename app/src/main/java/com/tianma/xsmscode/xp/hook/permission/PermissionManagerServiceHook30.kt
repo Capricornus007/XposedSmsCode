@@ -39,7 +39,7 @@ class PermissionManagerServiceHook30(classLoader: ClassLoader) : BaseSubHook(cla
                 override fun after(param: MethodHookParam) {
                     afterGrantPermissionsSinceAndroid11(param)
                 }
-            }
+            },
         )
     }
 
@@ -58,7 +58,7 @@ class PermissionManagerServiceHook30(classLoader: ClassLoader) : BaseSubHook(cla
             /* String packageOfInterest    */
             String::class.java,
             /* PermissionCallback callback */
-            callbackClass
+            callbackClass,
         )
 
         if (method == null) { // method restorePermissionState() not found
@@ -72,7 +72,7 @@ class PermissionManagerServiceHook30(classLoader: ClassLoader) : BaseSubHook(cla
                 /* String packageOfInterest    */
                 String::class.java,
                 /* PermissionCallback callback */
-                callbackClass
+                callbackClass,
             )
             if (methods != null && methods.isNotEmpty()) {
                 method = methods[0]
@@ -116,14 +116,14 @@ class PermissionManagerServiceHook30(classLoader: ClassLoader) : BaseSubHook(cla
                         val granted = XposedHelpers.callMethod(
                             permissionsState,
                             "hasInstallPermission",
-                            permissionToGrant
+                            permissionToGrant,
                         ) as Boolean
                         if (!granted) {
                             val bpToGrant = XposedHelpers.callMethod(permissions, "get", permissionToGrant)
                             val result = XposedHelpers.callMethod(
                                 permissionsState,
                                 "grantInstallPermission",
-                                bpToGrant
+                                bpToGrant,
                             ) as Int
                             XLog.d("Add $bpToGrant; result = $result")
                         } else {

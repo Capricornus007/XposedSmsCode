@@ -11,7 +11,5 @@ class DBTransition(private val mContext: Context) : ITransition {
         return recordFiles != null && recordFiles.isNotEmpty()
     }
 
-    override suspend fun doTransition(): Boolean {
-        return CodeRecordRestoreManager.importToDatabase(mContext)
-    }
+    override suspend fun doTransition(): Boolean = CodeRecordRestoreManager.importToDatabase(mContext)
 }

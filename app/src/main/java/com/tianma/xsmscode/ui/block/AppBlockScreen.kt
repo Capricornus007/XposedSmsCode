@@ -36,7 +36,7 @@ fun AppBlockScreen(
     hazeState: HazeState,
     hazeStyle: HazeStyle,
     onBack: (() -> Unit)? = null,
-    viewModel: AppBlockViewModel = koinViewModel()
+    viewModel: AppBlockViewModel = koinViewModel(),
 ) {
     val apps by viewModel.appsFlow.collectAsStateWithLifecycle()
     val isLoading by viewModel.loadingFlow.collectAsStateWithLifecycle()
@@ -59,12 +59,15 @@ fun AppBlockScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is AppBlockViewModel.AppBlockEvent.SaveSuccess -> onBack?.invoke()
+
                 is AppBlockViewModel.AppBlockEvent.SaveFailed -> {
                     snackbarHostState.showSnackbar(context.getString(R.string.save_failed))
                 }
+
                 is AppBlockViewModel.AppBlockEvent.Error -> {
                     snackbarHostState.showSnackbar(event.throwable.message ?: context.getString(R.string.save_failed))
                 }
+
                 is AppBlockViewModel.AppBlockEvent.ShowUsageStatsPermission -> {
                     showUsagePermissionDialog = true
                 }
@@ -87,7 +90,7 @@ fun AppBlockScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
     ) {
         val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 72.dp // TopBar(64) + SearchBox(72)
         val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
@@ -95,7 +98,7 @@ fun AppBlockScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 0.dp) // Content starts at top
+                .padding(top = 0.dp), // Content starts at top
         ) {
             if (isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
@@ -106,17 +109,17 @@ fun AppBlockScreen(
                         .hazeSource(state = hazeState)
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                     state = listState,
-                    contentPadding = PaddingValues(top = topPadding, bottom = bottomPadding)
+                    contentPadding = PaddingValues(top = topPadding, bottom = bottomPadding),
                 ) {
                     items(apps, key = { it.packageName }) { app ->
                         AppInfoItem(
                             appInfo = app,
-                            onClick = { viewModel.doItemClicked(app) }
+                            onClick = { viewModel.doItemClicked(app) },
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant
+                            color = MaterialTheme.colorScheme.outlineVariant,
                         )
                     }
                 }
@@ -128,14 +131,14 @@ fun AppBlockScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
-                .hazeEffect(hazeState, hazeStyle)
+                .hazeEffect(hazeState, hazeStyle),
         ) {
             TopAppBar(
                 title = {
                     Text(
                         text = stringResource(R.string.app_block_settings),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
                     )
                 },
                 scrollBehavior = scrollBehavior,
@@ -155,64 +158,64 @@ fun AppBlockScreen(
                         }
                         DropdownMenu(
                             expanded = showSettingsMenu,
-                            onDismissRequest = { showSettingsMenu = false }
+                            onDismissRequest = { showSettingsMenu = false },
                         ) {
                             Text(
                                 text = stringResource(R.string.action_sort_title),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.action_sort_by_label)) },
                                 trailingIcon = {
                                     RadioButton(
                                         selected = currentSortOption == AppBlockViewModel.SortOption.LABEL,
-                                        onClick = null
+                                        onClick = null,
                                     )
                                 },
                                 onClick = {
                                     viewModel.setSortOption(AppBlockViewModel.SortOption.LABEL)
                                     showSettingsMenu = false
-                                }
+                                },
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.action_sort_by_pkg)) },
                                 trailingIcon = {
                                     RadioButton(
                                         selected = currentSortOption == AppBlockViewModel.SortOption.PACKAGE,
-                                        onClick = null
+                                        onClick = null,
                                     )
                                 },
                                 onClick = {
                                     viewModel.setSortOption(AppBlockViewModel.SortOption.PACKAGE)
                                     showSettingsMenu = false
-                                }
+                                },
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.action_sort_by_usage)) },
                                 trailingIcon = {
                                     RadioButton(
                                         selected = currentSortOption == AppBlockViewModel.SortOption.USAGE,
-                                        onClick = null
+                                        onClick = null,
                                     )
                                 },
                                 onClick = {
                                     viewModel.setSortOption(AppBlockViewModel.SortOption.USAGE)
                                     showSettingsMenu = false
-                                }
+                                },
                             )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.action_sort_reverse)) },
                                 trailingIcon = {
                                     Checkbox(
                                         checked = !isAscending,
-                                        onCheckedChange = null
+                                        onCheckedChange = null,
                                     )
                                 },
                                 onClick = {
                                     viewModel.setAscending(!isAscending)
-                                }
+                                },
                             )
                             HorizontalDivider()
                             DropdownMenuItem(
@@ -220,26 +223,26 @@ fun AppBlockScreen(
                                 trailingIcon = {
                                     Checkbox(
                                         checked = hideSystemApps,
-                                        onCheckedChange = null
+                                        onCheckedChange = null,
                                     )
                                 },
                                 onClick = {
                                     viewModel.setHideSystemApps(!hideSystemApps)
-                                }
+                                },
                             )
                         }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent
-                )
+                    scrolledContainerColor = Color.Transparent,
+                ),
             )
 
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
                 OutlinedTextField(
                     value = searchQuery,
@@ -261,14 +264,14 @@ fun AppBlockScreen(
                                 Icon(Icons.Default.Close, contentDescription = null)
                             }
                         }
-                    }
+                    },
                 )
             }
         }
 
         SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding()
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
         )
 
         if (hasChanges) {
@@ -278,8 +281,8 @@ fun AppBlockScreen(
                     .align(Alignment.BottomEnd)
                     .padding(
                         bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp,
-                        end = 16.dp
-                    )
+                        end = 16.dp,
+                    ),
             ) {
                 Icon(Icons.Default.Check, contentDescription = stringResource(R.string.action_accomplish))
             }
@@ -296,7 +299,7 @@ fun AppBlockScreen(
                     showUsagePermissionDialog = false
                     try {
                         context.startActivity(
-                            android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                            android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS),
                         )
                     } catch (e: Exception) {
                         // Fallback or toast
@@ -309,17 +312,13 @@ fun AppBlockScreen(
                 TextButton(onClick = { showUsagePermissionDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
-            }
+            },
         )
     }
 }
 
 @Composable
-fun AppInfoItem(
-    appInfo: AppInfo,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun AppInfoItem(appInfo: AppInfo, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     ListItem(
         headlineContent = { Text(appInfo.label ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -327,7 +326,7 @@ fun AppInfoItem(
         leadingContent = {
             AppIconImage(
                 packageName = appInfo.packageName,
-                contentDescription = stringResource(R.string.app_icon_description, appInfo.label ?: "")
+                contentDescription = stringResource(R.string.app_icon_description, appInfo.label ?: ""),
             )
         },
         trailingContent = {
@@ -337,11 +336,11 @@ fun AppInfoItem(
                 modifier = Modifier.semantics {
                     contentDescription = context.getString(
                         if (appInfo.blocked) R.string.action_unblock_app else R.string.action_block_app,
-                        appInfo.label ?: ""
+                        appInfo.label ?: "",
                     )
-                }
+                },
             )
         },
-        modifier = modifier.clickable(onClick = onClick)
+        modifier = modifier.clickable(onClick = onClick),
     )
 }

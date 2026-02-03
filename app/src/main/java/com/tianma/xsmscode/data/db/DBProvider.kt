@@ -19,9 +19,7 @@ class DBProvider : ContentProvider() {
         return true
     }
 
-    override fun getType(uri: Uri): String? {
-        return null
-    }
+    override fun getType(uri: Uri): String? = null
 
     override fun insert(uri: Uri, values: ContentValues?): Uri? {
         val uriType = sUriMatcher.match(uri)
@@ -32,6 +30,7 @@ class DBProvider : ContentProvider() {
                 id = mDatabase!!.insert(TABLE_SMS_MSG, null, values)
                 path = "$PATH_SMS_MSG/$id"
             }
+
             else -> throw IllegalArgumentException("Unsupported URI: $uri")
         }
         context?.contentResolver?.notifyChange(uri, null)
@@ -43,7 +42,7 @@ class DBProvider : ContentProvider() {
         projection: Array<String>?,
         selection: String?,
         selectionArgs: Array<String>?,
-        sortOrder: String?
+        sortOrder: String?,
     ): Cursor? {
         val uriType = sUriMatcher.match(uri)
         val tableName: String = when (uriType) {
@@ -59,7 +58,7 @@ class DBProvider : ContentProvider() {
             selectionArgs,
             null,
             null,
-            sortOrder
+            sortOrder,
         )
     }
 
@@ -75,14 +74,7 @@ class DBProvider : ContentProvider() {
         return rowsDeleted
     }
 
-    override fun update(
-        uri: Uri,
-        values: ContentValues?,
-        selection: String?,
-        selectionArgs: Array<String>?
-    ): Int {
-        return 0
-    }
+    override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<String>?): Int = 0
 
     companion object {
         const val AUTHORITY = BuildConfig.APPLICATION_ID + ".db.provider"

@@ -34,24 +34,22 @@ abstract class AppDatabase : RoomDatabase() {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                 // Deduplicate before creating the unique index
                 db.execSQL(
-                    "DELETE FROM sms_msg WHERE id NOT IN (SELECT MIN(id) FROM sms_msg GROUP BY sender, body, date)"
+                    "DELETE FROM sms_msg WHERE id NOT IN (SELECT MIN(id) FROM sms_msg GROUP BY sender, body, date)",
                 )
                 db.execSQL(
-                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_sms_msg_sender_body_date` ON `sms_msg` (`sender`, `body`, `date`)"
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_sms_msg_sender_body_date` ON `sms_msg` (`sender`, `body`, `date`)",
                 )
             }
         }
 
-        fun getInstance(context: Context): AppDatabase {
-            return instance ?: synchronized(this) {
-                instance ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    DATABASE_NAME
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
-                    .allowMainThreadQueries() // For legacy compatibility
-                    .build().also { instance = it }
-            }
+        fun getInstance(context: Context): AppDatabase = instance ?: synchronized(this) {
+            instance ?: Room.databaseBuilder(
+                context.applicationContext,
+                AppDatabase::class.java,
+                DATABASE_NAME,
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .allowMainThreadQueries() // For legacy compatibility
+                .build().also { instance = it }
         }
     }
 }

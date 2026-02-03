@@ -84,7 +84,9 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
             try {
                 val codeRule = withContext(Dispatchers.IO) {
                     EntityStoreManager.loadEntityFromFile(
-                        getApplication(), EntityType.CODE_RULE_TEMPLATE, SmsCodeRule::class.java
+                        getApplication(),
+                        EntityType.CODE_RULE_TEMPLATE,
+                        SmsCodeRule::class.java,
                     ) ?: SmsCodeRule()
                 }
                 mCodeRule = codeRule
@@ -102,7 +104,7 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
                     getApplication(),
                     EntityType.CODE_RULE_TEMPLATE,
                     template,
-                    SmsCodeRule::class.java
+                    SmsCodeRule::class.java,
                 )
             }
             _eventsFlow.emit(RuleEditEvent.TemplateSaved(success))
@@ -116,7 +118,7 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
         mCodeRule = mCodeRule.copy(
             company = codeRule.company,
             codeKeyword = codeRule.codeKeyword,
-            codeRegex = codeRule.codeRegex
+            codeRegex = codeRule.codeRegex,
         )
 
         viewModelScope.launch {
@@ -155,9 +157,5 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
         return companyValid && keywordValid && codeRegexValid
     }
 
-    data class ValidationResult(
-        val companyValid: Boolean,
-        val keywordValid: Boolean,
-        val codeRegexValid: Boolean
-    )
+    data class ValidationResult(val companyValid: Boolean, val keywordValid: Boolean, val codeRegexValid: Boolean)
 }

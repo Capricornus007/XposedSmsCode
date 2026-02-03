@@ -27,20 +27,17 @@ object SPUtils {
     /**
      * 获取短信验证码关键字
      */
-    suspend fun getSMSCodeKeywords(context: Context): String? {
-        return AppPreferencesDataStore.getString(
-            context,
-            PrefConst.KEY_SMSCODE_KEYWORDS,
-            PrefConst.SMSCODE_KEYWORDS_DEFAULT
-        )
-    }
+    suspend fun getSMSCodeKeywords(context: Context): String? = AppPreferencesDataStore.getString(
+        context,
+        PrefConst.KEY_SMSCODE_KEYWORDS,
+        PrefConst.SMSCODE_KEYWORDS_DEFAULT,
+    )
 
     /**
      * 是否同意隐私协议
      */
-    suspend fun isPrivacyPolicyAccepted(context: Context): Boolean {
-        return AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_PRIVACY_POLICY_ACCEPTED, false)
-    }
+    suspend fun isPrivacyPolicyAccepted(context: Context): Boolean =
+        AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_PRIVACY_POLICY_ACCEPTED, false)
 
     /**
      * 设置是否同意隐私协议
@@ -53,9 +50,8 @@ object SPUtils {
      * 获取当前主题模式
      * 0: Follow System, 1: Light, 2: Dark
      */
-    suspend fun getThemeMode(context: Context): Int {
-        return AppPreferencesDataStore.getInt(context, PrefConst.KEY_CHOOSE_THEME, 0)
-    }
+    suspend fun getThemeMode(context: Context): Int =
+        AppPreferencesDataStore.getInt(context, PrefConst.KEY_CHOOSE_THEME, 0)
 
     /**
      * 设置当前主题模式

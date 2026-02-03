@@ -19,7 +19,5 @@ object ModuleUtils {
      * 当前模块是否在XposedInstaller中被启用
      */
     @JvmStatic
-    fun isModuleEnabled(): Boolean {
-        return getModuleVersion() > 0
-    }
+    fun isModuleEnabled(): Boolean = getModuleVersion() > 0
 }

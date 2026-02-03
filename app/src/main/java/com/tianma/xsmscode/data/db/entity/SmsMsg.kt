@@ -16,8 +16,8 @@ import java.text.Normalizer
 @Entity(
     tableName = "sms_msg",
     indices = [
-        androidx.room.Index(value = ["sender", "body", "date"], unique = true)
-    ]
+        androidx.room.Index(value = ["sender", "body", "date"], unique = true),
+    ],
 )
 @Parcelize
 @Serializable
@@ -48,7 +48,7 @@ data class SmsMsg(
 
     @ColumnInfo(name = "package_name")
     @SerialName("packageName")
-    val packageName: String? = null
+    val packageName: String? = null,
 ) : Parcelable {
 
     companion object {
@@ -67,7 +67,7 @@ data class SmsMsg(
             return SmsMsg(
                 sender = sender,
                 body = body,
-                date = date
+                date = date,
             )
         }
     }

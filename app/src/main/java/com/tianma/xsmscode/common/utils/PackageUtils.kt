@@ -37,8 +37,8 @@ object PackageUtils {
     @Retention(AnnotationRetention.SOURCE)
     annotation class PackageState
 
-    private fun checkPackageState(context: Context, packageName: String): Int {
-        return if (isPackageEnabled(context, packageName)) {
+    private fun checkPackageState(context: Context, packageName: String): Int =
+        if (isPackageEnabled(context, packageName)) {
             PACKAGE_ENABLED
         } else {
             if (isPackageInstalled(context, packageName)) {
@@ -47,7 +47,6 @@ object PackageUtils {
                 PACKAGE_NOT_INSTALLED
             }
         }
-    }
 
     /**
      * 指定的包名对应的App是否已安装
@@ -110,8 +109,11 @@ object PackageUtils {
         return when {
             !normalized.isNullOrBlank() && !versionCode.isNullOrBlank() && !normalized.contains("(") ->
                 "$normalized ($versionCode)"
+
             !normalized.isNullOrBlank() -> normalized
+
             !versionCode.isNullOrBlank() -> versionCode
+
             else -> null
         }
     }
@@ -134,36 +136,40 @@ object PackageUtils {
         val version = when {
             !normalized.isNullOrBlank() && !versionCode.isNullOrBlank() && !normalized.contains("(") ->
                 "$normalized ($versionCode)"
+
             !normalized.isNullOrBlank() -> normalized
+
             !versionCode.isNullOrBlank() -> versionCode
+
             else -> null
         }
         return if (!name.isNullOrBlank() && !version.isNullOrBlank()) name to version else null
     }
 
-    private fun runSuCommand(command: String): String? {
-        return try {
-            val process = ProcessBuilder("su", "-c", command).start()
-            val output = process.inputStream.bufferedReader().use { it.readText() }
-            val exitCode = process.waitFor()
-            if (exitCode == 0 && output.isNotBlank()) output else null
-        } catch (e: Exception) {
-            null
-        }
+    private fun runSuCommand(command: String): String? = try {
+        val process = ProcessBuilder("su", "-c", command).start()
+        val output = process.inputStream.bufferedReader().use { it.readText() }
+        val exitCode = process.waitFor()
+        if (exitCode == 0 && output.isNotBlank()) output else null
+    } catch (e: Exception) {
+        null
     }
 
     private fun checkAlipayExists(context: Context): Boolean {
         val packageState = checkPackageState(context, Const.ALIPAY_PACKAGE_NAME)
         return when (packageState) {
             PACKAGE_ENABLED -> true
+
             PACKAGE_DISABLED -> {
                 Toast.makeText(context, R.string.alipay_enable_prompt, Toast.LENGTH_SHORT).show()
                 false
             }
+
             PACKAGE_NOT_INSTALLED -> {
                 Toast.makeText(context, R.string.alipay_install_prompt, Toast.LENGTH_SHORT).show()
                 false
             }
+
             else -> false
         }
     }
@@ -217,9 +223,11 @@ object PackageUtils {
                 intent.setPackage(Const.COOL_MARKET_PACKAGE_NAME)
                 context.startActivity(intent)
             }
+
             PACKAGE_DISABLED -> {
                 Toast.makeText(context, R.string.coolapk_enable_prompt, Toast.LENGTH_SHORT).show()
             }
+
             PACKAGE_NOT_INSTALLED -> {
                 Toast.makeText(context, R.string.coolapk_install_prompt, Toast.LENGTH_SHORT).show()
             }
@@ -227,19 +235,17 @@ object PackageUtils {
     }
 
     @JvmStatic
-    fun isInstalledFromPlay(context: Context): Boolean {
-        return try {
-            val pm = context.packageManager
-            val installer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                pm.getInstallSourceInfo(BuildConfig.APPLICATION_ID).installingPackageName
-            } else {
-                @Suppress("DEPRECATION")
-                pm.getInstallerPackageName(BuildConfig.APPLICATION_ID)
-            }
-            installer == "com.android.vending"
-        } catch (e: Exception) {
-            false
+    fun isInstalledFromPlay(context: Context): Boolean = try {
+        val pm = context.packageManager
+        val installer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            pm.getInstallSourceInfo(BuildConfig.APPLICATION_ID).installingPackageName
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getInstallerPackageName(BuildConfig.APPLICATION_ID)
         }
+        installer == "com.android.vending"
+    } catch (e: Exception) {
+        false
     }
 
     @JvmStatic
@@ -254,40 +260,41 @@ object PackageUtils {
         } catch (e: Exception) {
             val webIntent = Intent(
                 Intent.ACTION_VIEW,
-                Uri.parse("https://play.google.com/store/apps/details?id=$packageName")
+                Uri.parse("https://play.google.com/store/apps/details?id=$packageName"),
             ).apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) }
             context.startActivity(webIntent)
         }
     }
 
     @JvmStatic
-    fun canReachGithub(): Boolean {
-        return try {
-            val url = URL("https://github.com")
-            val connection = (url.openConnection() as HttpURLConnection).apply {
-                connectTimeout = 3000
-                readTimeout = 3000
-                requestMethod = "HEAD"
-                instanceFollowRedirects = true
-            }
-            connection.connect()
-            connection.responseCode in 200..399
-        } catch (e: Exception) {
-            false
+    fun canReachGithub(): Boolean = try {
+        val url = URL("https://github.com")
+        val connection = (url.openConnection() as HttpURLConnection).apply {
+            connectTimeout = 3000
+            readTimeout = 3000
+            requestMethod = "HEAD"
+            instanceFollowRedirects = true
         }
+        connection.connect()
+        connection.responseCode in 200..399
+    } catch (e: Exception) {
+        false
     }
     private fun checkWechatExists(context: Context): Boolean {
         val packageState = checkPackageState(context, Const.WECHAT_PACKAGE_NAME)
         return when (packageState) {
             PACKAGE_ENABLED -> true
+
             PACKAGE_DISABLED -> {
                 Toast.makeText(context, R.string.wechat_enable_prompt, Toast.LENGTH_SHORT).show()
                 false
             }
+
             PACKAGE_NOT_INSTALLED -> {
                 Toast.makeText(context, R.string.wechat_install_prompt, Toast.LENGTH_SHORT).show()
                 false
             }
+
             else -> false
         }
     }

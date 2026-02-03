@@ -23,7 +23,7 @@ class RuleExporter(out: OutputStream?) : Closeable {
             version = BackupConst.BACKUP_VERSION,
             schemaVersion = BackupConst.BACKUP_VERSION,
             appVersion = appVersion,
-            rules = ruleList
+            rules = ruleList,
         )
         writer.write(JsonUtils.json.encodeToString(BackupPayload.serializer(), payload))
         writer.flush()

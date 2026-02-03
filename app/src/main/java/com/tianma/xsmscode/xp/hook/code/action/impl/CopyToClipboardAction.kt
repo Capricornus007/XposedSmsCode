@@ -11,11 +11,8 @@ import com.tianma.xsmscode.xp.hook.code.action.RunnableAction
 /**
  * 将验证码复制到剪切板
  */
-class CopyToClipboardAction(
-    pluginContext: Context,
-    phoneContext: Context,
-    smsMsg: SmsMsg
-) : RunnableAction(pluginContext, phoneContext, smsMsg) {
+class CopyToClipboardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg) :
+    RunnableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
         if (PrefsReader.copyToClipboardEnabled(mPluginContext)) {
