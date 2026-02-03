@@ -264,7 +264,7 @@ fun OverviewScreen(
         DonateDialog(
             onDismiss = { showDonateDialog = false },
             onAlipay = {
-                showDonateDialog = false;
+                showDonateDialog = false
                 showAlipayChoiceDialog = true
             },
             onWechat = {
