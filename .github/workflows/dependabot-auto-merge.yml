@@ -13,7 +13,11 @@ permissions:
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
-    if: github.event.pull_request.user.login == 'magisk317' || github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'app/dependabot'
+    if: >-
+      github.event.pull_request.user.login == 'magisk317' ||
+      github.event.pull_request.user.login == 'dependabot[bot]' ||
+      github.event.pull_request.user.login == 'app/dependabot' ||
+      (github.event.pull_request.user.login == 'github-actions[bot]' && startsWith(github.event.pull_request.title, 'style: auto-fix'))
     steps:
       - name: Enable auto-merge
         run: gh pr merge --auto --merge --delete-branch "$PR_URL"
