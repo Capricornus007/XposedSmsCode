@@ -29,10 +29,9 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-jobs:
-  scan:
-    name: Scan
-    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -58,11 +57,14 @@ jobs:
           mkdir -p detekt-results
           find . -name "detekt.sarif" -exec cp --parents {} detekt-results/ \;
 
-      # Uploads results to GitHub repository using the upload-sarif action
-      - uses: github/codeql-action/upload-sarif@v3
+      - name: Upload SARIF reports
         if: always()
-        with:
-          # Path to SARIF file or directory relative to the root of the repository
-          sarif_file: detekt-results
-          checkout_path: ${{ github.workspace }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for file in $(find detekt-results -name "*.sarif"); do
+            module=$(echo $file | cut -d'/' -f2)
+            echo "Uploading SARIF for module: $module ($file)"
+            gh code-scanning upload-sarif --sarif-file="$file" --category="$module" --commit="${{ github.sha }}" --ref="${{ github.ref }}"
+          done
 
