@@ -50,15 +50,19 @@ jobs:
         continue-on-error: true
         run: |
           chmod +x gradlew
-          ./gradlew detekt
+          ./gradlew detekt --continue
+
+      - name: Collect SARIF reports
+        if: always()
+        run: |
+          mkdir -p detekt-results
+          find . -name "detekt.sarif" -exec cp --parents {} detekt-results/ \;
 
       # Uploads results to GitHub repository using the upload-sarif action
       - uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
-          # Path to SARIF file relative to the root of the repository
-          # Gradle detekt task outputs to build/reports/detekt/detekt.sarif by default
-          # Since it's a multi-module project, we might need a specific path or aggregate.
-          # For now, targeting the app module's report as it's the main code.
-          sarif_file: app/build/reports/detekt/detekt.sarif
+          # Path to SARIF file or directory relative to the root of the repository
+          sarif_file: detekt-results
           checkout_path: ${{ github.workspace }}
 

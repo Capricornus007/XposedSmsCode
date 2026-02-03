@@ -12,11 +12,9 @@ sealed class NetworkError {
     data class MultiSource(val primary: NetworkError, val secondary: NetworkError) : NetworkError()
 }
 
-fun Throwable.toNetworkError(): NetworkError {
-    return when (this) {
-        is HttpException -> NetworkError.Http(code(), message())
-        is IOException -> NetworkError.Io(message)
-        is SerializationException -> NetworkError.Serialization(message)
-        else -> NetworkError.Unexpected(message, this)
-    }
+fun Throwable.toNetworkError(): NetworkError = when (this) {
+    is HttpException -> NetworkError.Http(code(), message())
+    is IOException -> NetworkError.Io(message)
+    is SerializationException -> NetworkError.Serialization(message)
+    else -> NetworkError.Unexpected(message, this)
 }
