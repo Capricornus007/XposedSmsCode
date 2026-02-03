@@ -338,10 +338,12 @@ fun RuleListItem(
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text(
-                                    stringResource(R.string.remove),
-                                    color = MaterialTheme.colorScheme.error
-                                ) },
+                                text = {
+                                    Text(
+                                        stringResource(R.string.remove),
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                },
                                 onClick = {
                                     showMenu = false
                                     onDelete()

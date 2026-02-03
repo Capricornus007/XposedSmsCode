@@ -425,7 +425,7 @@ fun ComposeSettingsScreen(
         DonateDialog(
             onDismiss = { showDonateDialog = false },
             onAlipay = {
-                showDonateDialog = false;
+                showDonateDialog = false
                 showAlipayChoiceDialog = true
             },
             onWechat = {
@@ -794,18 +794,26 @@ fun QRCodeDialog(resId: Int, type: String, onDismiss: () -> Unit, onSave: () -> 
         onDismissRequest = onDismiss,
         title = {
             Text(
-                if (type == "alipay") stringResource(
-                    id = R.string.dialog_donate_alipay
-                ) else stringResource(id = R.string.dialog_donate_wechat)
+                if (type == "alipay") {
+                    stringResource(
+                        id = R.string.dialog_donate_alipay
+                    )
+                } else {
+                    stringResource(id = R.string.dialog_donate_wechat)
+                }
             )
         },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 androidx.compose.foundation.Image(
                     painter = painterResource(id = resId),
-                    contentDescription = if (type == "alipay") stringResource(
-                        id = R.string.dialog_donate_alipay
-                    ) else stringResource(id = R.string.dialog_donate_wechat),
+                    contentDescription = if (type == "alipay") {
+                        stringResource(
+                            id = R.string.dialog_donate_alipay
+                        )
+                    } else {
+                        stringResource(id = R.string.dialog_donate_wechat)
+                    },
                     modifier = Modifier.size(200.dp)
                 )
             }

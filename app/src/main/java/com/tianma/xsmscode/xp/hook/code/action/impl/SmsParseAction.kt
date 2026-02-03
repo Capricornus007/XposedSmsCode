@@ -59,10 +59,12 @@ class SmsParseAction(
         }
 
         val msgBodyNotNull = msgBody ?: ""
-        val smsCode = kotlinx.coroutines.runBlocking { SmsCodeUtils.parseSmsCodeIfExists(
-            mPluginContext,
-            msgBodyNotNull
-        ) }
+        val smsCode = kotlinx.coroutines.runBlocking {
+            SmsCodeUtils.parseSmsCodeIfExists(
+                mPluginContext,
+                msgBodyNotNull
+            )
+        }
         if (TextUtils.isEmpty(smsCode)) { // isn't code message
             return null
         }

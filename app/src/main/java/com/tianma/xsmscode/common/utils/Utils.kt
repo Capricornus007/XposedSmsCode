@@ -101,7 +101,8 @@ object Utils {
                 }
                 val appNameResId = if (fileName.contains(
                         "alipay"
-                    )) {
+                    )
+                ) {
                     R.string.dialog_donate_alipay
                 } else {
                     R.string.dialog_donate_wechat
