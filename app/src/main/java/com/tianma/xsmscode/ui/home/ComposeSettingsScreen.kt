@@ -19,6 +19,7 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
@@ -160,6 +161,10 @@ fun ComposeSettingsScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp // TopBar height
+        val isCompact = LocalConfiguration.current.screenWidthDp < 600
+        val bottomPadding =
+            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
+                if (isCompact) Const.BOTTOM_SPACE_HEIGHT.dp else 0.dp
 
         Column(
             modifier = Modifier
@@ -489,7 +494,7 @@ fun SectionHeader(
         text = text,
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(vertical = 8.dp)
+        modifier = modifier.padding(horizontal = Const.PADDING_MEDIUM.dp, vertical = 8.dp)
     )
 }
 

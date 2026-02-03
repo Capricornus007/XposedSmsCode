@@ -51,4 +51,10 @@ object Const {
 
     /* Wechat */
     const val WECHAT_PACKAGE_NAME = "com.tencent.mm"
+
+    /* UI Dimensions (dp) */
+    const val PADDING_SMALL = 8
+    const val PADDING_MEDIUM = 16
+    const val PADDING_LARGE = 24
+    const val BOTTOM_SPACE_HEIGHT = 80
 }

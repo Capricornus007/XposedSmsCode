@@ -129,9 +129,9 @@ fun RuleEditScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp)
+                .padding(Const.PADDING_MEDIUM.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(Const.PADDING_MEDIUM.dp)
         ) {
             OutlinedTextField(
                 value = company,
@@ -169,12 +169,12 @@ fun RuleEditScreen(
                         viewModel.saveIfValid(ruleToSave)
                     })
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(Const.PADDING_SMALL.dp))
                 Button(onClick = { showQuickChoose = true }) {
                     Text(stringResource(R.string.quick_choose))
                 }
             }
-            Spacer(modifier = Modifier.height(padding.calculateBottomPadding() + 80.dp))
+            Spacer(modifier = Modifier.height(padding.calculateBottomPadding() + Const.BOTTOM_SPACE_HEIGHT.dp))
         }
     }
 
@@ -240,7 +240,7 @@ fun QuickChooseDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(Const.PADDING_MEDIUM.dp))
 
                 OutlinedTextField(
                     value = codeLength,

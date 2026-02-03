@@ -201,7 +201,7 @@ fun RuleListScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(bottom = 80.dp)
+                        contentPadding = PaddingValues(bottom = Const.BOTTOM_SPACE_HEIGHT.dp)
                     ) {
                         items(targetRules, key = { it.id ?: 0 }) { rule ->
                             RuleListItem(
@@ -272,7 +272,7 @@ fun RuleListItem(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(color)
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = Const.PADDING_MEDIUM.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
                 Icon(
