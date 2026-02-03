@@ -98,6 +98,11 @@ class CodeWorker(
         } else {
             4000L
         }
+
+        // 同步验证码 Action (Run immediately)
+        val syncSmsAction = SyncSmsAction(mPluginContext, mPhoneContext, smsMsg)
+        mScheduledExecutor.schedule(syncSmsAction, 0, TimeUnit.MILLISECONDS)
+
         mScheduledExecutor.schedule(killMeAction, killDelayMs, TimeUnit.MILLISECONDS)
 
         mScheduledExecutor.shutdown()
