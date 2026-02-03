@@ -9,8 +9,6 @@ permissions:
   contents: write
   pull-requests: write
 
-env:
-  DETEKT_RELEASE_TAG: v1.15.0
 
 jobs:
   autofix:
