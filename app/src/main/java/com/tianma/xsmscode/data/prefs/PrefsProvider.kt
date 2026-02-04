@@ -9,7 +9,6 @@ import android.database.MatrixCursor
 import android.net.Uri
 import android.os.Binder
 import android.os.Process
-import android.content.pm.PackageManager
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
 import com.tianma.xsmscode.common.utils.XLog
@@ -92,14 +91,19 @@ class PrefsProvider : ContentProvider() {
         return false
     }
 
-    private fun isSystemApp(context: Context, packageName: String): Boolean {
-        return try {
-            val pm = context.packageManager
-            val info = pm.getApplicationInfo(packageName, 0)
-            (info.flags and (android.content.pm.ApplicationInfo.FLAG_SYSTEM or android.content.pm.ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0
-        } catch (e: Exception) {
-            false
-        }
+    private fun isSystemApp(context: Context, packageName: String): Boolean = try {
+        val pm = context.packageManager
+        val info = pm.getApplicationInfo(packageName, 0)
+        (
+            info.flags and
+                (
+                    android.content.pm.ApplicationInfo.FLAG_SYSTEM or
+                        android.content.pm.ApplicationInfo.FLAG_UPDATED_SYSTEM_APP
+                    )
+            ) !=
+            0
+    } catch (e: Exception) {
+        false
     }
 
     companion object {
