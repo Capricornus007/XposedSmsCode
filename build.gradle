@@ -30,6 +30,7 @@ subprojects {
             autoCorrect = true
             parallel = true
             buildUponDefaultConfig = true
+            config = files("${rootProject.projectDir}/config/detekt/detekt.yml")
         }
         dependencies {
             detektPlugins "dev.detekt:detekt-rules-ktlint-wrapper:2.0.0-alpha.2"

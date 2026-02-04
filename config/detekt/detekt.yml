@@ -1,0 +1,78 @@
+config:
+  validation: true
+
+naming:
+  FunctionNaming:
+    active: true
+    # Allowing PascalCase for Compose functions
+    functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
+  VariableNaming:
+    active: true
+    # Allow underscore for internal variables
+    variablePattern: '(_)?[a-z][A-Za-z0-9]*'
+  TopLevelPropertyNaming:
+    active: true
+    propertyPattern: '[A-Za-z][_A-Za-z0-9]*'
+
+style:
+  MagicNumber:
+    active: true
+    ignoreNumbers:
+      - '-1'
+      - '0'
+      - '1'
+      - '2'
+      - '4'
+      - '8'
+      - '12'
+      - '16'
+      - '24'
+      - '32'
+      - '64'
+      - '300'
+      - '500'
+      - '1000'
+    ignoreHashCodeFunction: true
+    ignoreLocalVariableDeclaration: true
+    ignoreConstantDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreAnnotation: true
+    ignoreNamedArgument: true
+    ignoreEnums: true
+  
+  WildcardImport:
+    active: false
+  
+  ReturnCount:
+    active: true
+    max: 10
+  
+  MaxLineLength:
+    active: true
+    maxLineLength: 160
+
+complexity:
+  LongMethod:
+    active: true
+    allowedLines: 600
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    active: true
+    allowedFunctionsPerFile: 100
+    allowedFunctionsPerClass: 100
+    allowedFunctionsPerInterface: 100
+    allowedFunctionsPerObject: 100
+  CyclomaticComplexMethod:
+    active: true
+    allowedComplexity: 50
+  NestedBlockDepth:
+    active: true
+    allowedDepth: 10
+
+exceptions:
+  SwallowedException:
+    active: true
+    # Ignore when the exception is named 'ignored' or 'expected'
+    allowedExceptionNameRegex: '_|(ignore|expected).*'
+
+# buildUponDefaultConfig: true is handled in build.gradle
