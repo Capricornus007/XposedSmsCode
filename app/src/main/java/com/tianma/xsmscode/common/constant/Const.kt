@@ -63,4 +63,5 @@ object Const {
     const val SPACING_EXTRA_SMALL = 4
     const val SPACING_SMALL = 8
     const val SPACING_MEDIUM = 16
+    const val FLOW_STOP_TIMEOUT_MS = 5000L
 }
