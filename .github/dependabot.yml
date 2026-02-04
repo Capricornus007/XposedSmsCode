@@ -37,3 +37,7 @@ updates:
     target-branch: "dev"
     commit-message:
       prefix: "ci(deps)"
+    groups:
+      all-actions:
+        patterns:
+          - "*"
