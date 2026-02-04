@@ -250,7 +250,8 @@ fun ComposeSettingsScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + Const.TOP_BAR_HEIGHT.dp // TopBar height
+        val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
+            Const.TOP_BAR_HEIGHT.dp // TopBar height
         val isCompact = LocalConfiguration.current.screenWidthDp < 600
         val bottomPadding =
             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
