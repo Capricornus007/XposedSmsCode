@@ -57,4 +57,10 @@ object Const {
     const val PADDING_MEDIUM = 16
     const val PADDING_LARGE = 24
     const val BOTTOM_SPACE_HEIGHT = 80
+
+    /* UI Measurements */
+    const val TOP_BAR_HEIGHT = 64
+    const val SPACING_EXTRA_SMALL = 4
+    const val SPACING_SMALL = 8
+    const val SPACING_MEDIUM = 16
 }
