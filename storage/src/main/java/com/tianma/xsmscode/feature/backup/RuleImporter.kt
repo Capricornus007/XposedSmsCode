@@ -6,12 +6,12 @@ import com.tianma.xsmscode.feature.backup.exception.VersionInvalidException
 import com.tianma.xsmscode.feature.backup.exception.VersionMissedException
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.longOrNull
 import java.io.Closeable
 import java.io.File
 import java.io.FileInputStream
@@ -48,7 +48,7 @@ class RuleImporter(private val mJsonStream: InputStream?) : Closeable {
                 readRuleList(jsonObject)
             } else {
                 if (schemaVersion == 1) {
-                   readRuleList(jsonObject)
+                    readRuleList(jsonObject)
                 } else {
                     emptyList()
                 }
@@ -107,10 +107,10 @@ class RuleImporter(private val mJsonStream: InputStream?) : Closeable {
             val map = HashMap<String, String?>()
             for ((key, element) in obj) {
                 if (element.jsonPrimitive.isString) {
-                     map[key] = element.jsonPrimitive.content
+                    map[key] = element.jsonPrimitive.content
                 } else {
-                     // Convert other types to string for simplicity, or handle nulls
-                     map[key] = element.jsonPrimitive.contentOrNull
+                    // Convert other types to string for simplicity, or handle nulls
+                    map[key] = element.jsonPrimitive.contentOrNull
                 }
             }
             map
@@ -122,18 +122,18 @@ class RuleImporter(private val mJsonStream: InputStream?) : Closeable {
     private fun readRecords(jsonObject: JsonObject): List<BackupSmsRecord>? = try {
         val recordArray = jsonObject[BackupConst.KEY_RECORDS]?.jsonArray
         recordArray?.map { element ->
-             val obj = element.jsonObject
-             val datePrimitive = obj["date"]?.jsonPrimitive
-             BackupSmsRecord(
-                 sender = obj["sender"]?.jsonPrimitive?.contentOrNull,
-                 body = obj["body"]?.jsonPrimitive?.contentOrNull,
-                 date = datePrimitive?.longOrNull
-                     ?: datePrimitive?.contentOrNull?.toLongOrNull()
-                     ?: 0L,
-                 company = obj["company"]?.jsonPrimitive?.contentOrNull,
-                 smsCode = obj["code"]?.jsonPrimitive?.contentOrNull,
-                 packageName = obj["packageName"]?.jsonPrimitive?.contentOrNull,
-             )
+            val obj = element.jsonObject
+            val datePrimitive = obj["date"]?.jsonPrimitive
+            BackupSmsRecord(
+                sender = obj["sender"]?.jsonPrimitive?.contentOrNull,
+                body = obj["body"]?.jsonPrimitive?.contentOrNull,
+                date = datePrimitive?.longOrNull
+                    ?: datePrimitive?.contentOrNull?.toLongOrNull()
+                    ?: 0L,
+                company = obj["company"]?.jsonPrimitive?.contentOrNull,
+                smsCode = obj["code"]?.jsonPrimitive?.contentOrNull,
+                packageName = obj["packageName"]?.jsonPrimitive?.contentOrNull,
+            )
         }
     } catch (e: Exception) {
         null

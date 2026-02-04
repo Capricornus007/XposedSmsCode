@@ -9,6 +9,7 @@ import android.database.MatrixCursor
 import android.net.Uri
 import android.os.Binder
 import android.os.Process
+import android.content.pm.PackageManager
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
 import com.tianma.xsmscode.common.utils.XLog
@@ -69,8 +70,36 @@ class PrefsProvider : ContentProvider() {
 
     private fun isCallerAllowed(ctx: Context): Boolean {
         val uid = Binder.getCallingUid()
+        // 1. Check for standard System UIDs
         if (uid == Process.SYSTEM_UID || uid == Process.PHONE_UID) return true
-        return uid == ctx.applicationInfo?.uid
+        // 2. Check for self
+        if (uid == ctx.applicationInfo?.uid) return true
+
+        // 3. Check if the caller is a System App
+        try {
+            val packages = ctx.packageManager.getPackagesForUid(uid) ?: return false
+            for (packageName in packages) {
+                // If any package sharing this UID is a system app, allow it.
+                if (isSystemApp(ctx, packageName)) {
+                    return true
+                }
+            }
+        } catch (e: Exception) {
+            XLog.e("PrefsProvider: Failed to check caller permission", e)
+            return false
+        }
+
+        return false
+    }
+
+    private fun isSystemApp(context: Context, packageName: String): Boolean {
+        return try {
+            val pm = context.packageManager
+            val info = pm.getApplicationInfo(packageName, 0)
+            (info.flags and (android.content.pm.ApplicationInfo.FLAG_SYSTEM or android.content.pm.ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0
+        } catch (e: Exception) {
+            false
+        }
     }
 
     companion object {

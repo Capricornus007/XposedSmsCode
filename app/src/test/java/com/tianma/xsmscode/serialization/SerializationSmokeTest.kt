@@ -5,6 +5,7 @@ import com.tianma.xsmscode.data.http.entity.GithubRelease
 import com.tianma.xsmscode.feature.backup.BackupPayload
 import com.tianma.xsmscode.feature.backup.BackupRule
 import com.tianma.xsmscode.feature.backup.RuleExporter
+import com.tianma.xsmscode.feature.backup.BackupConst
 import com.tianma.xsmscode.feature.backup.RuleImporter
 import kotlinx.serialization.decodeFromString
 import org.junit.Assert.assertEquals
@@ -25,8 +26,8 @@ class SerializationSmokeTest {
         }
 
         val payload = JsonUtils.json.decodeFromString<BackupPayload>(output.toString(Charsets.UTF_8.name()))
-        assertEquals(1, payload.version)
-        assertEquals(1, payload.schemaVersion)
+        assertEquals(BackupConst.BACKUP_VERSION, payload.version)
+        assertEquals(BackupConst.BACKUP_VERSION, payload.schemaVersion)
         assertEquals(1, payload.rules.size)
         assertEquals("ACME", payload.rules.first().company)
     }
@@ -41,7 +42,7 @@ class SerializationSmokeTest {
 
         RuleImporter(input).use { importer ->
             val payload = importer.parsePayload()
-            assertEquals(1, payload.schemaVersion)
+            assertEquals(BackupConst.BACKUP_VERSION, payload.schemaVersion)
             assertEquals(1, payload.rules.size)
             assertEquals("ACME", payload.rules.first().company)
         }
