@@ -110,7 +110,7 @@ class SmsHandlerHook : BaseHook() {
         exactMethod?.let {
             XposedWrapper.hookMethod(it, DispatchIntentHook(receiverIndex))
         } ?: run {
-            XLog.e("Method %s for Class %s cannot found", DISPATCH_INTENT, SMS_HANDLER_CLASS)
+            XLog.e("Method %s for Class %s cannot found", dispatchIntentMethodName, SMS_HANDLER_CLASS)
         }
     }
 
