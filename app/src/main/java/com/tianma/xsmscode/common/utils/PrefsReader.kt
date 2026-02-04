@@ -86,7 +86,7 @@ object PrefsReader {
         )
         return try {
             value.toLong()
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT.toLong()
         }
     }
@@ -161,7 +161,7 @@ object PrefsReader {
         )
         return try {
             value.toInt()
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             0
         }
     }
@@ -181,7 +181,7 @@ object PrefsReader {
         )
         return try {
             value.toInt()
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             0
         }
     }

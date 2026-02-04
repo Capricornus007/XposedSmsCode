@@ -139,8 +139,7 @@ class MainActivity : AppCompatActivity() {
                             // Fallback if view not ready
                             currentThemeMode = themeState.mode
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    } catch (ignored: Exception) {
                         // Fallback on error
                         currentThemeMode = themeState.mode
                     }

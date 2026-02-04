@@ -84,8 +84,8 @@ object CodeRecordRestoreManager {
         } finally {
             try {
                 isr?.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
+            } catch (ignored: IOException) {
+                // Safe to ignore
             }
         }
     }

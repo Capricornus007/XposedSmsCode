@@ -109,8 +109,8 @@ object EntityStoreManager {
             if (isr != null) {
                 try {
                     isr.close()
-                } catch (e: IOException) {
-                    e.printStackTrace()
+                } catch (ignored: IOException) {
+                    XLog.e("Failed to close InputStreamReader", ignored)
                 }
             }
         }

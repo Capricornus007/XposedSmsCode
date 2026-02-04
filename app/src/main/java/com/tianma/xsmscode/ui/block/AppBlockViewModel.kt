@@ -151,8 +151,8 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                     usageStatsMap[pkg] = usage.totalTimeInForeground
                 }
             }
-        } catch (e: Exception) {
-            XLog.e("Failed to load usage stats", e)
+        } catch (ignored: Exception) {
+            XLog.e("Failed to load usage stats", ignored)
         }
     }
 

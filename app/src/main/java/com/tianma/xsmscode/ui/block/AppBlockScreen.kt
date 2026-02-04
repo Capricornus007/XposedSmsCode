@@ -303,7 +303,7 @@ fun AppBlockScreen(
                         context.startActivity(
                             android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS),
                         )
-                    } catch (e: Exception) {
+                    } catch (ignored: Exception) {
                         // Fallback or toast
                     }
                 }) {
