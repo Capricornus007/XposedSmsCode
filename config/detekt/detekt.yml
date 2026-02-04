@@ -4,11 +4,9 @@ config:
 naming:
   FunctionNaming:
     active: true
-    # Allowing PascalCase for Compose functions
     functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
   VariableNaming:
     active: true
-    # Allow underscore for internal variables
     variablePattern: '(_)?[a-z][A-Za-z0-9]*'
   TopLevelPropertyNaming:
     active: true
@@ -22,15 +20,24 @@ style:
       - '0'
       - '1'
       - '2'
+      - '3'
       - '4'
+      - '5'
+      - '6'
       - '8'
+      - '10'
       - '12'
       - '16'
       - '24'
       - '32'
       - '64'
+      - '100'
+      - '120'
+      - '200'
       - '300'
+      - '399'
       - '500'
+      - '600'
       - '1000'
     ignoreHashCodeFunction: true
     ignoreLocalVariableDeclaration: true
@@ -72,7 +79,16 @@ complexity:
 exceptions:
   SwallowedException:
     active: true
-    # Ignore when the exception is named 'ignored' or 'expected'
     allowedExceptionNameRegex: '_|(ignore|expected).*'
-
-# buildUponDefaultConfig: true is handled in build.gradle
+  TooGenericExceptionCaught:
+    active: true
+    exceptionNames:
+      - 'ArrayIndexOutOfBoundsException'
+      - 'Error'
+      - 'Exception'
+      - 'IllegalMonitorStateException'
+      - 'IndexOutOfBoundsException'
+      - 'NullPointerException'
+      - 'RuntimeException'
+      - 'Throwable'
+    allowedExceptionNameRegex: '_|(ignore|expected).*'
