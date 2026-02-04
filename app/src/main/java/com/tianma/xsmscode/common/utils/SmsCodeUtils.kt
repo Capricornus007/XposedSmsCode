@@ -205,7 +205,7 @@ object SmsCodeUtils {
                 XLog.d("Load SmsCode rules succeed by content provider")
                 rules = resultRules
             } else {
-                throw Exception("Cursor is null")
+                throw IllegalStateException("Cursor is null for URI: $smsCodeRuleUri")
             }
         } catch (ignored: Throwable) {
             rules = EntityStoreManager.loadEntitiesFromFile(

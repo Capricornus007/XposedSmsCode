@@ -276,10 +276,13 @@ object PackageUtils {
             instanceFollowRedirects = true
         }
         connection.connect()
-        connection.responseCode in 200..399
+        connection.responseCode in HTTP_OK..HTTP_REDIRECT_LIMIT
     } catch (ignored: Exception) {
         false
     }
+    private const val HTTP_OK = 200
+    private const val HTTP_REDIRECT_LIMIT = 399
+
     private fun checkWechatExists(context: Context): Boolean {
         val packageState = checkPackageState(context, Const.WECHAT_PACKAGE_NAME)
         return when (packageState) {

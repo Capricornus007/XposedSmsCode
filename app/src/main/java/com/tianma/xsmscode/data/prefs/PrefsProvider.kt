@@ -83,8 +83,8 @@ class PrefsProvider : ContentProvider() {
                     return true
                 }
             }
-        } catch (e: Exception) {
-            XLog.e("PrefsProvider: Failed to check caller permission", e)
+        } catch (ignored: Exception) {
+            // It's safe to ignore as we default to false
             return false
         }
 
@@ -102,7 +102,7 @@ class PrefsProvider : ContentProvider() {
                     )
             ) !=
             0
-    } catch (e: Exception) {
+    } catch (ignored: Exception) {
         false
     }
 
