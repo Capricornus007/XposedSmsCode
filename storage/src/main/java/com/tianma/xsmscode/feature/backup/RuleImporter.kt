@@ -115,7 +115,7 @@ class RuleImporter(private val mJsonStream: InputStream?) : Closeable {
             }
             map
         }
-    } catch (e: Exception) {
+    } catch (ignored: Exception) {
         null
     }
 
@@ -135,7 +135,7 @@ class RuleImporter(private val mJsonStream: InputStream?) : Closeable {
                 packageName = obj["packageName"]?.jsonPrimitive?.contentOrNull,
             )
         }
-    } catch (e: Exception) {
+    } catch (ignored: Exception) {
         null
     }
 

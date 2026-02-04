@@ -57,7 +57,7 @@ object PackageUtils {
         return try {
             val packageInfo = pm.getPackageInfo(packageName, 0)
             packageInfo != null
-        } catch (e: PackageManager.NameNotFoundException) {
+        } catch (ignored: PackageManager.NameNotFoundException) {
             false
         }
     }
@@ -71,7 +71,7 @@ object PackageUtils {
         return try {
             val appInfo = pm.getApplicationInfo(packageName, 0)
             appInfo.enabled
-        } catch (e: PackageManager.NameNotFoundException) {
+        } catch (ignored: PackageManager.NameNotFoundException) {
             false
         }
     }
@@ -89,7 +89,7 @@ object PackageUtils {
                 packageInfo.versionCode.toLong()
             }
             versionName to versionCode
-        } catch (e: PackageManager.NameNotFoundException) {
+        } catch (ignored: PackageManager.NameNotFoundException) {
             null
         }
     }
@@ -151,7 +151,7 @@ object PackageUtils {
         val output = process.inputStream.bufferedReader().use { it.readText() }
         val exitCode = process.waitFor()
         if (exitCode == 0 && output.isNotBlank()) output else null
-    } catch (e: Exception) {
+    } catch (ignored: Exception) {
         null
     }
 
@@ -207,7 +207,7 @@ object PackageUtils {
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         try {
             context.startActivity(intent)
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             Toast.makeText(context, R.string.prompt_join_qq_group_failed, Toast.LENGTH_SHORT).show()
         }
     }
@@ -244,7 +244,7 @@ object PackageUtils {
             pm.getInstallerPackageName(BuildConfig.APPLICATION_ID)
         }
         installer == "com.android.vending"
-    } catch (e: Exception) {
+    } catch (ignored: Exception) {
         false
     }
 
@@ -257,7 +257,7 @@ object PackageUtils {
         }
         try {
             context.startActivity(marketIntent)
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             val webIntent = Intent(
                 Intent.ACTION_VIEW,
                 Uri.parse("https://play.google.com/store/apps/details?id=$packageName"),
@@ -277,7 +277,7 @@ object PackageUtils {
         }
         connection.connect()
         connection.responseCode in 200..399
-    } catch (e: Exception) {
+    } catch (ignored: Exception) {
         false
     }
     private fun checkWechatExists(context: Context): Boolean {

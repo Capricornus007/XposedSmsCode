@@ -18,10 +18,10 @@ import java.util.ArrayList
  */
 object EntityStoreManager {
 
-    private val CODE_RULE_TEMPLATE_FILE_NAME = "code_rule_template"
-    private val CODE_RULES_FILE_NAME = "code_rules"
-    private val BLOCKED_APPS_FILE_NAME = "blocked_apps"
-    private val PREV_CODE_RECORD = "prev_code_record"
+    private const val CODE_RULE_TEMPLATE_FILE_NAME = "code_rule_template"
+    private const val CODE_RULES_FILE_NAME = "code_rules"
+    private const val BLOCKED_APPS_FILE_NAME = "blocked_apps"
+    private const val PREV_CODE_RECORD = "prev_code_record"
 
     @PublishedApi
     internal fun getStoreFile(context: Context, entityType: EntityType): File {
