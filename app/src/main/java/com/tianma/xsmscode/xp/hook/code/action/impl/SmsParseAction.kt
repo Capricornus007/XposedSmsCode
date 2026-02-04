@@ -87,7 +87,7 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
                 SmsMsg::class.java,
             )
             if (prevSmsMsg != null) {
-                if (abs(timestamp - prevSmsMsg.date) <= 15000) {
+                if (abs(timestamp - prevSmsMsg.date) <= SMS_DUPLICATE_THRESHOLD_MS) {
                     if ((sender == prevSmsMsg.sender && smsCode == prevSmsMsg.smsCode) ||
                         msgBody == prevSmsMsg.body
                     ) {
@@ -105,6 +105,7 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
     }
 
     companion object {
+        private const val SMS_DUPLICATE_THRESHOLD_MS = 15000L
         const val SMS_MSG = "sms_msg"
         const val SMS_DUPLICATED = "sms_duplicated"
     }

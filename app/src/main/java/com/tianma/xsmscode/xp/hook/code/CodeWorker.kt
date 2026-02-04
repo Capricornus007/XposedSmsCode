@@ -77,7 +77,7 @@ class CodeWorker(
 
         // 操作验证码短信（标记为已读 或者 删除） Action
         val operateSmsAction = OperateSmsAction(mPluginContext, mPhoneContext, smsMsg)
-        mScheduledExecutor.schedule(operateSmsAction, 3000, TimeUnit.MILLISECONDS)
+        mScheduledExecutor.schedule(operateSmsAction, SMS_OPERATE_DELAY_MS, TimeUnit.MILLISECONDS)
 
         var autoCancelRetentionMs = 0L
         if (PrefsReader.autoCancelCodeNotification(mPluginContext)) {
@@ -113,5 +113,8 @@ class CodeWorker(
         val parseResult = ParseResult()
         parseResult.isBlockSms = PrefsReader.blockSmsEnabled(mPluginContext)
         return parseResult
+    }
+    companion object {
+        private const val SMS_OPERATE_DELAY_MS = 3000L
     }
 }

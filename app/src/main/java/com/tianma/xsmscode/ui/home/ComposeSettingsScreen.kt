@@ -252,7 +252,8 @@ fun ComposeSettingsScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Box(modifier = Modifier.fillMaxSize()) {
-        val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp // TopBar height
+        val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
+            Const.TOP_BAR_HEIGHT.dp // TopBar height
         val isCompact = LocalConfiguration.current.screenWidthDp < 600
         val bottomPadding =
             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
@@ -265,7 +266,7 @@ fun ComposeSettingsScreen(
                 .padding(bottom = bottomPadding)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(Const.SPACING_EXTRA_SMALL.dp),
         ) {
             // Add top padding manually as the first item or Spacer
             Spacer(modifier = Modifier.height(topPadding))
@@ -311,7 +312,7 @@ fun ComposeSettingsScreen(
                 )
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
 
             SectionHeader(text = stringResource(id = R.string.pref_sms_code_title))
             SwitchItem(
@@ -351,7 +352,7 @@ fun ComposeSettingsScreen(
                 summary = stringResource(id = R.string.pref_smscode_test_summary),
             ) { showSmsTestDialog = true }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
 
             SectionHeader(text = stringResource(id = R.string.pref_category_auto_input_title))
             val autoInputEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, true)
@@ -368,7 +369,7 @@ fun ComposeSettingsScreen(
                 summary = stringResource(id = R.string.pref_auto_input_code_delay_summary, autoInputDelay),
             ) { showAutoInputDialog = true }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
 
             SectionHeader(text = stringResource(id = R.string.pref_notification_title))
             SwitchItem(
@@ -395,7 +396,7 @@ fun ComposeSettingsScreen(
                 },
             ) { showRetentionDialog = true }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
 
             SectionHeader(text = stringResource(id = R.string.pref_backup_restore_title))
             Item(
@@ -410,7 +411,7 @@ fun ComposeSettingsScreen(
                 restoreLauncher.launch(intent)
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
             SectionHeader(text = stringResource(id = R.string.pref_others_title))
             SwitchItem(
                 title = stringResource(id = R.string.pref_verbose_log_mode_title),
@@ -437,7 +438,7 @@ fun ComposeSettingsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Const.SPACING_SMALL.dp))
         }
 
         Column(
@@ -640,7 +641,7 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier) {
         text = text,
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(horizontal = Const.PADDING_MEDIUM.dp, vertical = 8.dp),
+        modifier = modifier.padding(horizontal = Const.PADDING_MEDIUM.dp, vertical = Const.SPACING_SMALL.dp),
     )
 }
 
@@ -779,11 +780,11 @@ fun RetentionDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onConfirm(value) }
-                            .padding(vertical = 12.dp),
+                            .padding(vertical = Const.PADDING_MEDIUM.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(selected = value == selectedValue, onClick = { onConfirm(value) })
-                        Text(text = entry, modifier = Modifier.padding(start = 16.dp))
+                        Text(text = entry, modifier = Modifier.padding(start = Const.SPACING_MEDIUM.dp))
                     }
                 }
             }

@@ -123,7 +123,7 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
                             }
                             try {
                                 context.startActivity(intent)
-                            } catch (e: Exception) {
+                            } catch (ignored: Exception) {
                                 // Ignore if LSPosed manager is not installed.
                             }
                         }

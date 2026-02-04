@@ -31,7 +31,7 @@ object CodeRecordRestoreManager {
         } finally {
             try {
                 osw?.close()
-            } catch (ioException: IOException) {
+            } catch (ignored: IOException) {
                 // ignore
             }
         }
@@ -84,8 +84,8 @@ object CodeRecordRestoreManager {
         } finally {
             try {
                 isr?.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
+            } catch (ignored: IOException) {
+                // Safe to ignore
             }
         }
     }

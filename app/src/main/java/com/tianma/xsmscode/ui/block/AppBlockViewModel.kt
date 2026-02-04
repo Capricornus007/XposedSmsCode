@@ -62,7 +62,8 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
     private val systemApps = HashSet<String>()
 
     private var filter = ""
-    private var sortOption = SortOption.LABEL // Default sort by blocked status first? Actually user asked for simple sort. Let's keep blocked priority in comparator but allow sorting criteria.
+    private var sortOption = SortOption.LABEL // Default sort.
+    // Let's keep blocked priority in comparator but allow sorting criteria.
     // User asked for: "Sort by App Name, Package Name, Usage Frequency". Let's default to LABEL.
     // Keeping "Blocked" at top is usually good UX, but user didn't explicitly ask for it to be removed.
     // Detailed requirement: "Sort: App Name, Package Name. Don't set 4. Click to ASC, click to DESC."
@@ -151,8 +152,8 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                     usageStatsMap[pkg] = usage.totalTimeInForeground
                 }
             }
-        } catch (e: Exception) {
-            XLog.e("Failed to load usage stats", e)
+        } catch (ignored: Exception) {
+            XLog.e("Failed to load usage stats", ignored)
         }
     }
 
@@ -268,7 +269,7 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
                 originalBlockedApps = blockedApps.toImmutableList()
                 updateHasChanges()
                 _events.emit(AppBlockEvent.SaveSuccess)
-            } catch (t: Throwable) {
+            } catch (ignored: Throwable) {
                 _events.emit(AppBlockEvent.SaveFailed)
             }
         }

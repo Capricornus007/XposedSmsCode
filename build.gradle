@@ -17,22 +17,7 @@ buildscript {
         classpath "dev.detekt:detekt-gradle-plugin:2.0.0-alpha.2"
         classpath "com.google.gms:google-services:4.4.2"
     }
-    configurations.all {
-        resolutionStrategy {
-            force libs.jose4j
-            force libs.jdom2
-            force libs.apache.commons.lang3
-            force libs.apache.httpclient
-            force libs.netty.codec.http
-            force libs.netty.codec
-            force libs.netty.codec.http2
-            force libs.netty.common
-            force libs.netty.handler
-            force libs.netty.resolver
-            force libs.netty.transport
-            force libs.netty.buffer
-        }
-    }
+
 }
 
 plugins {
@@ -45,7 +30,8 @@ subprojects {
         detekt {
             autoCorrect = true
             parallel = true
-            buildUponDefaultConfig = true
+            buildUponDefaultConfig = false
+            config = files("${rootProject.projectDir}/config/detekt/detekt.yml")
         }
         dependencies {
             detektPlugins "dev.detekt:detekt-rules-ktlint-wrapper:2.0.0-alpha.2"
@@ -66,6 +52,23 @@ subprojects {
         maven { url = "https://jitpack.io" }
         maven {
             url = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+        }
+    }
+
+    configurations.all {
+        resolutionStrategy {
+            force libs.jose4j
+            force libs.jdom2
+            force libs.apache.commons.lang3
+            force libs.apache.httpclient
+            force libs.netty.codec.http
+            force libs.netty.codec
+            force libs.netty.codec.http2
+            force libs.netty.common
+            force libs.netty.handler
+            force libs.netty.resolver
+            force libs.netty.transport
+            force libs.netty.buffer
         }
     }
 }

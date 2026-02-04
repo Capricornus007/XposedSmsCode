@@ -23,7 +23,7 @@ object Utils {
             val cti = CustomTabsIntent.Builder().build()
             cti.intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
             cti.launchUrl(context, Uri.parse(url))
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             Toast.makeText(context, R.string.browser_install_or_enable_prompt, Toast.LENGTH_SHORT).show()
         }
     }
@@ -116,7 +116,7 @@ object Utils {
                 } else if (fileName.contains("wechat")) {
                     PackageUtils.startWechatActivity(context)
                 }
-            } catch (e: Exception) {
+            } catch (ignored: Exception) {
                 Toast.makeText(context, R.string.save_to_gallery_failed, Toast.LENGTH_SHORT).show()
             }
         } else {
@@ -124,9 +124,12 @@ object Utils {
         }
     }
 
+    private const val CONTROL_CHAR_LIMIT = 0x1f
+    private const val DELETE_CHAR = 0x7f
+
     private fun isValidFilenameChar(c: Char): Boolean {
         // check control characters
-        if (c.code <= 0x1f || c.code == 0x7f) {
+        if (c.code <= CONTROL_CHAR_LIMIT || c.code == DELETE_CHAR) {
             return false
         }
 

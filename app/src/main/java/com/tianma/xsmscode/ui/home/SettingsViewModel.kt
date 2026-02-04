@@ -2,6 +2,7 @@ package com.tianma.xsmscode.ui.home
 
 import android.app.Application
 import android.content.ComponentName
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.TextUtils
@@ -89,7 +90,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         .queryAllSmsMsgCountFlow()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(Const.FLOW_STOP_TIMEOUT_MS),
             initialValue = 0L,
         )
 
@@ -299,88 +300,83 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     BackupManager.importRuleList(context, uri, BuildConfig.VERSION_NAME)
                 }
 
-                // If parse success, proceed to restore data to DB/Prefs
                 if (importResult.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
                     withContext(Dispatchers.IO) {
-                        if (restoreRules && importResult.rules.isNotEmpty()) {
-                            val dbManager = DBManager.get(context)
-                            // Simple merge: add if not exists, or maybe just addAll (DB handles conflicts usually or we should check)
-                            // existing implementation in RuleListViewModel wiped all rules if 'retain' was false.
-                            // Here we probably want to MERGE.
-                            // Implementing merge logic:
-                            val entities = importResult.rules.map {
-                                com.tianma.xsmscode.data.db.entity.SmsCodeRule(it.company, it.codeKeyword, it.codeRegex)
-                            }
-                            // For simplicity in this plan, we just add them. Uniqueness constraint might be on ID or content.
-                            // SmsCodeRule has PrimaryKey autoGenerate.
-                            // Ideally we should check duplicates.
-                            dbManager.addSmsCodeRules(entities)
-                        }
-
-                        val records = importResult.records.orEmpty()
-                        if (restoreRecords && records.isNotEmpty()) {
-                            val dbManager = DBManager.get(context)
-                            val entities = records.map {
-                                com.tianma.xsmscode.data.db.entity.SmsMsg(
-                                    sender = it.sender,
-                                    body = it.body,
-                                    date = it.date,
-                                    company = it.company,
-                                    smsCode = it.smsCode,
-                                    packageName = it.packageName,
-                                )
-                            }
-                            // SmsMsg has unique index on sender/body/date
-                            // So we use insert with OnConflictStrategy.IGNORE usually.
-                            // Check DB DAO specifically.
-                            dbManager.addSmsMsgList(entities)
-                        }
-
-                        val prefsMap = importResult.preferences.orEmpty()
-                        if (restoreConfig && prefsMap.isNotEmpty()) {
-                            for ((k, v) in prefsMap) {
-                                if (v == null) continue
-                                val strV = v
-                                when {
-                                    booleanPrefKeys.contains(k) -> {
-                                        val normalized = strV.trim().lowercase()
-                                        val boolValue = when (normalized) {
-                                            "true", "1" -> true
-                                            "false", "0" -> false
-                                            else -> null
-                                        }
-                                        if (boolValue != null) {
-                                            AppPreferencesDataStore.setBoolean(context, k, boolValue)
-                                        }
-                                    }
-
-                                    intPrefKeys.contains(k) -> {
-                                        val intValue = strV.trim().toIntOrNull()
-                                        if (intValue != null) {
-                                            AppPreferencesDataStore.setInt(context, k, intValue)
-                                        }
-                                    }
-
-                                    else -> {
-                                        AppPreferencesDataStore.setString(context, k, strV)
-                                    }
-                                }
-                            }
-                        }
+                        if (restoreRules) restoreRules(context, importResult.rules)
+                        if (restoreRecords) restoreRecords(context, importResult.records.orEmpty())
+                        if (restoreConfig) restorePreferences(context, importResult.preferences.orEmpty())
                     }
                 }
-
                 _eventsFlow.emit(SettingsEvent.RestoreResultEvent(importResult))
-            } catch (e: Exception) {
-                e.printStackTrace()
-                // Emit failure via RestoreResultEvent?
-                // BackupImportResult has ImportResult enum
-                // We can construct a failed result
+            } catch (ignored: Exception) {
+                // Return failed event
+                _eventsFlow.emit(
+                    SettingsEvent.RestoreResultEvent(
+                        BackupImportResult(com.tianma.xsmscode.feature.backup.ImportResult.READ_FAILED),
+                    ),
+                )
             }
         }
     }
 
-    private suspend fun ensureDataStoreLoaded(context: android.content.Context) {
+    private suspend fun restoreRules(context: Context, rules: List<BackupRule>) {
+        if (rules.isEmpty()) return
+        val dbManager = DBManager.get(context)
+        val entities = rules.map {
+            com.tianma.xsmscode.data.db.entity.SmsCodeRule(it.company, it.codeKeyword, it.codeRegex)
+        }
+        dbManager.addSmsCodeRules(entities)
+    }
+
+    private suspend fun restoreRecords(context: Context, records: List<BackupSmsRecord>) {
+        if (records.isEmpty()) return
+        val dbManager = DBManager.get(context)
+        val entities = records.map {
+            com.tianma.xsmscode.data.db.entity.SmsMsg(
+                sender = it.sender,
+                body = it.body,
+                date = it.date,
+                company = it.company,
+                smsCode = it.smsCode,
+                packageName = it.packageName,
+            )
+        }
+        dbManager.addSmsMsgList(entities)
+    }
+
+    private suspend fun restorePreferences(context: Context, prefsMap: Map<String, String?>) {
+        if (prefsMap.isEmpty()) return
+        for ((k, v) in prefsMap) {
+            if (v == null) continue
+            val strV = v
+            when {
+                booleanPrefKeys.contains(k) -> {
+                    val normalized = strV.trim().lowercase()
+                    val boolValue = when (normalized) {
+                        "true", "1" -> true
+                        "false", "0" -> false
+                        else -> null
+                    }
+                    if (boolValue != null) {
+                        AppPreferencesDataStore.setBoolean(context, k, boolValue)
+                    }
+                }
+
+                intPrefKeys.contains(k) -> {
+                    val intValue = strV.trim().toIntOrNull()
+                    if (intValue != null) {
+                        AppPreferencesDataStore.setInt(context, k, intValue)
+                    }
+                }
+
+                else -> {
+                    AppPreferencesDataStore.setString(context, k, strV)
+                }
+            }
+        }
+    }
+
+    private suspend fun ensureDataStoreLoaded(_context: android.content.Context) {
         // Trigger read to ensure in-memory cache if needed; keep no-op for now.
     }
 }

@@ -6,6 +6,7 @@ import android.net.Uri
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.tianma.xsmscode.common.constant.Const
 import com.tianma.xsmscode.common.utils.JsonUtils
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBManager
@@ -34,7 +35,7 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
         }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(Const.FLOW_STOP_TIMEOUT_MS),
             initialValue = CodeRecordUiState(isLoading = true),
         )
 
@@ -47,8 +48,8 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
             try {
                 DBManager.get(getApplication())
                     .removeSmsMsgListSuspend(smsMsgList)
-            } catch (t: Throwable) {
-                XLog.e("Error occurs when remove SMS records", t)
+            } catch (ignored: Throwable) {
+                XLog.e("Error occurs when remove SMS records", ignored)
             }
         }
     }
@@ -58,8 +59,8 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
             try {
                 DBManager.get(getApplication())
                     .insertSmsMsgListSuspend(smsMsgList)
-            } catch (t: Throwable) {
-                XLog.e("Error occurs when restore SMS records", t)
+            } catch (ignored: Throwable) {
+                XLog.e("Error occurs when restore SMS records", ignored)
             }
         }
     }
@@ -77,8 +78,8 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
                     }
                 }
                 // We might want an event for success/failure
-            } catch (t: Throwable) {
-                XLog.e("Export records failed", t)
+            } catch (ignored: Throwable) {
+                XLog.e("Export records failed", ignored)
             } finally {
                 _loading.value = false
             }

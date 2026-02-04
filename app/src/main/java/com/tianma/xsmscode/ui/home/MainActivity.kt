@@ -139,8 +139,7 @@ class MainActivity : AppCompatActivity() {
                             // Fallback if view not ready
                             currentThemeMode = themeState.mode
                         }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
+                    } catch (ignored: Exception) {
                         // Fallback on error
                         currentThemeMode = themeState.mode
                     }
@@ -292,7 +291,7 @@ class MainActivity : AppCompatActivity() {
                 updateLauncher,
                 AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build(),
             )
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             android.widget.Toast.makeText(
                 this,
                 getString(R.string.check_update_failed),

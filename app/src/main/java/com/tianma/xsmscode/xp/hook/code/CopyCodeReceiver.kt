@@ -47,7 +47,7 @@ class CopyCodeReceiver private constructor() : BroadcastReceiver() {
                     BuildConfig.APPLICATION_ID,
                     Context.CONTEXT_IGNORE_SECURITY,
                 )
-            } catch (e: Exception) {
+            } catch (ignored: Exception) {
                 // ignore
             }
         }

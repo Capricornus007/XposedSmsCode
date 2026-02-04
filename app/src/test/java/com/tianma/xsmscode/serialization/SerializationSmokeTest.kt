@@ -2,10 +2,10 @@ package com.tianma.xsmscode.serialization
 
 import com.tianma.xsmscode.common.utils.JsonUtils
 import com.tianma.xsmscode.data.http.entity.GithubRelease
+import com.tianma.xsmscode.feature.backup.BackupConst
 import com.tianma.xsmscode.feature.backup.BackupPayload
 import com.tianma.xsmscode.feature.backup.BackupRule
 import com.tianma.xsmscode.feature.backup.RuleExporter
-import com.tianma.xsmscode.feature.backup.BackupConst
 import com.tianma.xsmscode.feature.backup.RuleImporter
 import kotlinx.serialization.decodeFromString
 import org.junit.Assert.assertEquals

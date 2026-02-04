@@ -33,21 +33,22 @@ jobs:
   scan:
     name: Scan
     runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
     permissions:
       security-events: write
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Java
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '25'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v5
 
       - name: Run Detekt
         continue-on-error: true
@@ -63,27 +64,32 @@ jobs:
           if [ -f core/build/reports/detekt/detekt.sarif ]; then echo "core=true" >> $GITHUB_OUTPUT; fi
           if [ -f storage/build/reports/detekt/detekt.sarif ]; then echo "storage=true" >> $GITHUB_OUTPUT; fi
 
-      - name: Upload Scan results (app)
-        uses: github/codeql-action/upload-sarif@v3
-        if: always() && steps.check.outputs.app == 'true'
+      - name: Merge SARIF files
+        if: always()
+        run: |
+          mkdir -p merged-sarif
+          # Merge all SARIF files into one
+          jq -s '
+            {
+              "$schema": .[0]."$schema",
+              "version": .[0].version,
+              "runs": [
+                {
+                  "tool": .[0].runs[0].tool,
+                  "results": ([.[].runs[].results] | add)
+                }
+              ]
+            }
+          ' app/build/reports/detekt/detekt.sarif \
+            $([ -f storage/build/reports/detekt/detekt.sarif ] && echo "storage/build/reports/detekt/detekt.sarif" || echo "/dev/null") \
+            $([ -f core/build/reports/detekt/detekt.sarif ] && echo "core/build/reports/detekt/detekt.sarif" || echo "/dev/null") \
+            > merged-sarif/detekt.sarif 2>/dev/null || cp app/build/reports/detekt/detekt.sarif merged-sarif/detekt.sarif
+
+      - name: Upload merged SARIF results
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
         continue-on-error: true
         with:
-          sarif_file: app/build/reports/detekt/detekt.sarif
+          sarif_file: merged-sarif/detekt.sarif
           category: app
-
-      - name: Upload Scan results (core)
-        uses: github/codeql-action/upload-sarif@v3
-        if: always() && steps.check.outputs.core == 'true'
-        continue-on-error: true
-        with:
-          sarif_file: core/build/reports/detekt/detekt.sarif
-          category: core
-
-      - name: Upload Scan results (storage)
-        uses: github/codeql-action/upload-sarif@v3
-        if: always() && steps.check.outputs.storage == 'true'
-        continue-on-error: true
-        with:
-          sarif_file: storage/build/reports/detekt/detekt.sarif
-          category: storage
 

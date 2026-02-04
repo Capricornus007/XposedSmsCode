@@ -12,6 +12,9 @@ import java.util.regex.Pattern
  * 验证码相关Utils
  */
 object SmsCodeUtils {
+    private const val COLUMN_COMPANY = "company"
+    private const val COLUMN_KEYWORD = "code_keyword"
+    private const val COLUMN_REGEX = "code_regex"
 
     private const val LEVEL_DIGITAL_6 = 4
     private const val LEVEL_DIGITAL_4 = 3
@@ -150,7 +153,7 @@ object SmsCodeUtils {
     }
 
     private fun isNearToKeyword(keyword: String, possibleCode: String, content: String): Boolean =
-        distanceToKeyword(keyword, possibleCode, content) <= 30
+        distanceToKeyword(keyword, possibleCode, content) <= KEYWORD_DISTANCE_THRESHOLD
 
     private fun distanceToKeyword(keyword: String, possibleCode: String, content: String): Int {
         val keywordIdx = content.indexOf(keyword)
@@ -181,9 +184,9 @@ object SmsCodeUtils {
             val smsCodeRuleUri = DBProvider.SMS_CODE_RULE_URI
             val resolver = context.contentResolver
 
-            val companyColumn = "company"
-            val keywordColumn = "code_keyword"
-            val regexColumn = "code_regex"
+            val companyColumn = COLUMN_COMPANY
+            val keywordColumn = COLUMN_KEYWORD
+            val regexColumn = COLUMN_REGEX
 
             val projection = arrayOf(companyColumn, keywordColumn, regexColumn)
 
@@ -202,9 +205,9 @@ object SmsCodeUtils {
                 XLog.d("Load SmsCode rules succeed by content provider")
                 rules = resultRules
             } else {
-                throw Exception("Cursor is null")
+                throw IllegalStateException("Cursor is null for URI: $smsCodeRuleUri")
             }
-        } catch (e: Throwable) {
+        } catch (ignored: Throwable) {
             rules = EntityStoreManager.loadEntitiesFromFile(
                 context,
                 EntityType.CODE_RULES,
@@ -247,9 +250,10 @@ object SmsCodeUtils {
                     return app.packageName
                 }
             }
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             // ignore
         }
         return null
     }
+    private const val KEYWORD_DISTANCE_THRESHOLD = 30
 }
