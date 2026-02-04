@@ -73,7 +73,7 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
                 } else {
                     loadTemplate()
                 }
-            } catch (e: Throwable) {
+            } catch (ignored: Throwable) {
                 loadTemplate()
             }
         }
@@ -91,7 +91,7 @@ class RuleEditViewModel(application: Application) : AndroidViewModel(application
                 }
                 mCodeRule = codeRule
                 _codeRuleFlow.value = mCodeRule
-            } catch (e: Throwable) {
+            } catch (ignored: Throwable) {
                 // ignore
             }
         }

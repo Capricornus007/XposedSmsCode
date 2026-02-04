@@ -13,7 +13,7 @@ import java.lang.reflect.Member
 object XposedWrapper {
     fun findClass(className: String, classLoader: ClassLoader): Class<*>? = try {
         XposedHelpers.findClass(className, classLoader)
-    } catch (t: Throwable) {
+    } catch (ignored: Throwable) {
         XLog.e("Class not found: %s", className)
         null
     }

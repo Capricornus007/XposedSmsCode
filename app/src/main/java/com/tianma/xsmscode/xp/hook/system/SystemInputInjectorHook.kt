@@ -94,7 +94,7 @@ class SystemInputInjectorHook : BaseHook() {
                         } else {
                             -1
                         }
-                    } catch (t: Throwable) {
+                    } catch (ignored: Throwable) {
                         -1
                     }
                     val appUid = context.applicationInfo.uid

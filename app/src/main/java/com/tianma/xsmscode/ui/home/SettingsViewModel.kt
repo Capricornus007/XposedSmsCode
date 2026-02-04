@@ -2,6 +2,7 @@ package com.tianma.xsmscode.ui.home
 
 import android.app.Application
 import android.content.ComponentName
+import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.TextUtils
@@ -311,7 +312,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 // Return failed event
                 _eventsFlow.emit(
                     SettingsEvent.RestoreResultEvent(
-                        BackupImportResult(com.tianma.xsmscode.feature.backup.ImportResult.FAILED),
+                        BackupImportResult(com.tianma.xsmscode.feature.backup.ImportResult.READ_FAILED),
                     ),
                 )
             }

@@ -31,7 +31,7 @@ object CodeRecordRestoreManager {
         } finally {
             try {
                 osw?.close()
-            } catch (ioException: IOException) {
+            } catch (ignored: IOException) {
                 // ignore
             }
         }

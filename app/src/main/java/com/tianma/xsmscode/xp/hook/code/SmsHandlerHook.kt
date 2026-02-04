@@ -51,7 +51,7 @@ class SmsHandlerHook : BaseHook() {
         @Suppress("DEPRECATION")
         val xposedVersion = try {
             XposedBridge.getXposedVersion()
-        } catch (e: Throwable) {
+        } catch (ignored: Throwable) {
             XposedBridge.XPOSED_BRIDGE_VERSION
         }
         XLog.i("Xposed bridge version: %d", xposedVersion)
@@ -92,10 +92,10 @@ class SmsHandlerHook : BaseHook() {
 
         val methods = inboundSmsHandlerClass.declaredMethods
         var exactMethod: Method? = null
-        val DISPATCH_INTENT = "dispatchIntent"
+        val dispatchIntentMethodName = "dispatchIntent"
         var receiverIndex = 0
         for (method in methods) {
-            if (DISPATCH_INTENT == method.name) {
+            if (dispatchIntentMethodName == method.name) {
                 exactMethod = method
                 val parameterTypes = method.parameterTypes
                 for (i in parameterTypes.indices) {

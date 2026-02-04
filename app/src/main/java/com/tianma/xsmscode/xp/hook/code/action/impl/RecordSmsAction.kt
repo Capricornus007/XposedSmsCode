@@ -68,7 +68,7 @@ class RecordSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
                 XLog.d("Remove outdated code records succeed by content provider")
             }
             cursor.close()
-        } catch (e1: Exception) {
+        } catch (ignored: Exception) {
             // ContentProvider dead.
             // Write file to do data transition
             if (CodeRecordRestoreManager.exportToFile(mPluginContext, smsMsg)) {

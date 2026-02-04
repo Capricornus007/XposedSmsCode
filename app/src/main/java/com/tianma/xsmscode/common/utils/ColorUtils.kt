@@ -18,12 +18,14 @@ object ColorUtils {
             return originColor
         }
         val a = originColor ushr 24
-        var r = (((originColor ushr 16) and 0xff) * factor).toInt()
-        r = r.coerceAtMost(0xff)
-        var g = (((originColor ushr 8) and 0xff) * factor).toInt()
-        g = g.coerceAtMost(0xff)
-        var b = ((originColor and 0xff) * factor).toInt()
-        b = b.coerceAtMost(0xff)
+        var r = (((originColor ushr 16) and COLOR_MASK) * factor).toInt()
+        r = r.coerceAtMost(COLOR_MASK)
+        var g = (((originColor ushr 8) and COLOR_MASK) * factor).toInt()
+        g = g.coerceAtMost(COLOR_MASK)
+        var b = ((originColor and COLOR_MASK) * factor).toInt()
+        b = b.coerceAtMost(COLOR_MASK)
         return (a shl 24) or (r shl 16) or (g shl 8) or b
     }
+
+    private const val COLOR_MASK = 0xff
 }

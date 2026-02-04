@@ -65,7 +65,7 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
                     cursor.close()
                 }
                 XLog.d("Get blocked apps by content provider")
-            } catch (e: Exception) {
+            } catch (ignored: Exception) {
                 val appInfoList = EntityStoreManager.loadEntitiesFromFile(
                     mPluginContext,
                     EntityType.BLOCKED_APP,

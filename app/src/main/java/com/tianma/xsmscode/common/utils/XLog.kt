@@ -23,7 +23,7 @@ object XLog {
             if (args.isNotEmpty()) {
                 try {
                     String.format(message, *args)
-                } catch (e: Exception) {
+                } catch (ignored: Exception) {
                     message
                 }
             } else {

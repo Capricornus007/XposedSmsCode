@@ -291,7 +291,7 @@ class MainActivity : AppCompatActivity() {
                 updateLauncher,
                 AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build(),
             )
-        } catch (e: Exception) {
+        } catch (ignored: Exception) {
             android.widget.Toast.makeText(
                 this,
                 getString(R.string.check_update_failed),

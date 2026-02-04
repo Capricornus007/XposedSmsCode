@@ -153,7 +153,7 @@ object SmsCodeUtils {
     }
 
     private fun isNearToKeyword(keyword: String, possibleCode: String, content: String): Boolean =
-        distanceToKeyword(keyword, possibleCode, content) <= 30
+        distanceToKeyword(keyword, possibleCode, content) <= KEYWORD_DISTANCE_THRESHOLD
 
     private fun distanceToKeyword(keyword: String, possibleCode: String, content: String): Int {
         val keywordIdx = content.indexOf(keyword)
@@ -255,4 +255,5 @@ object SmsCodeUtils {
         }
         return null
     }
+    private const val KEYWORD_DISTANCE_THRESHOLD = 30
 }

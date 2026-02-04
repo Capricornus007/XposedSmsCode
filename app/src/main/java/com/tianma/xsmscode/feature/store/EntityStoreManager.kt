@@ -70,7 +70,7 @@ object EntityStoreManager {
             if (osw != null) {
                 try {
                     osw.close()
-                } catch (ioException: IOException) {
+                } catch (ignored: IOException) {
                     // ignore
                 }
             }

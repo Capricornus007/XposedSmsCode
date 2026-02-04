@@ -79,14 +79,14 @@ object ReflectionUtils {
     @JvmStatic
     fun invoke(method: Method, thisObject: Any?, vararg params: Any?): Any? = try {
         method.invoke(thisObject, *params)
-    } catch (e: InvocationTargetException) {
-        val cause = e.cause
+    } catch (ignored: InvocationTargetException) {
+        val cause = ignored.cause
         if (cause is RuntimeException) {
             throw cause
         } else {
-            throw RuntimeException(e)
+            throw RuntimeException(ignored)
         }
-    } catch (e: IllegalAccessException) {
-        throw RuntimeException(e)
+    } catch (ignored: IllegalAccessException) {
+        throw RuntimeException(ignored)
     }
 }
