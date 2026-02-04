@@ -181,7 +181,11 @@ object AppPreferencesDataStore {
         )
         editor.putString(
             PrefConst.KEY_NOTIFICATION_RETENTION_TIME,
-            getString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT),
+            getString(
+                context,
+                PrefConst.KEY_NOTIFICATION_RETENTION_TIME,
+                PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT,
+            ),
         )
         editor.putBoolean(PrefConst.KEY_DEDUPLICATE_SMS, getBoolean(context, PrefConst.KEY_DEDUPLICATE_SMS, true))
         editor.putString(PrefConst.KEY_HISTORY_LIMIT, getString(context, PrefConst.KEY_HISTORY_LIMIT, "0"))

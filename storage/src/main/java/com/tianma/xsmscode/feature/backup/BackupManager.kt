@@ -92,7 +92,7 @@ object BackupManager {
         ruleList: List<BackupRule>,
         preferences: Map<String, String?>?,
         records: List<BackupSmsRecord>?,
-        appVersion: String
+        appVersion: String,
     ): ExportResult {
         try {
             RuleExporter(context.contentResolver.openOutputStream(uri)).use { exporter ->
@@ -106,9 +106,8 @@ object BackupManager {
     }
 
     @JvmStatic
-    fun exportRuleList(context: Context, uri: Uri, ruleList: List<BackupRule>, appVersion: String): ExportResult {
-        return exportBackup(context, uri, ruleList, null, null, appVersion)
-    }
+    fun exportRuleList(context: Context, uri: Uri, ruleList: List<BackupRule>, appVersion: String): ExportResult =
+        exportBackup(context, uri, ruleList, null, null, appVersion)
 
     /**
      * 获取导出规则列表的 SAF (Storage Access Framework) 的 Intent
@@ -142,7 +141,7 @@ object BackupManager {
                 payload.rules,
                 payload.preferences,
                 payload.records,
-                warning
+                warning,
             )
         } catch (e: IOException) {
             Log.e("BackupManager", "Error occurs in importRuleList", e)
