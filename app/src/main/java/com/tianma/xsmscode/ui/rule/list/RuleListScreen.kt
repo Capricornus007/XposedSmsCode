@@ -124,10 +124,10 @@ fun RuleListScreen(
                         val msg = if (event.result ==
                             ImportResult.SUCCESS
                         ) {
-                                R.string.import_succeed
-                            } else {
-                                R.string.import_failed
-                            }
+                            R.string.import_succeed
+                        } else {
+                            R.string.import_failed
+                        }
                         snackbarHostState.showSnackbar(context.getString(msg))
                     }
 

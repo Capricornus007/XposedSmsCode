@@ -1,9 +1,9 @@
 package com.tianma.xsmscode.ui.home
 
-import android.util.Log
-import android.widget.Toast
 import android.app.Activity
 import android.content.Intent
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,8 +22,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
@@ -46,6 +46,7 @@ import com.tianma.xsmscode.common.utils.SPUtils
 import com.tianma.xsmscode.common.utils.Utils
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.entity.ApkVersion
+import com.tianma.xsmscode.ui.privacy.PrivacyPolicyPage
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
@@ -53,7 +54,6 @@ import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
-import com.tianma.xsmscode.ui.privacy.PrivacyPolicyPage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,10 +107,12 @@ fun ComposeSettingsScreen(
         }
     }
 
-    val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+    val restoreLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
-               settingsViewModel.handleBackupArguments(uri)
+                settingsViewModel.handleBackupArguments(uri)
             }
         }
     }
@@ -192,31 +194,42 @@ fun ComposeSettingsScreen(
                     }
 
                     is SettingsEvent.BackupResultEvent -> {
-                         val msg = if (event.success) R.string.backup_success else R.string.backup_failed
-                         snackbarHostState.showSnackbar(context.getString(msg))
+                        val msg = if (event.success) R.string.backup_success else R.string.backup_failed
+                        snackbarHostState.showSnackbar(context.getString(msg))
                     }
 
                     is SettingsEvent.RestoreResultEvent -> {
-                         val msg = if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) 
-                             R.string.restore_success else R.string.restore_failed
-                         snackbarHostState.showSnackbar(context.getString(msg))
+                        val msg = if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
+                            R.string.restore_success
+                        } else {
+                            R.string.restore_failed
+                        }
+                        snackbarHostState.showSnackbar(context.getString(msg))
 
-                         if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
-                             Toast.makeText(context, context.getString(R.string.restore_success), Toast.LENGTH_SHORT).show()
-                             scope.launch {
-                                 delay(1200L)
-                                 val activity = activityOwner ?: (context as? Activity)
-                                 if (activity != null) {
-                                     val intent = activity.packageManager.getLaunchIntentForPackage(activity.packageName)
-                                     if (intent != null) {
-                                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                                         activity.startActivity(intent)
-                                     }
-                                     activity.finish()
-                                 }
-                                 android.os.Process.killProcess(android.os.Process.myPid())
-                             }
-                         }
+                        if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.restore_success),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                            scope.launch {
+                                delay(1200L)
+                                val activity = activityOwner ?: (context as? Activity)
+                                if (activity != null) {
+                                    val intent = activity.packageManager.getLaunchIntentForPackage(
+                                        activity.packageName,
+                                    )
+                                    if (intent != null) {
+                                        intent.addFlags(
+                                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK,
+                                        )
+                                        activity.startActivity(intent)
+                                    }
+                                    activity.finish()
+                                }
+                                android.os.Process.killProcess(android.os.Process.myPid())
+                            }
+                        }
                     }
 
                     is SettingsEvent.ImportDialogConfirm -> {
@@ -390,7 +403,7 @@ fun ComposeSettingsScreen(
             Item(
                 title = stringResource(id = R.string.pref_restore_title),
                 summary = stringResource(id = R.string.pref_restore_summary),
-            ) { 
+            ) {
                 val intent = com.tianma.xsmscode.feature.backup.BackupManager.getImportRuleListSAFIntent(context)
                 restoreLauncher.launch(intent)
             }
@@ -966,10 +979,7 @@ fun PrivacyPolicyDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, onCancel: 
 }
 
 @Composable
-fun BackupDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (Boolean, Boolean, Boolean) -> Unit
-) {
+fun BackupDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Boolean) -> Unit) {
     var checkConfig by remember { mutableStateOf(true) }
     var checkRules by remember { mutableStateOf(true) }
     var checkRecords by remember { mutableStateOf(true) }
@@ -980,17 +990,26 @@ fun BackupDialog(
         text = {
             Column {
                 Text(stringResource(id = R.string.dialog_backup_msg), modifier = Modifier.padding(bottom = 8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig }) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig },
+                ) {
                     Checkbox(checked = checkConfig, onCheckedChange = { checkConfig = it })
                     Text(stringResource(id = R.string.item_config))
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkRules = !checkRules }) {
-                     Checkbox(checked = checkRules, onCheckedChange = { checkRules = it })
-                     Text(stringResource(id = R.string.item_rules))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkRules = !checkRules },
+                ) {
+                    Checkbox(checked = checkRules, onCheckedChange = { checkRules = it })
+                    Text(stringResource(id = R.string.item_rules))
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkRecords = !checkRecords }) {
-                     Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
-                     Text(stringResource(id = R.string.item_records))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkRecords = !checkRecords },
+                ) {
+                    Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
+                    Text(stringResource(id = R.string.item_records))
                 }
             }
         },
@@ -1008,10 +1027,7 @@ fun BackupDialog(
 }
 
 @Composable
-fun RestoreConfirmDialog(
-    onDismiss: () -> Unit,
-    onConfirm: (Boolean, Boolean, Boolean) -> Unit
-) {
+fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Boolean) -> Unit) {
     var checkConfig by remember { mutableStateOf(true) }
     var checkRules by remember { mutableStateOf(true) }
     var checkRecords by remember { mutableStateOf(true) }
@@ -1022,24 +1038,33 @@ fun RestoreConfirmDialog(
         text = {
             Column {
                 Text(stringResource(id = R.string.dialog_restore_msg), modifier = Modifier.padding(bottom = 8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig }) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig },
+                ) {
                     Checkbox(checked = checkConfig, onCheckedChange = { checkConfig = it })
                     Text(stringResource(id = R.string.item_config))
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkRules = !checkRules }) {
-                     Checkbox(checked = checkRules, onCheckedChange = { checkRules = it })
-                     Text(stringResource(id = R.string.item_rules))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkRules = !checkRules },
+                ) {
+                    Checkbox(checked = checkRules, onCheckedChange = { checkRules = it })
+                    Text(stringResource(id = R.string.item_rules))
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { checkRecords = !checkRecords }) {
-                     Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
-                     Text(stringResource(id = R.string.item_records))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkRecords = !checkRecords },
+                ) {
+                    Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
+                    Text(stringResource(id = R.string.item_records))
                 }
-                 Text(
-                     text = stringResource(id = R.string.restore_warning_msg),
-                     style = MaterialTheme.typography.bodySmall,
-                     color = MaterialTheme.colorScheme.error,
-                     modifier = Modifier.padding(top = 8.dp)
-                 )
+                Text(
+                    text = stringResource(id = R.string.restore_warning_msg),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
             }
         },
         confirmButton = {

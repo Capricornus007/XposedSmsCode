@@ -21,8 +21,6 @@ import com.tianma.xsmscode.feature.backup.BackupManager
 import com.tianma.xsmscode.feature.backup.BackupRule
 import com.tianma.xsmscode.feature.backup.BackupSmsRecord
 import com.tianma.xsmscode.feature.backup.ExportResult
-import com.tianma.xsmscode.feature.store.EntityStoreManager
-import com.tianma.xsmscode.feature.store.EntityType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -242,28 +240,35 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         DBManager.get(context).queryAllSmsCodeRules()
                             .map { BackupRule(it.company, it.codeKeyword, it.codeRegex) }
                     }
-                } else emptyList()
+                } else {
+                    emptyList()
+                }
 
                 val records = if (includeRecords) {
-                     withContext(Dispatchers.IO) {
-                         DBManager.get(context).queryAllSmsMsg()
-                             .map {
-                                 BackupSmsRecord(
-                                     sender = it.sender,
-                                     body = it.body,
-                                     date = it.date,
-                                     company = it.company,
-                                     smsCode = it.smsCode,
-                                     packageName = it.packageName
-                                 )
-                             }
-                     }
-                } else null
+                    withContext(Dispatchers.IO) {
+                        DBManager.get(context).queryAllSmsMsg()
+                            .map {
+                                BackupSmsRecord(
+                                    sender = it.sender,
+                                    body = it.body,
+                                    date = it.date,
+                                    company = it.company,
+                                    smsCode = it.smsCode,
+                                    packageName = it.packageName,
+                                )
+                            }
+                    }
+                } else {
+                    null
+                }
 
                 val prefs = if (includeConfig) {
                     withContext(Dispatchers.IO) {
                         ensureDataStoreLoaded(context)
-                        val sharedPrefs = context.getSharedPreferences("xposed_prefs", android.content.Context.MODE_PRIVATE)
+                        val sharedPrefs = context.getSharedPreferences(
+                            "xposed_prefs",
+                            android.content.Context.MODE_PRIVATE,
+                        )
                         val allPrefs = sharedPrefs.all
                         val map = HashMap<String, String?>()
                         for ((k, v) in allPrefs) {
@@ -271,7 +276,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         }
                         map
                     }
-                } else null
+                } else {
+                    null
+                }
 
                 val result = withContext(Dispatchers.IO) {
                     BackupManager.exportBackup(context, uri, rules, prefs, records, BuildConfig.VERSION_NAME)
@@ -291,74 +298,76 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val importResult = withContext(Dispatchers.IO) {
                     BackupManager.importRuleList(context, uri, BuildConfig.VERSION_NAME)
                 }
-                
+
                 // If parse success, proceed to restore data to DB/Prefs
                 if (importResult.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
-                     withContext(Dispatchers.IO) {
-                         if (restoreRules && importResult.rules.isNotEmpty()) {
-                             val dbManager = DBManager.get(context)
-                             // Simple merge: add if not exists, or maybe just addAll (DB handles conflicts usually or we should check)
-                             // existing implementation in RuleListViewModel wiped all rules if 'retain' was false. 
-                             // Here we probably want to MERGE.
-                             // Implementing merge logic:
-                             val entities = importResult.rules.map { 
-                                 com.tianma.xsmscode.data.db.entity.SmsCodeRule(it.company, it.codeKeyword, it.codeRegex) 
-                             }
-                             // For simplicity in this plan, we just add them. Uniqueness constraint might be on ID or content.
-                             // SmsCodeRule has PrimaryKey autoGenerate.
-                             // Ideally we should check duplicates.
-                             dbManager.addSmsCodeRules(entities)
-                         }
-                         
-                         val records = importResult.records.orEmpty()
-                         if (restoreRecords && records.isNotEmpty()) {
-                             val dbManager = DBManager.get(context)
-                             val entities = records.map {
-                                 com.tianma.xsmscode.data.db.entity.SmsMsg(
-                                     sender = it.sender,
-                                     body = it.body,
-                                     date = it.date,
-                                     company = it.company,
-                                     smsCode = it.smsCode,
-                                     packageName = it.packageName
-                                 )
-                             }
-                             // SmsMsg has unique index on sender/body/date
-                             // So we use insert with OnConflictStrategy.IGNORE usually.
-                             // Check DB DAO specifically.
-                             dbManager.addSmsMsgList(entities)
-                         }
-                         
-                         val prefsMap = importResult.preferences.orEmpty()
-                         if (restoreConfig && prefsMap.isNotEmpty()) {
-                             for ((k, v) in prefsMap) {
-                                 if (v == null) continue
-                                 val strV = v
-                                 when {
-                                     booleanPrefKeys.contains(k) -> {
-                                         val normalized = strV.trim().lowercase()
-                                         val boolValue = when (normalized) {
-                                             "true", "1" -> true
-                                             "false", "0" -> false
-                                             else -> null
-                                         }
-                                         if (boolValue != null) {
-                                             AppPreferencesDataStore.setBoolean(context, k, boolValue)
-                                         }
-                                     }
-                                     intPrefKeys.contains(k) -> {
-                                         val intValue = strV.trim().toIntOrNull()
-                                         if (intValue != null) {
-                                             AppPreferencesDataStore.setInt(context, k, intValue)
-                                         }
-                                     }
-                                     else -> {
-                                         AppPreferencesDataStore.setString(context, k, strV)
-                                     }
-                                 }
-                             }
-                         }
-                     }
+                    withContext(Dispatchers.IO) {
+                        if (restoreRules && importResult.rules.isNotEmpty()) {
+                            val dbManager = DBManager.get(context)
+                            // Simple merge: add if not exists, or maybe just addAll (DB handles conflicts usually or we should check)
+                            // existing implementation in RuleListViewModel wiped all rules if 'retain' was false.
+                            // Here we probably want to MERGE.
+                            // Implementing merge logic:
+                            val entities = importResult.rules.map {
+                                com.tianma.xsmscode.data.db.entity.SmsCodeRule(it.company, it.codeKeyword, it.codeRegex)
+                            }
+                            // For simplicity in this plan, we just add them. Uniqueness constraint might be on ID or content.
+                            // SmsCodeRule has PrimaryKey autoGenerate.
+                            // Ideally we should check duplicates.
+                            dbManager.addSmsCodeRules(entities)
+                        }
+
+                        val records = importResult.records.orEmpty()
+                        if (restoreRecords && records.isNotEmpty()) {
+                            val dbManager = DBManager.get(context)
+                            val entities = records.map {
+                                com.tianma.xsmscode.data.db.entity.SmsMsg(
+                                    sender = it.sender,
+                                    body = it.body,
+                                    date = it.date,
+                                    company = it.company,
+                                    smsCode = it.smsCode,
+                                    packageName = it.packageName,
+                                )
+                            }
+                            // SmsMsg has unique index on sender/body/date
+                            // So we use insert with OnConflictStrategy.IGNORE usually.
+                            // Check DB DAO specifically.
+                            dbManager.addSmsMsgList(entities)
+                        }
+
+                        val prefsMap = importResult.preferences.orEmpty()
+                        if (restoreConfig && prefsMap.isNotEmpty()) {
+                            for ((k, v) in prefsMap) {
+                                if (v == null) continue
+                                val strV = v
+                                when {
+                                    booleanPrefKeys.contains(k) -> {
+                                        val normalized = strV.trim().lowercase()
+                                        val boolValue = when (normalized) {
+                                            "true", "1" -> true
+                                            "false", "0" -> false
+                                            else -> null
+                                        }
+                                        if (boolValue != null) {
+                                            AppPreferencesDataStore.setBoolean(context, k, boolValue)
+                                        }
+                                    }
+
+                                    intPrefKeys.contains(k) -> {
+                                        val intValue = strV.trim().toIntOrNull()
+                                        if (intValue != null) {
+                                            AppPreferencesDataStore.setInt(context, k, intValue)
+                                        }
+                                    }
+
+                                    else -> {
+                                        AppPreferencesDataStore.setString(context, k, strV)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 _eventsFlow.emit(SettingsEvent.RestoreResultEvent(importResult))
