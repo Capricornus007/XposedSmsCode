@@ -91,4 +91,5 @@ jobs:
         continue-on-error: true
         with:
           sarif_file: merged-sarif/detekt.sarif
+          category: app
 
