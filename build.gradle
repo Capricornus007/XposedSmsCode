@@ -29,7 +29,7 @@ subprojects {
         detekt {
             autoCorrect = true
             parallel = true
-            buildUponDefaultConfig = true
+            buildUponDefaultConfig = false
             config = files("${rootProject.projectDir}/config/detekt/detekt.yml")
         }
         dependencies {

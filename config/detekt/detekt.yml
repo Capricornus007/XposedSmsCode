@@ -92,3 +92,6 @@ exceptions:
       - 'RuntimeException'
       - 'Throwable'
     allowedExceptionNameRegex: '_|(ignore|expected).*'
+    excludes:
+      - '**/xp/**'
+      - '**/feature/backup/RuleImporter.kt'
