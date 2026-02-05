@@ -17,12 +17,13 @@ class SyncSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
     CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
+        XLog.i("SyncSmsAction: Starting execution for code=${mSmsMsg.smsCode}")
         XLog.d("Executing SyncSmsAction")
-        // Use IO dispatcher for network operations
-        CoroutineScope(Dispatchers.IO).launch {
+        // Use runBlocking to ensure sync completes before returning
+        kotlinx.coroutines.runBlocking {
             try {
                 SyncManager.pushSmsToGroup(
-                    context = mPhoneContext,
+                    context = mPluginContext,  // 使用 mPluginContext 而非 mPhoneContext
                     code = mSmsMsg.smsCode ?: "",
                     sender = mSmsMsg.sender ?: "",
                     body = mSmsMsg.body,

@@ -24,14 +24,16 @@ object SyncManager {
         company: String?,
         packageName: String?
     ) {
+        XLog.i(TAG, "pushSmsToGroup called: code=$code, sender=$sender")
         if (!SPUtils.isFcmSyncEnabled(context)) {
             XLog.d(TAG, "FCM Sync disabled")
             return
         }
 
-        val serverKey = SPUtils.getFcmServerKey(context)
-        if (serverKey.isNullOrBlank()) {
-            XLog.e(TAG, "Cannot push SMS: FCM Server Key is missing")
+        // Get service account JSON for v1 API
+        val serviceAccountJson = SPUtils.getFcmServiceAccountJson(context)
+        if (serviceAccountJson.isNullOrBlank()) {
+            XLog.e(TAG, "Cannot push SMS: Service Account JSON is missing")
             return
         }
 
@@ -41,35 +43,53 @@ object SyncManager {
             return
         }
 
-        XLog.i(TAG, "Pushing encrypted SMS to topic: group_$groupId")
+        // Extract project ID from service account
+        val projectId = com.tianma.xsmscode.feature.fcm.FCMTokenManager.extractProjectId(serviceAccountJson)
+        if (projectId == null) {
+            XLog.e(TAG, "Cannot push SMS: Failed to extract project ID from service account")
+            return
+        }
+
+        XLog.i(TAG, "Pushing encrypted SMS to topic: group_$groupId (v1 API)")
         
         // Encrypt data with groupId as password
         val encryptedCode = com.tianma.xsmscode.common.utils.CryptoUtils.encrypt(code, groupId) ?: code
         val encryptedBody = body?.let { com.tianma.xsmscode.common.utils.CryptoUtils.encrypt(it, groupId) } ?: body
 
+        // Get OAuth access token
+        val tokenResult = com.tianma.xsmscode.feature.fcm.FCMTokenManager.getAccessToken(context, serviceAccountJson)
+        if (tokenResult.isFailure) {
+            XLog.e(TAG, "Failed to get access token: ${tokenResult.exceptionOrNull()?.message}")
+            return
+        }
+        val accessToken = tokenResult.getOrNull()!!
+
         val mediaType = "application/json; charset=utf-8".toMediaType()
 
-        val data = JSONObject().apply {
-            put("type", "sms_sync_encrypted") // New type for encrypted payloads
-            put("code", encryptedCode)
-            put("sender", sender)
-            put("body", encryptedBody)
-            put("timestamp", timestamp.toString())
-            put("company", company)
-            put("package_name", packageName)
+        // v1 API message format
+        val message = JSONObject().apply {
+            put("message", JSONObject().apply {
+                put("topic", "group_$groupId")
+                put("data", JSONObject().apply {
+                    put("type", "sms_sync_encrypted")
+                    put("code", encryptedCode)
+                    put("sender", sender)
+                    put("body", encryptedBody ?: "")
+                    put("timestamp", timestamp.toString())
+                    put("company", company ?: "")
+                    put("package_name", packageName ?: "")
+                })
+                put("android", JSONObject().apply {
+                    put("priority", "high")
+                })
+            })
         }
 
-        val json = JSONObject().apply {
-            put("to", "/topics/group_$groupId")
-            put("data", data)
-            put("priority", "high")
-        }
-
-        val requestBody = json.toString().toRequestBody(mediaType)
+        val requestBody = message.toString().toRequestBody(mediaType)
         val request = Request.Builder()
-            .url("https://fcm.googleapis.com/fcm/send")
+            .url("https://fcm.googleapis.com/v1/projects/$projectId/messages:send")
             .post(requestBody)
-            .addHeader("Authorization", "key=$serverKey")
+            .addHeader("Authorization", "Bearer $accessToken")
             .addHeader("Content-Type", "application/json")
             .build()
 
@@ -78,8 +98,9 @@ object SyncManager {
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
                         XLog.e(TAG, "Failed to broadcast to topic: ${response.code} ${response.message}")
+                        XLog.e(TAG, "Response body: ${response.body.string()}")
                     } else {
-                        XLog.d(TAG, "Topic broadcast success")
+                        XLog.d(TAG, "Topic broadcast success (v1 API)")
                     }
                 }
             } catch (e: Exception) {

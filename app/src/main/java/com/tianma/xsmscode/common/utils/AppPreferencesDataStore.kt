@@ -206,7 +206,26 @@ object AppPreferencesDataStore {
         )
         editor.putBoolean(PrefConst.KEY_DEDUPLICATE_SMS, getBoolean(context, PrefConst.KEY_DEDUPLICATE_SMS, true))
         editor.putString(PrefConst.KEY_HISTORY_LIMIT, getString(context, PrefConst.KEY_HISTORY_LIMIT, "0"))
-        editor.apply()
+        
+        // FCM 配置同步
+        editor.putBoolean(
+            PrefConst.KEY_FCM_ENABLE,
+            getBoolean(context, PrefConst.KEY_FCM_ENABLE, false)
+        )
+        editor.putString(
+            PrefConst.KEY_SYNC_GROUP_ID,
+            getString(context, PrefConst.KEY_SYNC_GROUP_ID, "")
+        )
+        editor.putString(
+            PrefConst.KEY_FCM_SERVICE_ACCOUNT_JSON,
+            getString(context, PrefConst.KEY_FCM_SERVICE_ACCOUNT_JSON, "")
+        )
+        editor.putString(
+            PrefConst.KEY_FCM_TOKEN,
+            getString(context, PrefConst.KEY_FCM_TOKEN, "")
+        )
+        
+        editor.commit()  // 使用 commit() 而非 apply() 确保立即写入
         ensureSharedPrefsReadable(context)
     }
 
