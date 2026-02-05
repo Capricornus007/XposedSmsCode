@@ -185,4 +185,19 @@ object PrefsReader {
             0
         }
     }
+
+    @JvmStatic
+    fun isFcmSyncEnabled(context: Context): Boolean {
+        return getBooleanViaProvider(context, PrefConst.KEY_FCM_ENABLE, false)
+    }
+
+    @JvmStatic
+    fun getFcmServiceAccountJson(context: Context): String {
+        return getStringViaProvider(context, PrefConst.KEY_FCM_SERVICE_ACCOUNT_JSON, "")
+    }
+
+    @JvmStatic
+    fun getSyncGroupId(context: Context): String {
+        return getStringViaProvider(context, PrefConst.KEY_SYNC_GROUP_ID, "")
+    }
 }

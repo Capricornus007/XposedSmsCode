@@ -34,22 +34,22 @@ object FCMTokenManager {
                 
                 // Return cached token if still valid
                 if (cachedToken != null && currentTime < tokenExpiryMs) {
-                    XLog.d(TAG, "Using cached access token")
+                    XLog.d("FCMTokenManager - Using cached access token")
                     return@withLock Result.success(cachedToken!!)
                 }
                 
                 // Refresh token
-                XLog.i(TAG, "Refreshing access token...")
+                XLog.i("FCMTokenManager - Refreshing access token...")
                 val newToken = refreshToken(serviceAccountJson)
                 
                 cachedToken = newToken
                 tokenExpiryMs = currentTime + 55 * 60 * 1000 // 55 minutes
                 
-                XLog.d(TAG, "Access token refreshed successfully")
+                XLog.d("FCMTokenManager - Access token refreshed successfully")
                 Result.success(newToken)
             }
         } catch (e: Exception) {
-            XLog.e(TAG, "Failed to get access token", e)
+            XLog.e("FCMTokenManager - Failed to get access token", e)
             Result.failure(e)
         }
     }
@@ -62,7 +62,7 @@ object FCMTokenManager {
             val json = JSONObject(serviceAccountJson)
             json.getString("project_id")
         } catch (e: Exception) {
-            XLog.e(TAG, "Failed to extract project ID", e)
+            XLog.e("FCMTokenManager - Failed to extract project ID", e)
             null
         }
     }
@@ -86,7 +86,7 @@ object FCMTokenManager {
      */
     suspend fun clearCache() {
         mutex.withLock {
-            XLog.d(TAG, "Clearing token cache")
+            XLog.d("FCMTokenManager - Clearing token cache")
             cachedToken = null
             tokenExpiryMs = 0
         }
