@@ -99,15 +99,14 @@ class CodeWorker(
             4000L
         }
 
-        // 同步验证码 Action (Run synchronously to avoid shutdown cancellation)
-        XLog.i("CodeWorker: About to execute SyncSmsAction for code: ${smsMsg.smsCode}")
+        // 同步启动异步任务 (Run asynchronously via internal CoroutineScope)
+        XLog.i("CodeWorker: Triggering SyncSmsAction for code: ${smsMsg.smsCode}")
         val syncSmsAction = SyncSmsAction(mPluginContext, mPhoneContext, smsMsg)
         try {
-            XLog.i("SyncSmsAction: Starting execution for code=${smsMsg.smsCode}")
-            syncSmsAction.action()  // 直接同步调用，不使用 Executor
-            XLog.i("CodeWorker: SyncSmsAction completed")
+            syncSmsAction.action()  // 此方法现在是内部异步启动，不会阻塞
+            XLog.i("CodeWorker: SyncSmsAction triggered successfully")
         } catch (e: Exception) {
-            XLog.e("CodeWorker: SyncSmsAction execution failed", e)
+            XLog.e("CodeWorker: SyncSmsAction trigger failed", e)
         }
 
         mScheduledExecutor.schedule(killMeAction, killDelayMs, TimeUnit.MILLISECONDS)

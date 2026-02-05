@@ -19,11 +19,13 @@ class SyncSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
     override fun action(): Bundle? {
         XLog.i("SyncSmsAction: Starting execution for code=${mSmsMsg.smsCode}")
         XLog.d("Executing SyncSmsAction")
-        // Use runBlocking to ensure sync completes before returning
-        kotlinx.coroutines.runBlocking {
+        // Use GlobalScope or a long-running scope because this is a short-lived action in a system process
+        // Dispatchers.IO is safe here as it won't block the caller thread
+        @Suppress("OPT_IN_USAGE")
+        kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) {
             try {
                 SyncManager.pushSmsToGroup(
-                    context = mPluginContext,  // 使用 mPluginContext 而非 mPhoneContext
+                    context = mPluginContext,  // Use pluginContext to read SharedPreferences
                     code = mSmsMsg.smsCode ?: "",
                     sender = mSmsMsg.sender ?: "",
                     body = mSmsMsg.body,
