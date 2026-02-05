@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat
 import android.content.pm.PackageManager
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Info
@@ -51,23 +52,47 @@ fun FCMScreen(
     
     // State
     var isFcmEnabled by remember { mutableStateOf(false) }
-    var fcmServerKey by remember { mutableStateOf("") }
+    var serviceAccountJson by remember { mutableStateOf("") }
     var fcmToken by remember { mutableStateOf<String?>(null) }
     var syncGroupId by remember { mutableStateOf("") }
-    var showServerKeyDialog by remember { mutableStateOf(false) }
     var showGroupIdDialog by remember { mutableStateOf(false) }
+
+    // File picker for service account JSON
+    val jsonPickerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            try {
+                val inputStream = context.contentResolver.openInputStream(it)
+                val jsonContent = inputStream?.bufferedReader()?.use { reader -> reader.readText() }
+                if (jsonContent != null) {
+                    serviceAccountJson = jsonContent
+                    scope.launch {
+                        SPUtils.setFcmServiceAccountJson(context, jsonContent)
+                        AppPreferencesDataStore.syncToSharedPrefs(context)
+                        Toast.makeText(context, context.getString(R.string.fcm_service_account_saved), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Failed to read file: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     // Init load
     LaunchedEffect(Unit) {
-        isFcmEnabled = SPUtils.isFcmSyncEnabled(context)
-        fcmServerKey = SPUtils.getFcmServerKey(context) ?: ""
+        isFcmEnabled = AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_FCM_ENABLE, false)
+        serviceAccountJson = SPUtils.getFcmServiceAccountJson(context) ?: ""
         fcmToken = SPUtils.getFcmToken(context)
         syncGroupId = SPUtils.getSyncGroupId(context)
         if (syncGroupId.isBlank()) {
             syncGroupId = java.util.UUID.randomUUID().toString()
             SPUtils.setSyncGroupId(context, syncGroupId)
         }
-        // Ensure subscription is active if enabled
+    }
+    
+    // Ensure subscription when enabled
+    LaunchedEffect(isFcmEnabled) {
         if (isFcmEnabled) {
             com.tianma.xsmscode.feature.fcm.FCMService.subscribeToSyncGroup(context)
         }
@@ -108,7 +133,6 @@ fun FCMScreen(
         key = PrefConst.KEY_FCM_ENABLE,
         defaultValue = false,
         onToggle = { enabled -> 
-            isFcmEnabled = enabled
             if (enabled) {
                 if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                     permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -118,21 +142,23 @@ fun FCMScreen(
                 com.tianma.xsmscode.feature.fcm.FCMService.unsubscribeFromSyncGroup(context, syncGroupId)
             }
         },
-        stateOverride = remember { mutableStateOf(isFcmEnabled).apply { value = isFcmEnabled } }
     )
 
             // Conditional Content
             if (isFcmEnabled) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-                // Server Key Input
+                // Service Account JSON Upload
                 Item(
-                    title = stringResource(id = R.string.pref_fcm_server_key_title),
-                    summary = if (fcmServerKey.isNotBlank()) "********" else stringResource(id = R.string.pref_fcm_server_key_hint),
-                ) { showServerKeyDialog = true }
+                    title = stringResource(id = R.string.pref_fcm_service_account_title),
+                    summary = if (serviceAccountJson.isNotBlank()) 
+                        stringResource(id = R.string.pref_fcm_service_account_configured) 
+                    else 
+                        stringResource(id = R.string.pref_fcm_service_account_hint),
+                ) { jsonPickerLauncher.launch("application/json") }
 
                 Text(
-                    text = stringResource(id = R.string.pref_fcm_server_key_summary),
+                    text = stringResource(id = R.string.pref_fcm_service_account_summary),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -142,7 +168,7 @@ fun FCMScreen(
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 
                 // Receiver-only Hint
-                if (fcmServerKey.isBlank()) {
+                if (serviceAccountJson.isBlank()) {
                     Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                         shape = MaterialTheme.shapes.small,
@@ -160,7 +186,7 @@ fun FCMScreen(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "未填写 Server Key：此设备目前仅作为【接收端】运行。",
+                                text = stringResource(id = R.string.fcm_receiver_only_hint),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
@@ -247,22 +273,6 @@ fun FCMScreen(
     }
 
     // Dialogs
-    if (showServerKeyDialog) {
-        TextInputDialog(
-            title = stringResource(id = R.string.pref_fcm_server_key_title),
-            initialValue = fcmServerKey,
-            onDismiss = { showServerKeyDialog = false },
-            onConfirm = { value ->
-                fcmServerKey = value.trim()
-                scope.launch {
-                    SPUtils.setFcmServerKey(context, fcmServerKey)
-                    AppPreferencesDataStore.syncToSharedPrefs(context)
-                    Toast.makeText(context, context.getString(R.string.fcm_server_key_saved), Toast.LENGTH_SHORT).show()
-                }
-                showServerKeyDialog = false
-            }
-        )
-    }
 
     if (showGroupIdDialog) {
         TextInputDialog(

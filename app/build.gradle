@@ -142,6 +142,12 @@ android {
         }
     }
 
+    packaging {
+        resources {
+            excludes += ['META-INF/INDEX.LIST', 'META-INF/DEPENDENCIES']
+        }
+    }
+
     compileOptions {
         // Keep JDK 25, but emit Java 21 bytecode so Compose/AGP tooling can read it.
         sourceCompatibility JavaVersion.VERSION_21
@@ -266,4 +272,5 @@ dependencies {
     // Firebase
     implementation platform(libs.firebase.bom)
     implementation libs.firebase.messaging
+    implementation libs.google.auth.oauth2.http
 }

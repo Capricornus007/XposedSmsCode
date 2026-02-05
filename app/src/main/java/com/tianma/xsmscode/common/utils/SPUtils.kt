@@ -97,6 +97,16 @@ object SPUtils {
         AppPreferencesDataStore.setString(context, PrefConst.KEY_FCM_SERVER_KEY, key)
     }
 
+    @JvmStatic
+    suspend fun getFcmServiceAccountJson(context: Context): String? {
+        return AppPreferencesDataStore.getString(context, PrefConst.KEY_FCM_SERVICE_ACCOUNT_JSON, "")
+    }
+
+    @JvmStatic
+    suspend fun setFcmServiceAccountJson(context: Context, json: String) {
+        AppPreferencesDataStore.setString(context, PrefConst.KEY_FCM_SERVICE_ACCOUNT_JSON, json)
+    }
+
 
     @JvmStatic
     suspend fun getSyncGroupId(context: Context): String {

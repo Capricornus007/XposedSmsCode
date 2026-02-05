@@ -46,6 +46,7 @@ object PrefConst {
     const val KEY_FCM_TOKEN = "fcm_token"
     const val KEY_FCM_ENABLE = "fcm_enable"
     const val KEY_FCM_SERVER_KEY = "fcm_server_key"
+    const val KEY_FCM_SERVICE_ACCOUNT_JSON = "fcm_service_account_json"
     const val KEY_SYNC_GROUP_ID = "sync_group_id"
 
     // Others
