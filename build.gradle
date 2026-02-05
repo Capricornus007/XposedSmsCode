@@ -9,7 +9,7 @@ buildscript {
         maven { url = "https://maven.pkg.jetbrains.space/kotlin/p/kotlin/eap" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:9.1.0-alpha07'
+        classpath 'com.android.tools.build:gradle:9.1.0-alpha08'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:2.3.20-Beta2"
         classpath "org.jetbrains.kotlin:kotlin-serialization:2.3.20-Beta2"
         classpath "org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.3.20-Beta2"
