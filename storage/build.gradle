@@ -5,11 +5,11 @@ plugins {
 
 android {
     namespace = 'com.tianma.xsmscode.storage'
-    compileSdk libs.versions.compileSdk.get().toInteger()
+    compileSdk = libs.versions.compileSdk.get().toInteger()
     compileSdkExtension = libs.versions.compileSdkExtension.get().toInteger()
 
     defaultConfig {
-        minSdk libs.versions.minSdk.get().toInteger()
+        minSdk = libs.versions.minSdk.get().toInteger()
     }
 
     compileOptions {

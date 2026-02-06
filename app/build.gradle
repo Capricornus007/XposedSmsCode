@@ -52,15 +52,15 @@ def releaseAabName = { String versionName ->
 android {
     namespace = 'com.github.tianma8023.xposed.smscode'
 
-    compileSdk COMPILE_SDK
+    compileSdk = COMPILE_SDK
     compileSdkExtension = SDK_EXTENSION
     ndkVersion = NDK_VERSION
     defaultConfig {
-        applicationId "com.github.tianma8023.xposed.smscode"
-        minSdkVersion MIN_SDK
-        targetSdk TARGET_SDK
-        versionCode VERSION_CODE
-        versionName VERSION_NAME
+        applicationId = "com.github.tianma8023.xposed.smscode"
+        minSdk = MIN_SDK
+        targetSdk = TARGET_SDK
+        versionCode = VERSION_CODE
+        versionName = VERSION_NAME
 
         buildConfigField("String", "LOG_TAG", "\"XSmsCode\"")
         buildConfigField("int", "MODULE_VERSION", "" + VERSION_CODE)
@@ -105,9 +105,9 @@ android {
         }
 
         alpha {
-            minifyEnabled true
+            minifyEnabled = true
             shrinkResources = true
-            zipAlignEnabled true
+            zipAlignEnabled = true
             debuggable = false
 
             buildConfigField("int", "LOG_LEVEL", "2")
@@ -121,9 +121,9 @@ android {
         }
 
         release {
-            minifyEnabled true
+            minifyEnabled = true
             shrinkResources = true
-            zipAlignEnabled true
+            zipAlignEnabled = true
 
             buildConfigField("int", "LOG_LEVEL", "4")
             buildConfigField("boolean", "LOG_TO_XPOSED", "true")
@@ -135,13 +135,15 @@ android {
 
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
 
-            lintOptions {
+            lint {
                 disable 'MissingTranslation'
                 checkReleaseBuilds = false
             }
 
-            packagingOptions {
-                exclude '**/*.kotlin_*'
+            packaging {
+                resources {
+                    excludes += '**/*.kotlin_*'
+                }
             }
         }
     }
@@ -165,21 +167,21 @@ android {
 }
 
 testlogger {
-    theme 'mocha'
-    showExceptions true
-    showStackTraces true
-    showFullStackTraces false
-    showCauses true
-    slowThreshold 2000
-    showSummary true
-    showPassed true
-    showSkipped true
-    showFailed true
-    showStandardStreams false
-    showPassedStandardStreams true
-    showSkippedStandardStreams true
-    showFailedStandardStreams true
-    logLevel 'lifecycle'
+    theme = 'mocha'
+    showExceptions = true
+    showStackTraces = true
+    showFullStackTraces = false
+    showCauses = true
+    slowThreshold = 2000
+    showSummary = true
+    showPassed = true
+    showSkipped = true
+    showFailed = true
+    showStandardStreams = false
+    showPassedStandardStreams = true
+    showSkippedStandardStreams = true
+    showFailedStandardStreams = true
+    logLevel = 'lifecycle'
 }
 
 androidComponents {

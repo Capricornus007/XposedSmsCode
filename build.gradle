@@ -61,11 +61,11 @@ subprojects {
     // Configure test-logger for all projects
     if (plugins.hasPlugin("com.adarshr.test-logger")) {
         testlogger {
-            theme 'mocha'
-            showExceptions true
-            showStackTraces true
-            showCauses true
-            showSummary true
+            theme = 'mocha'
+            showExceptions = true
+            showStackTraces = true
+            showCauses = true
+            showSummary = true
         }
     }
 
