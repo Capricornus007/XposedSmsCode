@@ -114,6 +114,15 @@
     <string name="pref_others_title">Others</string>
     <string name="pref_verbose_log_mode_title">Detailed log</string>
     <string name="pref_verbose_log_mode_summary">Print detailed log(only for debug)</string>
+    <string name="pref_auto_update_on_start_title">Auto update on launch</string>
+    <string name="pref_auto_update_on_start_summary">Run update strategy once when app starts</string>
+    <string name="pref_auto_update_wifi_only_title">Wi-Fi only for auto update</string>
+    <string name="pref_auto_update_wifi_only_summary">Only run startup update check on Wi-Fi</string>
+    <string name="github_update_dialog_title">New version found</string>
+    <string name="github_update_dialog_message">Version %1$s is available. Download now?</string>
+    <string name="github_update_ignore_this_version">Ignore this version</string>
+    <string name="github_update_download">Download</string>
+    <string name="app_already_newest">Current version is the latest.</string>
     <!-- preference others end -->
 
     <!-- preference about -->
@@ -253,7 +262,7 @@
     <string name="alipay_red_packet_code_copied">Red packet token copied, go get it: %s</string>
     <string name="get_red_packet">Get red packet</string>
     <string name="dialog_donate_title">Buy me a coffee T_T</string>
-    <string name="dialog_donate_summary">Tap to view donation details</string>
+    <string name="dialog_donate_summary">Thanks to the developer</string>
     <string name="dialog_donate_content">I\'m starving and can barely code. Please show some mercy and buy me a coffee! Whether it\'s WeChat or Alipay, even a penny is a huge rescue for me ✿✿ヽ(°▽°)ノ✿</string>
     <string name="dialog_donate_wechat">Coffee (WeChat)</string>
     <string name="dialog_donate_alipay">Coffee (Alipay)</string>
@@ -271,25 +280,9 @@
 
 
     <!-- check update -->
-    <string name="new_version_found">New version found!</string>
     <string name="check_update_title">Check for updates</string>
-    <string name="update_in_app">In-app update</string>
-    <string name="update_manual_download">Manual download</string>
-    <string name="update_link_copied">Download link copied</string>
-    <string name="update_completed">Update completed</string>
+    <string name="check_update_summary">Tap to check updates</string>
     <string name="check_update_failed">Check update failed.</string>
-    <string name="network_error_http">HTTP %1$d</string>
-    <string name="network_error_io">Network error</string>
-    <string name="network_error_serialization">Response parsing failed</string>
-    <string name="network_error_unexpected">Unexpected error</string>
-    <string name="network_error_multi_source">All sources failed</string>
-    <string name="app_already_newest">Current version is the latest.</string>
-    <string name="update_from_github">Go to GitHub</string>
-    <string name="update_from_coolapk">Go to Coolapk</string>
-    <string name="coolapk_install_prompt">Please install CoolApk</string>
-    <string name="coolapk_enable_prompt">Please enable CoolApk</string>
-    <string name="source_coolapk">CoolApk</string>
-    <string name="source_github">GitHub</string>
     <!-- check update end -->
 
 

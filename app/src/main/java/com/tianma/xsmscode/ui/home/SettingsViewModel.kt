@@ -13,10 +13,6 @@ import com.tianma.xsmscode.common.constant.Const
 import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.*
 import com.tianma.xsmscode.data.db.DBManager
-import com.tianma.xsmscode.data.db.entity.ApkVersion
-import com.tianma.xsmscode.data.http.NetworkError
-import com.tianma.xsmscode.data.http.NetworkResult
-import com.tianma.xsmscode.data.repository.DataRepository
 import com.tianma.xsmscode.feature.backup.BackupImportResult
 import com.tianma.xsmscode.feature.backup.BackupManager
 import com.tianma.xsmscode.feature.backup.BackupRule
@@ -38,12 +34,10 @@ sealed class SettingsEvent {
     data object ShowPrivacyPolicy : SettingsEvent()
     data object ShowAlipayPacket : SettingsEvent()
     data class SmsCodeTestResult(val code: String) : SettingsEvent()
-    data class CheckUpdateError(val error: NetworkError) : SettingsEvent()
-    data class ShowUpdateDialog(val version: ApkVersion) : SettingsEvent()
-    data object AppAlreadyNewest : SettingsEvent()
     data object NavigateToRules : SettingsEvent()
     data object NavigateToRecords : SettingsEvent()
     data object StartPlayUpdate : SettingsEvent()
+    data object StartGithubUpdateCheck : SettingsEvent()
     data class BackupResultEvent(val success: Boolean) : SettingsEvent()
     data class RestoreResultEvent(val result: BackupImportResult) : SettingsEvent()
     data class ImportDialogConfirm(val uri: android.net.Uri) : SettingsEvent()
@@ -66,6 +60,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         PrefConst.KEY_DELETE_SMS,
         PrefConst.KEY_KILL_ME,
         PrefConst.KEY_VERBOSE_LOG_MODE,
+        PrefConst.KEY_AUTO_UPDATE_ON_START,
+        PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
         PrefConst.KEY_PRIVACY_POLICY_ACCEPTED,
         PrefConst.KEY_BACKUP_COMPAT_TIP_SHOWN,
     )
@@ -82,9 +78,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val _themeState = MutableStateFlow(ThemeState(0))
     val themeState: StateFlow<ThemeState> = _themeState.asStateFlow()
-
-    private val _updateVersion = MutableStateFlow<ApkVersion?>(null)
-    val updateVersion: StateFlow<ApkVersion?> = _updateVersion.asStateFlow()
 
     val smsRecordCount: StateFlow<Long> = DBManager.get(application)
         .queryAllSmsMsgCountFlow()
@@ -109,10 +102,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             SPUtils.setThemeMode(getApplication(), mode)
             _themeState.value = ThemeState(mode, x, y)
         }
-    }
-
-    fun clearUpdateVersion() {
-        _updateVersion.value = null
     }
 
     override fun onCleared() {
@@ -185,44 +174,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         AppPreferencesDataStore.ensureReadable(getApplication())
     }
 
-    fun checkUpdate() {
+    fun requestPreferredUpdate() {
         viewModelScope.launch {
-            try {
-                val result = withContext(Dispatchers.IO) {
-                    DataRepository.getLatestVersion()
-                }
-                when (result) {
-                    is NetworkResult.Success -> {
-                        val currentVersion = ApkVersion(BuildConfig.VERSION_NAME, "")
-                        if (currentVersion < result.data) {
-                            _updateVersion.value = result.data
-                        } else {
-                            _eventsFlow.emit(SettingsEvent.AppAlreadyNewest)
-                        }
-                    }
-
-                    is NetworkResult.Error -> {
-                        _eventsFlow.emit(SettingsEvent.CheckUpdateError(result.error))
-                    }
-                }
-            } catch (e: Throwable) {
-                _eventsFlow.emit(SettingsEvent.CheckUpdateError(NetworkError.Unexpected(e.message, e)))
+            if (PackageUtils.isInstalledFromPlay(getApplication())) {
+                _eventsFlow.emit(SettingsEvent.StartPlayUpdate)
+            } else {
+                _eventsFlow.emit(SettingsEvent.StartGithubUpdateCheck)
             }
         }
-    }
-
-    fun requestPlayUpdate() {
-        viewModelScope.launch {
-            _eventsFlow.emit(SettingsEvent.StartPlayUpdate)
-        }
-    }
-
-    fun updateFromGithub() {
-        Utils.showWebPage(getApplication(), Const.PROJECT_GITHUB_LATEST_RELEASE_URL)
-    }
-
-    fun updateFromCoolApk() {
-        PackageUtils.showAppDetailsInCoolApk(getApplication())
     }
 
     fun handleBackupArguments(uri: android.net.Uri?) {

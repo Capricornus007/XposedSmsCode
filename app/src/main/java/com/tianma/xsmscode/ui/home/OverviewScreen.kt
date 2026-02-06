@@ -15,7 +15,6 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -30,14 +29,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.common.constant.Const
 import com.tianma.xsmscode.common.utils.ModuleUtils
 import com.tianma.xsmscode.common.utils.PackageUtils
 import com.tianma.xsmscode.common.utils.Utils
-import com.tianma.xsmscode.data.db.entity.ApkVersion
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
@@ -56,7 +53,6 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
     } else {
         koinViewModel()
     }
-    val updateVersion by settingsViewModel.updateVersion.collectAsStateWithLifecycle(null)
     var showDonateDialog by remember { mutableStateOf(false) }
     var showAlipayChoiceDialog by remember { mutableStateOf(false) }
     var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
@@ -64,11 +60,6 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
     val isEnabled = ModuleUtils.isModuleEnabled()
 
     val listState = rememberLazyListState()
-    val showTopDivider by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 0
-        }
-    }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val frameworkInfoState by produceState<Pair<String, String>?>(
         initialValue = null,
@@ -188,17 +179,9 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
                         InfoItem(
                             icon = Icons.Default.Info,
                             label = stringResource(id = R.string.check_update_title),
-                            value = stringResource(
-                                id = R.string.pref_version_summary,
-                                BuildConfig.VERSION_NAME,
-                                BuildConfig.VERSION_CODE,
-                            ),
+                            value = stringResource(id = R.string.check_update_summary),
                             onClick = {
-                                if (PackageUtils.isInstalledFromPlay(context)) {
-                                    settingsViewModel.requestPlayUpdate()
-                                } else {
-                                    settingsViewModel.checkUpdate()
-                                }
+                                settingsViewModel.requestPreferredUpdate()
                             },
                         )
                         InfoItem(
@@ -243,21 +226,6 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
                 containerColor = Color.Transparent,
                 scrolledContainerColor = Color.Transparent,
             ),
-        )
-    }
-
-    updateVersion?.let { version ->
-        UpdateSourceDialog(
-            version = version,
-            onDismiss = { settingsViewModel.clearUpdateVersion() },
-            onUpdateCoolApk = {
-                settingsViewModel.updateFromCoolApk()
-                settingsViewModel.clearUpdateVersion()
-            },
-            onUpdateGithub = {
-                settingsViewModel.updateFromGithub()
-                settingsViewModel.clearUpdateVersion()
-            },
         )
     }
 
@@ -369,31 +337,5 @@ fun InfoItem(icon: ImageVector, label: String, value: String, onClick: (() -> Un
         },
         modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-    )
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun UpdateSourceDialog(
-    version: ApkVersion,
-    onDismiss: () -> Unit,
-    onUpdateCoolApk: () -> Unit,
-    onUpdateGithub: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(id = R.string.new_version_found)) },
-        text = { Text(version.versionInfo ?: "") },
-        confirmButton = {
-            TextButton(onClick = onUpdateCoolApk) {
-                Text(stringResource(id = R.string.source_coolapk))
-            }
-            TextButton(onClick = onUpdateGithub) {
-                Text(stringResource(id = R.string.source_github))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) }
-        },
     )
 }

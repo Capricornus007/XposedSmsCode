@@ -116,6 +116,15 @@
     <string name="pref_others_title">其他</string>
     <string name="pref_verbose_log_mode_title">详细日志</string>
     <string name="pref_verbose_log_mode_summary">打印详细日志(仅用于调试)</string>
+    <string name="pref_auto_update_on_start_title">启动时自动更新</string>
+    <string name="pref_auto_update_on_start_summary">应用启动时执行一次更新策略</string>
+    <string name="pref_auto_update_wifi_only_title">仅 Wi-Fi 自动检查更新</string>
+    <string name="pref_auto_update_wifi_only_summary">仅在 Wi-Fi 下执行启动更新检查</string>
+    <string name="github_update_dialog_title">发现新版本</string>
+    <string name="github_update_dialog_message">检测到版本 %1$s，可前往下载。</string>
+    <string name="github_update_ignore_this_version">此版本不再提示</string>
+    <string name="github_update_download">去下载</string>
+    <string name="app_already_newest">当前已是最新版本。</string>
     <!-- preference others end -->
 
     <!-- preference about -->
@@ -255,7 +264,7 @@
     <string name="alipay_red_packet_code_copied">红包口令已复制，快去白嫖吧: %s</string>
     <string name="get_red_packet">领个红包</string>
     <string name="dialog_donate_title">买杯咖啡吧 T_T</string>
-    <string name="dialog_donate_summary">点此查看详细说明</string>
+    <string name="dialog_donate_summary">感谢开发者</string>
     <string name="dialog_donate_content">开发者已经饿得快写不动代码了，求各位老板大发慈悲赏口饭吃吧！不管是微信还是支付宝，哪怕是一分钱也是对我的巨大救赎 ✿✿ヽ(°▽°)ノ✿</string>
     <string name="dialog_donate_wechat">咖啡 (微信)</string>
     <string name="dialog_donate_alipay">咖啡 (支付宝)</string>
@@ -273,25 +282,9 @@
 
 
     <!-- check update -->
-    <string name="new_version_found">发现新版本！</string>
     <string name="check_update_title">检查更新</string>
-    <string name="update_in_app">应用内更新</string>
-    <string name="update_manual_download">手动下载</string>
-    <string name="update_link_copied">下载链接已复制</string>
-    <string name="update_completed">更新完成</string>
+    <string name="check_update_summary">点击检查更新</string>
     <string name="check_update_failed">检查更新失败。</string>
-    <string name="network_error_http">HTTP %1$d</string>
-    <string name="network_error_io">网络异常</string>
-    <string name="network_error_serialization">解析失败</string>
-    <string name="network_error_unexpected">未知错误</string>
-    <string name="network_error_multi_source">多来源请求失败</string>
-    <string name="app_already_newest">当前已是最新版本。</string>
-    <string name="update_from_github">前往 GitHub</string>
-    <string name="update_from_coolapk">前往酷安</string>
-    <string name="coolapk_install_prompt">请先安装酷安</string>
-    <string name="coolapk_enable_prompt">请先启用酷安</string>
-    <string name="source_coolapk">酷安</string>
-    <string name="source_github">GitHub</string>
     <!-- check update end -->
 
 

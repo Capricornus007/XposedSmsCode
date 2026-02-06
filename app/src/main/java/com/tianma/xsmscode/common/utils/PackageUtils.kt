@@ -3,6 +3,8 @@ package com.tianma.xsmscode.common.utils
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
@@ -10,13 +12,13 @@ import androidx.annotation.IntDef
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.common.constant.Const
-import java.net.HttpURLConnection
-import java.net.URL
 
 /**
  * 包相关工具类
  */
 object PackageUtils {
+
+    private const val PLAY_STORE_PACKAGE_NAME = "com.android.vending"
 
     /**
      * not installed
@@ -213,28 +215,6 @@ object PackageUtils {
     }
 
     @JvmStatic
-    fun showAppDetailsInCoolApk(context: Context) {
-        val packageState = checkPackageState(context, Const.COOL_MARKET_PACKAGE_NAME)
-        when (packageState) {
-            PACKAGE_ENABLED -> {
-                val intent = Intent(Intent.ACTION_VIEW)
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                intent.data = Uri.parse("market://details?id=" + BuildConfig.APPLICATION_ID)
-                intent.setPackage(Const.COOL_MARKET_PACKAGE_NAME)
-                context.startActivity(intent)
-            }
-
-            PACKAGE_DISABLED -> {
-                Toast.makeText(context, R.string.coolapk_enable_prompt, Toast.LENGTH_SHORT).show()
-            }
-
-            PACKAGE_NOT_INSTALLED -> {
-                Toast.makeText(context, R.string.coolapk_install_prompt, Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    @JvmStatic
     fun isInstalledFromPlay(context: Context): Boolean = try {
         val pm = context.packageManager
         val installer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -243,7 +223,7 @@ object PackageUtils {
             @Suppress("DEPRECATION")
             pm.getInstallerPackageName(BuildConfig.APPLICATION_ID)
         }
-        installer == "com.android.vending"
+        installer == PLAY_STORE_PACKAGE_NAME
     } catch (ignored: Exception) {
         false
     }
@@ -252,7 +232,7 @@ object PackageUtils {
     fun showAppDetailsInPlayStore(context: Context) {
         val packageName = BuildConfig.APPLICATION_ID
         val marketIntent = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")).apply {
-            setPackage("com.android.vending")
+            setPackage(PLAY_STORE_PACKAGE_NAME)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         try {
@@ -267,21 +247,30 @@ object PackageUtils {
     }
 
     @JvmStatic
-    fun canReachGithub(): Boolean = try {
-        val url = URL("https://github.com")
-        val connection = (url.openConnection() as HttpURLConnection).apply {
-            connectTimeout = 3000
-            readTimeout = 3000
-            requestMethod = "HEAD"
-            instanceFollowRedirects = true
+    fun isPlayStoreAvailable(context: Context): Boolean =
+        isPackageEnabled(context, PLAY_STORE_PACKAGE_NAME)
+
+    @JvmStatic
+    fun openPlayStoreOrGithub(context: Context) {
+        if (isPlayStoreAvailable(context)) {
+            showAppDetailsInPlayStore(context)
+        } else {
+            Utils.showWebPage(context, Const.PROJECT_GITHUB_LATEST_RELEASE_URL)
         }
-        connection.connect()
-        connection.responseCode in HTTP_OK..HTTP_REDIRECT_LIMIT
-    } catch (ignored: Exception) {
-        false
     }
-    private const val HTTP_OK = 200
-    private const val HTTP_REDIRECT_LIMIT = 399
+
+    @JvmStatic
+    fun isOnWifi(context: Context): Boolean {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val network = cm.activeNetwork ?: return false
+            val capabilities = cm.getNetworkCapabilities(network) ?: return false
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+        } else {
+            @Suppress("DEPRECATION")
+            cm.activeNetworkInfo?.type == ConnectivityManager.TYPE_WIFI
+        }
+    }
 
     private fun checkWechatExists(context: Context): Boolean {
         val packageState = checkPackageState(context, Const.WECHAT_PACKAGE_NAME)

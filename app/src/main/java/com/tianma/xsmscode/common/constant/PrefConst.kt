@@ -46,6 +46,9 @@ object PrefConst {
 
     // Others
     const val KEY_VERBOSE_LOG_MODE = "pref_verbose_log_mode"
+    const val KEY_AUTO_UPDATE_ON_START = "pref_auto_update_on_start"
+    const val KEY_AUTO_UPDATE_WIFI_ONLY = "pref_auto_update_wifi_only"
+    const val KEY_GITHUB_IGNORED_VERSION = "pref_github_ignored_version"
 
     // About
     const val KEY_ABOUT = "pref_about"

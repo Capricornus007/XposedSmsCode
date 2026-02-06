@@ -189,6 +189,14 @@ object AppPreferencesDataStore {
         )
         editor.putBoolean(PrefConst.KEY_DEDUPLICATE_SMS, getBoolean(context, PrefConst.KEY_DEDUPLICATE_SMS, true))
         editor.putString(PrefConst.KEY_HISTORY_LIMIT, getString(context, PrefConst.KEY_HISTORY_LIMIT, "0"))
+        editor.putBoolean(
+            PrefConst.KEY_AUTO_UPDATE_ON_START,
+            getBoolean(context, PrefConst.KEY_AUTO_UPDATE_ON_START, true),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
+            getBoolean(context, PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY, false),
+        )
         editor.apply()
         ensureSharedPrefsReadable(context)
     }

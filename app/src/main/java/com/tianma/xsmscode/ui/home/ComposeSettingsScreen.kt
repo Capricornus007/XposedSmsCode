@@ -45,7 +45,6 @@ import com.tianma.xsmscode.common.utils.PackageUtils
 import com.tianma.xsmscode.common.utils.SPUtils
 import com.tianma.xsmscode.common.utils.Utils
 import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.data.db.entity.ApkVersion
 import com.tianma.xsmscode.ui.privacy.PrivacyPolicyPage
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
@@ -75,7 +74,6 @@ fun ComposeSettingsScreen(
 
     val themeState by settingsViewModel.themeState.collectAsStateWithLifecycle()
     val themeMode = themeState.mode
-    val updateVersion by settingsViewModel.updateVersion.collectAsStateWithLifecycle(null)
 
     var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
     var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
@@ -183,14 +181,6 @@ fun ComposeSettingsScreen(
 
                     is SettingsEvent.ShowAlipayPacket -> {
                         showDonateDialog = true
-                    }
-
-                    is SettingsEvent.CheckUpdateError -> {
-                        snackbarHostState.showSnackbar(context.getString(R.string.check_update_failed))
-                    }
-
-                    is SettingsEvent.AppAlreadyNewest -> {
-                        snackbarHostState.showSnackbar(context.getString(R.string.app_already_newest))
                     }
 
                     is SettingsEvent.BackupResultEvent -> {
@@ -419,6 +409,24 @@ fun ComposeSettingsScreen(
                 onToggle = { on -> XLog.setLogLevel(if (on) Log.VERBOSE else BuildConfig.LOG_LEVEL) },
                 onSaved = markPrefsSaved,
             )
+            val autoUpdateEnabled = rememberPrefBoolean(PrefConst.KEY_AUTO_UPDATE_ON_START, true)
+            SwitchItem(
+                title = stringResource(id = R.string.pref_auto_update_on_start_title),
+                summary = stringResource(id = R.string.pref_auto_update_on_start_summary),
+                key = PrefConst.KEY_AUTO_UPDATE_ON_START,
+                defaultValue = true,
+                stateOverride = autoUpdateEnabled,
+                onSaved = markPrefsSaved,
+            )
+            if (autoUpdateEnabled.value) {
+                SwitchItem(
+                    title = stringResource(id = R.string.pref_auto_update_wifi_only_title),
+                    summary = stringResource(id = R.string.pref_auto_update_wifi_only_summary),
+                    key = PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
+                    defaultValue = false,
+                    onSaved = markPrefsSaved,
+                )
+            }
             Item(
                 title = stringResource(id = R.string.pref_privacy_policy_title),
                 summary = "",
@@ -514,15 +522,6 @@ fun ComposeSettingsScreen(
             }
             showKeywordsDialog = false
         }
-    }
-
-    updateVersion?.let { version ->
-        UpdateDialog(
-            version = version,
-            onDismiss = { settingsViewModel.clearUpdateVersion() },
-            onUpdateCoolApk = { settingsViewModel.updateFromCoolApk() },
-            onUpdateGithub = { settingsViewModel.updateFromGithub() },
-        )
     }
 
     if (showThemeDialog) {
@@ -776,22 +775,6 @@ fun RetentionDialog(
             }
         },
         confirmButton = {},
-    )
-}
-
-@Composable
-fun UpdateDialog(version: ApkVersion, onDismiss: () -> Unit, onUpdateCoolApk: () -> Unit, onUpdateGithub: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(id = R.string.pref_version_title)) },
-        text = { Text(version.versionInfo ?: "") },
-        confirmButton = {
-            TextButton(onClick = onUpdateCoolApk) { Text(stringResource(id = R.string.source_coolapk)) }
-            TextButton(onClick = onUpdateGithub) { Text(stringResource(id = R.string.source_github)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) }
-        },
     )
 }
 
