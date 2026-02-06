@@ -1,5 +1,20 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    configurations.all {
+        resolutionStrategy {
+            force libs.jose4j
+            force libs.jdom2
+            force libs.apache.commons.lang3
+        }
+    }
+}
+
 plugins {
     id "nl.littlerobots.version-catalog-update" version "1.0.1"
     alias(libs.plugins.android.application) apply false
