@@ -28,8 +28,13 @@ def randomHex8() {
     return String.format("%08x", r.nextInt() & 0xffffffffL)
 }
 
-def VERSION_NAME = "3.1.1"
-def VERSION_CODE = 81
+def VERSION_NAME = libs.versions.versionName.get()
+def VERSION_CODE = libs.versions.versionCode.get().toInteger()
+def COMPILE_SDK = libs.versions.compileSdk.get().toInteger()
+def MIN_SDK = libs.versions.minSdk.get().toInteger()
+def TARGET_SDK = libs.versions.targetSdk.get().toInteger()
+def SDK_EXTENSION = libs.versions.compileSdkExtension.get().toInteger()
+def NDK_VERSION = libs.versions.ndk.get()
 
 def releaseBaseName = { String versionName ->
     return "XposedSmsCode_v${versionName.replaceAll('\\s+', '_')}" +
@@ -47,15 +52,15 @@ def releaseAabName = { String versionName ->
 android {
     namespace = 'com.github.tianma8023.xposed.smscode'
 
-    compileSdk 36
-    compileSdkExtension = 1
-    ndkVersion = "28.2.13676358"
+    compileSdk = COMPILE_SDK
+    compileSdkExtension = SDK_EXTENSION
+    ndkVersion = NDK_VERSION
     defaultConfig {
-        applicationId "com.github.tianma8023.xposed.smscode"
-        minSdkVersion 24
-        targetSdk 36
-        versionCode VERSION_CODE
-        versionName VERSION_NAME
+        applicationId = "com.github.tianma8023.xposed.smscode"
+        minSdk = MIN_SDK
+        targetSdk = TARGET_SDK
+        versionCode = VERSION_CODE
+        versionName = VERSION_NAME
 
         buildConfigField("String", "LOG_TAG", "\"XSmsCode\"")
         buildConfigField("int", "MODULE_VERSION", "" + VERSION_CODE)
@@ -100,9 +105,9 @@ android {
         }
 
         alpha {
-            minifyEnabled true
+            minifyEnabled = true
             shrinkResources = true
-            zipAlignEnabled true
+            zipAlignEnabled = true
             debuggable = false
 
             buildConfigField("int", "LOG_LEVEL", "2")
@@ -116,9 +121,9 @@ android {
         }
 
         release {
-            minifyEnabled true
+            minifyEnabled = true
             shrinkResources = true
-            zipAlignEnabled true
+            zipAlignEnabled = true
 
             buildConfigField("int", "LOG_LEVEL", "4")
             buildConfigField("boolean", "LOG_TO_XPOSED", "true")
@@ -130,26 +135,27 @@ android {
 
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
 
-            lintOptions {
+            lint {
                 disable 'MissingTranslation'
                 checkReleaseBuilds = false
             }
 
-            packagingOptions {
-                exclude '**/*.kotlin_*'
+            packaging {
+                resources {
+                    excludes += '**/*.kotlin_*'
+                }
             }
         }
     }
 
     compileOptions {
-        // Keep JDK 25, but emit Java 21 bytecode so Compose/AGP tooling can read it.
-        sourceCompatibility JavaVersion.VERSION_21
-        targetCompatibility JavaVersion.VERSION_21
+        sourceCompatibility JavaVersion.toVersion(libs.versions.javaBytecode.get())
+        targetCompatibility JavaVersion.toVersion(libs.versions.javaBytecode.get())
     }
 
     kotlin {
         compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(libs.versions.javaBytecode.get()))
         }
     }
 
@@ -161,21 +167,21 @@ android {
 }
 
 testlogger {
-    theme 'mocha'
-    showExceptions true
-    showStackTraces true
-    showFullStackTraces false
-    showCauses true
-    slowThreshold 2000
-    showSummary true
-    showPassed true
-    showSkipped true
-    showFailed true
-    showStandardStreams false
-    showPassedStandardStreams true
-    showSkippedStandardStreams true
-    showFailedStandardStreams true
-    logLevel 'lifecycle'
+    theme = 'mocha'
+    showExceptions = true
+    showStackTraces = true
+    showFullStackTraces = false
+    showCauses = true
+    slowThreshold = 2000
+    showSummary = true
+    showPassed = true
+    showSkipped = true
+    showFailed = true
+    showStandardStreams = false
+    showPassedStandardStreams = true
+    showSkippedStandardStreams = true
+    showFailedStandardStreams = true
+    logLevel = 'lifecycle'
 }
 
 androidComponents {

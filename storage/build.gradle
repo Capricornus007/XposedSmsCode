@@ -5,22 +5,22 @@ plugins {
 
 android {
     namespace = 'com.tianma.xsmscode.storage'
-    compileSdk 36
-    compileSdkExtension = 1
+    compileSdk = libs.versions.compileSdk.get().toInteger()
+    compileSdkExtension = libs.versions.compileSdkExtension.get().toInteger()
 
     defaultConfig {
-        minSdk 24
+        minSdk = libs.versions.minSdk.get().toInteger()
     }
 
     compileOptions {
         // Keep JDK 25, but emit Java 21 bytecode for toolchain compatibility.
-        sourceCompatibility JavaVersion.VERSION_21
-        targetCompatibility JavaVersion.VERSION_21
+        sourceCompatibility JavaVersion.toVersion(libs.versions.javaBytecode.get())
+        targetCompatibility JavaVersion.toVersion(libs.versions.javaBytecode.get())
     }
 
     kotlin {
         compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(libs.versions.javaBytecode.get()))
         }
     }
     testOptions {
