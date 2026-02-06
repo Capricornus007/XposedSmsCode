@@ -43,6 +43,9 @@ sealed class SettingsEvent {
     data class ImportDialogConfirm(val uri: android.net.Uri) : SettingsEvent()
 }
 
+internal fun resolvePreferredUpdateEvent(installedFromPlay: Boolean): SettingsEvent =
+    if (installedFromPlay) SettingsEvent.StartPlayUpdate else SettingsEvent.StartGithubUpdateCheck
+
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val booleanPrefKeys = setOf(
@@ -176,11 +179,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun requestPreferredUpdate() {
         viewModelScope.launch {
-            if (PackageUtils.isInstalledFromPlay(getApplication())) {
-                _eventsFlow.emit(SettingsEvent.StartPlayUpdate)
-            } else {
-                _eventsFlow.emit(SettingsEvent.StartGithubUpdateCheck)
-            }
+            val event = resolvePreferredUpdateEvent(PackageUtils.isInstalledFromPlay(getApplication()))
+            _eventsFlow.emit(event)
         }
     }
 

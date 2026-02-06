@@ -53,6 +53,8 @@ import com.tianma.xsmscode.common.utils.PackageUtils
 import com.tianma.xsmscode.common.utils.Utils
 import com.tianma.xsmscode.data.update.GithubReleaseInfo
 import com.tianma.xsmscode.data.update.GithubUpdateChecker
+import com.tianma.xsmscode.data.update.UpdateCoordinator
+import com.tianma.xsmscode.data.update.UpdatePolicy
 import com.tianma.xsmscode.ui.app.base.UpdateSystemBars
 import com.tianma.xsmscode.ui.app.base.applyEdgeToEdge
 import com.tianma.xsmscode.ui.app.base.rememberHazeStyle
@@ -329,29 +331,21 @@ class MainActivity : AppCompatActivity() {
 
     private fun requestPlayUpdateInternal(silentIfNoUpdate: Boolean, fallbackOnQueryFailure: Boolean) {
         appUpdateManager.appUpdateInfo.addOnSuccessListener { info ->
-            when {
-                info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE &&
-                    info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE) -> {
-                    startUpdateFlow(info)
-                }
-
-                info.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS -> {
-                    startUpdateFlow(info)
-                }
-
-                info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE -> {
-                    PackageUtils.openPlayStoreOrGithub(this)
-                }
-
-                else -> {
-                    if (!silentIfNoUpdate) {
-                        PackageUtils.openPlayStoreOrGithub(this)
-                    }
-                }
+            val action = UpdateCoordinator.decidePlayAction(
+                updateAvailable = info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE,
+                flexibleAllowed = info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE),
+                inProgress = info.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS,
+                silentIfNoUpdate = silentIfNoUpdate,
+            )
+            when (action) {
+                UpdateCoordinator.PlayAction.START_UPDATE_FLOW -> startUpdateFlow(info)
+                UpdateCoordinator.PlayAction.OPEN_STORE_OR_GITHUB -> PackageUtils.openPlayStoreOrGithub(this)
+                UpdateCoordinator.PlayAction.NO_OP -> Unit
             }
         }.addOnFailureListener {
-            if (fallbackOnQueryFailure) {
-                PackageUtils.openPlayStoreOrGithub(this)
+            when (UpdateCoordinator.decidePlayFailureAction(fallbackOnQueryFailure)) {
+                UpdateCoordinator.PlayAction.OPEN_STORE_OR_GITHUB -> PackageUtils.openPlayStoreOrGithub(this)
+                else -> Unit
             }
         }
     }
@@ -373,10 +367,16 @@ class MainActivity : AppCompatActivity() {
                 PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
                 false,
             )
-            if (wifiOnly && !PackageUtils.isOnWifi(this@MainActivity)) return@launch
+            val onWifi = PackageUtils.isOnWifi(this@MainActivity)
+            if (!UpdatePolicy.shouldRunAutoCheck(enabled, wifiOnly, onWifi)) return@launch
 
-            if (PackageUtils.isInstalledFromPlay(this@MainActivity)) {
+            when (UpdatePolicy.resolveStartupTarget(PackageUtils.isInstalledFromPlay(this@MainActivity))) {
+                UpdatePolicy.StartupTarget.PLAY -> {
                 requestPlayUpdateInternal(silentIfNoUpdate = true, fallbackOnQueryFailure = false)
+                }
+                UpdatePolicy.StartupTarget.GITHUB -> {
+                    // Startup GitHub check is handled by checkStartupGithubUpdateIfNeeded()
+                }
             }
         }
     }
@@ -395,23 +395,34 @@ class MainActivity : AppCompatActivity() {
     ) {
         lifecycleScope.launch {
             val latest = GithubUpdateChecker.fetchLatestRelease()
-            if (latest == null) {
-                android.widget.Toast.makeText(
-                    this@MainActivity,
-                    getString(R.string.check_update_failed),
-                    android.widget.Toast.LENGTH_SHORT,
-                ).show()
-                return@launch
-            }
+            when (
+                val action = UpdateCoordinator.decideGithubManualAction(
+                    latest = latest,
+                    currentVersion = BuildConfig.VERSION_NAME,
+                    showNoUpdateToast = showNoUpdateToast,
+                )
+            ) {
+                UpdateCoordinator.GithubManualAction.SHOW_CHECK_FAILED -> {
+                    android.widget.Toast.makeText(
+                        this@MainActivity,
+                        getString(R.string.check_update_failed),
+                        android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                }
 
-            if (GithubUpdateChecker.isNewer(BuildConfig.VERSION_NAME, latest.versionName)) {
-                onUpdateFound(latest)
-            } else if (showNoUpdateToast) {
-                android.widget.Toast.makeText(
-                    this@MainActivity,
-                    getString(R.string.app_already_newest),
-                    android.widget.Toast.LENGTH_SHORT,
-                ).show()
+                UpdateCoordinator.GithubManualAction.SHOW_ALREADY_NEWEST -> {
+                    android.widget.Toast.makeText(
+                        this@MainActivity,
+                        getString(R.string.app_already_newest),
+                        android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                }
+
+                is UpdateCoordinator.GithubManualAction.SHOW_UPDATE_DIALOG -> {
+                    onUpdateFound(action.latest)
+                }
+
+                null -> Unit
             }
         }
     }
@@ -420,7 +431,7 @@ class MainActivity : AppCompatActivity() {
         isAutoCheck: Boolean,
         respectIgnoredVersion: Boolean,
     ): GithubReleaseInfo? {
-        if (PackageUtils.isInstalledFromPlay(this)) return null
+        val installedFromPlay = PackageUtils.isInstalledFromPlay(this)
         if (isAutoCheck) {
             val enabled = AppPreferencesDataStore.getBoolean(
                 this,
@@ -434,7 +445,10 @@ class MainActivity : AppCompatActivity() {
                 PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
                 false,
             )
-            if (wifiOnly && !PackageUtils.isOnWifi(this)) return null
+            val onWifi = PackageUtils.isOnWifi(this)
+            if (UpdatePolicy.shouldSkipGithubCheckOnStartup(installedFromPlay, enabled, wifiOnly, onWifi)) return null
+        } else if (installedFromPlay) {
+            return null
         }
 
         val latest = GithubUpdateChecker.fetchLatestRelease() ?: return null
@@ -446,7 +460,9 @@ class MainActivity : AppCompatActivity() {
                 PrefConst.KEY_GITHUB_IGNORED_VERSION,
                 "",
             )
-            if (ignoredVersion == latest.versionName) return null
+            if (UpdatePolicy.shouldSkipIgnoredVersion(respectIgnoredVersion, ignoredVersion, latest.versionName)) {
+                return null
+            }
         }
         return latest
     }

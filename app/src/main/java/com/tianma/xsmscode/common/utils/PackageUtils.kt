@@ -20,6 +20,11 @@ object PackageUtils {
 
     private const val PLAY_STORE_PACKAGE_NAME = "com.android.vending"
 
+    internal enum class UpdateDestination {
+        PLAY,
+        GITHUB,
+    }
+
     /**
      * not installed
      */
@@ -252,12 +257,14 @@ object PackageUtils {
 
     @JvmStatic
     fun openPlayStoreOrGithub(context: Context) {
-        if (isPlayStoreAvailable(context)) {
-            showAppDetailsInPlayStore(context)
-        } else {
-            Utils.showWebPage(context, Const.PROJECT_GITHUB_LATEST_RELEASE_URL)
+        when (resolveUpdateDestination(isPlayStoreAvailable(context))) {
+            UpdateDestination.PLAY -> showAppDetailsInPlayStore(context)
+            UpdateDestination.GITHUB -> Utils.showWebPage(context, Const.PROJECT_GITHUB_LATEST_RELEASE_URL)
         }
     }
+
+    internal fun resolveUpdateDestination(playStoreAvailable: Boolean): UpdateDestination =
+        if (playStoreAvailable) UpdateDestination.PLAY else UpdateDestination.GITHUB
 
     @JvmStatic
     fun isOnWifi(context: Context): Boolean {
