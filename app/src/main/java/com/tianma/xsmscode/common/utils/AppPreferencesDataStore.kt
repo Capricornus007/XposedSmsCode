@@ -91,29 +91,12 @@ object AppPreferencesDataStore {
             .first()
     }
 
-    suspend fun getStringOrNull(context: Context, key: String): String? {
-        val prefKey = stringPreferencesKey(key)
-        return getInstance(context).data
-            .map { prefs: Preferences -> prefs[prefKey] }
-            .first()
-    }
-
-    suspend fun setString(context: Context, key: String, value: String?) {
+    suspend fun setString(context: Context, key: String, value: String) {
         val prefKey = stringPreferencesKey(key)
         getInstance(context).edit { prefs ->
-            if (value == null) {
-                prefs.remove(prefKey)
-            } else {
-                prefs[prefKey] = value
-            }
+            prefs[prefKey] = value
         }
-        val editor = getSharedPrefs(context).edit()
-        if (value == null) {
-            editor.remove(key)
-        } else {
-            editor.putString(key, value)
-        }
-        editor.apply()
+        getSharedPrefs(context).edit().putString(key, value).apply()
         ensureDataStoreReadable(context)
         ensureSharedPrefsReadable(context)
     }
@@ -214,26 +197,7 @@ object AppPreferencesDataStore {
             PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
             getBoolean(context, PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY, false),
         )
-        
-        // FCM 配置同步
-        editor.putBoolean(
-            PrefConst.KEY_FCM_ENABLE,
-            getBoolean(context, PrefConst.KEY_FCM_ENABLE, false)
-        )
-        editor.putString(
-            PrefConst.KEY_SYNC_GROUP_ID,
-            getString(context, PrefConst.KEY_SYNC_GROUP_ID, "")
-        )
-        editor.putString(
-            PrefConst.KEY_FCM_SERVICE_ACCOUNT_JSON,
-            getString(context, PrefConst.KEY_FCM_SERVICE_ACCOUNT_JSON, "")
-        )
-        editor.putString(
-            PrefConst.KEY_FCM_TOKEN,
-            getString(context, PrefConst.KEY_FCM_TOKEN, "")
-        )
-        
-        editor.commit()  // 使用 commit() 而非 apply() 确保立即写入
+        editor.apply()
         ensureSharedPrefsReadable(context)
     }
 

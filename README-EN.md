@@ -48,16 +48,6 @@ Welcome any feedbacks.
 - Auto-input SMS code.
 - Various theme color to choose.
 - Modern settings UI powered by Jetpack Compose.
-- **🆕 FCM Cross-Device Sync**: Real-time SMS code synchronization via Firebase (End-to-End Encrypted)
-
-## FCM Cross-Device Sync
-
-The app supports real-time verification code synchronization across multiple devices via Firebase Cloud Messaging (v1 API) with end-to-end encryption.
-
-**Features**: Zero Central Database | AES-256 Encryption | User-Controlled Keys | Bidirectional Sync
-
-📖 **Setup Guide**: [FCM Sync Configuration Tutorial](./docs/FCM_SYNC_GUIDE-EN.md)
-
 
 # Documentation
 - [Release Logs](docs/CHANGELOG.md)
