@@ -4,17 +4,17 @@ plugins {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
+        languageVersion = JavaLanguageVersion.of(libs.versions.java.get().toInteger())
     }
     // Keep JDK 25, but emit Java 21 bytecode for compatibility with app module.
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    sourceCompatibility = JavaVersion.toVersion(libs.versions.javaBytecode.get())
+    targetCompatibility = JavaVersion.toVersion(libs.versions.javaBytecode.get())
 }
 
 kotlin {
     compilerOptions {
         // Emit Java 21 bytecode for compatibility with Compose tooling.
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(libs.versions.javaBytecode.get()))
     }
 }
 
