@@ -43,6 +43,11 @@ object PrefConst {
     const val KEY_MARK_AS_READ = "pref_mark_as_read"
     const val KEY_DELETE_SMS = "pref_delete_sms"
     const val KEY_KILL_ME = "pref_kill_me"
+    const val KEY_FCM_TOKEN = "fcm_token"
+    const val KEY_FCM_ENABLE = "fcm_enable"
+    const val KEY_FCM_SERVER_KEY = "fcm_server_key"
+    const val KEY_FCM_SERVICE_ACCOUNT_JSON = "fcm_service_account_json"
+    const val KEY_SYNC_GROUP_ID = "sync_group_id"
 
     // Others
     const val KEY_VERBOSE_LOG_MODE = "pref_verbose_log_mode"

@@ -152,7 +152,6 @@
     <string name="app_block_settings">禁用自动输入列表</string>
     <string name="tab_overview">概览</string>
     <string name="tab_blacklist">黑名单</string>
-    <string name="tab_faq">FAQ</string>
     <string name="tab_records">记录</string>
     <string name="tab_settings">设置</string>
     <string name="action_sort_title">应用排序</string>
@@ -250,11 +249,26 @@
     <string name="code_notification_content">验证码: %s</string>
     <!-- code parsing notification end -->
 
-    <!-- faq -->
-    <string name="action_home_faq_title">常见问题</string>
-    <string name="simplified_question">问：</string>
-    <string name="simplified_answer">答：</string>
-    <!-- faq end -->
+    <!-- fcm -->
+    <string name="tab_fcm">同步</string>
+    <string name="pref_fcm_title">FCM 同步</string>
+    <string name="pref_fcm_enable_title">启用 FCM 同步</string>
+    <string name="pref_fcm_enable_summary">通过 Google FCM 将验证码同步到其他设备</string>
+    <string name="pref_fcm_service_account_title">服务账号 (v1 API)</string>
+    <string name="pref_fcm_service_account_summary">从 Firebase 控制台上传 JSON 密钥文件：项目设置 → 服务账号 → 生成新的私钥</string>
+    <string name="pref_fcm_service_account_hint">点击选择 JSON 文件</string>
+    <string name="pref_fcm_service_account_configured">已配置</string>
+    <string name="fcm_service_account_saved">服务账号已保存</string>
+    <string name="fcm_receiver_only_hint">未配置服务账号：此设备目前仅作为【接收端】运行</string>
+    <string name="pref_fcm_group_id_title">同步组 ID</string>
+    <string name="pref_fcm_group_id_summary">拥有相同 ID 的设备将互相同步</string>
+    <string name="pref_fcm_group_id_hint">输入或生成 ID</string>
+    <string name="fcm_group_id_saved">组 ID 已保存</string>
+    <string name="copy_group_id">复制 ID</string>
+    <string name="gen_group_id">生成</string>
+    <string name="permission_denied">通知权限被拒绝</string>
+    <!-- fcm end -->
+
 
     <!-- alipay packet start -->
     <string name="pref_get_alipay_packet_title">领个红包救救孩子</string>
@@ -289,28 +303,6 @@
 
 
 
-    <!-- faq -->
-    <string-array name="question_list">
-        <item>更新后发现显示模块未激活？</item>
-        <item>Android 15 系统不定期闪退？</item>
-        <item>手机发烫是怎么回事？</item>
-        <item>自动输入不完整，怎么办？</item>
-        <item>模块失效怎么办？</item>
-        <item>短信标记为已读或者删除短信，为什么不生效？</item>
-        <item>这个模块适用的Rom是什么？</item>
-        <item>产品初衷是什么？</item>
-    </string-array>
-    <string-array name="answer_list">
-        <item>重新在模块列表勾选本模块，强行停止本应用并重新打开，或者重启手机。</item>
-        <item>Android 15 引入了新的系统机制，请确保使用最新版 LSPosed 并正确配置作用域。</item>
-        <item>本模块极轻量，如果严重发烫请排查是否与其他模块冲突。</item>
-        <item>自动输入不完整，一般是因为自动输入的过程中焦点被抢占。通常的解决方案是：检查是否有监控剪切板的应用在后台工作(比如fv悬浮球)，然后关闭这些应用对剪贴板的监控，或者关闭本模块的“复制到剪切板”选项。</item>
-        <item>1. 因为使用到ContentProvider，所以需要放在应用控制类软件(黑域、应用管理、绿色守护等)白名单中。\n\n2. 检查模块的组件(ContentProvider)是否被禁用。\n\n3. 检查是否打开验证码安全保护开关(华为，OPPO等国内Rom)。\n\n4. 联系开发者，反馈问题。</item>
-        <item>如果您设备上默认的短信 App 使用的是它自己的短信数据库，而不是系统的短信数据库，那么标记为已读或者删除短信操作可能不会生效。</item>
-        <item>适用于基于 AOSP 的原生类 Rom，在其他重度定制的 Rom 可能运行效果不佳。</item>
-        <item>不做毒瘤，绿色 Android。</item>
-    </string-array>
-    <!-- faq end -->
 
     <!-- privacy policy start -->
     <string name="privacy_dialog_title">隐私政策</string>

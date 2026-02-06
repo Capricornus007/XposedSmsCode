@@ -248,11 +248,25 @@
     <string name="code_notification_content">SMS code: %s</string>
     <!-- code parsing notification end -->
 
-    <!-- faq -->
-    <string name="action_home_faq_title">FAQ</string>
-    <string name="simplified_question">Q:\u00A0</string>
-    <string name="simplified_answer">A:\u00A0</string>
-    <!-- faq end -->
+    <!-- fcm -->
+    <string name="tab_fcm">Sync</string>
+    <string name="pref_fcm_title">FCM Sync</string>
+    <string name="pref_fcm_enable_title">Enable FCM Sync</string>
+    <string name="pref_fcm_enable_summary">Sync SMS codes to other devices via Google FCM</string>
+    <string name="pref_fcm_service_account_title">Service Account (v1 API)</string>
+    <string name="pref_fcm_service_account_summary">Upload JSON key file from Firebase Console → Project Settings → Service Accounts → Generate New Private Key</string>
+    <string name="pref_fcm_service_account_hint">Tap to select JSON file</string>
+    <string name="pref_fcm_service_account_configured">Configured</string>
+    <string name="fcm_service_account_saved">Service account saved</string>
+    <string name="fcm_receiver_only_hint">No service account: This device runs in RECEIVE-ONLY mode</string>
+    <string name="pref_fcm_group_id_title">Sync Group ID</string>
+    <string name="pref_fcm_group_id_summary">Devices with the same ID will sync with each other</string>
+    <string name="pref_fcm_group_id_hint">Enter or Generate ID</string>
+    <string name="fcm_group_id_saved">Group ID saved</string>
+    <string name="copy_group_id">Copy ID</string>
+    <string name="gen_group_id">Generate</string>
+    <string name="permission_denied">Notification permission denied</string>
+    <!-- fcm end -->
 
     <!-- alipay packet start -->
     <string name="pref_get_alipay_packet_title">Get red packet to save me</string>

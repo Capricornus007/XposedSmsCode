@@ -56,6 +56,16 @@
 - **100% Kotlin + 协程 (Coroutines) + Room 数据库**
 - **Jetpack Compose 现代化 UI (FaqFragment 已迁移)**
 - **设置页已升级为 Jetpack Compose**
+- **🆕 FCM 跨设备同步**：通过 Firebase 在多设备间实时同步验证码（端到端加密）
+
+## FCM 跨设备同步
+
+本应用支持通过 Firebase Cloud Messaging (v1 API) 在多台设备间同步验证码，采用端到端加密确保隐私安全。
+
+**特性**: 零中心数据库 | AES-256 加密 | 用户完全控制密钥 | 双向同步
+
+📖 **配置指南**: [FCM 同步配置教程](./docs/FCM_SYNC_GUIDE.md)
+
 
 # 文档
 - [更新日志 (Changelog)](docs/CHANGELOG.md)

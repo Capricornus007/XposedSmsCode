@@ -4,6 +4,7 @@ plugins {
     id 'com.google.devtools.ksp'
     id 'org.jetbrains.kotlin.plugin.compose'
     id 'org.jetbrains.kotlin.plugin.serialization'
+    id 'com.google.gms.google-services'
 }
 
 def keystoreFilePath = System.getenv("KEYSTORE_FILE") ?: findProperty("tianma.keystore.path") ?: "release.jks"
@@ -28,7 +29,7 @@ def randomHex8() {
     return String.format("%08x", r.nextInt() & 0xffffffffL)
 }
 
-def VERSION_NAME = "3.1.1"
+def VERSION_NAME = "3.1.1-fcm"
 def VERSION_CODE = 81
 
 def releaseBaseName = { String versionName ->
@@ -138,6 +139,12 @@ android {
             packagingOptions {
                 exclude '**/*.kotlin_*'
             }
+        }
+    }
+
+    packaging {
+        resources {
+            excludes += ['META-INF/INDEX.LIST', 'META-INF/DEPENDENCIES']
         }
     }
 
@@ -262,4 +269,8 @@ dependencies {
     implementation libs.koin.compose.viewmodel
     implementation libs.androidx.datastore.preferences
     implementation libs.kotlinx.collections.immutable
+    // Firebase
+    implementation platform(libs.firebase.bom)
+    implementation libs.firebase.messaging
+    implementation libs.google.auth.oauth2.http
 }

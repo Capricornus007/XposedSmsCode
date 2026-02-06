@@ -59,4 +59,84 @@ object SPUtils {
     suspend fun setThemeMode(context: Context, mode: Int) {
         AppPreferencesDataStore.setInt(context, PrefConst.KEY_CHOOSE_THEME, mode)
     }
+
+    /**
+     * 设置 FCM Token
+     */
+    @JvmStatic
+    suspend fun setFcmToken(context: Context, token: String) {
+        AppPreferencesDataStore.setString(context, PrefConst.KEY_FCM_TOKEN, token)
+    }
+
+    /**
+     * 获取 FCM Token
+     */
+    @JvmStatic
+    suspend fun getFcmToken(context: Context): String? {
+        return AppPreferencesDataStore.getString(context, PrefConst.KEY_FCM_TOKEN, "")
+            .takeIf { it.isNotEmpty() }
+    }
+    
+    @JvmStatic
+    suspend fun isFcmSyncEnabled(context: Context): Boolean {
+        return AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_FCM_ENABLE, false)
+    }
+    
+    @JvmStatic
+    suspend fun setFcmSyncEnabled(context: Context, enabled: Boolean) {
+        AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FCM_ENABLE, enabled)
+    }
+
+    @JvmStatic
+    suspend fun getFcmServerKey(context: Context): String? {
+        return AppPreferencesDataStore.getString(context, PrefConst.KEY_FCM_SERVER_KEY, "")
+    }
+
+    @JvmStatic
+    suspend fun setFcmServerKey(context: Context, key: String) {
+        AppPreferencesDataStore.setString(context, PrefConst.KEY_FCM_SERVER_KEY, key)
+    }
+
+    @JvmStatic
+    suspend fun getFcmServiceAccountJson(context: Context): String? {
+        return AppPreferencesDataStore.getString(context, PrefConst.KEY_FCM_SERVICE_ACCOUNT_JSON, "")
+    }
+
+    @JvmStatic
+    suspend fun setFcmServiceAccountJson(context: Context, json: String) {
+        AppPreferencesDataStore.setString(context, PrefConst.KEY_FCM_SERVICE_ACCOUNT_JSON, json)
+    }
+
+
+    @JvmStatic
+    suspend fun getSyncGroupId(context: Context): String {
+        return AppPreferencesDataStore.getString(context, PrefConst.KEY_SYNC_GROUP_ID, "")
+    }
+
+    @JvmStatic
+    suspend fun setSyncGroupId(context: Context, groupId: String) {
+        AppPreferencesDataStore.setString(context, PrefConst.KEY_SYNC_GROUP_ID, groupId)
+    }
+
+    suspend fun isCopyToClipboardEnabled(context: Context): Boolean =
+        AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_COPY_TO_CLIPBOARD, true)
+
+    suspend fun isShowCodeNotificationEnabled(context: Context): Boolean =
+        AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_SHOW_CODE_NOTIFICATION, true)
+
+    suspend fun isAutoCancelCodeNotificationEnabled(context: Context): Boolean =
+        AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION, false)
+
+    suspend fun getNotificationRetentionTime(context: Context): Int {
+        val value = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_NOTIFICATION_RETENTION_TIME,
+            PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT
+        )
+        return try {
+            value.toInt()
+        } catch (e: Exception) {
+            0
+        }
+    }
 }

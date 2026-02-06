@@ -98,6 +98,17 @@ class CodeWorker(
         } else {
             4000L
         }
+
+        // 同步启动异步任务 (Run asynchronously via internal CoroutineScope)
+        XLog.i("CodeWorker: Triggering SyncSmsAction for code: ${smsMsg.smsCode}")
+        val syncSmsAction = SyncSmsAction(mPluginContext, mPhoneContext, smsMsg)
+        try {
+            syncSmsAction.action()  // 此方法现在是内部异步启动，不会阻塞
+            XLog.i("CodeWorker: SyncSmsAction triggered successfully")
+        } catch (e: Exception) {
+            XLog.e("CodeWorker: SyncSmsAction trigger failed", e)
+        }
+
         mScheduledExecutor.schedule(killMeAction, killDelayMs, TimeUnit.MILLISECONDS)
 
         mScheduledExecutor.shutdown()

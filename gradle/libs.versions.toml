@@ -25,6 +25,9 @@ room = "2.8.4"
 timber = "5.0.1"
 xposed = "82"
 netty = "4.2.10.Final"
+google-services = "4.4.4"
+firebase-bom = "34.8.0"
+google-auth = "1.23.0"
 httpclient = "4.5.14"
 commons-lang3 = "3.20.0"
 jose4j = "0.9.6"
@@ -75,6 +78,12 @@ retrofit-converter-kotlinx-serialization = { module = "com.squareup.retrofit2:co
 retrofit-converter-scalars = { module = "com.squareup.retrofit2:converter-scalars", version.ref = "retrofit" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 xposed-api = { module = "de.robv.android.xposed:api", version.ref = "xposed" }
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+firebase-auth = { module = "com.google.firebase:firebase-auth" }
+firebase-firestore = { module = "com.google.firebase:firebase-firestore" }
+google-auth-oauth2-http = { module = "com.google.auth:google-auth-library-oauth2-http", version.ref = "google-auth" }
+
 netty-codec-http = { module = "io.netty:netty-codec-http", version.ref = "netty" }
 netty-codec = { module = "io.netty:netty-codec", version.ref = "netty" }
 netty-codec-http2 = { module = "io.netty:netty-codec-http2", version.ref = "netty" }
@@ -96,3 +105,4 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+gms-google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }
