@@ -25,6 +25,17 @@ plugins {
     alias(libs.plugins.test.logger) apply false
 }
 
+kover {
+    reports {
+        verify {
+            rule {
+                // Start with a pragmatic threshold and tighten later.
+                minBound(60)
+            }
+        }
+    }
+}
+
 subprojects {
     def applyDetekt = {
         apply plugin: "dev.detekt"
