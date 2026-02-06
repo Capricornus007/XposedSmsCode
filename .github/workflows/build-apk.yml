@@ -46,6 +46,13 @@ jobs:
           name: apks
           path: app/build/outputs/apk/release/*.apk
 
+      - name: Upload Native Symbols Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: native-symbols
+          path: app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip
+          if-no-files-found: warn
+
   build-aab:
     name: Build Bundle
     runs-on: ubuntu-latest
@@ -83,7 +90,6 @@ jobs:
           path: |
             app/build/outputs/bundle/release/*.aab
             app/build/outputs/mapping/release/mapping.txt
-            app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip
 
   release:
     name: Create Release
@@ -105,6 +111,11 @@ jobs:
           name: bundle-assets
           path: artifacts/bundle
 
+      - uses: actions/download-artifact@v7
+        with:
+          name: native-symbols
+          path: artifacts/symbols
+
       - name: Create Draft Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') && env.HAS_RELEASE_KEYSTORE == 'true'
@@ -112,7 +123,7 @@ jobs:
           draft: true
           files: |
             artifacts/apks/*.apk
-            artifacts/bundle/*.aab
+            artifacts/bundle/bundle/release/*.aab
           body: |
             ## XposedSmsCode Release
             Automated build for version ${{ github.ref_name }}
@@ -125,8 +136,8 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
           packageName: com.github.tianma8023.xposed.smscode
-          releaseFiles: artifacts/bundle/*.aab
-          mappingFile: artifacts/bundle/mapping.txt
-          debugSymbols: artifacts/bundle/native-debug-symbols.zip
+          releaseFiles: artifacts/bundle/bundle/release/*.aab
+          mappingFile: artifacts/bundle/mapping/release/mapping.txt
+          debugSymbols: artifacts/symbols/native-debug-symbols.zip
           track: alpha
           status: completed
