@@ -45,10 +45,6 @@ object Const {
     const val KEY_RULE_ID = "key_rule_id"
     const val EXTRA_IMPORT_URI = "extra_import_uri"
 
-    /* CoolApk */
-    const val COOL_MARKET_PACKAGE_NAME = "com.coolapk.market"
-    /* CoolApk end */
-
     /* Wechat */
     const val WECHAT_PACKAGE_NAME = "com.tencent.mm"
 
