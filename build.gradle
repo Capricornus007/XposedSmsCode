@@ -21,6 +21,8 @@ buildscript {
 
 plugins {
     id "nl.littlerobots.version-catalog-update" version "1.0.1"
+    alias(libs.plugins.kover)
+    alias(libs.plugins.test.logger) apply false
 }
 
 subprojects {
@@ -37,10 +39,36 @@ subprojects {
         }
     }
 
-    plugins.withId("com.android.application") { applyDetekt() }
-    plugins.withId("com.android.library") { applyDetekt() }
-    plugins.withId("org.jetbrains.kotlin.jvm") { applyDetekt() }
-    plugins.withId("org.jetbrains.kotlin.android") { applyDetekt() }
+    // Apply kover to all projects
+    apply plugin: "org.jetbrains.kotlinx.kover"
+
+    plugins.withId("com.android.application") { 
+        applyDetekt()
+        apply plugin: "com.adarshr.test-logger"
+    }
+    plugins.withId("com.android.library") { 
+        applyDetekt()
+        apply plugin: "com.adarshr.test-logger"
+    }
+    plugins.withId("org.jetbrains.kotlin.jvm") { 
+        applyDetekt()
+        apply plugin: "com.adarshr.test-logger"
+    }
+    plugins.withId("org.jetbrains.kotlin.android") { 
+        applyDetekt()
+        apply plugin: "com.adarshr.test-logger"
+    }
+
+    // Configure test-logger for all projects
+    if (plugins.hasPlugin("com.adarshr.test-logger")) {
+        testlogger {
+            theme 'mocha'
+            showExceptions true
+            showStackTraces true
+            showCauses true
+            showSummary true
+        }
+    }
 
     repositories {
         google()

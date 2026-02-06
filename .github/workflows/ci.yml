@@ -22,8 +22,8 @@ jobs:
           distribution: temurin
           java-version: "25"
           cache: gradle
-      - name: Build
-        run: ./gradlew --warning-mode all assembleDebug testDebugUnitTest -PbuildSplits
+      - name: Build & Test
+        run: ./gradlew --warning-mode all assembleDebug testDebugUnitTest koverVerify koverHtmlReport -PbuildSplits
       - name: Write build summary
         if: always()
         run: |
@@ -66,3 +66,9 @@ jobs:
         with:
           name: XposedSmsCode-debug-universal
           path: app/build/outputs/apk/debug/*universal*.apk
+      - name: Upload Kover Report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: kover-report
+          path: build/reports/kover/html

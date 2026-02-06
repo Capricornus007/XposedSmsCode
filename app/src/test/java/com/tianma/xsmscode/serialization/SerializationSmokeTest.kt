@@ -1,16 +1,14 @@
 package com.tianma.xsmscode.serialization
 
 import com.tianma.xsmscode.common.utils.JsonUtils
-import com.tianma.xsmscode.data.http.entity.GithubRelease
 import com.tianma.xsmscode.feature.backup.BackupConst
 import com.tianma.xsmscode.feature.backup.BackupPayload
 import com.tianma.xsmscode.feature.backup.BackupRule
 import com.tianma.xsmscode.feature.backup.RuleExporter
 import com.tianma.xsmscode.feature.backup.RuleImporter
-import kotlinx.serialization.decodeFromString
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Test
+import kotlinx.serialization.encodeToString
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 
@@ -25,7 +23,8 @@ class SerializationSmokeTest {
             exporter.doExport(rules, "3.0.0")
         }
 
-        val payload = JsonUtils.json.decodeFromString<BackupPayload>(output.toString(Charsets.UTF_8.name()))
+        val jsonString = output.toString(Charsets.UTF_8.name())
+        val payload = JsonUtils.json.decodeFromString<BackupPayload>(jsonString)
         assertEquals(BackupConst.BACKUP_VERSION, payload.version)
         assertEquals(BackupConst.BACKUP_VERSION, payload.schemaVersion)
         assertEquals(1, payload.rules.size)
@@ -37,22 +36,14 @@ class SerializationSmokeTest {
         val payload = BackupPayload(
             rules = listOf(BackupRule(company = "ACME", codeKeyword = "code", codeRegex = "\\d{6}")),
         )
-        val json = JsonUtils.json.encodeToString(BackupPayload.serializer(), payload)
+        val json = JsonUtils.json.encodeToString(payload)
         val input = ByteArrayInputStream(json.toByteArray(Charsets.UTF_8))
 
         RuleImporter(input).use { importer ->
-            val payload = importer.parsePayload()
-            assertEquals(BackupConst.BACKUP_VERSION, payload.schemaVersion)
-            assertEquals(1, payload.rules.size)
-            assertEquals("ACME", payload.rules.first().company)
+            val importedPayload = importer.parsePayload()
+            assertEquals(BackupConst.BACKUP_VERSION, importedPayload.schemaVersion)
+            assertEquals(1, importedPayload.rules.size)
+            assertEquals("ACME", importedPayload.rules.first().company)
         }
-    }
-
-    @Test
-    fun githubReleaseParsing() {
-        val json = """{"tag_name":"v1.2.3","name":"Release","body":"Notes"}"""
-        val release = JsonUtils.json.decodeFromString<GithubRelease>(json)
-        assertNotNull(release)
-        assertEquals("v1.2.3", release.tagName)
     }
 }

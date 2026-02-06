@@ -10,7 +10,11 @@ compose-bom = "2026.01.01"
 coroutines = "1.10.2"
 datastore = "1.2.0"
 haze = "1.7.1"
-junit = "4.13.2"
+junit5 = "5.11.4"
+junit-platform = "1.11.4"
+mockk = "1.13.16"
+kover = "0.9.6"
+test-logger = "4.0.0"
 koin = "4.1.1"
 kotlin = "2.3.20-Beta2"
 kotlinx-collections-immutable = "0.4.0"
@@ -59,7 +63,9 @@ androidx-ui = { module = "androidx.compose.ui:ui" }
 androidx-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 haze-android = { module = "dev.chrisbanes.haze:haze-android", version.ref = "haze" }
-junit = { module = "junit:junit", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit5" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
 koin-androidx-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin" }
 koin-compose-viewmodel = { module = "io.insert-koin:koin-compose-viewmodel", version.ref = "koin" }
@@ -96,3 +102,5 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
+test-logger = { id = "com.adarshr.test-logger", version.ref = "test-logger" }

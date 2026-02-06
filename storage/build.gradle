@@ -23,9 +23,17 @@ android {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         }
     }
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+        }
+    }
 }
 
 dependencies {
     implementation libs.androidx.core.ktx
     implementation libs.kotlinx.serialization.json
+
+    testImplementation libs.junit.jupiter
+    testImplementation libs.mockk
 }

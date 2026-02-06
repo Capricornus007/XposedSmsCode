@@ -152,6 +152,30 @@ android {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
         }
     }
+
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+        }
+    }
+}
+
+testlogger {
+    theme 'mocha'
+    showExceptions true
+    showStackTraces true
+    showFullStackTraces false
+    showCauses true
+    slowThreshold 2000
+    showSummary true
+    showPassed true
+    showSkipped true
+    showFailed true
+    showStandardStreams false
+    showPassedStandardStreams true
+    showSkippedStandardStreams true
+    showFailedStandardStreams true
+    logLevel 'lifecycle'
 }
 
 androidComponents {
@@ -255,7 +279,9 @@ dependencies {
     implementation libs.androidx.room.ktx
     ksp libs.androidx.room.compiler
 
-    testImplementation libs.junit
+    testImplementation libs.junit.jupiter
+    testRuntimeOnly libs.junit.platform.launcher
+    testImplementation libs.mockk
     implementation libs.timber
     implementation libs.koin.android
     implementation libs.koin.androidx.compose
