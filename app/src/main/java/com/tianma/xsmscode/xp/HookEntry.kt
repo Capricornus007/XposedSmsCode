@@ -1,6 +1,7 @@
 package com.tianma.xsmscode.xp
 
 import com.github.tianma8023.xposed.smscode.BuildConfig
+import com.magisk317.xp.hook.google.GoogleMessagesHook
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.xp.hook.BaseHook
 import com.tianma.xsmscode.xp.hook.code.SmsHandlerHook
@@ -17,6 +18,7 @@ class HookEntry :
 
     private val mHookList: List<BaseHook> = listOf(
         SmsHandlerHook(), // InBoundsSmsHandler Hook
+        GoogleMessagesHook(), // Google Messages read sync hook
         ModuleUtilsHook(), // ModuleUtils Hook
         PermissionGranterHook(), // PackageManagerService Hook
         SystemInputInjectorHook(), // System Server Input Injection Hook

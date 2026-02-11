@@ -110,6 +110,14 @@
     <string name="cannot_parse_smscode">无法解析验证码。</string>
     <!-- preference code rules end -->
 
+    <!-- preference experimental -->
+    <string name="pref_experimental_title">试验性功能</string>
+    <string name="pref_mark_as_read_title">验证码短信标记为已读</string>
+    <string name="pref_mark_as_read_summary">将验证码短信标记为已读</string>
+    <string name="pref_delete_sms_title">验证码短信删除</string>
+    <string name="pref_delete_sms_summary">警告：提取成功后验证码短信将被删除</string>
+    <!-- preference experimental end -->
+
 
 
     <!-- preference others -->

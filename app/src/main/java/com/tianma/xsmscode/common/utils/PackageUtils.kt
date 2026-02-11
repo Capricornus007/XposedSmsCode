@@ -268,14 +268,18 @@ object PackageUtils {
 
     @JvmStatic
     fun isOnWifi(context: Context): Boolean {
-        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = cm.activeNetwork ?: return false
-            val capabilities = cm.getNetworkCapabilities(network) ?: return false
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-        } else {
-            @Suppress("DEPRECATION")
-            cm.activeNetworkInfo?.type == ConnectivityManager.TYPE_WIFI
+        return try {
+            val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val network = cm.activeNetwork ?: return false
+                val capabilities = cm.getNetworkCapabilities(network) ?: return false
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+            } else {
+                @Suppress("DEPRECATION")
+                cm.activeNetworkInfo?.type == ConnectivityManager.TYPE_WIFI
+            }
+        } catch (_: SecurityException) {
+            false
         }
     }
 

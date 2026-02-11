@@ -3,8 +3,11 @@ package com.tianma.xsmscode.xp.hook.code.action.impl
 import android.Manifest
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Handler
 import android.os.Bundle
+import android.os.Looper
 import android.provider.Telephony
 import androidx.annotation.IntDef
 import androidx.core.content.ContextCompat
@@ -68,10 +71,11 @@ class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sm
                 Telephony.Sms.ADDRESS,
                 Telephony.Sms.BODY,
                 Telephony.Sms.READ,
+                Telephony.Sms.THREAD_ID,
                 Telephony.Sms.DATE,
             )
-            // 查看最近5条短信
-            val sortOrder = Telephony.Sms.DATE + " desc limit 5"
+            // 查看最近短信并匹配目标
+            val sortOrder = Telephony.Sms.DATE + " desc limit 20"
             val uri = Telephony.Sms.CONTENT_URI
             val resolver = mPluginContext.contentResolver
             cursor = resolver.query(uri, projection, null, null, sortOrder)
@@ -83,20 +87,25 @@ class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sm
                 val curAddress = cursor.getString(cursor.getColumnIndexOrThrow("address"))
                 val curRead = cursor.getInt(cursor.getColumnIndexOrThrow("read"))
                 val curBody = cursor.getString(cursor.getColumnIndexOrThrow("body"))
-                if (curAddress == sender && curRead == 0 && curBody != null && curBody.startsWith(body ?: "")) {
+                if (curAddress == sender && curRead == 0 && isBodyMatched(curBody, body)) {
                     val smsMessageId = cursor.getString(cursor.getColumnIndexOrThrow("_id"))
+                    val threadId = cursor.getLong(cursor.getColumnIndexOrThrow("thread_id"))
                     val where = Telephony.Sms._ID + " = ?"
                     val selectionArgs = arrayOf(smsMessageId)
                     if (smsOp == OP_DELETE) {
                         val rows = resolver.delete(uri, where, selectionArgs)
                         if (rows > 0) {
+                            notifyExternalProviderChange()
                             return true
                         }
                     } else if (smsOp == OP_MARK_AS_READ) {
                         val values = ContentValues()
                         values.put(Telephony.Sms.READ, true)
+                        values.put(Telephony.Sms.SEEN, true)
                         val rows = resolver.update(uri, values, where, selectionArgs)
                         if (rows > 0) {
+                            markRelatedSmsAsReadInThread(threadId, sender)
+                            notifyExternalProviderChange()
                             return true
                         }
                     }
@@ -110,8 +119,77 @@ class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sm
         return false
     }
 
+    private fun markRelatedSmsAsReadInThread(threadId: Long, sender: String?) {
+        if (threadId <= 0L || sender.isNullOrBlank()) return
+        try {
+            val where = (
+                "${Telephony.Sms.THREAD_ID} = ? AND " +
+                    "${Telephony.Sms.ADDRESS} = ? AND " +
+                    "${Telephony.Sms.READ} = 0"
+                )
+            val selectionArgs = arrayOf(threadId.toString(), sender)
+            val values = ContentValues().apply {
+                put(Telephony.Sms.READ, true)
+                put(Telephony.Sms.SEEN, true)
+            }
+            val rows = mPluginContext.contentResolver.update(
+                Telephony.Sms.CONTENT_URI,
+                values,
+                where,
+                selectionArgs,
+            )
+            if (rows > 0) {
+                XLog.d("Marked $rows unread SMS as read in same thread: $threadId")
+            }
+        } catch (e: Exception) {
+            XLog.w("Failed to mark related SMS as read in thread: $threadId", e)
+        }
+    }
+
+    private fun isBodyMatched(curBody: String?, targetBody: String?): Boolean {
+        if (curBody.isNullOrEmpty() || targetBody.isNullOrEmpty()) return false
+        return curBody.startsWith(targetBody) || targetBody.startsWith(curBody)
+    }
+
+    private fun notifyExternalProviderChange() {
+        try {
+            val packages = linkedSetOf<String>()
+            val defaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(mPluginContext)
+            if (!defaultSmsPackage.isNullOrBlank()) {
+                packages.add(defaultSmsPackage)
+            }
+            packages.add(GOOGLE_MESSAGES_PACKAGE_NAME)
+
+            sendExternalProviderChange(packages)
+            Handler(Looper.getMainLooper()).postDelayed(
+                { sendExternalProviderChange(packages) },
+                EXTERNAL_PROVIDER_CHANGE_DELAY_MS,
+            )
+        } catch (e: Exception) {
+            XLog.w("Failed to schedule external provider change broadcast", e)
+        }
+    }
+
+    private fun sendExternalProviderChange(packages: Set<String>) {
+        try {
+            packages.forEach { packageName ->
+                val intent = Intent(Telephony.Sms.Intents.ACTION_EXTERNAL_PROVIDER_CHANGE).apply {
+                    addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
+                    setPackage(packageName)
+                    putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, packageName)
+                }
+                mPhoneContext.sendBroadcast(intent)
+                XLog.d("Sent external provider change broadcast to: $packageName")
+            }
+        } catch (e: Exception) {
+            XLog.w("Failed to send external provider change broadcast", e)
+        }
+    }
+
     companion object {
         private const val OP_DELETE = 0
         private const val OP_MARK_AS_READ = 1
+        private const val GOOGLE_MESSAGES_PACKAGE_NAME = "com.google.android.apps.messaging"
+        private const val EXTERNAL_PROVIDER_CHANGE_DELAY_MS = 500L
     }
 }

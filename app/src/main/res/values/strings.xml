@@ -109,6 +109,14 @@
     <string name="cannot_parse_smscode">Cannot parse SMS code.</string>
     <!-- preference code rules end -->
 
+    <!-- preference experimental -->
+    <string name="pref_experimental_title">Experimental</string>
+    <string name="pref_mark_as_read_title">Mark as read</string>
+    <string name="pref_mark_as_read_summary">Mark code SMS as read if extract succeed</string>
+    <string name="pref_delete_sms_title">Delete SMS</string>
+    <string name="pref_delete_sms_summary">Warning! Code SMS will be deleted if extract succeed</string>
+    <!-- preference experimental end -->
+
 
     <!-- preference others -->
     <string name="pref_others_title">Others</string>

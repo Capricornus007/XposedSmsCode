@@ -342,6 +342,24 @@ fun ComposeSettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
 
+            SectionHeader(text = stringResource(id = R.string.pref_experimental_title))
+            SwitchItem(
+                title = stringResource(id = R.string.pref_mark_as_read_title),
+                summary = stringResource(id = R.string.pref_mark_as_read_summary),
+                key = PrefConst.KEY_MARK_AS_READ,
+                defaultValue = false,
+                onSaved = markPrefsSaved,
+            )
+            SwitchItem(
+                title = stringResource(id = R.string.pref_delete_sms_title),
+                summary = stringResource(id = R.string.pref_delete_sms_summary),
+                key = PrefConst.KEY_DELETE_SMS,
+                defaultValue = false,
+                onSaved = markPrefsSaved,
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
+
             SectionHeader(text = stringResource(id = R.string.pref_category_auto_input_title))
             val autoInputEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, true)
             SwitchItem(
