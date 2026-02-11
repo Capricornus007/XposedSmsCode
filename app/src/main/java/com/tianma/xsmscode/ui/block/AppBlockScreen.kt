@@ -1,7 +1,7 @@
 package com.tianma.xsmscode.ui.block
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -14,9 +14,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -29,6 +31,7 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import org.koin.compose.viewmodel.koinViewModel
+import android.widget.Toast
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,6 +49,7 @@ fun AppBlockScreen(
     val isAscending by viewModel.isAscendingFlow.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val isCompact = LocalConfiguration.current.screenWidthDp < 600
 
     // Initial Load
     LaunchedEffect(Unit) {
@@ -58,7 +62,10 @@ fun AppBlockScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is AppBlockViewModel.AppBlockEvent.SaveSuccess -> onBack?.invoke()
+                is AppBlockViewModel.AppBlockEvent.SaveSuccess -> {
+                    Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+                    onBack?.invoke()
+                }
 
                 is AppBlockViewModel.AppBlockEvent.SaveFailed -> {
                     snackbarHostState.showSnackbar(context.getString(R.string.save_failed))
@@ -114,7 +121,7 @@ fun AppBlockScreen(
                     items(apps, key = { it.packageName }) { app ->
                         AppInfoItem(
                             appInfo = app,
-                            onClick = { viewModel.doItemClicked(app) },
+                            onCheckedChange = { checked -> viewModel.setBlocked(app, checked) },
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -282,7 +289,8 @@ fun AppBlockScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(
-                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp,
+                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
+                            if (isCompact) 80.dp else 16.dp,
                         end = 16.dp,
                     ),
             ) {
@@ -320,7 +328,11 @@ fun AppBlockScreen(
 }
 
 @Composable
-fun AppInfoItem(appInfo: AppInfo, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun AppInfoItem(
+    appInfo: AppInfo,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val context = LocalContext.current
     ListItem(
         headlineContent = { Text(appInfo.label ?: "", maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -334,7 +346,7 @@ fun AppInfoItem(appInfo: AppInfo, onClick: () -> Unit, modifier: Modifier = Modi
         trailingContent = {
             Checkbox(
                 checked = appInfo.blocked,
-                onCheckedChange = { onClick() },
+                onCheckedChange = null,
                 modifier = Modifier.semantics {
                     contentDescription = context.getString(
                         if (appInfo.blocked) R.string.action_unblock_app else R.string.action_block_app,
@@ -343,6 +355,10 @@ fun AppInfoItem(appInfo: AppInfo, onClick: () -> Unit, modifier: Modifier = Modi
                 },
             )
         },
-        modifier = modifier.clickable(onClick = onClick),
+        modifier = modifier.toggleable(
+            value = appInfo.blocked,
+            role = Role.Checkbox,
+            onValueChange = onCheckedChange,
+        ),
     )
 }

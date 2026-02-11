@@ -225,18 +225,17 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun doItemClicked(item: AppInfo) {
+    fun setBlocked(item: AppInfo, blocked: Boolean) {
         val updatedApps = apps.map { appInfo ->
             if (appInfo.packageName == item.packageName) {
-                appInfo.copy(blocked = !appInfo.blocked)
+                if (appInfo.blocked == blocked) appInfo else appInfo.copy(blocked = blocked)
             } else {
                 appInfo
             }
         }.toImmutableList()
+        if (updatedApps === apps) return
         apps = updatedApps
         updateHasChanges()
-        // Re-apply sort/filter to keep consistency (e.g. if sorting by blocked status)
-        // Optimization: simply update the flow with new blocked state, but we need to find it in the current filtered list.
         applyFilterAndSort()
     }
 
