@@ -6,6 +6,8 @@ import de.robv.android.xposed.XC_MethodHook.Unhook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import java.lang.reflect.Member
+import java.lang.reflect.Method
+import java.lang.reflect.Modifier
 
 /**
  * Xposed Wrapper Utils
@@ -43,6 +45,10 @@ object XposedWrapper {
     }
 
     fun hookMethod(hookMethod: Member, callback: XC_MethodHook): Unhook? = try {
+        if (hookMethod is Method && (Modifier.isAbstract(hookMethod.modifiers) || Modifier.isNative(hookMethod.modifiers))) {
+            XLog.d("Skip hook unsupported method: %s#%s", hookMethod.declaringClass.name, hookMethod.name)
+            return null
+        }
         XposedBridge.hookMethod(hookMethod, callback)
     } catch (t: Throwable) {
         XLog.e("Error in hookMethod: %s", hookMethod.name, t)
