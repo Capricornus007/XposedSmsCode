@@ -15,6 +15,7 @@ import com.tianma.xsmscode.xp.hook.BaseHook
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
+import de.robv.android.xposed.callbacks.XC_LoadPackage
 import java.lang.reflect.Method
 
 class SystemInputInjectorHook : BaseHook() {
@@ -40,12 +41,15 @@ class SystemInputInjectorHook : BaseHook() {
 
     override fun initZygote(startupParam: de.robv.android.xposed.IXposedHookZygoteInit.StartupParam) {
         try {
+            // Redmi K60 Ultra (Redmi 23078RKD5C) Android 16 feedback:
+            // system_server starts very early, ActivityThread.systemMain might be missed.
             XposedHelpers.findAndHookMethod(
                 "android.app.ActivityThread",
                 null,
                 "systemMain",
                 object : XC_MethodHook() {
                     override fun afterHookedMethod(param: MethodHookParam) {
+                        XLog.i("XSmsCode: ActivityThread.systemMain hook triggered")
                         val activityThreadClass = XposedHelpers.findClass("android.app.ActivityThread", null)
                         val activityThread = XposedHelpers.callStaticMethod(
                             activityThreadClass,
@@ -68,7 +72,54 @@ class SystemInputInjectorHook : BaseHook() {
         }
     }
 
-    // onLoadPackage hook removed; zygote hook handles system_server registration.
+    override fun hookOnLoadPackage(): Boolean = true
+
+    override fun onLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
+        if (lpparam.packageName != "android") return
+
+        // Fallback for Redmi K60 Ultra (Android 16): 
+        // If systemMain was already executed, try immediate initialization or hook systemReady.
+        XLog.i("XSmsCode: SystemInputInjectorHook loading for android package")
+        
+        try {
+            // Attempt 1: Check if already ready
+            val activityThreadClass = XposedHelpers.findClass("android.app.ActivityThread", lpparam.classLoader)
+            val activityThread = XposedHelpers.callStaticMethod(activityThreadClass, "currentActivityThread")
+            if (activityThread != null) {
+                val systemContext = XposedHelpers.callMethod(activityThread, "getSystemContext") as? Context
+                if (systemContext != null) {
+                    XLog.w("XSmsCode: System context available in onLoadPackage, registering receiver")
+                    XposedBridge.log("XSmsCode: System context available in onLoadPackage, registering receiver")
+                    scheduleRegister(systemContext)
+                    if (receiverRegistered) return
+                }
+            }
+        } catch (t: Throwable) {
+            // ignore
+        }
+
+        // Attempt 2: Hook ActivityManagerService.systemReady as fallback
+        try {
+            XposedHelpers.findAndHookMethod(
+                "com.android.server.am.ActivityManagerService",
+                lpparam.classLoader,
+                "systemReady",
+                object : XC_MethodHook() {
+                    override fun afterHookedMethod(param: MethodHookParam) {
+                        if (receiverRegistered) return
+                        XLog.i("XSmsCode: ActivityManagerService.systemReady hook triggered")
+                        val context = XposedHelpers.getObjectField(param.thisObject, "mContext") as? Context
+                        if (context != null) {
+                            scheduleRegister(context)
+                        }
+                    }
+                }
+            )
+            XLog.w("SystemInputInjectorHook: hooked ActivityManagerService.systemReady as fallback")
+        } catch (t: Throwable) {
+            XLog.e("SystemInputInjectorHook: failed to hook AMS.systemReady", t)
+        }
+    }
 
     private fun scheduleRegister(context: Context) {
         if (receiverRegistered) return
