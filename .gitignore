@@ -88,3 +88,6 @@ app/signature.properties
 # Python virtual environments
 venv/
 .venv/
+
+# Ignore log folder
+log/
