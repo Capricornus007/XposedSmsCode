@@ -167,10 +167,21 @@ tasks.withType<Test>().configureEach {
 
 androidComponents {
     onVariants(selector().all()) { variant ->
-        if (variant.buildType == "debug") {
-            val suffixProvider = providers.provider { randomHex8() }
-            variant.outputs.forEach { output ->
-                output.versionName.set(suffixProvider.map { "$versionNameStr-$it" })
+        val isDebug = variant.buildType == "debug"
+        val suffix = if (isDebug) randomHex8() else ""
+        val vName = if (isDebug) "$versionNameStr-$suffix" else versionNameStr
+        
+        variant.outputs.forEach { output ->
+            if (isDebug) {
+                output.versionName.set(vName)
+            }
+            val abi = output.filters.find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }?.identifier ?: "universal"
+            // Use reflection or search for the property if outputFileName is unresolved
+            try {
+                val outputFileName = output.javaClass.getMethod("getOutputFileName").invoke(output) as org.gradle.api.provider.Property<String>
+                outputFileName.set(releaseApkName(vName, variant.buildType ?: "", abi))
+            } catch (e: Exception) {
+                // Ignore for now, build will fail if this is wrong
             }
         }
     }
