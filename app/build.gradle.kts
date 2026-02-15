@@ -194,10 +194,7 @@ tasks.register("renameReleaseAab") {
         val bundleFile = bundleFileProvider.get().asFile
         if (bundleFile.exists()) {
             val target = targetFileProvider.get().asFile
-            if (target.exists()) {
-                target.delete()
-            }
-            bundleFile.renameTo(target)
+            bundleFile.copyTo(target, overwrite = true)
         }
     }
 }
