@@ -39,6 +39,8 @@ val versionCodeInt = libs.versions.versionCode.get().toInt()
 val compileSdkInt = libs.versions.compileSdk.get().toInt()
 val minSdkInt = libs.versions.minSdk.get().toInt()
 val targetSdkInt = libs.versions.targetSdk.get().toInt()
+val minSdkStr = libs.versions.minSdk.get()
+val targetSdkStr = libs.versions.targetSdk.get()
 val sdkExtensionInt = libs.versions.compileSdkExtension.get().toInt()
 val ndkVersionStr = libs.versions.ndk.get()
 
@@ -66,8 +68,23 @@ android {
 
     defaultConfig {
         applicationId = "com.github.tianma8023.xposed.smscode"
-        minSdk = minSdkInt
-        targetSdk = targetSdkInt
+        val minSdkCodename = minSdkStr.removePrefix("android-")
+        val minSdkAsInt = minSdkCodename.toIntOrNull()
+        if (minSdkAsInt != null) {
+            minSdk = minSdkAsInt
+        } else {
+            @Suppress("DEPRECATION")
+            minSdkPreview = minSdkCodename
+        }
+        
+        val targetSdkCodename = targetSdkStr.removePrefix("android-")
+        val targetSdkAsInt = targetSdkCodename.toIntOrNull()
+        if (targetSdkAsInt != null) {
+            targetSdk = targetSdkAsInt
+        } else {
+            targetSdkPreview = targetSdkCodename
+        }
+
         versionCode = versionCodeInt
         versionName = versionNameStr
 
