@@ -32,6 +32,8 @@
     <string name="language_zh_tw">繁體中文</string>
     <string name="module_status_active">Active</string>
     <string name="module_status_inactive">Inactive</string>
+    <string name="pref_haze_blur_radius_title">Background blur radius</string>
+    <string name="pref_haze_tint_alpha_title">Blur mask alpha</string>
     <!-- preferences general end -->
 
     <!-- preferences sms code -->

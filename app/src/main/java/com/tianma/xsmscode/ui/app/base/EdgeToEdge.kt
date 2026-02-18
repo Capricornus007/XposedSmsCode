@@ -56,11 +56,14 @@ fun SystemBarsScrim(hazeState: HazeState, hazeStyle: HazeStyle) {
 }
 
 @Composable
-fun rememberHazeStyle(): HazeStyle = HazeStyle(
+fun rememberHazeStyle(
+    blurRadius: androidx.compose.ui.unit.Dp = 25.dp,
+    tintAlpha: Float = 0.2f
+): HazeStyle = HazeStyle(
     backgroundColor = MaterialTheme.colorScheme.surface,
-    tint = HazeTint(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)),
-    blurRadius = 30.dp,
-    noiseFactor = 0f,
+    tint = HazeTint(MaterialTheme.colorScheme.surface.copy(alpha = tintAlpha)),
+    blurRadius = blurRadius,
+    noiseFactor = 0.1f,
 )
 
 @Composable

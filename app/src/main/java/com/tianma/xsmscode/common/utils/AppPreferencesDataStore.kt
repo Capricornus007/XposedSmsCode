@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.tianma.xsmscode.common.constant.PrefConst
 import kotlinx.coroutines.flow.Flow
@@ -118,6 +119,23 @@ object AppPreferencesDataStore {
         ensureSharedPrefsReadable(context)
     }
 
+    suspend fun getFloat(context: Context, key: String, defaultValue: Float): Float {
+        val prefKey = floatPreferencesKey(key)
+        return getInstance(context).data
+            .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
+            .first()
+    }
+
+    suspend fun setFloat(context: Context, key: String, value: Float) {
+        val prefKey = floatPreferencesKey(key)
+        getInstance(context).edit { prefs ->
+            prefs[prefKey] = value
+        }
+        getSharedPrefs(context).edit().putFloat(key, value).apply()
+        ensureDataStoreReadable(context)
+        ensureSharedPrefsReadable(context)
+    }
+
     suspend fun getBooleanCompat(context: Context, key: String, defaultValue: Boolean): Boolean {
         val sharedPrefs = getSharedPrefs(context)
         return if (sharedPrefs.contains(key)) {
@@ -198,8 +216,15 @@ object AppPreferencesDataStore {
             getBoolean(context, PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY, false),
         )
         editor.putBoolean(
-            PrefConst.KEY_ENABLE_AUTO_ENTER_CODE,
             getBoolean(context, PrefConst.KEY_ENABLE_AUTO_ENTER_CODE, false),
+        )
+        editor.putInt(
+            PrefConst.KEY_HAZE_BLUR_RADIUS,
+            getInt(context, PrefConst.KEY_HAZE_BLUR_RADIUS, 25),
+        )
+        editor.putFloat(
+            PrefConst.KEY_HAZE_TINT_ALPHA,
+            getFloat(context, PrefConst.KEY_HAZE_TINT_ALPHA, 0.2f),
         )
         editor.apply()
         ensureSharedPrefsReadable(context)
@@ -219,6 +244,12 @@ object AppPreferencesDataStore {
 
     fun getIntFlow(context: Context, key: String, defaultValue: Int): Flow<Int> {
         val prefKey = intPreferencesKey(key)
+        return getInstance(context).data
+            .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
+    }
+
+    fun getFloatFlow(context: Context, key: String, defaultValue: Float): Flow<Float> {
+        val prefKey = floatPreferencesKey(key)
         return getInstance(context).data
             .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
     }

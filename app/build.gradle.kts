@@ -135,6 +135,9 @@ android {
                 signingConfig = signingConfigs.getByName("release")
             }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
         getByName("release") {
             isMinifyEnabled = true
@@ -148,6 +151,9 @@ android {
                 signingConfig = signingConfigs.getByName("debug")
             }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
             lint {
                 disable += "MissingTranslation"
                 checkReleaseBuilds = false
