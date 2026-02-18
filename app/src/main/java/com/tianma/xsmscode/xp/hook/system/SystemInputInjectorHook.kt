@@ -145,7 +145,8 @@ class SystemInputInjectorHook : BaseHook() {
                         } else {
                             -1
                         }
-                    } catch (ignored: Throwable) {
+                    } catch (t: Throwable) {
+                        XLog.w("Failed to get sendingUid: ${t.message}")
                         -1
                     }
                     val appUid = context.applicationInfo.uid
