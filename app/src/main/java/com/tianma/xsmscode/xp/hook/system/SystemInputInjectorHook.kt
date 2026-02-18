@@ -95,7 +95,7 @@ class SystemInputInjectorHook : BaseHook() {
                 }
             }
         } catch (t: Throwable) {
-            // ignore
+            XLog.w("Failed to get system context in onLoadPackage: ${t.message}")
         }
 
         // Attempt 2: Hook ActivityManagerService.systemReady as fallback
