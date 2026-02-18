@@ -195,8 +195,17 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     Box(modifier = Modifier.fillMaxSize()) {
-                        val hazeBlurRadius by AppPreferencesDataStore.getIntFlow(context, PrefConst.KEY_HAZE_BLUR_RADIUS, 25).collectAsStateWithLifecycle(initialValue = 25)
-                        val hazeTintAlpha by AppPreferencesDataStore.getFloatFlow(context, PrefConst.KEY_HAZE_TINT_ALPHA, 0.2f).collectAsStateWithLifecycle(initialValue = 0.2f)
+                        val hazeBlurRadius by AppPreferencesDataStore.getIntFlow(
+                            context,
+                            PrefConst.KEY_HAZE_BLUR_RADIUS,
+                            PrefConst.HAZE_BLUR_RADIUS_DEFAULT,
+                        ).collectAsStateWithLifecycle(initialValue = PrefConst.HAZE_BLUR_RADIUS_DEFAULT)
+
+                        val hazeTintAlpha by AppPreferencesDataStore.getFloatFlow(
+                            context,
+                            PrefConst.KEY_HAZE_TINT_ALPHA,
+                            PrefConst.HAZE_TINT_ALPHA_DEFAULT,
+                        ).collectAsStateWithLifecycle(initialValue = PrefConst.HAZE_TINT_ALPHA_DEFAULT)
 
                         val hazeState = remember { HazeState() }
                         val hazeStyle = rememberHazeStyle(blurRadius = hazeBlurRadius.dp, tintAlpha = hazeTintAlpha)

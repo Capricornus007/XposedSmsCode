@@ -221,11 +221,11 @@ object AppPreferencesDataStore {
         )
         editor.putInt(
             PrefConst.KEY_HAZE_BLUR_RADIUS,
-            getInt(context, PrefConst.KEY_HAZE_BLUR_RADIUS, 25),
+            getInt(context, PrefConst.KEY_HAZE_BLUR_RADIUS, PrefConst.HAZE_BLUR_RADIUS_DEFAULT),
         )
         editor.putFloat(
             PrefConst.KEY_HAZE_TINT_ALPHA,
-            getFloat(context, PrefConst.KEY_HAZE_TINT_ALPHA, 0.2f),
+            getFloat(context, PrefConst.KEY_HAZE_TINT_ALPHA, PrefConst.HAZE_TINT_ALPHA_DEFAULT),
         )
         editor.apply()
         ensureSharedPrefsReadable(context)
