@@ -298,7 +298,6 @@ fun ComposeSettingsScreen(
                         showLanguageDialog = false
                     },
                 )
-                )
             }
 
             val blurRadius = rememberPrefInt(PrefConst.KEY_HAZE_BLUR_RADIUS, 25)
@@ -356,60 +355,7 @@ fun ComposeSettingsScreen(
                 )
             }
 
-            val blurRadius = rememberPrefInt(PrefConst.KEY_HAZE_BLUR_RADIUS, 25)
-            val tintAlpha = rememberPrefFloat(PrefConst.KEY_HAZE_TINT_ALPHA, 0.2f)
-            var showBlurRadiusDialog by remember { mutableStateOf(false) }
-            var showTintAlphaDialog by remember { mutableStateOf(false) }
 
-            Item(
-                title = stringResource(id = R.string.pref_haze_blur_radius_title),
-                summary = "${blurRadius.intValue}dp",
-            ) { showBlurRadiusDialog = true }
-
-            Item(
-                title = stringResource(id = R.string.pref_haze_tint_alpha_title),
-                summary = "%.2f".format(tintAlpha.floatValue),
-            ) { showTintAlphaDialog = true }
-
-            if (showBlurRadiusDialog) {
-                SliderDialog(
-                    title = stringResource(id = R.string.pref_haze_blur_radius_title),
-                    value = blurRadius.intValue.toFloat(),
-                    valueRange = 0f..100f,
-                    steps = 0,
-                    onDismiss = { showBlurRadiusDialog = false },
-                    onValueChange = {
-                        val newVal = it.toInt()
-                        blurRadius.intValue = newVal
-                        scope.launch {
-                            AppPreferencesDataStore.setInt(context, PrefConst.KEY_HAZE_BLUR_RADIUS, newVal)
-                            AppPreferencesDataStore.syncToSharedPrefs(context)
-                            markPrefsSaved()
-                        }
-                        showBlurRadiusDialog = false
-                    },
-                    valueFormatter = { "${it.toInt()}dp" }
-                )
-            }
-
-            if (showTintAlphaDialog) {
-                SliderDialog(
-                    title = stringResource(id = R.string.pref_haze_tint_alpha_title),
-                    value = tintAlpha.floatValue,
-                    valueRange = 0f..1f,
-                    steps = 0,
-                    onDismiss = { showTintAlphaDialog = false },
-                    onValueChange = {
-                        tintAlpha.floatValue = it
-                        scope.launch {
-                            AppPreferencesDataStore.setFloat(context, PrefConst.KEY_HAZE_TINT_ALPHA, it)
-                            AppPreferencesDataStore.syncToSharedPrefs(context)
-                            markPrefsSaved()
-                        }
-                        showTintAlphaDialog = false
-                    }
-                )
-            }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
 
