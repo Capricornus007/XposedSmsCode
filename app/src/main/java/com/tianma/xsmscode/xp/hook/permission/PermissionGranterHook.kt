@@ -15,6 +15,10 @@ class PermissionGranterHook : BaseHook() {
 
             val sdkInt = Build.VERSION.SDK_INT
             when {
+                sdkInt >= 36 -> { // Android 16+
+                    PermissionManagerServiceHook36(classLoader).startHook()
+                }
+
                 sdkInt >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE -> {
                     PermissionManagerServiceHook34(classLoader).startHook()
                 }
