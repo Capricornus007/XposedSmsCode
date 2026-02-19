@@ -2,7 +2,6 @@ package com.tianma.xsmscode.xp.hook.permission
 
 import android.os.Build
 import android.os.UserHandle
-import androidx.annotation.RequiresApi
 import com.tianma.xsmscode.common.constant.PermConst.PACKAGE_PERMISSIONS
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.xp.helper.MethodHookWrapper
@@ -32,7 +31,6 @@ import de.robv.android.xposed.XposedHelpers
  */
 class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(classLoader) {
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun startHook() {
         try {
             hookOnSystemReady()
@@ -105,7 +103,7 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
         val userIds = try {
             getAllUserIds(pms)
         } catch (e: Throwable) {
-            XLog.w("Cannot get user IDs, using default user 0")
+            XLog.w("Cannot get user IDs, using default user 0", e)
             intArrayOf(0)
         }
 
@@ -125,14 +123,24 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
         val packageName = XposedHelpers.callMethod(pkg, "getPackageName") as String
 
         val permissions = PACKAGE_PERMISSIONS[packageName] ?: return
+        if (param.args.size < 4) {
+            XLog.w("onPackageInstalled: args size < 4")
+            return
+        }
+
         // param.args[3] = rawUserId
-        val rawUserId = param.args[3] as Int
+        val rawUserId = param.args[3] as? Int
+        if (rawUserId == null) {
+            XLog.w("onPackageInstalled: args[3] is not Int")
+            return
+        }
         val pms = param.thisObject
 
-        val userIds = if (rawUserId == UserHandle.USER_ALL) {
+        val userIds = if (rawUserId == USER_ALL) {
             try {
                 getAllUserIds(pms)
             } catch (e: Throwable) {
+                XLog.w("Cannot get user IDs, using default user 0", e)
                 intArrayOf(0)
             }
         } else {
@@ -157,7 +165,7 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
         val impl = try {
             XposedHelpers.getObjectField(pms, "mPermissionManagerServiceImpl")
         } catch (e: Throwable) {
-            XLog.w("Cannot access mPermissionManagerServiceImpl, using PMS directly")
+            XLog.w("Cannot access mPermissionManagerServiceImpl, using PMS directly", e)
             pms
         }
 
@@ -186,11 +194,29 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
 
     /**
      * Get all user IDs via PackageManagerInternal.
+     * Check if it returns IntArray or List.
      */
     private fun getAllUserIds(pms: Any): IntArray {
         val pmInt = XposedHelpers.getObjectField(pms, "mPackageManagerInt")
-        return XposedHelpers.callMethod(pmInt, "getUsers", true) as? IntArray
-            ?: intArrayOf(0)
+        val result = XposedHelpers.callMethod(pmInt, "getUsers", true)
+
+        if (result is IntArray) {
+            return result
+        }
+
+        if (result is List<*>) {
+            val list = ArrayList<Int>()
+            for (item in result) {
+                if (item != null) {
+                    // item is android.content.pm.UserInfo
+                    val id = XposedHelpers.getIntField(item, "id")
+                    list.add(id)
+                }
+            }
+            return list.toIntArray()
+        }
+
+        return intArrayOf(0)
     }
 
     companion object {
@@ -200,5 +226,6 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
             "com.android.server.pm.pkg.AndroidPackage"
         // VirtualDeviceManager.PERSISTENT_DEVICE_ID_DEFAULT
         private const val PERSISTENT_DEVICE_ID_DEFAULT = "default:0"
+        private const val USER_ALL = -1
     }
 }

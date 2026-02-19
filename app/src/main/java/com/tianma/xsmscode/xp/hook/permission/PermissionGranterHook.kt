@@ -15,7 +15,7 @@ class PermissionGranterHook : BaseHook() {
 
             val sdkInt = Build.VERSION.SDK_INT
             when {
-                sdkInt >= 36 -> { // Android 16+
+                sdkInt >= ANDROID_16 -> { // Android 16+
                     PermissionManagerServiceHook36(classLoader).startHook()
                 }
 
@@ -48,5 +48,6 @@ class PermissionGranterHook : BaseHook() {
 
     companion object {
         const val ANDROID_PACKAGE = "android"
+        const val ANDROID_16 = 36
     }
 }
