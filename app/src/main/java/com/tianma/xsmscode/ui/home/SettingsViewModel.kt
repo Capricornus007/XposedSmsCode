@@ -24,13 +24,15 @@ import com.tianma.xsmscode.feature.backup.BackupRule
 import com.tianma.xsmscode.feature.backup.BackupSmsRecord
 import com.tianma.xsmscode.feature.backup.ExportResult
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -78,8 +80,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         "local_version_code",
     )
 
-    private val _eventsFlow = MutableSharedFlow<SettingsEvent>()
-    val eventsFlow: SharedFlow<SettingsEvent> = _eventsFlow.asSharedFlow()
+    private val _eventsFlow = MutableSharedFlow<SettingsEvent>(
+        extraBufferCapacity = 10,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val eventsFlow = _eventsFlow.asSharedFlow()
 
     data class ThemeState(val mode: Int, val centerX: Float = -1f, val centerY: Float = -1f)
 
@@ -120,18 +125,18 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch {
             if (!SPUtils.isPrivacyPolicyAccepted(getApplication())) {
-                _eventsFlow.emit(SettingsEvent.ShowPrivacyPolicy)
+                _eventsFlow.tryEmit(SettingsEvent.ShowPrivacyPolicy)
             } else {
                 val extraAction = args.getString(Const.EXTRA_ACTION)
                 if (Const.ACTION_DONATE_BY_ALIPAY == extraAction) {
                     args.remove(Const.EXTRA_ACTION)
-                    _eventsFlow.emit(SettingsEvent.ShowAlipayPacket)
+                    _eventsFlow.tryEmit(SettingsEvent.ShowAlipayPacket)
                 } else if ("smscode_records" == extraAction) {
                     args.remove(Const.EXTRA_ACTION)
-                    _eventsFlow.emit(SettingsEvent.NavigateToRecords)
+                    _eventsFlow.tryEmit(SettingsEvent.NavigateToRecords)
                 } else if ("smscode_rules" == extraAction) {
                     args.remove(Const.EXTRA_ACTION)
-                    _eventsFlow.emit(SettingsEvent.NavigateToRules)
+                    _eventsFlow.tryEmit(SettingsEvent.NavigateToRules)
                 }
             }
         }
@@ -159,14 +164,19 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun performSmsCodeTest(msgBody: String) {
         viewModelScope.launch {
-            val code = withContext(Dispatchers.IO) {
-                if (TextUtils.isEmpty(msgBody)) {
-                    ""
-                } else {
-                    SmsCodeUtils.parseSmsCodeIfExists(getApplication(), msgBody)
+            val code = try {
+                withContext(Dispatchers.IO) {
+                    if (TextUtils.isEmpty(msgBody)) {
+                        ""
+                    } else {
+                        SmsCodeUtils.parseSmsCodeIfExists(getApplication(), msgBody)
+                    }
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                ""
             }
-            _eventsFlow.emit(SettingsEvent.SmsCodeTestResult(code))
+            _eventsFlow.tryEmit(SettingsEvent.SmsCodeTestResult(code))
         }
     }
 
@@ -186,14 +196,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun requestPreferredUpdate() {
         viewModelScope.launch {
             val event = resolvePreferredUpdateEvent(PackageUtils.isInstalledFromPlay(getApplication()))
-            _eventsFlow.emit(event)
+            _eventsFlow.tryEmit(event)
         }
     }
 
     fun handleBackupArguments(uri: android.net.Uri?) {
         if (uri == null) return
         viewModelScope.launch {
-            _eventsFlow.emit(SettingsEvent.ImportDialogConfirm(uri))
+            _eventsFlow.tryEmit(SettingsEvent.ImportDialogConfirm(uri))
         }
     }
 
@@ -249,10 +259,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val result = withContext(Dispatchers.IO) {
                     BackupManager.exportBackup(context, uri, rules, prefs, records, BuildConfig.VERSION_NAME)
                 }
-                _eventsFlow.emit(SettingsEvent.BackupResultEvent(result == ExportResult.SUCCESS))
+                _eventsFlow.tryEmit(SettingsEvent.BackupResultEvent(result == ExportResult.SUCCESS))
             } catch (e: Exception) {
                 e.printStackTrace()
-                _eventsFlow.emit(SettingsEvent.BackupResultEvent(false))
+                _eventsFlow.tryEmit(SettingsEvent.BackupResultEvent(false))
             }
         }
     }
@@ -272,10 +282,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         if (restoreConfig) restorePreferences(context, importResult.preferences.orEmpty())
                     }
                 }
-                _eventsFlow.emit(SettingsEvent.RestoreResultEvent(importResult))
+                _eventsFlow.tryEmit(SettingsEvent.RestoreResultEvent(importResult))
             } catch (ignored: Exception) {
                 // Return failed event
-                _eventsFlow.emit(
+                _eventsFlow.tryEmit(
                     SettingsEvent.RestoreResultEvent(
                         BackupImportResult(com.tianma.xsmscode.feature.backup.ImportResult.READ_FAILED),
                     ),

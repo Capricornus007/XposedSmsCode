@@ -172,7 +172,7 @@ fun ComposeSettingsScreen(
                         } else {
                             context.getString(R.string.current_sms_code, event.code)
                         }
-                        snackbarHostState.showSnackbar(text, duration = SnackbarDuration.Long)
+                        android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_LONG).show()
                     }
 
                     is SettingsEvent.ShowPrivacyPolicy -> {
@@ -185,7 +185,7 @@ fun ComposeSettingsScreen(
 
                     is SettingsEvent.BackupResultEvent -> {
                         val msg = if (event.success) R.string.backup_success else R.string.backup_failed
-                        snackbarHostState.showSnackbar(context.getString(msg))
+                        android.widget.Toast.makeText(context, context.getString(msg), android.widget.Toast.LENGTH_SHORT).show()
                     }
 
                     is SettingsEvent.RestoreResultEvent -> {
@@ -194,7 +194,7 @@ fun ComposeSettingsScreen(
                         } else {
                             R.string.restore_failed
                         }
-                        snackbarHostState.showSnackbar(context.getString(msg))
+                        android.widget.Toast.makeText(context, context.getString(msg), android.widget.Toast.LENGTH_SHORT).show()
 
                         if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
                             Toast.makeText(
