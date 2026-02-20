@@ -234,16 +234,21 @@ class SystemInputInjectorHook : BaseHook() {
                 manager to method
             } else {
                 try {
-                    val inputManagerGlobalClass = XposedHelpers.findClass(
-                        "android.hardware.input.InputManagerGlobal",
+                    val className = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                        "android.hardware.input.InputManagerGlobal"
+                    } else {
+                        "android.hardware.input.InputManager"
+                    }
+                    val inputManagerClass = XposedHelpers.findClass(
+                        className,
                         null,
                     )
                     val instance = XposedHelpers.callStaticMethod(
-                        inputManagerGlobalClass,
+                        inputManagerClass,
                         "getInstance",
                     )
                     val inject = XposedHelpers.findMethodBestMatch(
-                        inputManagerGlobalClass,
+                        inputManagerClass,
                         "injectInputEvent",
                         android.view.InputEvent::class.java,
                         Int::class.javaPrimitiveType,
