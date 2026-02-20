@@ -266,14 +266,10 @@ fun ComposeSettingsScreen(
                 defaultValue = true,
                 onSaved = markPrefsSaved,
             )
-            SwitchItem(
-                title = stringResource(id = R.string.pref_hide_launcher_icon_title),
-                summary = stringResource(id = R.string.pref_hide_launcher_icon_summary),
-                key = PrefConst.KEY_HIDE_LAUNCHER_ICON,
-                defaultValue = false,
-                onToggle = { enabled -> settingsViewModel.hideOrShowLauncherIcon(enabled) },
-                onSaved = markPrefsSaved,
-            )
+            Item(
+                title = stringResource(id = R.string.pref_create_shortcut_title),
+                summary = stringResource(id = R.string.pref_create_shortcut_summary),
+            ) { settingsViewModel.pinShortcutToDesktop() }
             Item(
                 title = stringResource(id = R.string.pref_choose_theme_title),
                 summary = stringResource(id = R.string.pref_choose_theme_summary),

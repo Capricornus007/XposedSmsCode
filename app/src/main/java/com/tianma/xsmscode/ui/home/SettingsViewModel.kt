@@ -12,6 +12,11 @@ import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.constant.Const
 import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.*
+import androidx.core.content.pm.ShortcutInfoCompat
+import androidx.core.content.pm.ShortcutManagerCompat
+import androidx.core.graphics.drawable.IconCompat
+import android.content.Intent
+import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.data.db.DBManager
 import com.tianma.xsmscode.feature.backup.BackupImportResult
 import com.tianma.xsmscode.feature.backup.BackupManager
@@ -50,7 +55,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val booleanPrefKeys = setOf(
         PrefConst.KEY_ENABLE,
-        PrefConst.KEY_HIDE_LAUNCHER_ICON,
         PrefConst.KEY_SHOW_TOAST,
         PrefConst.KEY_COPY_TO_CLIPBOARD,
         PrefConst.KEY_ENABLE_AUTO_INPUT_CODE,
@@ -133,21 +137,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun hideOrShowLauncherIcon(hide: Boolean) {
-        val pm = getApplication<Application>().packageManager
-        val launcherCN = ComponentName(getApplication(), Const.HOME_ACTIVITY_ALIAS)
-        val mainCN = ComponentName(getApplication(), MainActivity::class.java)
-        val state = if (hide) PackageManager.COMPONENT_ENABLED_STATE_DISABLED else PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-        if (pm.getComponentEnabledSetting(launcherCN) != state) {
-            val flags = if (hide) 0 else PackageManager.DONT_KILL_APP
-            pm.setComponentEnabledSetting(launcherCN, state, flags)
-            if (hide) {
-                pm.setComponentEnabledSetting(
-                    mainCN,
-                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
-                    PackageManager.DONT_KILL_APP,
-                )
+    fun pinShortcutToDesktop() {
+        val context = getApplication<Application>()
+        if (ShortcutManagerCompat.isRequestPinShortcutSupported(context)) {
+            val intent = Intent(context, MainActivity::class.java).apply {
+                action = Intent.ACTION_MAIN
             }
+            // 使用挂载了 CATEGORY_INFO 的主入口强行注册
+            val mainActivity = android.content.ComponentName(context, MainActivity::class.java)
+            val shortcut = ShortcutInfoCompat.Builder(context, "shortcut_main")
+                .setShortLabel(context.getString(R.string.app_name))
+                .setIcon(IconCompat.createWithResource(context, R.mipmap.ic_launcher))
+                .setIntent(intent)
+                .setActivity(mainActivity)
+                .build()
+            ShortcutManagerCompat.requestPinShortcut(context, shortcut, null)
+        } else {
+            android.widget.Toast.makeText(context, "当前系统不支持创建快捷方式", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 

@@ -17,8 +17,8 @@
     <string name="pref_general_title">通用设置</string>
     <string name="pref_enable_title">主开关</string>
     <string name="pref_enable_summary">模块已激活</string>
-    <string name="pref_hide_launcher_icon_title">隐藏桌面图标</string>
-    <string name="pref_hide_launcher_icon_summary">隐藏后您可以从 Xposed 模块中重新打开本应用</string>
+    <string name="pref_create_shortcut_title">创建桌面快捷方式</string>
+    <string name="pref_create_shortcut_summary">将图标固定到桌面上以便快速访问</string>
     <string name="pref_choose_theme_title">主题</string>
     <string name="pref_choose_theme_summary">跟随系统、浅色或深色</string>
     <string name="theme_follow_system">自动 (跟随系统)</string>
