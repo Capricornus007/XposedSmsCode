@@ -25,13 +25,15 @@
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>
     <string name="pref_language_title">语言</string>
-    <string name="pref_language_summary">Select language/语言</string>
+    <string name="pref_language_summary">选择语言</string>
     <string name="language_follow_system">系统默认/跟随系统</string>
     <string name="language_en">English</string>
     <string name="language_zh_cn">简体中文</string>
     <string name="language_zh_tw">繁體中文</string>
     <string name="module_status_active">已激活</string>
     <string name="module_status_inactive">未激活</string>
+    <string name="pref_haze_blur_radius_title">背景模糊半径</string>
+    <string name="pref_haze_tint_alpha_title">模糊遮罩透明度</string>
     <!-- preferences general end -->
 
     <!-- preferences sms code -->
