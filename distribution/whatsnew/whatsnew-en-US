@@ -1,5 +1,5 @@
-- New: Added "Auto-Enter" support after auto-inputting verification code
-- Opt: Enhanced input injection with fallback strategies for better compatibility
-- UI: Improved internationalization and added OS codename display
-- Build: Migrated build system to Gradle Kotlin DSL (KTS)
-- Release: Automated Google Play multi-track distribution and release notes
+- Fix: Resolved unresponsive behavior in SMS code test dialog
+- New: Added desktop shortcut support and secret code entry to restore hidden icon
+- Fix: Completed Chinese translations for blur settings to avoid English fallback
+- UI: Unified language/display strings across localized resources
+- CI: Standardized release tag and build trigger to semantic versioning (vX.Y.Z)
