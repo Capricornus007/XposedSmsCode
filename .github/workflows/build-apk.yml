@@ -3,7 +3,7 @@ name: Build APK/AAB
 on:
   push:
     tags:
-      - '[0-9]*-*'  # VersionCode-VersionName format, e.g. 85-3.1.3
+      - 'v*.*.*'  # Semantic version tag, e.g. v3.1.4
   workflow_dispatch:
 
 permissions:
@@ -122,9 +122,12 @@ jobs:
         id: extract_version
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          TAG=${GITHUB_REF_NAME}       # e.g. 85-3.1.3
-          VERSION_NAME=${TAG#*-}       # 3.1.3
-          echo "version_name=v${VERSION_NAME}" >> $GITHUB_OUTPUT
+          TAG=${GITHUB_REF_NAME}       # e.g. v3.1.4
+          if [[ "$TAG" == v* ]]; then
+            echo "version_name=${TAG}" >> $GITHUB_OUTPUT
+          else
+            echo "version_name=v${TAG}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create Draft Release
         uses: softprops/action-gh-release@v2
@@ -195,9 +198,12 @@ jobs:
       - name: Extract Version Name from Tag
         id: extract_version
         run: |
-          TAG=${GITHUB_REF_NAME}       # e.g. 85-3.1.3
-          VERSION_NAME=${TAG#*-}       # 3.1.3
-          echo "version_name=v${VERSION_NAME}" >> $GITHUB_OUTPUT
+          TAG=${GITHUB_REF_NAME}       # e.g. v3.1.4
+          if [[ "$TAG" == v* ]]; then
+            echo "version_name=${TAG}" >> $GITHUB_OUTPUT
+          else
+            echo "version_name=v${TAG}" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create Draft Release in Xposed-Modules-Repo
         if: env.HAS_MODULES_REPO_TOKEN == 'true' && env.HAS_RELEASE_KEYSTORE == 'true'
