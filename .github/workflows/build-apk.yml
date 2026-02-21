@@ -132,6 +132,16 @@ jobs:
         with:
           name: ${{ steps.extract_version.outputs.version_name }}
           draft: true
+          body: |
+            <div align="center">
+              <a href="https://play.google.com/store/apps/details?id=com.github.tianma8023.xposed.smscode">
+                <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="80"/>
+              </a>
+              <a href="https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}">
+                <img src="https://raw.githubusercontent.com/machiav3lli/oandbackupx/master/badge_github.png" alt="Get it on GitHub" height="80"/>
+              </a>
+            </div>
+
           files: |
             artifacts/apks/*.apk
             artifacts/bundle/bundle/release/*.aab
@@ -196,7 +206,16 @@ jobs:
             artifacts/apks/*.apk \
             --repo "${{ env.MODULES_REPO }}" \
             --title "${{ steps.extract_version.outputs.version_name }}" \
-            --notes "Source: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}" \
+            --notes "<div align=\"center\">
+            <a href=\"https://play.google.com/store/apps/details?id=com.github.tianma8023.xposed.smscode\">
+              <img src=\"https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png\" alt=\"Get it on Google Play\" height=\"80\"/>
+            </a>
+            <a href=\"https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}\">
+              <img src=\"https://raw.githubusercontent.com/machiav3lli/oandbackupx/master/badge_github.png\" alt=\"Get it on GitHub\" height=\"80\"/>
+            </a>
+            </div>
+
+            Source: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}" \
             --draft
         env:
           GH_TOKEN: ${{ secrets.XPOSED_MODULES_REPO_TOKEN }}

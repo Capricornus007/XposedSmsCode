@@ -2,7 +2,7 @@ name: Update Gradle Wrapper
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Run daily at midnight UTC
+    - cron: '30 2 * * *' # Run daily at 02:30 UTC (10:30 Beijing time)
   workflow_dispatch:
 
 permissions:
