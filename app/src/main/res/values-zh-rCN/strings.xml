@@ -20,10 +20,11 @@
     <string name="pref_create_shortcut_title">创建桌面快捷方式</string>
     <string name="pref_create_shortcut_summary">将图标固定到桌面上以便快速访问</string>
     <string name="pref_choose_theme_title">主题</string>
-    <string name="pref_choose_theme_summary">跟随系统、浅色或深色</string>
+    <string name="pref_choose_theme_summary">跟随系统、浅色、深色或纯黑</string>
     <string name="theme_follow_system">自动 (跟随系统)</string>
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>
+    <string name="theme_black">纯黑</string>
     <string name="pref_language_title">语言</string>
     <string name="pref_language_summary">选择语言</string>
     <string name="language_follow_system">系统默认/跟随系统</string>
@@ -151,7 +152,7 @@
     <string name="pref_join_telegram_group_summary">点击加入</string>
     <string name="pref_source_code_title">源代码</string>
     <string name="browser_install_or_enable_prompt">请先安装或启用浏览器</string>
-    <string name="pref_source_code_summary">欢迎 Star ♪(＾∀＾●)ﾉ</string>
+    <string name="pref_source_code_summary">欢迎 Star</string>
     <string name="pref_donate_by_alipay_title">打赏感谢</string>
     <string name="alipay_install_prompt">请先安装支付宝</string>
     <string name="alipay_enable_prompt">请先启用支付宝</string>

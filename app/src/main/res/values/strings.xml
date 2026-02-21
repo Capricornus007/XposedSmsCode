@@ -20,10 +20,11 @@
     <string name="pref_create_shortcut_title">Create Desktop Shortcut</string>
     <string name="pref_create_shortcut_summary">Pin a shortcut to the launcher for quick access</string>
     <string name="pref_choose_theme_title">Theme</string>
-    <string name="pref_choose_theme_summary">Follow System, Light or Dark</string>
+    <string name="pref_choose_theme_summary">Follow System, Light, Dark or Pure Black</string>
     <string name="theme_follow_system">Automatic (Follow System)</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
+    <string name="theme_black">Pure Black</string>
     <string name="pref_language_title">Language</string>
     <string name="pref_language_summary">Select language</string>
     <string name="language_follow_system">System Default/跟随系统</string>
@@ -149,7 +150,7 @@
     <string name="pref_join_telegram_group_summary">Tap to join</string>
     <string name="pref_source_code_title">Source code</string>
     <string name="browser_install_or_enable_prompt">Please install or enable browser first</string>
-    <string name="pref_source_code_summary">Welcome to star ♪(＾∀＾●)ﾉ</string>
+    <string name="pref_source_code_summary">Welcome to star</string>
     <string name="pref_donate_by_alipay_title">Donation Appreciation</string>
     <string name="alipay_install_prompt">Please install Alipay</string>
     <string name="alipay_enable_prompt">Please enable Alipay</string>

@@ -43,6 +43,19 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
         // Data is automatically loaded via queryAllSmsMsgFlow() in uiState
     }
 
+    fun refreshData() {
+        viewModelScope.launch {
+            _loading.value = true
+            try {
+                withContext(Dispatchers.IO) {
+                    DBManager.get(getApplication()).queryAllSmsMsg()
+                }
+            } finally {
+                _loading.value = false
+            }
+        }
+    }
+
     fun removeSmsMsg(smsMsgList: List<SmsMsg>) {
         viewModelScope.launch {
             try {

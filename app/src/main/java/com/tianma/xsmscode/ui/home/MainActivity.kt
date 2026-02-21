@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -494,18 +495,34 @@ class MainActivity : AppCompatActivity() {
     @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     @Composable
     fun AppTheme(themeMode: Int, content: @Composable () -> Unit) {
+        val isPureBlack = themeMode == 3
         val darkTheme = when (themeMode) {
             1 -> false
             2 -> true
+            3 -> true
             else -> isSystemInDarkTheme()
         }
 
         UpdateSystemBars(darkTheme)
 
+        val pureBlackColorScheme = darkColorScheme(
+            background = Color.Black,
+            surface = Color.Black,
+            surfaceContainer = Color.Black,
+            surfaceContainerLow = Color.Black,
+            surfaceContainerLowest = Color.Black,
+            surfaceContainerHigh = Color.Black,
+            surfaceContainerHighest = Color.Black,
+        )
+
         // Material 3 Expressive Theme Implementation
         // Note: MaterialExpressiveTheme uses its own shape and typography defaults
         MaterialExpressiveTheme(
-            colorScheme = if (darkTheme) darkColorScheme() else lightColorScheme(),
+            colorScheme = when {
+                isPureBlack -> pureBlackColorScheme
+                darkTheme -> darkColorScheme()
+                else -> lightColorScheme()
+            },
             content = content,
         )
     }

@@ -1,5 +1,7 @@
 package com.tianma.xsmscode.ui.block
 
+import android.os.SystemClock
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,6 +11,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,19 +31,23 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.data.db.entity.AppInfo
 import com.tianma.xsmscode.ui.common.AppIconImage
+import com.tianma.xsmscode.ui.common.PolygonMorphLoadingIndicator
+import com.tianma.xsmscode.ui.common.SessionLoadingRegistry
+import com.tianma.xsmscode.ui.common.rememberMinDurationLoading
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
-import android.widget.Toast
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppBlockScreen(
     hazeState: HazeState,
     hazeStyle: HazeStyle,
     onBack: (() -> Unit)? = null,
+    refreshTrigger: Int = 0,
     viewModel: AppBlockViewModel = koinViewModel(),
 ) {
     val apps by viewModel.appsFlow.collectAsStateWithLifecycle()
@@ -50,6 +59,45 @@ fun AppBlockScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val isCompact = LocalConfiguration.current.screenWidthDp < 600
+    val shouldShowInitialLoading = remember { SessionLoadingRegistry.shouldShowInitial("app_block") }
+    var initialLoadingStarted by remember { mutableStateOf(false) }
+    var manualRefreshing by remember { mutableStateOf(false) }
+    var manualRefreshStartedAt by remember { mutableLongStateOf(0L) }
+    val showLoading = rememberMinDurationLoading(
+        actualLoading = isLoading && shouldShowInitialLoading,
+        minDurationMillis = 500L,
+    )
+
+    LaunchedEffect(isLoading, shouldShowInitialLoading, initialLoadingStarted) {
+        if (!shouldShowInitialLoading) return@LaunchedEffect
+        if (isLoading) {
+            initialLoadingStarted = true
+        } else if (initialLoadingStarted) {
+            SessionLoadingRegistry.markShown("app_block")
+        }
+    }
+
+    LaunchedEffect(isLoading, manualRefreshing) {
+        if (manualRefreshing && !isLoading) {
+            val elapsed = if (manualRefreshStartedAt > 0L) {
+                SystemClock.elapsedRealtime() - manualRefreshStartedAt
+            } else {
+                500L
+            }
+            val remaining = (500L - elapsed).coerceAtLeast(0L)
+            if (remaining > 0L) delay(remaining)
+            manualRefreshing = false
+            manualRefreshStartedAt = 0L
+        }
+    }
+
+    LaunchedEffect(refreshTrigger) {
+        if (refreshTrigger > 0) {
+            manualRefreshStartedAt = SystemClock.elapsedRealtime()
+            manualRefreshing = true
+            viewModel.refreshData(force = true)
+        }
+    }
 
     // Initial Load
     LaunchedEffect(Unit) {
@@ -95,6 +143,7 @@ fun AppBlockScreen(
         }
     }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val pullToRefreshState = rememberPullToRefreshState()
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -102,13 +151,35 @@ fun AppBlockScreen(
         val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp + 72.dp // TopBar(64) + SearchBox(72)
         val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
 
-        Box(
+        PullToRefreshBox(
+            state = pullToRefreshState,
+            isRefreshing = manualRefreshing,
+            onRefresh = {
+                manualRefreshStartedAt = SystemClock.elapsedRealtime()
+                manualRefreshing = true
+                viewModel.refreshData(force = true)
+            },
+            indicator = {
+                PullToRefreshDefaults.LoadingIndicator(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = topPadding + 8.dp),
+                    isRefreshing = manualRefreshing,
+                    state = pullToRefreshState,
+                )
+            },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 0.dp), // Content starts at top
+                .padding(top = 0.dp)
         ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            if (showLoading && !manualRefreshing) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    PolygonMorphLoadingIndicator(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = topPadding + 8.dp),
+                    )
+                }
             } else {
                 LazyColumn(
                     modifier = Modifier

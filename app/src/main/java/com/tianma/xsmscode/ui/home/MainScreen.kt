@@ -35,6 +35,7 @@ import com.tianma.xsmscode.ui.record.CodeRecordScreen
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
+import android.os.SystemClock
 
 @Immutable
 data class TabItem<T : Any>(val label: String, val icon: ImageVector, val route: T)
@@ -67,6 +68,43 @@ fun MainScreen(
 
     val configuration = LocalConfiguration.current
     val isCompact = configuration.screenWidthDp < 600
+    var appBlockRefreshTrigger by remember { mutableIntStateOf(0) }
+    var recordsRefreshTrigger by remember { mutableIntStateOf(0) }
+    var faqRefreshTrigger by remember { mutableIntStateOf(0) }
+    var settingsRefreshTrigger by remember { mutableIntStateOf(0) }
+    val tabLastTapAt = remember { mutableStateMapOf<String, Long>() }
+
+    fun triggerRefreshForTab(route: Any) {
+        when (route) {
+            is AppBlockRoute -> appBlockRefreshTrigger++
+            is RecordsRoute -> recordsRefreshTrigger++
+            is FaqRoute -> faqRefreshTrigger++
+            is SettingsRoute -> settingsRefreshTrigger++
+            else -> Unit
+        }
+    }
+
+    fun handleTabClick(tab: TabItem<*>, selected: Boolean) {
+        val key = tab.route::class.qualifiedName ?: tab.label
+        val now = SystemClock.elapsedRealtime()
+        val last = tabLastTapAt[key] ?: 0L
+        tabLastTapAt[key] = now
+
+        if (selected) {
+            if (now - last <= 350L) {
+                triggerRefreshForTab(tab.route)
+            }
+            return
+        }
+
+        navController.navigate(tab.route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
 
     LaunchedEffect(initialTab) {
         when (initialTab) {
@@ -106,15 +144,7 @@ fun MainScreen(
                             label = { Text(tab.label) },
                             selected = selected,
                             alwaysShowLabel = false,
-                            onClick = {
-                                navController.navigate(tab.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
+                            onClick = { handleTabClick(tab, selected) },
                         )
                     }
                 }
@@ -157,19 +187,34 @@ fun MainScreen(
                         OverviewScreen(hazeState = hazeState, hazeStyle = hazeStyle)
                     }
                     composable<AppBlockRoute> {
-                        AppBlockScreen(hazeState = hazeState, hazeStyle = hazeStyle, onBack = null)
+                        AppBlockScreen(
+                            hazeState = hazeState,
+                            hazeStyle = hazeStyle,
+                            onBack = null,
+                            refreshTrigger = appBlockRefreshTrigger,
+                        )
                     }
                     composable<FaqRoute> {
-                        FaqScreen(hazeState = hazeState, hazeStyle = hazeStyle)
+                        FaqScreen(
+                            hazeState = hazeState,
+                            hazeStyle = hazeStyle,
+                            refreshTrigger = faqRefreshTrigger,
+                        )
                     }
                     composable<RecordsRoute> {
-                        CodeRecordScreen(hazeState = hazeState, hazeStyle = hazeStyle, onBack = null)
+                        CodeRecordScreen(
+                            hazeState = hazeState,
+                            hazeStyle = hazeStyle,
+                            onBack = null,
+                            refreshTrigger = recordsRefreshTrigger,
+                        )
                     }
                     composable<SettingsRoute> {
                         ComposeSettingsScreen(
                             hazeState = hazeState,
                             hazeStyle = hazeStyle,
                             onExit = { /* In tab, ignore exit */ },
+                            refreshTrigger = settingsRefreshTrigger,
                         )
                     }
                 }
@@ -199,15 +244,7 @@ fun MainScreen(
                                 indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
                             ),
                             alwaysShowLabel = false,
-                            onClick = {
-                                navController.navigate(tab.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
+                            onClick = { handleTabClick(tab, selected) },
                         )
                     }
                 }

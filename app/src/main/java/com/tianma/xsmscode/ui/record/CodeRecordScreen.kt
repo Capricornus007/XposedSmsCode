@@ -1,5 +1,6 @@
 package com.tianma.xsmscode.ui.record
 
+import android.os.SystemClock
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,6 +28,9 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.rememberDismissState
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +50,9 @@ import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.ui.common.AppIconImage
+import com.tianma.xsmscode.ui.common.PolygonMorphLoadingIndicator
+import com.tianma.xsmscode.ui.common.SessionLoadingRegistry
+import com.tianma.xsmscode.ui.common.rememberMinDurationLoading
 import com.tianma.xsmscode.ui.home.Item
 import com.tianma.xsmscode.ui.home.RetentionDialog
 import com.tianma.xsmscode.ui.home.SectionHeader
@@ -55,25 +62,66 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterialApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterialApi::class)
 @Composable
 fun CodeRecordScreen(
     hazeState: HazeState,
     hazeStyle: HazeStyle,
     onBack: (() -> Unit)? = null,
+    refreshTrigger: Int = 0,
     viewModel: CodeRecordViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val smsList = uiState.smsList
     val isLoading = uiState.isLoading
+    val shouldShowInitialLoading = remember { SessionLoadingRegistry.shouldShowInitial("records") }
+    var initialLoadingStarted by remember { mutableStateOf(false) }
+    var manualRefreshing by remember { mutableStateOf(false) }
+    var manualRefreshStartedAt by remember { mutableLongStateOf(0L) }
+    val showLoading = rememberMinDurationLoading(
+        actualLoading = isLoading && shouldShowInitialLoading,
+        minDurationMillis = 500L,
+    )
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+
+    LaunchedEffect(isLoading, shouldShowInitialLoading, initialLoadingStarted) {
+        if (!shouldShowInitialLoading) return@LaunchedEffect
+        if (isLoading) {
+            initialLoadingStarted = true
+        } else if (initialLoadingStarted) {
+            SessionLoadingRegistry.markShown("records")
+        }
+    }
+
+    LaunchedEffect(isLoading, manualRefreshing) {
+        if (manualRefreshing && !isLoading) {
+            val elapsed = if (manualRefreshStartedAt > 0L) {
+                SystemClock.elapsedRealtime() - manualRefreshStartedAt
+            } else {
+                500L
+            }
+            val remaining = (500L - elapsed).coerceAtLeast(0L)
+            if (remaining > 0L) delay(remaining)
+            manualRefreshing = false
+            manualRefreshStartedAt = 0L
+        }
+    }
+
+    LaunchedEffect(refreshTrigger) {
+        if (refreshTrigger > 0) {
+            manualRefreshStartedAt = SystemClock.elapsedRealtime()
+            manualRefreshing = true
+            viewModel.refreshData()
+        }
+    }
 
     @Suppress("DEPRECATION")
     val clipboardManager = LocalClipboardManager.current
@@ -285,6 +333,7 @@ fun CodeRecordScreen(
         }
     }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val pullToRefreshState = rememberPullToRefreshState()
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -292,21 +341,41 @@ fun CodeRecordScreen(
         val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
         val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
 
-        Box(
+        PullToRefreshBox(
+            state = pullToRefreshState,
+            isRefreshing = manualRefreshing,
+            onRefresh = {
+                manualRefreshStartedAt = SystemClock.elapsedRealtime()
+                manualRefreshing = true
+                viewModel.refreshData()
+            },
+            indicator = {
+                PullToRefreshDefaults.LoadingIndicator(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = topPadding + 8.dp),
+                    isRefreshing = manualRefreshing,
+                    state = pullToRefreshState,
+                )
+            },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 0.dp),
+                .padding(top = 0.dp)
         ) {
             AnimatedContent(
-                targetState = Pair(isLoading, smsList),
+                targetState = Pair(showLoading, smsList),
                 transitionSpec = {
                     fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
                 },
                 label = "CodeRecordState",
             ) { (loading, list) ->
-                if (loading && list.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                if (loading && !manualRefreshing && list.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        PolygonMorphLoadingIndicator(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = topPadding + 8.dp),
+                        )
                     }
                 } else if (list.isEmpty() && !loading) {
                     // Empty View

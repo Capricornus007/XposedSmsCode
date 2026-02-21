@@ -2,6 +2,7 @@ package com.tianma.xsmscode.ui.home
 
 import android.app.Activity
 import android.content.Intent
+import android.os.SystemClock
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -13,6 +14,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,6 +49,9 @@ import com.tianma.xsmscode.common.utils.PackageUtils
 import com.tianma.xsmscode.common.utils.SPUtils
 import com.tianma.xsmscode.common.utils.Utils
 import com.tianma.xsmscode.common.utils.XLog
+import com.tianma.xsmscode.ui.common.PolygonMorphLoadingIndicator
+import com.tianma.xsmscode.ui.common.SessionLoadingRegistry
+import com.tianma.xsmscode.ui.common.rememberMinDurationLoading
 import com.tianma.xsmscode.ui.privacy.PrivacyPolicyPage
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
@@ -54,12 +61,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ComposeSettingsScreen(
     hazeState: HazeState,
     hazeStyle: HazeStyle,
     viewModel: SettingsViewModel? = null,
+    refreshTrigger: Int = 0,
     onExit: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -91,6 +99,38 @@ fun ComposeSettingsScreen(
     var showKeywordsDialog by remember { mutableStateOf(false) }
     var isActivated by remember { mutableStateOf(ModuleUtils.isModuleEnabled()) }
     var pendingSavedToast by remember { mutableStateOf(false) }
+    var settingsDataLoaded by remember { mutableStateOf(false) }
+    var manualRefreshing by remember { mutableStateOf(false) }
+
+    val reloadSettingsData: suspend () -> Unit = {
+        autoInputDelay = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_AUTO_INPUT_CODE_DELAY,
+            PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT,
+        )
+        retentionTime = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_NOTIFICATION_RETENTION_TIME,
+            PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT,
+        )
+        smsCodeKeywords = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_SMSCODE_KEYWORDS,
+            PrefConst.SMSCODE_KEYWORDS_DEFAULT,
+        )
+        settingsViewModel.setInternalFilesWritable()
+        settingsDataLoaded = true
+    }
+
+    suspend fun runManualRefresh() {
+        val startedAt = SystemClock.elapsedRealtime()
+        manualRefreshing = true
+        reloadSettingsData()
+        val elapsed = SystemClock.elapsedRealtime() - startedAt
+        val remaining = (500L - elapsed).coerceAtLeast(0L)
+        if (remaining > 0L) delay(remaining)
+        manualRefreshing = false
+    }
 
     var showBackupDialog by remember { mutableStateOf(false) }
     var showRestoreDialog by remember { mutableStateOf(false) }
@@ -122,22 +162,7 @@ fun ComposeSettingsScreen(
     }
 
     LaunchedEffect(Unit) {
-        autoInputDelay = AppPreferencesDataStore.getString(
-            context,
-            PrefConst.KEY_AUTO_INPUT_CODE_DELAY,
-            PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT,
-        )
-        retentionTime = AppPreferencesDataStore.getString(
-            context,
-            PrefConst.KEY_NOTIFICATION_RETENTION_TIME,
-            PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT,
-        )
-        smsCodeKeywords = AppPreferencesDataStore.getString(
-            context,
-            PrefConst.KEY_SMSCODE_KEYWORDS,
-            PrefConst.SMSCODE_KEYWORDS_DEFAULT,
-        )
-        settingsViewModel.setInternalFilesWritable()
+        reloadSettingsData()
     }
 
     LaunchedEffect(lifecycleOwner) {
@@ -238,6 +263,24 @@ fun ComposeSettingsScreen(
         derivedStateOf { scrollState.value > 0 }
     }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val shouldShowInitialLoading = remember { SessionLoadingRegistry.shouldShowInitial("settings") }
+    val showLoading = rememberMinDurationLoading(
+        actualLoading = shouldShowInitialLoading && !settingsDataLoaded,
+        minDurationMillis = 500L,
+    )
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    LaunchedEffect(settingsDataLoaded, showLoading, shouldShowInitialLoading) {
+        if (shouldShowInitialLoading && settingsDataLoaded && !showLoading) {
+            SessionLoadingRegistry.markShown("settings")
+        }
+    }
+
+    LaunchedEffect(refreshTrigger) {
+        if (refreshTrigger > 0) {
+            runManualRefresh()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
@@ -247,33 +290,60 @@ fun ComposeSettingsScreen(
             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
                 if (isCompact) Const.BOTTOM_SPACE_HEIGHT.dp else 0.dp
 
-        Column(
+        PullToRefreshBox(
+            state = pullToRefreshState,
+            isRefreshing = manualRefreshing,
+            onRefresh = {
+                scope.launch { runManualRefresh() }
+            },
+            indicator = {
+                PullToRefreshDefaults.LoadingIndicator(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = topPadding + 8.dp),
+                    isRefreshing = manualRefreshing,
+                    state = pullToRefreshState,
+                )
+            },
             modifier = Modifier
                 .fillMaxSize()
-                .hazeSource(hazeState)
-                .padding(bottom = bottomPadding)
-                .nestedScroll(scrollBehavior.nestedScrollConnection)
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(Const.SPACING_EXTRA_SMALL.dp),
         ) {
-            // Add top padding manually as the first item or Spacer
-            Spacer(modifier = Modifier.height(topPadding))
-            SectionHeader(text = stringResource(id = R.string.pref_general_title))
-            SwitchItem(
-                title = stringResource(id = R.string.pref_enable_title),
-                summary = stringResource(id = R.string.pref_enable_summary),
-                key = PrefConst.KEY_ENABLE,
-                defaultValue = true,
-                onSaved = markPrefsSaved,
-            )
-            Item(
-                title = stringResource(id = R.string.pref_create_shortcut_title),
-                summary = stringResource(id = R.string.pref_create_shortcut_summary),
-            ) { settingsViewModel.pinShortcutToDesktop() }
-            Item(
-                title = stringResource(id = R.string.pref_choose_theme_title),
-                summary = stringResource(id = R.string.pref_choose_theme_summary),
-            ) { showThemeDialog = true }
+            if (showLoading && !manualRefreshing) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    PolygonMorphLoadingIndicator(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = topPadding + 8.dp),
+                    )
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .hazeSource(hazeState)
+                        .padding(bottom = bottomPadding)
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(Const.SPACING_EXTRA_SMALL.dp),
+                ) {
+                // Add top padding manually as the first item or Spacer
+                Spacer(modifier = Modifier.height(topPadding))
+                SectionHeader(text = stringResource(id = R.string.pref_general_title))
+                SwitchItem(
+                    title = stringResource(id = R.string.pref_enable_title),
+                    summary = stringResource(id = R.string.pref_enable_summary),
+                    key = PrefConst.KEY_ENABLE,
+                    defaultValue = true,
+                    onSaved = markPrefsSaved,
+                )
+                Item(
+                    title = stringResource(id = R.string.pref_create_shortcut_title),
+                    summary = stringResource(id = R.string.pref_create_shortcut_summary),
+                ) { settingsViewModel.pinShortcutToDesktop() }
+                Item(
+                    title = stringResource(id = R.string.pref_choose_theme_title),
+                    summary = stringResource(id = R.string.pref_choose_theme_summary),
+                ) { showThemeDialog = true }
 
             var showLanguageDialog by remember { mutableStateOf(false) }
             Item(
@@ -510,7 +580,9 @@ fun ComposeSettingsScreen(
                 summary = "",
             ) { showPrivacyPolicyPage = true }
 
-            Spacer(modifier = Modifier.height(Const.SPACING_SMALL.dp))
+                    Spacer(modifier = Modifier.height(Const.SPACING_SMALL.dp))
+                }
+            }
         }
 
         Column(
@@ -862,6 +934,7 @@ fun ThemeChooserDialog(currentMode: Int, onDismiss: () -> Unit, onThemeSelected:
         stringResource(id = R.string.theme_follow_system) to 0,
         stringResource(id = R.string.theme_light) to 1,
         stringResource(id = R.string.theme_dark) to 2,
+        stringResource(id = R.string.theme_black) to 3,
     )
     AlertDialog(
         onDismissRequest = onDismiss,

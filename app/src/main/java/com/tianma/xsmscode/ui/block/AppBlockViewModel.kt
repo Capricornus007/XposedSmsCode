@@ -82,8 +82,8 @@ class AppBlockViewModel(application: Application) : AndroidViewModel(application
 
     private val usageStatsMap = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
-    fun refreshData() {
-        if (isLoadSucceed) {
+    fun refreshData(force: Boolean = false) {
+        if (isLoadSucceed && !force) {
             if (_appsFlow.value.isEmpty() && apps.isNotEmpty()) {
                 // If we have data but flow is empty (e.g. config change?), restore it.
                 // But better re-apply filter/sort.
