@@ -1231,10 +1231,13 @@ fun PrivacyPolicyDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, onCancel: 
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun BackupDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Boolean) -> Unit) {
     var checkConfig by remember { mutableStateOf(true) }
     var checkRules by remember { mutableStateOf(true) }
     var checkRecords by remember { mutableStateOf(true) }
+    val cancelLabel = stringResource(id = R.string.cancel)
+    val confirmLabel = stringResource(id = R.string.confirm)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1266,23 +1269,37 @@ fun BackupDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Boolean) -
             }
         },
         confirmButton = {
-            FilledTonalButton(onClick = { onConfirm(checkConfig, checkRules, checkRecords) }) {
-                Text(stringResource(id = R.string.confirm))
+            ButtonGroup(
+                overflowIndicator = { menuState ->
+                    ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                clickableItem(
+                    onClick = onDismiss,
+                    label = cancelLabel,
+                    weight = 1f,
+                )
+                clickableItem(
+                    onClick = { onConfirm(checkConfig, checkRules, checkRecords) },
+                    label = confirmLabel,
+                    weight = 1f,
+                )
             }
         },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text(stringResource(id = R.string.cancel))
-            }
-        },
+        dismissButton = {},
     )
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Boolean) -> Unit) {
     var checkConfig by remember { mutableStateOf(true) }
     var checkRules by remember { mutableStateOf(true) }
     var checkRecords by remember { mutableStateOf(true) }
+    val cancelLabel = stringResource(id = R.string.cancel)
+    val confirmLabel = stringResource(id = R.string.confirm)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -1320,15 +1337,26 @@ fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Bo
             }
         },
         confirmButton = {
-            FilledTonalButton(onClick = { onConfirm(checkConfig, checkRules, checkRecords) }) {
-                Text(stringResource(id = R.string.confirm))
+            ButtonGroup(
+                overflowIndicator = { menuState ->
+                    ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                clickableItem(
+                    onClick = onDismiss,
+                    label = cancelLabel,
+                    weight = 1f,
+                )
+                clickableItem(
+                    onClick = { onConfirm(checkConfig, checkRules, checkRecords) },
+                    label = confirmLabel,
+                    weight = 1f,
+                )
             }
         },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text(stringResource(id = R.string.cancel))
-            }
-        },
+        dismissButton = {},
     )
 }
 
@@ -1353,6 +1381,7 @@ fun rememberPrefFloat(key: String, defaultValue: Float): MutableFloatState {
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun SliderDialog(
     title: String,
     value: Float,
@@ -1363,6 +1392,8 @@ fun SliderDialog(
     valueFormatter: (Float) -> String = { "%.2f".format(it) }
 ) {
     var sliderValue by remember { mutableFloatStateOf(value) }
+    val cancelLabel = stringResource(id = R.string.cancel)
+    val confirmLabel = stringResource(id = R.string.confirm)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = title) },
@@ -1382,14 +1413,25 @@ fun SliderDialog(
             }
         },
         confirmButton = {
-            FilledTonalButton(onClick = { onValueChange(sliderValue) }) {
-                Text(stringResource(id = R.string.confirm))
+            ButtonGroup(
+                overflowIndicator = { menuState ->
+                    ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                clickableItem(
+                    onClick = onDismiss,
+                    label = cancelLabel,
+                    weight = 1f,
+                )
+                clickableItem(
+                    onClick = { onValueChange(sliderValue) },
+                    label = confirmLabel,
+                    weight = 1f,
+                )
             }
         },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text(stringResource(id = R.string.cancel))
-            }
-        }
+        dismissButton = {},
     )
 }
