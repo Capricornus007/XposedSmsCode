@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Bundle
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.Telephony
 import androidx.annotation.IntDef
 import androidx.core.content.ContextCompat
@@ -39,7 +40,7 @@ class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sm
 
     private fun markSmsAsRead(sender: String?, body: String?) {
         XLog.d("Marking SMS as read...")
-        val result = operateSms(sender, body, OP_MARK_AS_READ)
+        val result = operateSmsWithRetry(sender, body, OP_MARK_AS_READ)
         if (result) {
             XLog.i("Mark SMS as read succeed")
         } else {
@@ -49,7 +50,7 @@ class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sm
 
     private fun deleteSms(sender: String?, body: String?) {
         XLog.d("Deleting SMS...")
-        val result = operateSms(sender, body, OP_DELETE)
+        val result = operateSmsWithRetry(sender, body, OP_DELETE)
         if (result) {
             XLog.i("Delete SMS succeed")
         } else {
@@ -57,10 +58,22 @@ class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sm
         }
     }
 
+    private fun operateSmsWithRetry(sender: String?, body: String?, @SmsOp smsOp: Int): Boolean {
+        repeat(SMS_OP_RETRY_TIMES) { attempt ->
+            if (operateSms(sender, body, smsOp)) {
+                return true
+            }
+            if (attempt < SMS_OP_RETRY_TIMES - 1) {
+                SystemClock.sleep(SMS_OP_RETRY_DELAY_MS)
+            }
+        }
+        return false
+    }
+
     private fun operateSms(sender: String?, body: String?, @SmsOp smsOp: Int): Boolean {
         var cursor: android.database.Cursor? = null
         try {
-            if (ContextCompat.checkSelfPermission(mPluginContext, Manifest.permission.READ_SMS)
+            if (ContextCompat.checkSelfPermission(mPhoneContext, Manifest.permission.READ_SMS)
                 != PackageManager.PERMISSION_GRANTED
             ) {
                 XLog.e("Don't have permission to read/write sms")
@@ -77,7 +90,8 @@ class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sm
             // 查看最近短信并匹配目标
             val sortOrder = Telephony.Sms.DATE + " desc limit 20"
             val uri = Telephony.Sms.CONTENT_URI
-            val resolver = mPluginContext.contentResolver
+            // Use phone context to keep telephony provider access in telephony process identity.
+            val resolver = mPhoneContext.contentResolver
             cursor = resolver.query(uri, projection, null, null, sortOrder)
             if (cursor == null) {
                 XLog.d("Cursor is null")
@@ -87,7 +101,16 @@ class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sm
                 val curAddress = cursor.getString(cursor.getColumnIndexOrThrow("address"))
                 val curRead = cursor.getInt(cursor.getColumnIndexOrThrow("read"))
                 val curBody = cursor.getString(cursor.getColumnIndexOrThrow("body"))
-                if (curAddress == sender && curRead == 0 && isBodyMatched(curBody, body)) {
+                val senderMatched = isAddressMatched(curAddress, sender)
+                val bodyMatched = isBodyMatched(curBody, body)
+                if (!senderMatched || !bodyMatched) {
+                    continue
+                }
+                if (smsOp == OP_MARK_AS_READ && curRead != 0) {
+                    // Treat already-read as success to avoid false failure reporting.
+                    return true
+                }
+                if (bodyMatched) {
                     val smsMessageId = cursor.getString(cursor.getColumnIndexOrThrow("_id"))
                     val threadId = cursor.getLong(cursor.getColumnIndexOrThrow("thread_id"))
                     val where = Telephony.Sms._ID + " = ?"
@@ -117,6 +140,17 @@ class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sm
             cursor?.close()
         }
         return false
+    }
+
+    private fun isAddressMatched(curAddress: String?, targetAddress: String?): Boolean {
+        if (curAddress.isNullOrBlank() || targetAddress.isNullOrBlank()) return false
+        if (curAddress == targetAddress) return true
+        val normalizedCurrent = curAddress.filter { it.isDigit() }
+        val normalizedTarget = targetAddress.filter { it.isDigit() }
+        if (normalizedCurrent.isBlank() || normalizedTarget.isBlank()) {
+            return false
+        }
+        return normalizedCurrent.endsWith(normalizedTarget) || normalizedTarget.endsWith(normalizedCurrent)
     }
 
     private fun markRelatedSmsAsReadInThread(threadId: Long, sender: String?) {
@@ -191,5 +225,7 @@ class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sm
         private const val OP_MARK_AS_READ = 1
         private const val GOOGLE_MESSAGES_PACKAGE_NAME = "com.google.android.apps.messaging"
         private const val EXTERNAL_PROVIDER_CHANGE_DELAY_MS = 500L
+        private const val SMS_OP_RETRY_TIMES = 4
+        private const val SMS_OP_RETRY_DELAY_MS = 800L
     }
 }
