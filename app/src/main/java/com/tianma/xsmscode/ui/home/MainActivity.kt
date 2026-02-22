@@ -2,6 +2,7 @@ package com.tianma.xsmscode.ui.home
 
 import android.content.Intent
 import android.graphics.Bitmap
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,6 +24,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -495,6 +498,7 @@ class MainActivity : AppCompatActivity() {
     @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     @Composable
     fun AppTheme(themeMode: Int, content: @Composable () -> Unit) {
+        val context = LocalContext.current
         val isPureBlack = themeMode == 3
         val darkTheme = when (themeMode) {
             1 -> false
@@ -505,7 +509,13 @@ class MainActivity : AppCompatActivity() {
 
         UpdateSystemBars(darkTheme)
 
-        val pureBlackColorScheme = darkColorScheme(
+        val darkBaseColorScheme = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            dynamicDarkColorScheme(context)
+        } else {
+            darkColorScheme()
+        }
+
+        val pureBlackColorScheme = darkBaseColorScheme.copy(
             background = Color.Black,
             surface = Color.Black,
             surfaceContainer = Color.Black,
@@ -520,6 +530,8 @@ class MainActivity : AppCompatActivity() {
         MaterialExpressiveTheme(
             colorScheme = when {
                 isPureBlack -> pureBlackColorScheme
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && darkTheme -> dynamicDarkColorScheme(context)
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> dynamicLightColorScheme(context)
                 darkTheme -> darkColorScheme()
                 else -> lightColorScheme()
             },
