@@ -86,8 +86,14 @@
     <string name="action_select_all">Select All</string>
     <string name="some_items_removed">Removed %d record(s)</string>
     <string name="message_details">Message Details</string>
+    <string name="detail_sender">Sender</string>
+    <string name="detail_time">Time</string>
+    <string name="detail_content">Content</string>
+    <string name="detail_click_copy_hint">(Tap content to copy)</string>
+    <string name="prompt_field_copied">%1$s copied</string>
     <string name="copy_smscode">Copy Code</string>
     <string name="copy_sms">Copy Message</string>
+    <string name="delete_sms_action">Delete SMS</string>
     <string name="prompt_sms_copied">SMS copied</string>
     <string name="pref_enable_code_records_title">Reserve SMS code records</string>
     <string name="selected_count">%d selected</string>

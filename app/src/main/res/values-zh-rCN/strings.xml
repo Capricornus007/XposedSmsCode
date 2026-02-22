@@ -87,8 +87,14 @@
     <string name="action_select_all">全选</string>
     <string name="some_items_removed">删除了 %d 条记录</string>
     <string name="message_details">短信详情</string>
+    <string name="detail_sender">发件人</string>
+    <string name="detail_time">时间</string>
+    <string name="detail_content">内容</string>
+    <string name="detail_click_copy_hint">（点击复制内容）</string>
+    <string name="prompt_field_copied">%1$s已复制</string>
     <string name="copy_smscode">复制验证码</string>
     <string name="copy_sms">复制短信</string>
+    <string name="delete_sms_action">删除短信</string>
     <string name="prompt_sms_copied">短信已复制</string>
     <string name="pref_enable_code_records_title">保留验证码记录</string>
     <string name="selected_count">已选 %d 项</string>
