@@ -13,15 +13,19 @@ import com.tianma.xsmscode.common.constant.NotificationConst
 import com.tianma.xsmscode.common.utils.ModuleActivationStore
 import com.tianma.xsmscode.common.utils.NotificationUtils
 import com.tianma.xsmscode.common.utils.PrefsReader
+import com.tianma.xsmscode.common.utils.SmsBlacklistUtils
 import com.tianma.xsmscode.common.utils.XLog
+import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.xp.helper.XposedWrapper
 import com.tianma.xsmscode.xp.hook.BaseHook
+import com.tianma.xsmscode.xp.hook.code.action.impl.OperateSmsAction
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
 import de.robv.android.xposed.XposedHelpers
 import de.robv.android.xposed.callbacks.XC_LoadPackage
 import java.lang.reflect.InvocationTargetException
 import java.lang.reflect.Method
+import java.util.concurrent.Executors
 
 /**
  * Hook class com.android.internal.telephony.InboundSmsHandler
@@ -221,6 +225,28 @@ class SmsHandlerHook : BaseHook() {
             XLog.e("Context is null, skip parsing. pluginContext: %s, phoneContext: %s", pluginContext, phoneContext)
             return
         }
+        val smsMsg = runCatching { SmsMsg.fromIntent(intent) }.getOrNull()
+        val blacklistResult = SmsBlacklistUtils.match(pluginContext, smsMsg?.sender, smsMsg?.body)
+        if (blacklistResult.matched) {
+            XLog.w(
+                "Diag sms blacklist matched: type=%s, pattern=%s, delete=%s, block=%s",
+                blacklistResult.matchType,
+                blacklistResult.pattern,
+                blacklistResult.actionDelete,
+                blacklistResult.actionBlock,
+            )
+            if (blacklistResult.actionDelete && !blacklistResult.actionBlock && smsMsg != null) {
+                scheduleBlacklistDelete(pluginContext, phoneContext, smsMsg)
+            }
+            if (blacklistResult.actionBlock) {
+                XLog.w("Diag sms blacklist action: blocking broadcast")
+                param.args.getOrNull(receiverIndex)?.let { receiver ->
+                    deleteRawTableAndSendMessage(param.thisObject, receiver)
+                    param.result = null
+                }
+                return
+            }
+        }
 
         val parseResult = CodeWorker(pluginContext, phoneContext, intent).parse()
         if (parseResult == null) {
@@ -245,6 +271,21 @@ class SmsHandlerHook : BaseHook() {
         } catch (t: Throwable) {
             XLog.w("Diag getPduCount failed: %s", t.message ?: "unknown")
             -1
+        }
+    }
+
+    private fun scheduleBlacklistDelete(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg) {
+        SMS_OPERATION_EXECUTOR.execute {
+            runCatching {
+                OperateSmsAction(
+                    pluginContext,
+                    phoneContext,
+                    smsMsg,
+                    OperateSmsAction.FORCE_DELETE,
+                ).call()
+            }.onFailure {
+                XLog.w("Diag sms blacklist delete task failed: %s", it.message ?: "unknown")
+            }
         }
     }
 
@@ -309,6 +350,7 @@ class SmsHandlerHook : BaseHook() {
         private const val SMS_HANDLER_CLASS = "$TELEPHONY_PACKAGE.InboundSmsHandler"
         private val SMSCODE_PACKAGE = BuildConfig.APPLICATION_ID
         private const val EVENT_BROADCAST_COMPLETE = 3
+        private val SMS_OPERATION_EXECUTOR = Executors.newSingleThreadExecutor()
 
         @Throws(InvocationTargetException::class, IllegalAccessException::class)
         private fun callDeclaredMethod(className: String, obj: Any, methodName: String, vararg args: Any?): Any? {

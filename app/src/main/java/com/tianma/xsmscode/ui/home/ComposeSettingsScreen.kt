@@ -86,9 +86,17 @@ fun ComposeSettingsScreen(
     var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
     var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
     var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
+    var smsBlacklistNumbers by remember { mutableStateOf("") }
+    var smsBlacklistPrefixes by remember { mutableStateOf("") }
+    var smsBlacklistRegex by remember { mutableStateOf("") }
+    var smsBlacklistContent by remember { mutableStateOf("") }
     var showAutoInputDialog by remember { mutableStateOf(false) }
     var showRetentionDialog by remember { mutableStateOf(false) }
     var showSmsTestDialog by remember { mutableStateOf(false) }
+    var showSmsBlacklistNumbersDialog by remember { mutableStateOf(false) }
+    var showSmsBlacklistPrefixesDialog by remember { mutableStateOf(false) }
+    var showSmsBlacklistRegexDialog by remember { mutableStateOf(false) }
+    var showSmsBlacklistContentDialog by remember { mutableStateOf(false) }
     var smsTestInput by remember { mutableStateOf("") }
     var showThemeDialog by remember { mutableStateOf(false) }
     var showDonateDialog by remember { mutableStateOf(false) }
@@ -117,6 +125,26 @@ fun ComposeSettingsScreen(
             context,
             PrefConst.KEY_SMSCODE_KEYWORDS,
             PrefConst.SMSCODE_KEYWORDS_DEFAULT,
+        )
+        smsBlacklistNumbers = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_SMS_BLACKLIST_NUMBERS,
+            "",
+        )
+        smsBlacklistPrefixes = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_SMS_BLACKLIST_PREFIXES,
+            "",
+        )
+        smsBlacklistRegex = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_SMS_BLACKLIST_REGEX,
+            "",
+        )
+        smsBlacklistContent = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_SMS_BLACKLIST_CONTENT,
+            "",
         )
         settingsViewModel.setInternalFilesWritable()
         settingsDataLoaded = true
@@ -186,6 +214,14 @@ fun ComposeSettingsScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val markPrefsSaved = { pendingSavedToast = true }
+    val formatBlacklistSummary: (String) -> String = { raw ->
+        val list = raw.split('\n', ',', ';').map { it.trim() }.filter { it.isNotEmpty() }
+        if (list.isEmpty()) {
+            context.getString(R.string.blacklist_not_set)
+        } else {
+            context.getString(R.string.blacklist_rule_count, list.size)
+        }
+    }
 
     LaunchedEffect(settingsViewModel, lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
@@ -465,6 +501,47 @@ fun ComposeSettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
 
+            SectionHeader(text = stringResource(id = R.string.pref_sms_blacklist_title))
+            SwitchItem(
+                title = stringResource(id = R.string.pref_enable_sms_blacklist_title),
+                summary = stringResource(id = R.string.pref_enable_sms_blacklist_summary),
+                key = PrefConst.KEY_ENABLE_SMS_BLACKLIST,
+                defaultValue = false,
+                onSaved = markPrefsSaved,
+            )
+            SwitchItem(
+                title = stringResource(id = R.string.pref_sms_blacklist_action_delete_title),
+                summary = stringResource(id = R.string.pref_sms_blacklist_action_delete_summary),
+                key = PrefConst.KEY_SMS_BLACKLIST_ACTION_DELETE,
+                defaultValue = true,
+                onSaved = markPrefsSaved,
+            )
+            SwitchItem(
+                title = stringResource(id = R.string.pref_sms_blacklist_action_block_title),
+                summary = stringResource(id = R.string.pref_sms_blacklist_action_block_summary),
+                key = PrefConst.KEY_SMS_BLACKLIST_ACTION_BLOCK,
+                defaultValue = false,
+                onSaved = markPrefsSaved,
+            )
+            Item(
+                title = stringResource(id = R.string.pref_sms_blacklist_numbers_title),
+                summary = formatBlacklistSummary(smsBlacklistNumbers),
+            ) { showSmsBlacklistNumbersDialog = true }
+            Item(
+                title = stringResource(id = R.string.pref_sms_blacklist_prefixes_title),
+                summary = formatBlacklistSummary(smsBlacklistPrefixes),
+            ) { showSmsBlacklistPrefixesDialog = true }
+            Item(
+                title = stringResource(id = R.string.pref_sms_blacklist_regex_title),
+                summary = formatBlacklistSummary(smsBlacklistRegex),
+            ) { showSmsBlacklistRegexDialog = true }
+            Item(
+                title = stringResource(id = R.string.pref_sms_blacklist_content_title),
+                summary = formatBlacklistSummary(smsBlacklistContent),
+            ) { showSmsBlacklistContentDialog = true }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
+
             SectionHeader(text = stringResource(id = R.string.pref_experimental_title))
             SwitchItem(
                 title = stringResource(id = R.string.pref_mark_as_read_title),
@@ -671,6 +748,78 @@ fun ComposeSettingsScreen(
                 pendingSavedToast = true
             }
             showKeywordsDialog = false
+        }
+    }
+
+    if (showSmsBlacklistNumbersDialog) {
+        TextInputDialog(
+            title = stringResource(id = R.string.pref_sms_blacklist_numbers_title),
+            initialValue = smsBlacklistNumbers,
+            onDismiss = { showSmsBlacklistNumbersDialog = false },
+            singleLine = false,
+            maxLines = 10,
+        ) { value ->
+            smsBlacklistNumbers = value
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_SMS_BLACKLIST_NUMBERS, value)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                pendingSavedToast = true
+            }
+            showSmsBlacklistNumbersDialog = false
+        }
+    }
+
+    if (showSmsBlacklistPrefixesDialog) {
+        TextInputDialog(
+            title = stringResource(id = R.string.pref_sms_blacklist_prefixes_title),
+            initialValue = smsBlacklistPrefixes,
+            onDismiss = { showSmsBlacklistPrefixesDialog = false },
+            singleLine = false,
+            maxLines = 10,
+        ) { value ->
+            smsBlacklistPrefixes = value
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_SMS_BLACKLIST_PREFIXES, value)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                pendingSavedToast = true
+            }
+            showSmsBlacklistPrefixesDialog = false
+        }
+    }
+
+    if (showSmsBlacklistRegexDialog) {
+        TextInputDialog(
+            title = stringResource(id = R.string.pref_sms_blacklist_regex_title),
+            initialValue = smsBlacklistRegex,
+            onDismiss = { showSmsBlacklistRegexDialog = false },
+            singleLine = false,
+            maxLines = 10,
+        ) { value ->
+            smsBlacklistRegex = value
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_SMS_BLACKLIST_REGEX, value)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                pendingSavedToast = true
+            }
+            showSmsBlacklistRegexDialog = false
+        }
+    }
+
+    if (showSmsBlacklistContentDialog) {
+        TextInputDialog(
+            title = stringResource(id = R.string.pref_sms_blacklist_content_title),
+            initialValue = smsBlacklistContent,
+            onDismiss = { showSmsBlacklistContentDialog = false },
+            singleLine = false,
+            maxLines = 10,
+        ) { value ->
+            smsBlacklistContent = value
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_SMS_BLACKLIST_CONTENT, value)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                pendingSavedToast = true
+            }
+            showSmsBlacklistContentDialog = false
         }
     }
 

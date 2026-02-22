@@ -207,6 +207,40 @@ object PrefsReader {
     }
 
     @JvmStatic
+    fun smsBlacklistEnabled(context: Context): Boolean {
+        val defaultValue = false
+        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_SMS_BLACKLIST, defaultValue)
+    }
+
+    @JvmStatic
+    fun smsBlacklistNumbers(context: Context): String =
+        getStringViaProvider(context, PrefConst.KEY_SMS_BLACKLIST_NUMBERS, "")
+
+    @JvmStatic
+    fun smsBlacklistPrefixes(context: Context): String =
+        getStringViaProvider(context, PrefConst.KEY_SMS_BLACKLIST_PREFIXES, "")
+
+    @JvmStatic
+    fun smsBlacklistRegex(context: Context): String =
+        getStringViaProvider(context, PrefConst.KEY_SMS_BLACKLIST_REGEX, "")
+
+    @JvmStatic
+    fun smsBlacklistContent(context: Context): String =
+        getStringViaProvider(context, PrefConst.KEY_SMS_BLACKLIST_CONTENT, "")
+
+    @JvmStatic
+    fun smsBlacklistActionDelete(context: Context): Boolean {
+        val defaultValue = true
+        return getBooleanViaProvider(context, PrefConst.KEY_SMS_BLACKLIST_ACTION_DELETE, defaultValue)
+    }
+
+    @JvmStatic
+    fun smsBlacklistActionBlock(context: Context): Boolean {
+        val defaultValue = false
+        return getBooleanViaProvider(context, PrefConst.KEY_SMS_BLACKLIST_ACTION_BLOCK, defaultValue)
+    }
+
+    @JvmStatic
     fun getHistoryLimit(context: Context): Int {
         val value = getStringViaProvider(
             context,

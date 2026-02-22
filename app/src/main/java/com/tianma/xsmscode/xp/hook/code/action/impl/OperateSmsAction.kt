@@ -23,17 +23,35 @@ import com.tianma.xsmscode.xp.hook.code.action.CallableAction
 class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg) :
     CallableAction(pluginContext, phoneContext, smsMsg) {
 
+    constructor(
+        pluginContext: Context,
+        phoneContext: Context,
+        smsMsg: SmsMsg,
+        @SmsOp forcedOp: Int,
+    ) : this(pluginContext, phoneContext, smsMsg) {
+        this.forcedOp = forcedOp
+    }
+
     @IntDef(OP_DELETE, OP_MARK_AS_READ)
     @Retention(AnnotationRetention.SOURCE)
     private annotation class SmsOp
 
+    @SmsOp
+    private var forcedOp: Int? = null
+
     override fun action(): Bundle? {
         val sender = mSmsMsg.sender
         val body = mSmsMsg.body
-        if (PrefsReader.deleteSmsEnabled(mPluginContext)) {
-            deleteSms(sender, body)
-        } else if (PrefsReader.markAsReadEnabled(mPluginContext)) {
-            markSmsAsRead(sender, body)
+        when (forcedOp) {
+            OP_DELETE -> deleteSms(sender, body)
+            OP_MARK_AS_READ -> markSmsAsRead(sender, body)
+            else -> {
+                if (PrefsReader.deleteSmsEnabled(mPluginContext)) {
+                    deleteSms(sender, body)
+                } else if (PrefsReader.markAsReadEnabled(mPluginContext)) {
+                    markSmsAsRead(sender, body)
+                }
+            }
         }
         return null
     }
@@ -221,7 +239,8 @@ class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sm
     }
 
     companion object {
-        private const val OP_DELETE = 0
+        const val FORCE_DELETE = 0
+        private const val OP_DELETE = FORCE_DELETE
         private const val OP_MARK_AS_READ = 1
         private const val GOOGLE_MESSAGES_PACKAGE_NAME = "com.google.android.apps.messaging"
         private const val EXTERNAL_PROVIDER_CHANGE_DELAY_MS = 500L

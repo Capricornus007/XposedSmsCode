@@ -206,6 +206,34 @@ object AppPreferencesDataStore {
             ),
         )
         editor.putBoolean(PrefConst.KEY_DEDUPLICATE_SMS, getBoolean(context, PrefConst.KEY_DEDUPLICATE_SMS, true))
+        editor.putBoolean(
+            PrefConst.KEY_ENABLE_SMS_BLACKLIST,
+            getBoolean(context, PrefConst.KEY_ENABLE_SMS_BLACKLIST, false),
+        )
+        editor.putString(
+            PrefConst.KEY_SMS_BLACKLIST_NUMBERS,
+            getString(context, PrefConst.KEY_SMS_BLACKLIST_NUMBERS, ""),
+        )
+        editor.putString(
+            PrefConst.KEY_SMS_BLACKLIST_PREFIXES,
+            getString(context, PrefConst.KEY_SMS_BLACKLIST_PREFIXES, ""),
+        )
+        editor.putString(
+            PrefConst.KEY_SMS_BLACKLIST_REGEX,
+            getString(context, PrefConst.KEY_SMS_BLACKLIST_REGEX, ""),
+        )
+        editor.putString(
+            PrefConst.KEY_SMS_BLACKLIST_CONTENT,
+            getString(context, PrefConst.KEY_SMS_BLACKLIST_CONTENT, ""),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_SMS_BLACKLIST_ACTION_DELETE,
+            getBoolean(context, PrefConst.KEY_SMS_BLACKLIST_ACTION_DELETE, true),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_SMS_BLACKLIST_ACTION_BLOCK,
+            getBoolean(context, PrefConst.KEY_SMS_BLACKLIST_ACTION_BLOCK, false),
+        )
         editor.putString(PrefConst.KEY_HISTORY_LIMIT, getString(context, PrefConst.KEY_HISTORY_LIMIT, "0"))
         editor.putBoolean(
             PrefConst.KEY_AUTO_UPDATE_ON_START,

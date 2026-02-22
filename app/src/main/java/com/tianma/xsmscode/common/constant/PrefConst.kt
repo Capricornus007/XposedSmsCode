@@ -25,6 +25,13 @@ object PrefConst {
     const val KEY_APP_BLOCK_ENTRY = "pref_app_block_entry"
     const val KEY_BLOCK_SMS = "pref_block_sms"
     const val KEY_DEDUPLICATE_SMS = "pref_deduplicate_sms"
+    const val KEY_ENABLE_SMS_BLACKLIST = "pref_enable_sms_blacklist"
+    const val KEY_SMS_BLACKLIST_NUMBERS = "pref_sms_blacklist_numbers"
+    const val KEY_SMS_BLACKLIST_PREFIXES = "pref_sms_blacklist_prefixes"
+    const val KEY_SMS_BLACKLIST_REGEX = "pref_sms_blacklist_regex"
+    const val KEY_SMS_BLACKLIST_CONTENT = "pref_sms_blacklist_content"
+    const val KEY_SMS_BLACKLIST_ACTION_DELETE = "pref_sms_blacklist_action_delete"
+    const val KEY_SMS_BLACKLIST_ACTION_BLOCK = "pref_sms_blacklist_action_block"
 
     // Code Notification
     const val KEY_SHOW_CODE_NOTIFICATION = "pref_show_code_notification"
