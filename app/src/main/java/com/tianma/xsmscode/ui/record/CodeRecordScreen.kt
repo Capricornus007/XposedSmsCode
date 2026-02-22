@@ -680,36 +680,66 @@ private fun RecordDetailOverlay(
                 ButtonGroup(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    overflowIndicator = { menuState ->
+                        ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
+                    },
                 ) {
-                    val copyInteraction = remember { MutableInteractionSource() }
-                    val deleteInteraction = remember { MutableInteractionSource() }
-                    OutlinedButton(
-                        modifier = Modifier
-                            .weight(1f)
-                            .animateWidth(copyInteraction),
-                        interactionSource = copyInteraction,
-                        onClick = {
-                            if (content.isNotEmpty()) {
-                                val message = context.getString(R.string.prompt_sms_copied)
-                                onCopy("sms_body", content, message)
+                    customItem(
+                        buttonGroupContent = {
+                            OutlinedButton(
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    if (content.isNotEmpty()) {
+                                        val message = context.getString(R.string.prompt_sms_copied)
+                                        onCopy("sms_body", content, message)
+                                    }
+                                    onDismiss()
+                                },
+                            ) {
+                                Text(stringResource(R.string.copy_sms))
                             }
-                            onDismiss()
                         },
-                    ) { Text(stringResource(R.string.copy_sms)) }
-                    Button(
-                        modifier = Modifier
-                            .weight(1f)
-                            .animateWidth(deleteInteraction),
-                        interactionSource = deleteInteraction,
-                        onClick = {
-                            onDelete()
-                            onDismiss()
+                        menuContent = { menuState ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.copy_sms)) },
+                                onClick = {
+                                    if (content.isNotEmpty()) {
+                                        val message = context.getString(R.string.prompt_sms_copied)
+                                        onCopy("sms_body", content, message)
+                                    }
+                                    menuState.dismiss()
+                                    onDismiss()
+                                },
+                            )
                         },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                        ),
-                    ) { Text(stringResource(R.string.delete_sms_action)) }
+                    )
+                    customItem(
+                        buttonGroupContent = {
+                            Button(
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    onDelete()
+                                    onDismiss()
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                ),
+                            ) {
+                                Text(stringResource(R.string.delete_sms_action))
+                            }
+                        },
+                        menuContent = { menuState ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.delete_sms_action)) },
+                                onClick = {
+                                    onDelete()
+                                    menuState.dismiss()
+                                    onDismiss()
+                                },
+                            )
+                        },
+                    )
                 }
             }
         }

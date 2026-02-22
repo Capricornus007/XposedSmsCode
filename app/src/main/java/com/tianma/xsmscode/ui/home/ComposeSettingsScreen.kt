@@ -944,6 +944,7 @@ fun rememberPrefBoolean(key: String, defaultValue: Boolean): MutableState<Boolea
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun TextInputDialog(
     title: String,
     initialValue: String,
@@ -957,6 +958,8 @@ fun TextInputDialog(
 ) {
     var text by remember { mutableStateOf(initialValue) }
     var hadFocus by remember { mutableStateOf(false) }
+    val cancelLabel = stringResource(id = R.string.cancel)
+    val confirmLabel = stringResource(id = R.string.confirm)
     AlertDialog(
         onDismissRequest = {
             onDismissWithValue?.invoke(text)
@@ -982,15 +985,26 @@ fun TextInputDialog(
             )
         },
         confirmButton = {
-            FilledTonalButton(onClick = { onConfirm(text) }) {
-                Text(stringResource(id = R.string.confirm))
+            ButtonGroup(
+                overflowIndicator = { menuState ->
+                    ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                clickableItem(
+                    onClick = onDismiss,
+                    label = cancelLabel,
+                    weight = 1f,
+                )
+                clickableItem(
+                    onClick = { onConfirm(text) },
+                    label = confirmLabel,
+                    weight = 1f,
+                )
             }
         },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text(stringResource(id = R.string.cancel))
-            }
-        },
+        dismissButton = {},
     )
 }
 
