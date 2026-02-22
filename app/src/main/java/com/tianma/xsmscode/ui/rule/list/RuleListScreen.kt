@@ -43,7 +43,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -81,6 +80,7 @@ import com.tianma.xsmscode.common.constant.Const
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.feature.backup.ImportResult
 import com.tianma.xsmscode.feature.backup.ImportWarning
+import com.tianma.xsmscode.ui.common.AppLinearLoadingIndicator
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -221,7 +221,7 @@ fun RuleListScreen(
                     enter = expandVertically() + fadeIn(),
                     exit = shrinkVertically() + fadeOut(),
                 ) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    AppLinearLoadingIndicator()
                 }
             }
         },

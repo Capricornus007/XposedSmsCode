@@ -31,6 +31,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.data.db.entity.AppInfo
 import com.tianma.xsmscode.ui.common.AppIconImage
+import com.tianma.xsmscode.ui.common.LoadingIndicatorTokens
 import com.tianma.xsmscode.ui.common.PolygonMorphLoadingIndicator
 import com.tianma.xsmscode.ui.common.SessionLoadingRegistry
 import com.tianma.xsmscode.ui.common.rememberMinDurationLoading
@@ -65,7 +66,7 @@ fun AppBlockScreen(
     var manualRefreshStartedAt by remember { mutableLongStateOf(0L) }
     val showLoading = rememberMinDurationLoading(
         actualLoading = isLoading && shouldShowInitialLoading,
-        minDurationMillis = 500L,
+        minDurationMillis = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
     )
 
     LaunchedEffect(isLoading, shouldShowInitialLoading, initialLoadingStarted) {
@@ -82,9 +83,9 @@ fun AppBlockScreen(
             val elapsed = if (manualRefreshStartedAt > 0L) {
                 SystemClock.elapsedRealtime() - manualRefreshStartedAt
             } else {
-                500L
+                LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS
             }
-            val remaining = (500L - elapsed).coerceAtLeast(0L)
+            val remaining = (LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS - elapsed).coerceAtLeast(0L)
             if (remaining > 0L) delay(remaining)
             manualRefreshing = false
             manualRefreshStartedAt = 0L
@@ -163,7 +164,7 @@ fun AppBlockScreen(
                 PullToRefreshDefaults.LoadingIndicator(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = topPadding + 8.dp),
+                        .padding(top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing),
                     isRefreshing = manualRefreshing,
                     state = pullToRefreshState,
                 )
@@ -177,7 +178,7 @@ fun AppBlockScreen(
                     PolygonMorphLoadingIndicator(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .padding(top = topPadding + 8.dp),
+                            .padding(top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing),
                     )
                 }
             } else {

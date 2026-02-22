@@ -52,6 +52,7 @@ import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.ui.common.AppIconImage
+import com.tianma.xsmscode.ui.common.LoadingIndicatorTokens
 import com.tianma.xsmscode.ui.common.PolygonMorphLoadingIndicator
 import com.tianma.xsmscode.ui.common.SessionLoadingRegistry
 import com.tianma.xsmscode.ui.common.rememberMinDurationLoading
@@ -88,7 +89,7 @@ fun CodeRecordScreen(
     var manualRefreshStartedAt by remember { mutableLongStateOf(0L) }
     val showLoading = rememberMinDurationLoading(
         actualLoading = isLoading && shouldShowInitialLoading,
-        minDurationMillis = 500L,
+        minDurationMillis = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
     )
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -108,9 +109,9 @@ fun CodeRecordScreen(
             val elapsed = if (manualRefreshStartedAt > 0L) {
                 SystemClock.elapsedRealtime() - manualRefreshStartedAt
             } else {
-                500L
+                LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS
             }
-            val remaining = (500L - elapsed).coerceAtLeast(0L)
+            val remaining = (LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS - elapsed).coerceAtLeast(0L)
             if (remaining > 0L) delay(remaining)
             manualRefreshing = false
             manualRefreshStartedAt = 0L
@@ -318,7 +319,7 @@ fun CodeRecordScreen(
                 PullToRefreshDefaults.LoadingIndicator(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = topPadding + 8.dp),
+                        .padding(top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing),
                     isRefreshing = manualRefreshing,
                     state = pullToRefreshState,
                 )
@@ -339,7 +340,7 @@ fun CodeRecordScreen(
                         PolygonMorphLoadingIndicator(
                             modifier = Modifier
                                 .align(Alignment.TopCenter)
-                                .padding(top = topPadding + 8.dp),
+                                .padding(top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing),
                         )
                     }
                 } else if (list.isEmpty() && !loading) {

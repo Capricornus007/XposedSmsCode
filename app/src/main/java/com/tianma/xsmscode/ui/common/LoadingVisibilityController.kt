@@ -13,7 +13,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun rememberMinDurationLoading(
     actualLoading: Boolean,
-    minDurationMillis: Long = 500L,
+    minDurationMillis: Long = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
 ): Boolean {
     var visibleLoading by remember { mutableStateOf(actualLoading) }
     var loadingStartAt by remember { mutableLongStateOf(0L) }
