@@ -20,6 +20,7 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
@@ -848,18 +849,32 @@ fun TextInputDialog(
     modifier: Modifier = Modifier,
     singleLine: Boolean = true,
     maxLines: Int = if (singleLine) 1 else 6,
+    onFocusLost: ((String) -> Unit)? = null,
+    onDismissWithValue: ((String) -> Unit)? = null,
     onConfirm: (String) -> Unit,
 ) {
     var text by remember { mutableStateOf(initialValue) }
+    var hadFocus by remember { mutableStateOf(false) }
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = {
+            onDismissWithValue?.invoke(text)
+            onDismiss()
+        },
         modifier = modifier,
         title = { Text(text = title) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { state ->
+                        if (state.isFocused) {
+                            hadFocus = true
+                        } else if (hadFocus) {
+                            onFocusLost?.invoke(text)
+                        }
+                    },
                 singleLine = singleLine,
                 maxLines = maxLines,
             )

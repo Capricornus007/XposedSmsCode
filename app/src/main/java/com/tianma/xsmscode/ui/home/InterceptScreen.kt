@@ -1,5 +1,6 @@
 package com.tianma.xsmscode.ui.home
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -77,6 +78,19 @@ fun InterceptScreen(
     }
 
     val notSetText = context.getString(R.string.blacklist_not_set)
+    val savedToastText = context.getString(R.string.pref_sync_toast)
+    val notifySaved = {
+        Toast.makeText(context, savedToastText, Toast.LENGTH_SHORT).show()
+    }
+    fun saveStringIfChanged(oldValue: String, key: String, newValue: String, updateState: (String) -> Unit) {
+        if (newValue == oldValue) return
+        updateState(newValue)
+        scope.launch {
+            AppPreferencesDataStore.setString(context, key, newValue)
+            AppPreferencesDataStore.syncToSharedPrefs(context)
+            notifySaved()
+        }
+    }
     val formatSummary: (String) -> String = { raw ->
         val count = raw.split('\n', ',', ';').map { it.trim() }.count { it.isNotEmpty() }
         if (count == 0) notSetText else context.getString(R.string.blacklist_rule_count, count)
@@ -117,18 +131,21 @@ fun InterceptScreen(
                     summary = stringResource(R.string.pref_enable_sms_blacklist_summary),
                     key = PrefConst.KEY_ENABLE_SMS_BLACKLIST,
                     defaultValue = false,
+                    onSaved = notifySaved,
                 )
                 SwitchItem(
                     title = stringResource(R.string.pref_sms_blacklist_action_delete_title),
                     summary = stringResource(R.string.pref_sms_blacklist_action_delete_summary),
                     key = PrefConst.KEY_SMS_BLACKLIST_ACTION_DELETE,
                     defaultValue = true,
+                    onSaved = notifySaved,
                 )
                 SwitchItem(
                     title = stringResource(R.string.pref_sms_blacklist_action_block_title),
                     summary = stringResource(R.string.pref_sms_blacklist_action_block_summary),
                     key = PrefConst.KEY_SMS_BLACKLIST_ACTION_BLOCK,
                     defaultValue = false,
+                    onSaved = notifySaved,
                 )
                 Item(
                     title = stringResource(R.string.pref_sms_blacklist_numbers_title),
@@ -161,14 +178,13 @@ fun InterceptScreen(
             title = stringResource(id = R.string.pref_sms_blacklist_numbers_title),
             initialValue = smsBlacklistNumbers,
             onDismiss = { showSmsBlacklistNumbersDialog = false },
+            onFocusLost = { value ->
+                saveStringIfChanged(smsBlacklistNumbers, PrefConst.KEY_SMS_BLACKLIST_NUMBERS, value) { smsBlacklistNumbers = it }
+            },
             singleLine = false,
             maxLines = 10,
         ) { value ->
-            smsBlacklistNumbers = value
-            scope.launch {
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_SMS_BLACKLIST_NUMBERS, value)
-                AppPreferencesDataStore.syncToSharedPrefs(context)
-            }
+            saveStringIfChanged(smsBlacklistNumbers, PrefConst.KEY_SMS_BLACKLIST_NUMBERS, value) { smsBlacklistNumbers = it }
             showSmsBlacklistNumbersDialog = false
         }
     }
@@ -178,14 +194,13 @@ fun InterceptScreen(
             title = stringResource(id = R.string.pref_sms_blacklist_prefixes_title),
             initialValue = smsBlacklistPrefixes,
             onDismiss = { showSmsBlacklistPrefixesDialog = false },
+            onFocusLost = { value ->
+                saveStringIfChanged(smsBlacklistPrefixes, PrefConst.KEY_SMS_BLACKLIST_PREFIXES, value) { smsBlacklistPrefixes = it }
+            },
             singleLine = false,
             maxLines = 10,
         ) { value ->
-            smsBlacklistPrefixes = value
-            scope.launch {
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_SMS_BLACKLIST_PREFIXES, value)
-                AppPreferencesDataStore.syncToSharedPrefs(context)
-            }
+            saveStringIfChanged(smsBlacklistPrefixes, PrefConst.KEY_SMS_BLACKLIST_PREFIXES, value) { smsBlacklistPrefixes = it }
             showSmsBlacklistPrefixesDialog = false
         }
     }
@@ -195,14 +210,13 @@ fun InterceptScreen(
             title = stringResource(id = R.string.pref_sms_blacklist_regex_title),
             initialValue = smsBlacklistRegex,
             onDismiss = { showSmsBlacklistRegexDialog = false },
+            onFocusLost = { value ->
+                saveStringIfChanged(smsBlacklistRegex, PrefConst.KEY_SMS_BLACKLIST_REGEX, value) { smsBlacklistRegex = it }
+            },
             singleLine = false,
             maxLines = 10,
         ) { value ->
-            smsBlacklistRegex = value
-            scope.launch {
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_SMS_BLACKLIST_REGEX, value)
-                AppPreferencesDataStore.syncToSharedPrefs(context)
-            }
+            saveStringIfChanged(smsBlacklistRegex, PrefConst.KEY_SMS_BLACKLIST_REGEX, value) { smsBlacklistRegex = it }
             showSmsBlacklistRegexDialog = false
         }
     }
@@ -212,14 +226,13 @@ fun InterceptScreen(
             title = stringResource(id = R.string.pref_sms_blacklist_content_title),
             initialValue = smsBlacklistContent,
             onDismiss = { showSmsBlacklistContentDialog = false },
+            onFocusLost = { value ->
+                saveStringIfChanged(smsBlacklistContent, PrefConst.KEY_SMS_BLACKLIST_CONTENT, value) { smsBlacklistContent = it }
+            },
             singleLine = false,
             maxLines = 10,
         ) { value ->
-            smsBlacklistContent = value
-            scope.launch {
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_SMS_BLACKLIST_CONTENT, value)
-                AppPreferencesDataStore.syncToSharedPrefs(context)
-            }
+            saveStringIfChanged(smsBlacklistContent, PrefConst.KEY_SMS_BLACKLIST_CONTENT, value) { smsBlacklistContent = it }
             showSmsBlacklistContentDialog = false
         }
     }
