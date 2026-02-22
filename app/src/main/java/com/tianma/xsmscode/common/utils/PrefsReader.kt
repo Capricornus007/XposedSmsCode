@@ -4,6 +4,40 @@ import android.content.Context
 import com.tianma.xsmscode.common.constant.PrefConst
 
 object PrefsReader {
+    private fun getSharedPrefs(context: Context) = context.getSharedPreferences("xposed_prefs", Context.MODE_PRIVATE)
+
+    private fun getBooleanViaSharedPrefs(context: Context, key: String, defaultValue: Boolean): Boolean {
+        return try {
+            getSharedPrefs(context).getBoolean(key, defaultValue)
+        } catch (t: Throwable) {
+            XLog.w("PrefsReader: sharedPrefs boolean '%s' failed, default=%s", key, defaultValue, t)
+            defaultValue
+        }
+    }
+
+    private fun getStringViaSharedPrefs(context: Context, key: String, defaultValue: String): String {
+        return try {
+            getSharedPrefs(context).getString(key, defaultValue) ?: defaultValue
+        } catch (t: Throwable) {
+            XLog.w("PrefsReader: sharedPrefs string '%s' failed, default=%s", key, defaultValue, t)
+            defaultValue
+        }
+    }
+
+    private fun getIntViaSharedPrefs(context: Context, key: String, defaultValue: Int): Int {
+        return try {
+            when (val any = getSharedPrefs(context).all[key]) {
+                is Int -> any
+                is Long -> any.toInt()
+                is String -> any.toIntOrNull() ?: defaultValue
+                else -> defaultValue
+            }
+        } catch (t: Throwable) {
+            XLog.w("PrefsReader: sharedPrefs int '%s' failed, default=%d", key, defaultValue, t)
+            defaultValue
+        }
+    }
+
     private fun getBooleanViaProvider(context: Context, key: String, defaultValue: Boolean): Boolean {
         return try {
             val uri = com.tianma.xsmscode.data.prefs.PrefsProvider.BOOL_URI.buildUpon()
@@ -16,10 +50,10 @@ object PrefsReader {
                     return value == "1" || value.equals("true", ignoreCase = true)
                 }
             }
-            defaultValue
+            getBooleanViaSharedPrefs(context, key, defaultValue)
         } catch (t: Throwable) {
-            XLog.w("PrefsReader: read boolean '%s' failed, default=%s", key, defaultValue, t)
-            defaultValue
+            XLog.w("PrefsReader: read boolean '%s' via provider failed, fallback sharedPrefs", key, t)
+            getBooleanViaSharedPrefs(context, key, defaultValue)
         }
     }
 
@@ -34,10 +68,10 @@ object PrefsReader {
                     return cursor.getString(0) ?: defaultValue
                 }
             }
-            defaultValue
+            getStringViaSharedPrefs(context, key, defaultValue)
         } catch (t: Throwable) {
-            XLog.w("PrefsReader: read string '%s' failed, default=%s", key, defaultValue, t)
-            defaultValue
+            XLog.w("PrefsReader: read string '%s' via provider failed, fallback sharedPrefs", key, t)
+            getStringViaSharedPrefs(context, key, defaultValue)
         }
     }
 
@@ -52,10 +86,10 @@ object PrefsReader {
                     return cursor.getString(0)?.toIntOrNull() ?: defaultValue
                 }
             }
-            defaultValue
+            getIntViaSharedPrefs(context, key, defaultValue)
         } catch (t: Throwable) {
-            XLog.w("PrefsReader: read int '%s' failed, default=%d", key, defaultValue, t)
-            defaultValue
+            XLog.w("PrefsReader: read int '%s' via provider failed, fallback sharedPrefs", key, t)
+            getIntViaSharedPrefs(context, key, defaultValue)
         }
     }
 

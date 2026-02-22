@@ -202,8 +202,19 @@ object SmsCodeUtils {
                     resultRules.add(rule)
                 }
                 cursor.close()
-                XLog.d("Load SmsCode rules succeed by content provider")
-                rules = resultRules
+                if (resultRules.isNotEmpty()) {
+                    XLog.d("Load SmsCode rules succeed by content provider")
+                    rules = resultRules
+                } else {
+                    // Provider is reachable but may return empty during cross-process cold state.
+                    // Fallback to file to keep behavior stable for hook side.
+                    rules = EntityStoreManager.loadEntitiesFromFile(
+                        context,
+                        EntityType.CODE_RULES,
+                        SmsCodeRule::class.java,
+                    )
+                    XLog.w("Load SmsCode rules by file: provider returned empty result")
+                }
             } else {
                 throw IllegalStateException("Cursor is null for URI: $smsCodeRuleUri")
             }
