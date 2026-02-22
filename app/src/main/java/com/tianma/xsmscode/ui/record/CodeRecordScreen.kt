@@ -2,6 +2,7 @@ package com.tianma.xsmscode.ui.record
 
 import android.content.ClipData
 import android.os.SystemClock
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -126,6 +127,14 @@ fun CodeRecordScreen(
 
     val clipboard = LocalClipboard.current
 
+    fun copyWithFeedback(label: String, text: String, toastText: String, snackbarText: String) {
+        scope.launch {
+            clipboard.setClipEntry(ClipData.newPlainText(label, text).toClipEntry())
+            Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show()
+            snackbarHostState.showSnackbar(snackbarText)
+        }
+    }
+
     // Initial Load
     LaunchedEffect(Unit) {
         viewModel.loadData()
@@ -225,10 +234,8 @@ fun CodeRecordScreen(
                     onClick = {
                         val code = detailSmsMsg?.smsCode
                         if (!code.isNullOrEmpty()) {
-                            scope.launch {
-                                clipboard.setClipEntry(ClipData.newPlainText("sms_code", code).toClipEntry())
-                                snackbarHostState.showSnackbar(context.getString(R.string.prompt_sms_code_copied, code))
-                            }
+                            val message = context.getString(R.string.prompt_sms_code_copied, code)
+                            copyWithFeedback("sms_code", code, message, message)
                         }
                         detailSmsMsg = null
                     },
@@ -241,10 +248,8 @@ fun CodeRecordScreen(
                     onClick = {
                         val body = detailSmsMsg?.body
                         if (!body.isNullOrEmpty()) {
-                            scope.launch {
-                                clipboard.setClipEntry(ClipData.newPlainText("sms_body", body).toClipEntry())
-                                snackbarHostState.showSnackbar(context.getString(R.string.prompt_sms_copied))
-                            }
+                            val message = context.getString(R.string.prompt_sms_copied)
+                            copyWithFeedback("sms_body", body, message, message)
                         }
                         detailSmsMsg = null
                     },
@@ -461,14 +466,8 @@ fun CodeRecordScreen(
                                             onClick = {
                                                 val code = smsMsg.smsCode
                                                 if (!code.isNullOrEmpty()) {
-                                                    scope.launch {
-                                                        clipboard.setClipEntry(
-                                                            ClipData.newPlainText("sms_code", code).toClipEntry(),
-                                                        )
-                                                        snackbarHostState.showSnackbar(
-                                                            context.getString(R.string.prompt_sms_code_copied, code),
-                                                        )
-                                                    }
+                                                    val message = context.getString(R.string.prompt_sms_code_copied, code)
+                                                    copyWithFeedback("sms_code", code, message, message)
                                                 }
                                             },
                                             onLongClick = {
