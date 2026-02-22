@@ -26,6 +26,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.tianma8023.xposed.smscode.R
+import com.tianma.xsmscode.ui.common.LoadingIndicatorTokens
 import com.tianma.xsmscode.ui.common.PolygonMorphLoadingIndicator
 import com.tianma.xsmscode.ui.common.SessionLoadingRegistry
 import com.tianma.xsmscode.ui.common.rememberMinDurationLoading
@@ -45,13 +46,16 @@ fun FaqScreen(hazeState: HazeState, hazeStyle: HazeStyle, refreshTrigger: Int = 
     var actualLoading by remember { mutableStateOf(shouldShowInitialLoading) }
     var manualRefreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val showLoading = rememberMinDurationLoading(actualLoading = actualLoading, minDurationMillis = 500L)
+    val showLoading = rememberMinDurationLoading(
+        actualLoading = actualLoading,
+        minDurationMillis = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
+    )
 
     suspend fun runManualRefresh() {
         val startedAt = SystemClock.elapsedRealtime()
         manualRefreshing = true
         val elapsed = SystemClock.elapsedRealtime() - startedAt
-        val remaining = (500L - elapsed).coerceAtLeast(0L)
+        val remaining = (LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS - elapsed).coerceAtLeast(0L)
         if (remaining > 0L) delay(remaining)
         manualRefreshing = false
     }
@@ -96,7 +100,7 @@ fun FaqScreen(hazeState: HazeState, hazeStyle: HazeStyle, refreshTrigger: Int = 
                 PullToRefreshDefaults.LoadingIndicator(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = topPadding + 8.dp),
+                        .padding(top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing),
                     isRefreshing = manualRefreshing,
                     state = pullToRefreshState,
                 )
@@ -109,7 +113,7 @@ fun FaqScreen(hazeState: HazeState, hazeStyle: HazeStyle, refreshTrigger: Int = 
                     PolygonMorphLoadingIndicator(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .padding(top = topPadding + 8.dp),
+                            .padding(top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing),
                     )
                 }
             } else {
@@ -122,7 +126,7 @@ fun FaqScreen(hazeState: HazeState, hazeStyle: HazeStyle, refreshTrigger: Int = 
                     contentPadding = PaddingValues(
                         start = 16.dp,
                         end = 16.dp,
-                        top = topPadding + 8.dp,
+                        top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing,
                         bottom = 80.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
                     ),
                     verticalArrangement = Arrangement.spacedBy(16.dp),

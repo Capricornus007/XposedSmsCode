@@ -50,6 +50,7 @@ import com.tianma.xsmscode.common.utils.PackageUtils
 import com.tianma.xsmscode.common.utils.SPUtils
 import com.tianma.xsmscode.common.utils.Utils
 import com.tianma.xsmscode.common.utils.XLog
+import com.tianma.xsmscode.ui.common.LoadingIndicatorTokens
 import com.tianma.xsmscode.ui.common.PolygonMorphLoadingIndicator
 import com.tianma.xsmscode.ui.common.SessionLoadingRegistry
 import com.tianma.xsmscode.ui.common.rememberMinDurationLoading
@@ -128,7 +129,7 @@ fun ComposeSettingsScreen(
         manualRefreshing = true
         reloadSettingsData()
         val elapsed = SystemClock.elapsedRealtime() - startedAt
-        val remaining = (500L - elapsed).coerceAtLeast(0L)
+        val remaining = (LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS - elapsed).coerceAtLeast(0L)
         if (remaining > 0L) delay(remaining)
         manualRefreshing = false
     }
@@ -215,7 +216,7 @@ fun ComposeSettingsScreen(
     val shouldShowInitialLoading = remember { SessionLoadingRegistry.shouldShowInitial("settings") }
     val showLoading = rememberMinDurationLoading(
         actualLoading = shouldShowInitialLoading && !settingsDataLoaded,
-        minDurationMillis = 500L,
+        minDurationMillis = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
     )
     val pullToRefreshState = rememberPullToRefreshState()
 
@@ -249,7 +250,7 @@ fun ComposeSettingsScreen(
                 PullToRefreshDefaults.LoadingIndicator(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = topPadding + 8.dp),
+                        .padding(top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing),
                     isRefreshing = manualRefreshing,
                     state = pullToRefreshState,
                 )
@@ -262,7 +263,7 @@ fun ComposeSettingsScreen(
                     PolygonMorphLoadingIndicator(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .padding(top = topPadding + 8.dp),
+                            .padding(top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing),
                     )
                 }
             } else {
