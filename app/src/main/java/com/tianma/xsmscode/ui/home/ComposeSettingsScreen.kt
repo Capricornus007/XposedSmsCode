@@ -487,6 +487,13 @@ fun ComposeSettingsScreen(
                 defaultValue = false,
                 onSaved = markPrefsSaved,
             )
+            SwitchItem(
+                title = stringResource(id = R.string.pref_kill_me_title),
+                summary = stringResource(id = R.string.pref_kill_me_summary),
+                key = PrefConst.KEY_KILL_ME,
+                defaultValue = false,
+                onSaved = markPrefsSaved,
+            )
             Item(
                 title = stringResource(id = R.string.pref_auto_input_code_delay_title),
                 summary = stringResource(id = R.string.pref_auto_input_code_delay_summary, autoInputDelay),

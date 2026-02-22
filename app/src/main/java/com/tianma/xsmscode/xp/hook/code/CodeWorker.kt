@@ -98,11 +98,11 @@ class CodeWorker(
         // 显示Toast Action
         mUIHandler.post(ToastAction(mPluginContext, mPhoneContext, smsMsg))
 
+        val autoInputDelayMs = PrefsReader.getAutoInputCodeDelay(mPluginContext) * 1000L
         // 自动输入 Action
         if (autoInput) {
             val autoInputAction = AutoInputAction(mPluginContext, mPhoneContext, smsMsg)
-            val autoInputDelay = PrefsReader.getAutoInputCodeDelay(mPluginContext) * 1000L
-            mScheduledExecutor.schedule(autoInputAction, autoInputDelay, TimeUnit.MILLISECONDS)
+            mScheduledExecutor.schedule(autoInputAction, autoInputDelayMs, TimeUnit.MILLISECONDS)
         }
 
         // 显示通知 Action
@@ -128,14 +128,17 @@ class CodeWorker(
             XLog.d("Scheduled CancelNotifyAction with delay: ${autoCancelRetentionMs}ms for ID: $notificationId")
         }
 
-        // 自杀 Action - delay it if we need time for auto-cancel to fire.
-        val killMeAction = KillMeAction(mPluginContext, mPhoneContext, smsMsg)
-        val killDelayMs = if (autoCancelRetentionMs > 0L) {
-            maxOf(4000L, autoCancelRetentionMs + 500L)
-        } else {
-            4000L
+        // 自杀 Action: only execute after auto-input stage to avoid killing too early.
+        if (killMe) {
+            if (autoInput) {
+                val killMeAction = KillMeAction(mPluginContext, mPhoneContext, smsMsg)
+                // Keep a buffer after auto-input for broadcast/input dispatch to settle.
+                val killDelayMs = maxOf(autoInputDelayMs + 1500L, 2500L)
+                mScheduledExecutor.schedule(killMeAction, killDelayMs, TimeUnit.MILLISECONDS)
+            } else {
+                XLog.w("KillMe enabled but auto-input disabled, skip KillMeAction")
+            }
         }
-        mScheduledExecutor.schedule(killMeAction, killDelayMs, TimeUnit.MILLISECONDS)
 
         mScheduledExecutor.shutdown()
         return buildParseResult()
