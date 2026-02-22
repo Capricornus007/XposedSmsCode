@@ -39,6 +39,8 @@ import android.os.SystemClock
 @Immutable
 data class TabItem<T : Any>(val label: String, val icon: ImageVector, val route: T)
 
+private const val TAB_DOUBLE_TAP_REFRESH_WINDOW_MS = 350L
+
 @Composable
 fun MainScreen(
     onNavigateToRuleEdit: (Int, SmsCodeRule?) -> Unit,
@@ -90,7 +92,7 @@ fun MainScreen(
         tabLastTapAt[key] = now
 
         if (selected) {
-            if (now - last <= 350L) {
+            if (now - last <= TAB_DOUBLE_TAP_REFRESH_WINDOW_MS) {
                 triggerRefreshForTab(tab.route)
             }
             return

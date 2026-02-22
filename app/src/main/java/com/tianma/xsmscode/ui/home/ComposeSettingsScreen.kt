@@ -191,70 +191,18 @@ fun ComposeSettingsScreen(
     LaunchedEffect(settingsViewModel, lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
             settingsViewModel.eventsFlow.collect { event ->
-                when (event) {
-                    is SettingsEvent.SmsCodeTestResult -> {
-                        val text = if (event.code.isBlank()) {
-                            context.getString(R.string.cannot_parse_smscode)
-                        } else {
-                            context.getString(R.string.current_sms_code, event.code)
-                        }
-                        android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_LONG).show()
-                    }
-
-                    is SettingsEvent.ShowPrivacyPolicy -> {
-                        showPrivacyPolicyDialog = true
-                    }
-
-                    is SettingsEvent.ShowAlipayPacket -> {
-                        showDonateDialog = true
-                    }
-
-                    is SettingsEvent.BackupResultEvent -> {
-                        val msg = if (event.success) R.string.backup_success else R.string.backup_failed
-                        android.widget.Toast.makeText(context, context.getString(msg), android.widget.Toast.LENGTH_SHORT).show()
-                    }
-
-                    is SettingsEvent.RestoreResultEvent -> {
-                        val msg = if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
-                            R.string.restore_success
-                        } else {
-                            R.string.restore_failed
-                        }
-                        android.widget.Toast.makeText(context, context.getString(msg), android.widget.Toast.LENGTH_SHORT).show()
-
-                        if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.restore_success),
-                                Toast.LENGTH_SHORT,
-                            ).show()
-                            scope.launch {
-                                delay(1200L)
-                                val activity = activityOwner ?: (context as? Activity)
-                                if (activity != null) {
-                                    val intent = activity.packageManager.getLaunchIntentForPackage(
-                                        activity.packageName,
-                                    )
-                                    if (intent != null) {
-                                        intent.addFlags(
-                                            Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK,
-                                        )
-                                        activity.startActivity(intent)
-                                    }
-                                    activity.finish()
-                                }
-                                android.os.Process.killProcess(android.os.Process.myPid())
-                            }
-                        }
-                    }
-
-                    is SettingsEvent.ImportDialogConfirm -> {
-                        restoreUri = event.uri
+                handleSettingsEvent(
+                    event = event,
+                    context = context,
+                    activity = activityOwner ?: (context as? Activity),
+                    scope = scope,
+                    onShowPrivacyPolicy = { showPrivacyPolicyDialog = true },
+                    onShowDonate = { showDonateDialog = true },
+                    onShowRestoreConfirm = { uri ->
+                        restoreUri = uri
                         showRestoreDialog = true
-                    }
-
-                    else -> Unit
-                }
+                    },
+                )
             }
         }
     }
@@ -604,34 +552,181 @@ fun ComposeSettingsScreen(
         )
     }
 
+    SettingsDialogs(
+        context = context,
+        scope = scope,
+        themeMode = themeMode,
+        autoInputDelay = autoInputDelay,
+        retentionTime = retentionTime,
+        smsTestInput = smsTestInput,
+        smsCodeKeywords = smsCodeKeywords,
+        showAutoInputDialog = showAutoInputDialog,
+        showRetentionDialog = showRetentionDialog,
+        showSmsTestDialog = showSmsTestDialog,
+        showKeywordsDialog = showKeywordsDialog,
+        showThemeDialog = showThemeDialog,
+        showDonateDialog = showDonateDialog,
+        showAlipayChoiceDialog = showAlipayChoiceDialog,
+        showQRCodeDialog = showQRCodeDialog,
+        showPrivacyPolicyDialog = showPrivacyPolicyDialog,
+        showPrivacyPolicyPage = showPrivacyPolicyPage,
+        showBackupDialog = showBackupDialog,
+        showRestoreDialog = showRestoreDialog,
+        restoreUri = restoreUri,
+        onAutoInputDelayChange = { autoInputDelay = it },
+        onRetentionTimeChange = { retentionTime = it },
+        onSmsTestInputChange = { smsTestInput = it },
+        onSmsKeywordsChange = { smsCodeKeywords = it },
+        onShowAutoInputDialogChange = { showAutoInputDialog = it },
+        onShowRetentionDialogChange = { showRetentionDialog = it },
+        onShowSmsTestDialogChange = { showSmsTestDialog = it },
+        onShowKeywordsDialogChange = { showKeywordsDialog = it },
+        onShowThemeDialogChange = { showThemeDialog = it },
+        onShowDonateDialogChange = { showDonateDialog = it },
+        onShowAlipayChoiceDialogChange = { showAlipayChoiceDialog = it },
+        onShowQrCodeDialogChange = { showQRCodeDialog = it },
+        onShowPrivacyPolicyDialogChange = { showPrivacyPolicyDialog = it },
+        onShowPrivacyPolicyPageChange = { showPrivacyPolicyPage = it },
+        onShowBackupDialogChange = { showBackupDialog = it },
+        onShowRestoreDialogChange = { showRestoreDialog = it },
+        onBackupFlagsChange = { backupFlags = it },
+        onPendingSavedToast = { pendingSavedToast = true },
+        backupLauncher = backupLauncher,
+        settingsViewModel = settingsViewModel,
+        onExit = onExit,
+        onSetTheme = { mode, x, y -> settingsViewModel.setThemeMode(mode, x, y) },
+    )
+}
+
+private fun handleSettingsEvent(
+    event: SettingsEvent,
+    context: android.content.Context,
+    activity: Activity?,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onShowPrivacyPolicy: () -> Unit,
+    onShowDonate: () -> Unit,
+    onShowRestoreConfirm: (android.net.Uri) -> Unit,
+) {
+    when (event) {
+        is SettingsEvent.SmsCodeTestResult -> {
+            val text = if (event.code.isBlank()) {
+                context.getString(R.string.cannot_parse_smscode)
+            } else {
+                context.getString(R.string.current_sms_code, event.code)
+            }
+            android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_LONG).show()
+        }
+
+        is SettingsEvent.ShowPrivacyPolicy -> onShowPrivacyPolicy()
+        is SettingsEvent.ShowAlipayPacket -> onShowDonate()
+        is SettingsEvent.BackupResultEvent -> {
+            val msg = if (event.success) R.string.backup_success else R.string.backup_failed
+            android.widget.Toast.makeText(context, context.getString(msg), android.widget.Toast.LENGTH_SHORT).show()
+        }
+
+        is SettingsEvent.RestoreResultEvent -> {
+            val msg = if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
+                R.string.restore_success
+            } else {
+                R.string.restore_failed
+            }
+            android.widget.Toast.makeText(context, context.getString(msg), android.widget.Toast.LENGTH_SHORT).show()
+
+            if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
+                Toast.makeText(context, context.getString(R.string.restore_success), Toast.LENGTH_SHORT).show()
+                scope.launch {
+                    delay(1200L)
+                    if (activity != null) {
+                        val intent = activity.packageManager.getLaunchIntentForPackage(activity.packageName)
+                        if (intent != null) {
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                            activity.startActivity(intent)
+                        }
+                        activity.finish()
+                    }
+                    android.os.Process.killProcess(android.os.Process.myPid())
+                }
+            }
+        }
+
+        is SettingsEvent.ImportDialogConfirm -> onShowRestoreConfirm(event.uri)
+        else -> Unit
+    }
+}
+
+@Composable
+private fun SettingsDialogs(
+    context: android.content.Context,
+    scope: kotlinx.coroutines.CoroutineScope,
+    themeMode: Int,
+    autoInputDelay: String,
+    retentionTime: String,
+    smsTestInput: String,
+    smsCodeKeywords: String,
+    showAutoInputDialog: Boolean,
+    showRetentionDialog: Boolean,
+    showSmsTestDialog: Boolean,
+    showKeywordsDialog: Boolean,
+    showThemeDialog: Boolean,
+    showDonateDialog: Boolean,
+    showAlipayChoiceDialog: Boolean,
+    showQRCodeDialog: Pair<Int, String>?,
+    showPrivacyPolicyDialog: Boolean,
+    showPrivacyPolicyPage: Boolean,
+    showBackupDialog: Boolean,
+    showRestoreDialog: Boolean,
+    restoreUri: android.net.Uri?,
+    onAutoInputDelayChange: (String) -> Unit,
+    onRetentionTimeChange: (String) -> Unit,
+    onSmsTestInputChange: (String) -> Unit,
+    onSmsKeywordsChange: (String) -> Unit,
+    onShowAutoInputDialogChange: (Boolean) -> Unit,
+    onShowRetentionDialogChange: (Boolean) -> Unit,
+    onShowSmsTestDialogChange: (Boolean) -> Unit,
+    onShowKeywordsDialogChange: (Boolean) -> Unit,
+    onShowThemeDialogChange: (Boolean) -> Unit,
+    onShowDonateDialogChange: (Boolean) -> Unit,
+    onShowAlipayChoiceDialogChange: (Boolean) -> Unit,
+    onShowQrCodeDialogChange: (Pair<Int, String>?) -> Unit,
+    onShowPrivacyPolicyDialogChange: (Boolean) -> Unit,
+    onShowPrivacyPolicyPageChange: (Boolean) -> Unit,
+    onShowBackupDialogChange: (Boolean) -> Unit,
+    onShowRestoreDialogChange: (Boolean) -> Unit,
+    onBackupFlagsChange: (Triple<Boolean, Boolean, Boolean>) -> Unit,
+    onPendingSavedToast: () -> Unit,
+    backupLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
+    settingsViewModel: SettingsViewModel,
+    onExit: () -> Unit,
+    onSetTheme: (Int, Float, Float) -> Unit,
+) {
     if (showAutoInputDialog) {
         TextInputDialog(
             title = stringResource(id = R.string.pref_auto_input_code_delay_title),
             initialValue = autoInputDelay,
-            onDismiss = { showAutoInputDialog = false },
+            onDismiss = { onShowAutoInputDialogChange(false) },
         ) { value ->
-            autoInputDelay = value
+            onAutoInputDelayChange(value)
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, value)
                 AppPreferencesDataStore.syncToSharedPrefs(context)
-                pendingSavedToast = true
+                onPendingSavedToast()
             }
-            showAutoInputDialog = false
+            onShowAutoInputDialogChange(false)
         }
     }
 
     if (showRetentionDialog) {
         RetentionDialog(
             selectedValue = retentionTime,
-            onDismiss = { showRetentionDialog = false },
+            onDismiss = { onShowRetentionDialogChange(false) },
         ) { value ->
-            retentionTime = value
+            onRetentionTimeChange(value)
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, value)
                 AppPreferencesDataStore.syncToSharedPrefs(context)
-                pendingSavedToast = true
+                onPendingSavedToast()
             }
-            showRetentionDialog = false
+            onShowRetentionDialogChange(false)
         }
     }
 
@@ -639,13 +734,13 @@ fun ComposeSettingsScreen(
         TextInputDialog(
             title = stringResource(id = R.string.pref_smscode_test_title),
             initialValue = smsTestInput,
-            onDismiss = { showSmsTestDialog = false },
+            onDismiss = { onShowSmsTestDialogChange(false) },
             singleLine = false,
             maxLines = 8,
         ) { value ->
-            smsTestInput = value
+            onSmsTestInputChange(value)
             settingsViewModel.performSmsCodeTest(value)
-            showSmsTestDialog = false
+            onShowSmsTestDialogChange(false)
         }
     }
 
@@ -653,55 +748,55 @@ fun ComposeSettingsScreen(
         TextInputDialog(
             title = stringResource(id = R.string.pref_smscode_keywords_title),
             initialValue = smsCodeKeywords,
-            onDismiss = { showKeywordsDialog = false },
+            onDismiss = { onShowKeywordsDialogChange(false) },
             singleLine = false,
             maxLines = 10,
         ) { value ->
             val updated = if (value.isBlank()) PrefConst.SMSCODE_KEYWORDS_DEFAULT else value
-            smsCodeKeywords = updated
+            onSmsKeywordsChange(updated)
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_SMSCODE_KEYWORDS, updated)
                 AppPreferencesDataStore.syncToSharedPrefs(context)
-                pendingSavedToast = true
+                onPendingSavedToast()
             }
-            showKeywordsDialog = false
+            onShowKeywordsDialogChange(false)
         }
     }
 
     if (showThemeDialog) {
         ThemeChooserDialog(
             currentMode = themeMode,
-            onDismiss = { showThemeDialog = false },
+            onDismiss = { onShowThemeDialogChange(false) },
             onThemeSelected = { mode, x, y ->
-                settingsViewModel.setThemeMode(mode, x, y)
-                showThemeDialog = false
+                onSetTheme(mode, x, y)
+                onShowThemeDialogChange(false)
             },
         )
     }
 
     if (showDonateDialog) {
         DonateDialog(
-            onDismiss = { showDonateDialog = false },
+            onDismiss = { onShowDonateDialogChange(false) },
             onAlipay = {
-                showDonateDialog = false
-                showAlipayChoiceDialog = true
+                onShowDonateDialogChange(false)
+                onShowAlipayChoiceDialogChange(true)
             },
             onWechat = {
-                showDonateDialog = false
-                showQRCodeDialog = Pair(R.drawable.wx, "wechat")
+                onShowDonateDialogChange(false)
+                onShowQrCodeDialogChange(Pair(R.drawable.wx, "wechat"))
             },
         )
     }
 
     if (showAlipayChoiceDialog) {
         AlipayChoiceDialog(
-            onDismiss = { showAlipayChoiceDialog = false },
+            onDismiss = { onShowAlipayChoiceDialogChange(false) },
             onQRCode = {
-                showAlipayChoiceDialog = false
-                showQRCodeDialog = Pair(R.drawable.alipay, "alipay")
+                onShowAlipayChoiceDialogChange(false)
+                onShowQrCodeDialogChange(Pair(R.drawable.alipay, "alipay"))
             },
             onToken = {
-                showAlipayChoiceDialog = false
+                onShowAlipayChoiceDialogChange(false)
                 PackageUtils.copyAlipayPocketToken(context)
                 PackageUtils.startAlipayActivity(context)
             },
@@ -712,39 +807,39 @@ fun ComposeSettingsScreen(
         QRCodeDialog(
             resId = pair.first,
             type = pair.second,
-            onDismiss = { showQRCodeDialog = null },
+            onDismiss = { onShowQrCodeDialogChange(null) },
             onSave = { Utils.saveImageToGallery(context, pair.first, "${pair.second}_qrcode") },
         )
     }
 
     if (showPrivacyPolicyDialog) {
         PrivacyPolicyDialog(
-            onDismiss = { showPrivacyPolicyDialog = false },
+            onDismiss = { onShowPrivacyPolicyDialogChange(false) },
             onConfirm = {
                 scope.launch { SPUtils.setPrivacyPolicyAccepted(context, true) }
-                showPrivacyPolicyDialog = false
+                onShowPrivacyPolicyDialogChange(false)
             },
             onCancel = {
                 scope.launch { SPUtils.setPrivacyPolicyAccepted(context, false) }
-                showPrivacyPolicyDialog = false
+                onShowPrivacyPolicyDialogChange(false)
                 onExit()
             },
             onViewPolicy = {
-                showPrivacyPolicyPage = true
+                onShowPrivacyPolicyPageChange(true)
             },
         )
     }
 
     if (showPrivacyPolicyPage) {
-        PrivacyPolicyPage(onDismiss = { showPrivacyPolicyPage = false })
+        PrivacyPolicyPage(onDismiss = { onShowPrivacyPolicyPageChange(false) })
     }
 
     if (showBackupDialog) {
         BackupDialog(
-            onDismiss = { showBackupDialog = false },
+            onDismiss = { onShowBackupDialogChange(false) },
             onConfirm = { config, rules, records ->
-                backupFlags = Triple(config, rules, records)
-                showBackupDialog = false
+                onBackupFlagsChange(Triple(config, rules, records))
+                onShowBackupDialogChange(false)
                 val intent = com.tianma.xsmscode.feature.backup.BackupManager.getExportRuleListSAFIntent(context)
                 backupLauncher.launch(intent)
             },
@@ -753,10 +848,10 @@ fun ComposeSettingsScreen(
 
     if (showRestoreDialog && restoreUri != null) {
         RestoreConfirmDialog(
-            onDismiss = { showRestoreDialog = false },
+            onDismiss = { onShowRestoreDialogChange(false) },
             onConfirm = { config, rules, records ->
-                settingsViewModel.performRestore(restoreUri!!, config, rules, records)
-                showRestoreDialog = false
+                settingsViewModel.performRestore(restoreUri, config, rules, records)
+                onShowRestoreDialogChange(false)
             },
         )
     }

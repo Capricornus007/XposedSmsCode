@@ -38,7 +38,9 @@ class CodeWorker(
         val deduplicateSms = false
         val killMe = PrefsReader.killMeEnabled(mPluginContext)
         XLog.w(
-            "Diag settings: enabled=%s, verbose=%s, showNotif=%s, autoCancel=%s, retentionSec=%d, autoInput=%s, copy=%s, toast=%s, record=%s, block=%s, markRead=%s, delete=%s, dedup=%s, killMe=%s",
+            "Diag settings: enabled=%s, verbose=%s, showNotif=%s, autoCancel=%s, " +
+                "retentionSec=%d, autoInput=%s, copy=%s, toast=%s, record=%s, " +
+                "block=%s, markRead=%s, delete=%s, dedup=%s, killMe=%s",
             moduleEnabled,
             verboseLog,
             showNotification,

@@ -535,148 +535,172 @@ fun CodeRecordScreen(
 
         val sms = detailSmsMsg
         if (sms != null) {
-            val detailDateFormatter = remember { SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()) }
-            val sender = sms.sender ?: sms.company ?: context.getString(R.string.unknown)
-            val time = detailDateFormatter.format(Date(sms.date))
-            val content = sms.body.orEmpty()
-            val dismissInteraction = remember { MutableInteractionSource() }
+            RecordDetailOverlay(
+                hazeState = hazeState,
+                hazeStyle = hazeStyle,
+                sms = sms,
+                onDismiss = { detailSmsMsg = null },
+                onCopy = { label, value, toast ->
+                    copyWithFeedback(label, value, toast, toast)
+                },
+                onDelete = {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.some_items_removed, 1),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                    deleteAndUndo(sms)
+                },
+            )
+        }
+    }
+}
 
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .hazeEffect(hazeState, hazeStyle) { forceInvalidateOnPreDraw = true }
-                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.28f))
-                    .clickable(
-                        interactionSource = dismissInteraction,
-                        indication = null,
-                    ) { detailSmsMsg = null },
-                contentAlignment = Alignment.Center,
+@Composable
+private fun RecordDetailOverlay(
+    hazeState: HazeState,
+    hazeStyle: HazeStyle,
+    sms: SmsMsg,
+    onDismiss: () -> Unit,
+    onCopy: (label: String, value: String, toast: String) -> Unit,
+    onDelete: () -> Unit,
+) {
+    val context = LocalContext.current
+    val detailDateFormatter = remember { SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()) }
+    val sender = sms.sender ?: sms.company ?: context.getString(R.string.unknown)
+    val time = detailDateFormatter.format(Date(sms.date))
+    val content = sms.body.orEmpty()
+    val dismissInteraction = remember { MutableInteractionSource() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .hazeEffect(hazeState, hazeStyle) { forceInvalidateOnPreDraw = true }
+            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.28f))
+            .clickable(
+                interactionSource = dismissInteraction,
+                indication = null,
+            ) { onDismiss() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                ) {},
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 6.dp,
+            shadowElevation = 12.dp,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) {},
-                    shape = MaterialTheme.shapes.extraLarge,
-                    tonalElevation = 6.dp,
-                    shadowElevation = 12.dp,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.message_details),
-                                style = MaterialTheme.typography.titleLarge,
+                    Text(
+                        text = stringResource(R.string.message_details),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    Text(
+                        text = stringResource(R.string.detail_click_copy_hint),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = "${stringResource(R.string.detail_sender)}:",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = sender,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable {
+                            val message = context.getString(
+                                R.string.prompt_field_copied,
+                                context.getString(R.string.detail_sender),
                             )
-                            Text(
-                                text = stringResource(R.string.detail_click_copy_hint),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            onCopy("sms_sender", sender, message)
+                        },
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = "${stringResource(R.string.detail_time)}:",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = time,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable {
+                            val message = context.getString(
+                                R.string.prompt_field_copied,
+                                context.getString(R.string.detail_time),
                             )
+                            onCopy("sms_time", time, message)
+                        },
+                    )
+                }
+                Text(
+                    text = "${stringResource(R.string.detail_content)}:",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    text = content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable {
+                        if (content.isNotEmpty()) {
+                            val message = context.getString(
+                                R.string.prompt_field_copied,
+                                context.getString(R.string.detail_content),
+                            )
+                            onCopy("sms_body", content, message)
                         }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Text(
-                                text = "${stringResource(R.string.detail_sender)}:",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                            Text(
-                                text = sender,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.clickable {
-                                    val message = context.getString(
-                                        R.string.prompt_field_copied,
-                                        context.getString(R.string.detail_sender),
-                                    )
-                                    copyWithFeedback("sms_sender", sender, message, message)
-                                },
-                            )
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Text(
-                                text = "${stringResource(R.string.detail_time)}:",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                            Text(
-                                text = time,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.clickable {
-                                    val message = context.getString(
-                                        R.string.prompt_field_copied,
-                                        context.getString(R.string.detail_time),
-                                    )
-                                    copyWithFeedback("sms_time", time, message, message)
-                                },
-                            )
-                        }
-                        Text(
-                            text = "${stringResource(R.string.detail_content)}:",
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        Text(
-                            text = content,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.clickable {
-                                if (content.isNotEmpty()) {
-                                    val message = context.getString(
-                                        R.string.prompt_field_copied,
-                                        context.getString(R.string.detail_content),
-                                    )
-                                    copyWithFeedback("sms_body", content, message, message)
-                                }
-                            },
-                        )
-                        HorizontalDivider()
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            OutlinedButton(
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    if (content.isNotEmpty()) {
-                                        val message = context.getString(R.string.prompt_sms_copied)
-                                        copyWithFeedback("sms_body", content, message, message)
-                                    }
-                                    detailSmsMsg = null
-                                },
-                            ) { Text(stringResource(R.string.copy_sms)) }
-                            Button(
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.some_items_removed, 1),
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
-                                    deleteAndUndo(sms)
-                                    detailSmsMsg = null
-                                },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.errorContainer,
-                                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                ),
-                            ) { Text(stringResource(R.string.delete_sms_action)) }
-                        }
-                    }
+                    },
+                )
+                HorizontalDivider()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedButton(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            if (content.isNotEmpty()) {
+                                val message = context.getString(R.string.prompt_sms_copied)
+                                onCopy("sms_body", content, message)
+                            }
+                            onDismiss()
+                        },
+                    ) { Text(stringResource(R.string.copy_sms)) }
+                    Button(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            onDelete()
+                            onDismiss()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ),
+                    ) { Text(stringResource(R.string.delete_sms_action)) }
                 }
             }
         }
