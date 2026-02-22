@@ -556,6 +556,7 @@ fun CodeRecordScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun RecordDetailOverlay(
     hazeState: HazeState,
@@ -676,12 +677,17 @@ private fun RecordDetailOverlay(
                     },
                 )
                 HorizontalDivider()
-                Row(
+                ButtonGroup(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
+                    val copyInteraction = remember { MutableInteractionSource() }
+                    val deleteInteraction = remember { MutableInteractionSource() }
                     OutlinedButton(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .animateWidth(copyInteraction),
+                        interactionSource = copyInteraction,
                         onClick = {
                             if (content.isNotEmpty()) {
                                 val message = context.getString(R.string.prompt_sms_copied)
@@ -691,7 +697,10 @@ private fun RecordDetailOverlay(
                         },
                     ) { Text(stringResource(R.string.copy_sms)) }
                     Button(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .animateWidth(deleteInteraction),
+                        interactionSource = deleteInteraction,
                         onClick = {
                             onDelete()
                             onDismiss()
