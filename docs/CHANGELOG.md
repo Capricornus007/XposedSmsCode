@@ -25,6 +25,33 @@
 
 ---
 
+## [v3.1.5] - 2026-02-23
+### 修复 (Fixed)
+- 修复短信拦截链路在进程回收场景下的稳定性问题（#81）。
+- 修复短信删除在部分系统短信数据库通路中的失效问题（#85）。
+- 修复“记录/拦截”页面保存反馈缺失，补齐 Toast 提示（#81、#86）。
+- 修复拦截规则说明中中英文 regex 指引不一致的问题（#87）。
+
+### 功能与体验 (Features & UX)
+- 新增可配置短信黑名单：支持号码/号段/正则/内容匹配，以及“删除短信/阻断广播”动作（#84）。
+- 设置页新增“自动输入后自杀”开关，并将触发时机对齐自动输入阶段（#90）。
+- 统一对话框按钮语义为 M3 层级并重构记录详情交互（字段点击复制、动作精简）（#94）。
+- 新增 dynamic color 主题能力，并保留 pure black 主题表现（#93）。
+- 迁移到 Material 3 下拉刷新并统一加载反馈体验（#92）。
+
+### 架构与质量 (Architecture & Quality)
+- 完成 DBProvider 到 Room 通路迁移阶段一，降低 legacy API 依赖并增强诊断（#96）。
+- 清理当前 code scanning 的 detekt open 告警（复杂度/魔法数字/超长行）（#95）。
+
+### 构建与依赖 (Build & Dependencies)
+- 升级依赖：`nl.littlerobots.version-catalog-update` `1.0.1 -> 1.1.0`（#91）。
+- 例行更新 Gradle Wrapper 夜版工具链（#97）。
+- 升级到 `versionCode 88` / `versionName 3.1.5`。
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.1.4...v3.1.5
+
+---
+
 ## [v3.1.3] - 2026-02-19
 ### 修复与兼容性 (Fixes & Compatibility)
 - 新增 Android 16（SDK 36）`PermissionManagerService` 兼容 Hook，适配系统 API 变化。
