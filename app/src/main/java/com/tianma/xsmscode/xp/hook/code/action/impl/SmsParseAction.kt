@@ -5,15 +5,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
 import com.github.tianma8023.xposed.smscode.BuildConfig
-import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.common.utils.SmsCodeUtils
 import com.tianma.xsmscode.common.utils.StringUtils
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.entity.SmsMsg
-import com.tianma.xsmscode.feature.store.EntityStoreManager
-import com.tianma.xsmscode.feature.store.EntityType
 import com.tianma.xsmscode.xp.hook.code.action.CallableAction
-import kotlin.math.abs
 
 /**
  * 解析短信中的验证码
@@ -91,34 +87,11 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
         val bundle = Bundle()
         bundle.putParcelable(SMS_MSG, mSmsMsg)
 
-        // 去除重复短信
-        var duplicated = false
-        if (PrefsReader.deduplicateSms(mPluginContext)) {
-            val prevSmsMsg = EntityStoreManager.loadEntityFromFile(
-                mPluginContext,
-                EntityType.PREV_SMS_MSG,
-                SmsMsg::class.java,
-            )
-            if (prevSmsMsg != null) {
-                if (abs(timestamp - prevSmsMsg.date) <= SMS_DUPLICATE_THRESHOLD_MS) {
-                    if ((sender == prevSmsMsg.sender && smsCode == prevSmsMsg.smsCode) ||
-                        msgBody == prevSmsMsg.body
-                    ) {
-                        duplicated = true
-                        XLog.d("Duplicated message, ignore")
-                    }
-                }
-            }
-            // 保存当前验证码记录 Action
-            EntityStoreManager.storeEntityToFile(mPluginContext, EntityType.PREV_SMS_MSG, mSmsMsg, SmsMsg::class.java)
-        }
-
-        bundle.putBoolean(SMS_DUPLICATED, duplicated)
+        bundle.putBoolean(SMS_DUPLICATED, false)
         return bundle
     }
 
     companion object {
-        private const val SMS_DUPLICATE_THRESHOLD_MS = 15000L
         const val SMS_MSG = "sms_msg"
         const val SMS_DUPLICATED = "sms_duplicated"
     }

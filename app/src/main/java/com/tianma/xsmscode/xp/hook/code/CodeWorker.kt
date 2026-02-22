@@ -32,10 +32,10 @@ class CodeWorker(
         val copyToClipboard = PrefsReader.copyToClipboardEnabled(mPluginContext)
         val showToast = PrefsReader.shouldShowToast(mPluginContext)
         val recordSms = PrefsReader.recordSmsCodeEnabled(mPluginContext)
-        val blockSms = PrefsReader.blockSmsEnabled(mPluginContext)
+        val blockSms = false
         val markAsRead = PrefsReader.markAsReadEnabled(mPluginContext)
         val deleteSms = PrefsReader.deleteSmsEnabled(mPluginContext)
-        val deduplicateSms = PrefsReader.deduplicateSms(mPluginContext)
+        val deduplicateSms = false
         val killMe = PrefsReader.killMeEnabled(mPluginContext)
         XLog.w(
             "Diag settings: enabled=%s, verbose=%s, showNotif=%s, autoCancel=%s, retentionSec=%d, autoInput=%s, copy=%s, toast=%s, record=%s, block=%s, markRead=%s, delete=%s, dedup=%s, killMe=%s",
@@ -143,7 +143,7 @@ class CodeWorker(
 
     private fun buildParseResult(): ParseResult {
         val parseResult = ParseResult()
-        parseResult.isBlockSms = PrefsReader.blockSmsEnabled(mPluginContext)
+        parseResult.isBlockSms = false
         return parseResult
     }
 

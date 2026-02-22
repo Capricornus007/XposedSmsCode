@@ -25,6 +25,9 @@ object SettingsRoute
 object FaqRoute
 
 @Serializable
+object InterceptRoute
+
+@Serializable
 data class RuleEditRoute(val editType: Int, val ruleId: Long? = null)
 
 @Serializable

@@ -8,7 +8,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Help
+import androidx.compose.material.icons.filled.GppGood
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,7 +29,6 @@ import androidx.navigation.compose.rememberNavController
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.ui.block.AppBlockScreen
-import com.tianma.xsmscode.ui.faq.FaqScreen
 import com.tianma.xsmscode.ui.nav.*
 import com.tianma.xsmscode.ui.record.CodeRecordScreen
 import dev.chrisbanes.haze.HazeState
@@ -56,7 +55,7 @@ fun MainScreen(
         TabItem(stringResource(R.string.tab_overview), Icons.Default.Home, OverviewRoute),
         TabItem(stringResource(R.string.tab_blacklist), Icons.Default.Widgets, AppBlockRoute),
         TabItem(stringResource(R.string.tab_records), Icons.Default.History, RecordsRoute),
-        TabItem(stringResource(R.string.tab_faq), Icons.AutoMirrored.Filled.Help, FaqRoute),
+        TabItem(stringResource(R.string.tab_intercept), Icons.Default.GppGood, InterceptRoute),
         TabItem(stringResource(R.string.tab_settings), Icons.Default.Settings, SettingsRoute),
     )
     val selectedIndex = tabs.indexOfFirst { tab ->
@@ -70,7 +69,7 @@ fun MainScreen(
     val isCompact = configuration.screenWidthDp < 600
     var appBlockRefreshTrigger by remember { mutableIntStateOf(0) }
     var recordsRefreshTrigger by remember { mutableIntStateOf(0) }
-    var faqRefreshTrigger by remember { mutableIntStateOf(0) }
+    var interceptRefreshTrigger by remember { mutableIntStateOf(0) }
     var settingsRefreshTrigger by remember { mutableIntStateOf(0) }
     val tabLastTapAt = remember { mutableStateMapOf<String, Long>() }
 
@@ -78,7 +77,7 @@ fun MainScreen(
         when (route) {
             is AppBlockRoute -> appBlockRefreshTrigger++
             is RecordsRoute -> recordsRefreshTrigger++
-            is FaqRoute -> faqRefreshTrigger++
+            is InterceptRoute -> interceptRefreshTrigger++
             is SettingsRoute -> settingsRefreshTrigger++
             else -> Unit
         }
@@ -110,7 +109,7 @@ fun MainScreen(
         when (initialTab) {
             is OverviewRoute -> navController.navigate(OverviewRoute)
             is AppBlockRoute -> navController.navigate(AppBlockRoute)
-            is FaqRoute -> navController.navigate(FaqRoute)
+            is InterceptRoute -> navController.navigate(InterceptRoute)
             is RecordsRoute -> navController.navigate(RecordsRoute)
             is SettingsRoute -> navController.navigate(SettingsRoute)
             else -> Unit
@@ -194,11 +193,11 @@ fun MainScreen(
                             refreshTrigger = appBlockRefreshTrigger,
                         )
                     }
-                    composable<FaqRoute> {
-                        FaqScreen(
+                    composable<InterceptRoute> {
+                        InterceptScreen(
                             hazeState = hazeState,
                             hazeStyle = hazeStyle,
-                            refreshTrigger = faqRefreshTrigger,
+                            refreshTrigger = interceptRefreshTrigger,
                         )
                     }
                     composable<RecordsRoute> {

@@ -177,6 +177,7 @@
     <string name="app_block_settings">停用自動輸入清單</string>
     <string name="tab_overview">概覽</string>
     <string name="tab_blacklist">黑名單</string>
+    <string name="tab_intercept">攔截</string>
     <string name="tab_faq">FAQ</string>
     <string name="tab_records">記錄</string>
     <string name="tab_settings">設定</string>

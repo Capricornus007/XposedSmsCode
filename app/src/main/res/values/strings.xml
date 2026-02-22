@@ -176,6 +176,7 @@
     <string name="app_block_settings">Auto Input Block List</string>
     <string name="tab_overview">Overview</string>
     <string name="tab_blacklist">Blacklist</string>
+    <string name="tab_intercept">Intercept</string>
     <string name="tab_faq">FAQ</string>
     <string name="tab_records">Records</string>
     <string name="tab_settings">Settings</string>
