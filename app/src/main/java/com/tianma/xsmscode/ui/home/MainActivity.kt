@@ -16,13 +16,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -256,7 +257,7 @@ class MainActivity : AppCompatActivity() {
                                     )
                                 },
                                 confirmButton = {
-                                    TextButton(
+                                    FilledTonalButton(
                                         onClick = {
                                             Utils.showWebPage(this@MainActivity, release.htmlUrl)
                                             githubUpdateInfo = null
@@ -267,7 +268,7 @@ class MainActivity : AppCompatActivity() {
                                 },
                                 dismissButton = {
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        TextButton(
+                                        OutlinedButton(
                                             onClick = {
                                                 lifecycleScope.launch {
                                                     AppPreferencesDataStore.setString(
@@ -282,7 +283,7 @@ class MainActivity : AppCompatActivity() {
                                         ) {
                                             Text(getString(R.string.github_update_ignore_this_version))
                                         }
-                                        TextButton(onClick = { githubUpdateInfo = null }) {
+                                        OutlinedButton(onClick = { githubUpdateInfo = null }) {
                                             Text(getString(R.string.cancel))
                                         }
                                     }

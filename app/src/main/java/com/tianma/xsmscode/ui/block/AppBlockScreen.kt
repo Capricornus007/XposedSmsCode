@@ -376,7 +376,7 @@ fun AppBlockScreen(
             title = { Text(stringResource(R.string.action_sort_by_usage)) },
             text = { Text(stringResource(R.string.usage_permission_prompt)) },
             confirmButton = {
-                TextButton(onClick = {
+                FilledTonalButton(onClick = {
                     showUsagePermissionDialog = false
                     try {
                         context.startActivity(
@@ -390,7 +390,7 @@ fun AppBlockScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showUsagePermissionDialog = false }) {
+                OutlinedButton(onClick = { showUsagePermissionDialog = false }) {
                     Text(stringResource(R.string.cancel))
                 }
             },

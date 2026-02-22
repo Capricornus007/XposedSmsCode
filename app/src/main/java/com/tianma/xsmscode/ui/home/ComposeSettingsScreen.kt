@@ -880,12 +880,12 @@ fun TextInputDialog(
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(text) }) {
+            FilledTonalButton(onClick = { onConfirm(text) }) {
                 Text(stringResource(id = R.string.confirm))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            OutlinedButton(onClick = onDismiss) {
                 Text(stringResource(id = R.string.cancel))
             }
         },
@@ -1027,8 +1027,8 @@ fun DonateDialog(onDismiss: () -> Unit, onAlipay: () -> Unit, onWechat: () -> Un
         title = { Text(stringResource(id = R.string.dialog_donate_title)) },
         text = { Text(stringResource(id = R.string.dialog_donate_content)) },
         confirmButton = {
-            TextButton(onClick = onAlipay) { Text(stringResource(id = R.string.dialog_donate_alipay)) }
-            TextButton(onClick = onWechat) { Text(stringResource(id = R.string.dialog_donate_wechat)) }
+            FilledTonalButton(onClick = onAlipay) { Text(stringResource(id = R.string.dialog_donate_alipay)) }
+            OutlinedButton(onClick = onWechat) { Text(stringResource(id = R.string.dialog_donate_wechat)) }
         },
     )
 }
@@ -1039,8 +1039,8 @@ fun AlipayChoiceDialog(onDismiss: () -> Unit, onQRCode: () -> Unit, onToken: () 
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.dialog_donate_alipay)) },
         confirmButton = {
-            TextButton(onClick = onQRCode) { Text(stringResource(id = R.string.dialog_donate_alipay_qrcode)) }
-            TextButton(onClick = onToken) { Text(stringResource(id = R.string.dialog_donate_alipay_token)) }
+            FilledTonalButton(onClick = onQRCode) { Text(stringResource(id = R.string.dialog_donate_alipay_qrcode)) }
+            OutlinedButton(onClick = onToken) { Text(stringResource(id = R.string.dialog_donate_alipay_token)) }
         },
     )
 }
@@ -1076,10 +1076,10 @@ fun QRCodeDialog(resId: Int, type: String, onDismiss: () -> Unit, onSave: () -> 
             }
         },
         confirmButton = {
-            TextButton(onClick = onSave) { Text(stringResource(id = R.string.save_to_gallery)) }
+            FilledTonalButton(onClick = onSave) { Text(stringResource(id = R.string.save_to_gallery)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) }
+            OutlinedButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) }
         },
     )
 }
@@ -1093,7 +1093,7 @@ fun PrivacyPolicyDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, onCancel: 
             Column {
                 Text(stringResource(id = R.string.privacy_dialog_content))
                 Spacer(modifier = Modifier.height(16.dp))
-                TextButton(
+                OutlinedButton(
                     onClick = onViewPolicy,
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                 ) {
@@ -1102,12 +1102,12 @@ fun PrivacyPolicyDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, onCancel: 
             }
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
+            FilledTonalButton(onClick = onConfirm) {
                 Text(stringResource(id = R.string.privacy_dialog_confirm))
             }
         },
         dismissButton = {
-            TextButton(onClick = onCancel) {
+            OutlinedButton(onClick = onCancel) {
                 Text(stringResource(id = R.string.privacy_dialog_cancel))
             }
         },
@@ -1150,12 +1150,12 @@ fun BackupDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Boolean) -
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(checkConfig, checkRules, checkRecords) }) {
+            FilledTonalButton(onClick = { onConfirm(checkConfig, checkRules, checkRecords) }) {
                 Text(stringResource(id = R.string.confirm))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            OutlinedButton(onClick = onDismiss) {
                 Text(stringResource(id = R.string.cancel))
             }
         },
@@ -1204,12 +1204,12 @@ fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Bo
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(checkConfig, checkRules, checkRecords) }) {
+            FilledTonalButton(onClick = { onConfirm(checkConfig, checkRules, checkRecords) }) {
                 Text(stringResource(id = R.string.confirm))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            OutlinedButton(onClick = onDismiss) {
                 Text(stringResource(id = R.string.cancel))
             }
         },
@@ -1266,12 +1266,12 @@ fun SliderDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onValueChange(sliderValue) }) {
+            FilledTonalButton(onClick = { onValueChange(sliderValue) }) {
                 Text(stringResource(id = R.string.confirm))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            OutlinedButton(onClick = onDismiss) {
                 Text(stringResource(id = R.string.cancel))
             }
         }
