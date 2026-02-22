@@ -140,7 +140,11 @@ fun InterceptScreen(
                 ) { showSmsBlacklistPrefixesDialog = true }
                 Item(
                     title = stringResource(R.string.pref_sms_blacklist_regex_title),
-                    summary = formatSummary(smsBlacklistRegex),
+                    summary = buildString {
+                        append(formatSummary(smsBlacklistRegex))
+                        append('\n')
+                        append(stringResource(R.string.pref_sms_blacklist_regex_hint))
+                    },
                 ) { showSmsBlacklistRegexDialog = true }
                 Item(
                     title = stringResource(R.string.pref_sms_blacklist_content_title),

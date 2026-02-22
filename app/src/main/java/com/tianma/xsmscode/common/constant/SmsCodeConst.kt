@@ -58,6 +58,7 @@ object SmsCodeConst {
             "|登入碼|認證碼|識別碼" +
             /*English*/
             "|Code|code|CODE" +
+            "|(?i)\\b(otp|verification|verify|pin|passcode|password|code|secure\\s*code)\\b" +
             /*Russian*/
             "|Код|код|КОД|Пароль|пароль|ПАРОЛЬ|Kod|kod|KOD" +
             /*Vietnamese*/
@@ -68,6 +69,13 @@ object SmsCodeConst {
         "Code",
         "code",
         "CODE",
+        "otp",
+        "verification",
+        "verify",
+        "pin",
+        "passcode",
+        "password",
+        "secure code",
     )
 
     const val PHONE_NUMBER_KEYWORDS =

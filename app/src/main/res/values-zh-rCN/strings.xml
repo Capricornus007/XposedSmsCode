@@ -104,7 +104,7 @@
     <!-- preference code rules -->
     <string name="pref_match_rules">匹配规则</string>
     <string name="pref_smscode_keywords_title">关键字</string>
-    <string name="pref_smscode_keywords_summary">短信包含的验证码关键字(正则表达式)</string>
+    <string name="pref_smscode_keywords_summary">用于提取验证码的关键字正则，支持中英文 regex。示例：(?i)\\b(验证码|otp|verification|verify|pin|passcode|password|code|secure\\s*code)\\b</string>
     <string name="reset">重置</string>
     <string name="code_keywords_hint">关键字(正则表达式)</string>
     <string name="pref_smscode_test_title">验证码短信测试</string>
@@ -119,6 +119,7 @@
     <string name="pref_sms_blacklist_numbers_title">黑名单号码</string>
     <string name="pref_sms_blacklist_prefixes_title">黑名单号段</string>
     <string name="pref_sms_blacklist_regex_title">黑名单正则规则</string>
+    <string name="pref_sms_blacklist_regex_hint">支持中英文 regex。示例：(?i)\\b(验证码|otp|verification|verify|pin|passcode|password|code|secure\\s*code)\\b</string>
     <string name="pref_sms_blacklist_content_title">黑名单内容规则</string>
     <string name="blacklist_not_set">未设置</string>
     <string name="blacklist_rule_count">已配置 %1$d 条规则</string>
