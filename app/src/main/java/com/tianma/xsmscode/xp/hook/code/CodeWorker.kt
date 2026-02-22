@@ -23,17 +23,55 @@ class CodeWorker(
     private val mScheduledExecutor = Executors.newSingleThreadScheduledExecutor()
 
     fun parse(): ParseResult? {
-        if (!PrefsReader.isEnabled(mPluginContext)) {
+        val moduleEnabled = PrefsReader.isEnabled(mPluginContext)
+        val verboseLog = PrefsReader.isVerboseLogMode(mPluginContext)
+        val showNotification = PrefsReader.showCodeNotification(mPluginContext)
+        val autoCancelNotification = PrefsReader.autoCancelCodeNotification(mPluginContext)
+        val retentionSec = PrefsReader.getNotificationRetentionTime(mPluginContext)
+        val autoInput = PrefsReader.autoInputCodeEnabled(mPluginContext)
+        val copyToClipboard = PrefsReader.copyToClipboardEnabled(mPluginContext)
+        val showToast = PrefsReader.shouldShowToast(mPluginContext)
+        val recordSms = PrefsReader.recordSmsCodeEnabled(mPluginContext)
+        val blockSms = PrefsReader.blockSmsEnabled(mPluginContext)
+        val markAsRead = PrefsReader.markAsReadEnabled(mPluginContext)
+        val deleteSms = PrefsReader.deleteSmsEnabled(mPluginContext)
+        val deduplicateSms = PrefsReader.deduplicateSms(mPluginContext)
+        val killMe = PrefsReader.killMeEnabled(mPluginContext)
+        XLog.w(
+            "Diag settings: enabled=%s, verbose=%s, showNotif=%s, autoCancel=%s, retentionSec=%d, autoInput=%s, copy=%s, toast=%s, record=%s, block=%s, markRead=%s, delete=%s, dedup=%s, killMe=%s",
+            moduleEnabled,
+            verboseLog,
+            showNotification,
+            autoCancelNotification,
+            retentionSec,
+            autoInput,
+            copyToClipboard,
+            showToast,
+            recordSms,
+            blockSms,
+            markAsRead,
+            deleteSms,
+            deduplicateSms,
+            killMe,
+        )
+
+        if (!moduleEnabled) {
+            XLog.w("Diag: module disabled in settings")
             XLog.i("XposedSmsCode disabled, exiting")
             return null
         }
 
-        val verboseLog = PrefsReader.isVerboseLogMode(mPluginContext)
         if (verboseLog) {
             XLog.setLogLevel(Log.VERBOSE)
         } else {
             XLog.setLogLevel(BuildConfig.LOG_LEVEL)
         }
+        XLog.w(
+            "Diag log mode: verboseSetting=%s, activeLevel=%d, defaultLevel=%d",
+            verboseLog,
+            XLog.getLogLevel(),
+            BuildConfig.LOG_LEVEL,
+        )
 
         val smsParseAction = SmsParseAction(mPluginContext, mPhoneContext, null)
         smsParseAction.setSmsIntent(mSmsIntent)
@@ -61,7 +99,7 @@ class CodeWorker(
         mUIHandler.post(ToastAction(mPluginContext, mPhoneContext, smsMsg))
 
         // 自动输入 Action
-        if (PrefsReader.autoInputCodeEnabled(mPluginContext)) {
+        if (autoInput) {
             val autoInputAction = AutoInputAction(mPluginContext, mPhoneContext, smsMsg)
             val autoInputDelay = PrefsReader.getAutoInputCodeDelay(mPluginContext) * 1000L
             mScheduledExecutor.schedule(autoInputAction, autoInputDelay, TimeUnit.MILLISECONDS)
@@ -79,7 +117,7 @@ class CodeWorker(
         scheduleOperateSmsActions(smsMsg)
 
         var autoCancelRetentionMs = 0L
-        if (PrefsReader.autoCancelCodeNotification(mPluginContext)) {
+        if (autoCancelNotification) {
             autoCancelRetentionMs = PrefsReader.getNotificationRetentionTime(mPluginContext) * 1000L
             val notificationId = smsMsg.hashCode()
 

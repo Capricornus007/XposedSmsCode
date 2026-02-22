@@ -89,7 +89,6 @@ class PermissionManagerServiceHook34(classLoader: ClassLoader) : BaseSubHook(cla
         return method
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun afterRestorePermissionStateSinceAndroid14(param: XC_MethodHook.MethodHookParam) {
         // com.android.server.pm.pkg.AndroidPackage 对象
         val pkg = param.args[0]
@@ -120,7 +119,7 @@ class PermissionManagerServiceHook34(classLoader: ClassLoader) : BaseSubHook(cla
                 val ps = XposedHelpers.callMethod(mPackageManagerInt, "getPackageStateInternal", packageName)
 
                 // Manifest.xml 中声明的permission列表
-                val requestedPermissions = XposedHelpers.callMethod(pkg, "getRequestedPermissions") as List<String>
+                val requestedPermissions = XposedHelpers.callMethod(pkg, "getRequestedPermissions") as? List<*>
 
                 // com.android.server.pm.permission.DevicePermissionState 对象
                 val mState = XposedHelpers.getObjectField(pmsImpl, "mState")
@@ -136,7 +135,7 @@ class PermissionManagerServiceHook34(classLoader: ClassLoader) : BaseSubHook(cla
                     val uidState = XposedHelpers.callMethod(userState, "getOrCreateUidState", appId)
 
                     for (permissionToGrant in permissionsToGrant) {
-                        if (!requestedPermissions.contains(permissionToGrant)) {
+                        if (requestedPermissions?.contains(permissionToGrant) != true) {
                             val granted = XposedHelpers.callMethod(
                                 uidState,
                                 "isPermissionGranted",

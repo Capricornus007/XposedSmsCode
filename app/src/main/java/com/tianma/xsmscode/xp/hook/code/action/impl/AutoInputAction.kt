@@ -122,9 +122,13 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
         return am?.runningAppProcesses
     }
 
-    @Suppress("DEPRECATION")
     private fun getRunningTasks(context: Context): List<ActivityManager.RunningTaskInfo>? {
         val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager?
-        return am?.getRunningTasks(10)
+        am ?: return null
+        return runCatching {
+            val method = ActivityManager::class.java.getMethod("getRunningTasks", Int::class.javaPrimitiveType)
+            val result = method.invoke(am, 10) as? List<*>
+            result?.filterIsInstance<ActivityManager.RunningTaskInfo>()
+        }.getOrNull()
     }
 }

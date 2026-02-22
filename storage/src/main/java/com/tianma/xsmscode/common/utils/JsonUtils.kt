@@ -1,7 +1,6 @@
 package com.tianma.xsmscode.common.utils
 
 import com.tianma.xsmscode.common.serialization.JsonConfig
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -68,9 +67,9 @@ object JsonUtils {
 
     @JvmStatic
     fun <T : Any> listFromJson(jsonString: String, entityClass: Class<T>): List<T> {
-        @Suppress("UNCHECKED_CAST")
-        val entitySerializer = serializer(entityClass) as KSerializer<T>
-        return json.decodeFromString(ListSerializer(entitySerializer), jsonString)
+        val entitySerializer = serializer(entityClass)
+        val decoded = json.decodeFromString(ListSerializer(entitySerializer), jsonString)
+        return decoded.map { entityClass.cast(it)!! }
     }
 
     @JvmStatic
@@ -82,8 +81,8 @@ object JsonUtils {
 
     @JvmStatic
     fun <T : Any> listToJson(list: List<T>, entityClass: Class<T>): String {
-        @Suppress("UNCHECKED_CAST")
-        val entitySerializer = serializer(entityClass) as KSerializer<T>
-        return json.encodeToString(ListSerializer(entitySerializer), list)
+        val entitySerializer = serializer(entityClass)
+        val checked = list.map { entityClass.cast(it) as Any }
+        return json.encodeToString(ListSerializer(entitySerializer), checked)
     }
 }

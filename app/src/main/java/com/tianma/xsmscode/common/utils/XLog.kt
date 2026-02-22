@@ -69,4 +69,7 @@ object XLog {
     fun setLogLevel(logLevel: Int) {
         sLogLevel = logLevel
     }
+
+    @JvmStatic
+    fun getLogLevel(): Int = sLogLevel
 }

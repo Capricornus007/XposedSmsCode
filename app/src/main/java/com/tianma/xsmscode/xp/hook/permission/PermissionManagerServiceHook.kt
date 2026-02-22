@@ -98,7 +98,6 @@ class PermissionManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(class
         return method
     }
 
-    @Suppress("UNCHECKED_CAST")
     private fun afterGrantPermissionsSinceP(param: XC_MethodHook.MethodHookParam) {
         // android.content.pm.PackageParser.Package 对象
         val pkg = param.args[0]
@@ -109,13 +108,13 @@ class PermissionManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(class
                 XLog.d("PackageName: %s", packageName)
                 val extras = XposedHelpers.getObjectField(pkg, "mExtras")
                 val permissionsState = XposedHelpers.callMethod(extras, "getPermissionsState")
-                val requestedPermissions = XposedHelpers.getObjectField(pkg, "requestedPermissions") as List<String>
+                val requestedPermissions = XposedHelpers.getObjectField(pkg, "requestedPermissions") as? List<*>
                 val settings = XposedHelpers.getObjectField(param.thisObject, "mSettings")
                 val permissions = XposedHelpers.getObjectField(settings, "mPermissions")
 
                 val permissionsToGrant = PACKAGE_PERMISSIONS[packageName] ?: continue
                 for (permissionToGrant in permissionsToGrant) {
-                    if (!requestedPermissions.contains(permissionToGrant)) {
+                    if (requestedPermissions?.contains(permissionToGrant) != true) {
                         val granted = XposedHelpers.callMethod(
                             permissionsState,
                             "hasInstallPermission",

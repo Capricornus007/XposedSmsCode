@@ -4,17 +4,19 @@ import android.content.ContentProvider
 import android.content.ContentValues
 import android.content.UriMatcher
 import android.database.Cursor
-import android.database.sqlite.SQLiteDatabase
+import android.database.MatrixCursor
 import android.net.Uri
 import com.github.tianma8023.xposed.smscode.BuildConfig
+import com.tianma.xsmscode.data.db.entity.AppInfo
+import com.tianma.xsmscode.data.db.entity.SmsCodeRule
+import com.tianma.xsmscode.data.db.entity.SmsMsg
 
 class DBProvider : ContentProvider() {
-    private var mDatabase: SQLiteDatabase? = null
+    private var mDbManager: DBManager? = null
 
     override fun onCreate(): Boolean {
         context?.let {
-            @Suppress("DEPRECATION")
-            mDatabase = DBManager.get(it).getSQLiteDatabase()
+            mDbManager = DBManager.get(it)
         }
         return true
     }
@@ -27,7 +29,15 @@ class DBProvider : ContentProvider() {
         val path: String
         when (uriType) {
             SMS_MSG_DIR -> {
-                id = mDatabase!!.insert(TABLE_SMS_MSG, null, values)
+                val msg = SmsMsg(
+                    sender = values?.getAsString("sender"),
+                    body = values?.getAsString("body"),
+                    date = values?.getAsLong("date") ?: 0L,
+                    company = values?.getAsString("company"),
+                    smsCode = values?.getAsString("sms_code"),
+                    packageName = values?.getAsString("package_name"),
+                )
+                id = mDbManager!!.addSmsMsg(msg)
                 path = "$PATH_SMS_MSG/$id"
             }
 
@@ -45,27 +55,23 @@ class DBProvider : ContentProvider() {
         sortOrder: String?,
     ): Cursor? {
         val uriType = sUriMatcher.match(uri)
-        val tableName: String = when (uriType) {
-            SMS_CODE_RULE_DIR -> TABLE_SMS_CODE_RULE
-            SMS_MSG_DIR -> TABLE_SMS_MSG
-            APP_INFO_DIR -> TABLE_APP_INFO
+        return when (uriType) {
+            SMS_CODE_RULE_DIR -> querySmsCodeRules(projection)
+            SMS_CODE_RULE_ID -> querySmsCodeRuleById(projection, uri)
+            SMS_MSG_DIR -> querySmsMsgs(projection, sortOrder)
+            SMS_MSG_ID -> querySmsMsgById(projection, uri)
+            APP_INFO_DIR -> queryAppInfo(projection, selection, selectionArgs)
+            APP_INFO_ITEM -> queryAppInfoByPackageName(projection, uri)
             else -> throw IllegalArgumentException("Unsupported URI: $uri")
         }
-        return mDatabase!!.query(
-            tableName,
-            projection,
-            selection,
-            selectionArgs,
-            null,
-            null,
-            sortOrder,
-        )
     }
 
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<String>?): Int {
         val uriType = sUriMatcher.match(uri)
         val rowsDeleted: Int = when (uriType) {
-            SMS_MSG_DIR -> mDatabase!!.delete(TABLE_SMS_MSG, selection, selectionArgs)
+            SMS_MSG_DIR -> deleteSmsMsg(selection, selectionArgs)
+            SMS_MSG_ID -> uri.lastPathSegment?.toLongOrNull()?.let { mDbManager!!.removeSmsMsgById(it) } ?: 0
+            APP_INFO_ITEM -> deleteAppInfoByPackageName(uri)
             else -> throw IllegalArgumentException("Unsupported URI: $uri")
         }
         if (rowsDeleted > 0) {
@@ -74,7 +80,243 @@ class DBProvider : ContentProvider() {
         return rowsDeleted
     }
 
-    override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<String>?): Int = 0
+    private fun deleteSmsMsg(selection: String?, selectionArgs: Array<String>?): Int {
+        if (selection == null || selectionArgs.isNullOrEmpty()) {
+            return 0
+        }
+        val normalized = selection.replace("`", "").trim().lowercase()
+        if (normalized == "_id = ?" || normalized == "id = ?") {
+            val id = selectionArgs.firstOrNull()?.toLongOrNull() ?: return 0
+            return mDbManager!!.removeSmsMsgById(id)
+        }
+        throw IllegalArgumentException("Unsupported delete selection: $selection")
+    }
+
+    private fun querySmsCodeRules(projection: Array<String>?): Cursor {
+        val rules = mDbManager!!.queryAllSmsCodeRules()
+        val columns = projection ?: arrayOf("company", "code_keyword", "code_regex", "_id")
+        val cursor = MatrixCursor(columns)
+        rules.forEach { rule ->
+            cursor.addRow(buildRow(columns) { column -> valueFromSmsCodeRule(rule, column) })
+        }
+        return cursor
+    }
+
+    private fun querySmsMsgs(projection: Array<String>?, sortOrder: String?): Cursor {
+        val rows = mDbManager!!.queryAllSmsMsg().let { list ->
+            when (sortOrder?.trim()?.lowercase()) {
+                "date asc" -> list.sortedBy { it.date }
+                "date desc", null, "" -> list.sortedByDescending { it.date }
+                else -> list
+            }
+        }
+        val columns = projection ?: arrayOf("_id", "sender", "body", "date", "company", "sms_code", "package_name")
+        val cursor = MatrixCursor(columns)
+        rows.forEach { msg ->
+            cursor.addRow(buildRow(columns) { column -> valueFromSmsMsg(msg, column) })
+        }
+        return cursor
+    }
+
+    private fun querySmsMsgById(projection: Array<String>?, uri: Uri): Cursor {
+        val id = uri.lastPathSegment?.toLongOrNull() ?: throw IllegalArgumentException("Invalid URI: $uri")
+        val columns = projection ?: arrayOf("_id", "sender", "body", "date", "company", "sms_code", "package_name")
+        val cursor = MatrixCursor(columns)
+        val msg = mDbManager!!.querySmsMsgById(id)
+        if (msg != null) {
+            cursor.addRow(buildRow(columns) { column -> valueFromSmsMsg(msg, column) })
+        }
+        return cursor
+    }
+
+    private fun querySmsCodeRuleById(projection: Array<String>?, uri: Uri): Cursor {
+        val id = uri.lastPathSegment?.toLongOrNull() ?: throw IllegalArgumentException("Invalid URI: $uri")
+        val columns = projection ?: arrayOf("company", "code_keyword", "code_regex", "_id")
+        val cursor = MatrixCursor(columns)
+        val rule = mDbManager!!.querySmsCodeRuleById(id)
+        if (rule != null) {
+            cursor.addRow(buildRow(columns) { column -> valueFromSmsCodeRule(rule, column) })
+        }
+        return cursor
+    }
+
+    private fun queryAppInfo(
+        projection: Array<String>?,
+        selection: String?,
+        selectionArgs: Array<String>?,
+    ): Cursor {
+        var rows = mDbManager!!.queryAllBlockedApps()
+        if (!selection.isNullOrBlank()) {
+            val normalized = selection.replace("`", "").trim().lowercase()
+            if (normalized == "blocked = ?" && !selectionArgs.isNullOrEmpty()) {
+                val blocked = selectionArgs[0] == "1" || selectionArgs[0].equals("true", ignoreCase = true)
+                rows = rows.filter { it.blocked == blocked }
+            }
+        }
+        val columns = projection ?: arrayOf("package_name", "label", "blocked")
+        val cursor = MatrixCursor(columns)
+        rows.forEach { app ->
+            cursor.addRow(buildRow(columns) { column -> valueFromAppInfo(app, column) })
+        }
+        return cursor
+    }
+
+    private fun queryAppInfoByPackageName(projection: Array<String>?, uri: Uri): Cursor {
+        val packageName = uri.lastPathSegment.orEmpty()
+        val columns = projection ?: arrayOf("package_name", "label", "blocked")
+        val cursor = MatrixCursor(columns)
+        if (packageName.isBlank()) {
+            return cursor
+        }
+        val app = mDbManager!!.queryAppInfoByPackageName(packageName)
+        if (app != null) {
+            cursor.addRow(buildRow(columns) { column -> valueFromAppInfo(app, column) })
+        }
+        return cursor
+    }
+
+    private fun buildRow(columns: Array<String>, resolver: (String) -> Any?): Array<Any?> =
+        Array(columns.size) { idx -> resolver(columns[idx]) }
+
+    private fun valueFromSmsCodeRule(rule: SmsCodeRule, column: String): Any? =
+        when (column) {
+            "_id", "id" -> rule.id
+            "company" -> rule.company
+            "code_keyword" -> rule.codeKeyword
+            "code_regex" -> rule.codeRegex
+            else -> null
+        }
+
+    private fun valueFromSmsMsg(msg: SmsMsg, column: String): Any? =
+        when (column) {
+            "_id", "id" -> msg.id
+            "sender" -> msg.sender
+            "body" -> msg.body
+            "date" -> msg.date
+            "company" -> msg.company
+            "sms_code" -> msg.smsCode
+            "package_name" -> msg.packageName
+            else -> null
+        }
+
+    private fun valueFromAppInfo(app: AppInfo, column: String): Any? =
+        when (column) {
+            "package_name" -> app.packageName
+            "label" -> app.label
+            "blocked" -> if (app.blocked) 1 else 0
+            else -> null
+        }
+
+    override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<String>?): Int {
+        val uriType = sUriMatcher.match(uri)
+        val rowsUpdated = when (uriType) {
+            SMS_MSG_DIR -> updateSmsMsg(values, selection, selectionArgs)
+            SMS_MSG_ID -> updateSmsMsgByUriId(uri, values)
+            APP_INFO_DIR -> updateAppInfo(values, selection, selectionArgs)
+            APP_INFO_ITEM -> updateAppInfoByUri(uri, values)
+            else -> 0
+        }
+        if (rowsUpdated > 0) {
+            context?.contentResolver?.notifyChange(uri, null)
+        }
+        return rowsUpdated
+    }
+
+    private fun updateSmsMsgByUriId(uri: Uri, values: ContentValues?): Int {
+        val id = uri.lastPathSegment?.toLongOrNull() ?: return 0
+        return updateSmsMsgById(id, values)
+    }
+
+    private fun updateSmsMsg(values: ContentValues?, selection: String?, selectionArgs: Array<String>?): Int {
+        if (selection.isNullOrBlank() || selectionArgs.isNullOrEmpty()) {
+            return 0
+        }
+        val normalized = selection.replace("`", "").trim().lowercase()
+        if (normalized == "_id = ?" || normalized == "id = ?") {
+            val id = selectionArgs.firstOrNull()?.toLongOrNull() ?: return 0
+            return updateSmsMsgById(id, values)
+        }
+        return 0
+    }
+
+    private fun updateSmsMsgById(id: Long, values: ContentValues?): Int {
+        val existing = mDbManager!!.querySmsMsgById(id) ?: return 0
+        val updated = existing.copy(
+            sender = values?.getAsString("sender") ?: existing.sender,
+            body = values?.getAsString("body") ?: existing.body,
+            date = values?.getAsLong("date") ?: existing.date,
+            company = values?.getAsString("company") ?: existing.company,
+            smsCode = values?.getAsString("sms_code") ?: existing.smsCode,
+            packageName = values?.getAsString("package_name") ?: existing.packageName,
+        )
+        return mDbManager!!.updateSmsMsg(updated)
+    }
+
+    private fun updateAppInfo(values: ContentValues?, selection: String?, selectionArgs: Array<String>?): Int {
+        if (selection.isNullOrBlank() || selectionArgs.isNullOrEmpty()) {
+            return 0
+        }
+        val normalized = selection.replace("`", "").trim().lowercase()
+        if (normalized != "package_name = ?") {
+            return 0
+        }
+        val packageName = selectionArgs.firstOrNull().orEmpty()
+        if (packageName.isBlank()) {
+            return 0
+        }
+        val existing = mDbManager!!.queryAppInfoByPackageName(packageName) ?: AppInfo(packageName = packageName)
+        val blocked = when {
+            values?.containsKey("blocked") == true -> {
+                val raw = values.get("blocked")
+                when (raw) {
+                    is Boolean -> raw
+                    is Number -> raw.toInt() != 0
+                    is String -> raw == "1" || raw.equals("true", ignoreCase = true)
+                    else -> existing.blocked
+                }
+            }
+            else -> existing.blocked
+        }
+        val label = when {
+            values?.containsKey("label") == true -> values.getAsString("label")
+            else -> existing.label
+        }
+        return mDbManager!!.upsertAppInfo(existing.copy(label = label, blocked = blocked))
+    }
+
+    private fun updateAppInfoByUri(uri: Uri, values: ContentValues?): Int {
+        val packageName = uri.lastPathSegment.orEmpty()
+        if (packageName.isBlank()) {
+            return 0
+        }
+        val existing = mDbManager!!.queryAppInfoByPackageName(packageName) ?: AppInfo(packageName = packageName)
+        val blocked = when {
+            values?.containsKey("blocked") == true -> {
+                val raw = values.get("blocked")
+                when (raw) {
+                    is Boolean -> raw
+                    is Number -> raw.toInt() != 0
+                    is String -> raw == "1" || raw.equals("true", ignoreCase = true)
+                    else -> existing.blocked
+                }
+            }
+            else -> existing.blocked
+        }
+        val label = when {
+            values?.containsKey("label") == true -> values.getAsString("label")
+            else -> existing.label
+        }
+        return mDbManager!!.upsertAppInfo(existing.copy(label = label, blocked = blocked))
+    }
+
+    private fun deleteAppInfoByPackageName(uri: Uri): Int {
+        val packageName = uri.lastPathSegment.orEmpty()
+        if (packageName.isBlank()) {
+            return 0
+        }
+        val app = mDbManager!!.queryAppInfoByPackageName(packageName) ?: return 0
+        return mDbManager!!.removeBlockedAppsByPackage(listOf(app.packageName))
+    }
 
     companion object {
         const val AUTHORITY = BuildConfig.APPLICATION_ID + ".db.provider"
@@ -96,10 +338,7 @@ class DBProvider : ContentProvider() {
         private const val SMS_CODE_RULE_DIR = 2
         private const val SMS_CODE_RULE_ID = 3
         private const val APP_INFO_DIR = 4
-        private const val APP_INFO_ID = 5
-        private const val TABLE_SMS_MSG = "sms_msg"
-        private const val TABLE_SMS_CODE_RULE = "sms_code_rule"
-        private const val TABLE_APP_INFO = "app_info"
+        private const val APP_INFO_ITEM = 5
         private val sUriMatcher: UriMatcher = UriMatcher(UriMatcher.NO_MATCH)
 
         init {
@@ -108,7 +347,7 @@ class DBProvider : ContentProvider() {
             sUriMatcher.addURI(AUTHORITY, PATH_SMS_CODE_RULE, SMS_CODE_RULE_DIR)
             sUriMatcher.addURI(AUTHORITY, "$PATH_SMS_CODE_RULE/#", SMS_CODE_RULE_ID)
             sUriMatcher.addURI(AUTHORITY, PATH_APP_INFO, APP_INFO_DIR)
-            sUriMatcher.addURI(AUTHORITY, "$PATH_APP_INFO/#", APP_INFO_ID)
+            sUriMatcher.addURI(AUTHORITY, "$PATH_APP_INFO/*", APP_INFO_ITEM)
         }
     }
 }

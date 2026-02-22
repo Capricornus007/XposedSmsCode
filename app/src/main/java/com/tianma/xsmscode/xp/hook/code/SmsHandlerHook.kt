@@ -48,14 +48,24 @@ class SmsHandlerHook : BaseHook() {
         XLog.i("Phone manufacturer: %s", Build.MANUFACTURER)
         XLog.i("Phone model: %s", Build.MODEL)
         XLog.i("Android version: %s", Build.VERSION.RELEASE)
-        @Suppress("DEPRECATION")
-        val xposedVersion = try {
-            XposedBridge.getXposedVersion()
-        } catch (ignored: Throwable) {
-            XposedBridge.XPOSED_BRIDGE_VERSION
+        val xposedVersion = resolveXposedVersion()
+        if (xposedVersion != null) {
+            XLog.i("Xposed bridge version: %d", xposedVersion)
+        } else {
+            XLog.i("Xposed bridge version: unknown")
         }
-        XLog.i("Xposed bridge version: %d", xposedVersion)
         XLog.i("SmsCode version: %s (%d)", BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE)
+    }
+
+    private fun resolveXposedVersion(): Int? {
+        return runCatching {
+            val method = XposedBridge::class.java.getMethod("getXposedVersion")
+            (method.invoke(null) as? Number)?.toInt()
+        }.getOrNull() ?: runCatching {
+            val field = XposedBridge::class.java.getDeclaredField("XPOSED_BRIDGE_VERSION")
+            field.isAccessible = true
+            (field.get(null) as? Number)?.toInt()
+        }.getOrNull()
     }
 
     private fun hookSmsHandler(classloader: ClassLoader) {
@@ -190,16 +200,20 @@ class SmsHandlerHook : BaseHook() {
         if (BuildConfig.DEBUG) {
             XLog.d("SmsHandlerHook: Received intent action: $action")
             intent.extras?.let { bundle ->
-                for (key in bundle.keySet()) {
-                    @Suppress("DEPRECATION")
-                    XLog.d("SmsHandlerHook: Extra[$key] = ${bundle.get(key)}")
-                }
+                XLog.d("SmsHandlerHook: Extra keys = %s", bundle.keySet().joinToString(","))
             }
         }
 
         if (Telephony.Sms.Intents.SMS_DELIVER_ACTION != action) {
             return
         }
+        val pduCount = getPduCount(intent)
+        XLog.w(
+            "Diag SMS_DELIVER intercepted: action=%s, pduCount=%d, extras=%s",
+            action,
+            pduCount,
+            intent.extras != null,
+        )
 
         val pluginContext = getPluginContext()
         val phoneContext = mPhoneContext
@@ -209,6 +223,11 @@ class SmsHandlerHook : BaseHook() {
         }
 
         val parseResult = CodeWorker(pluginContext, phoneContext, intent).parse()
+        if (parseResult == null) {
+            XLog.w("Diag parse result is null: no code matched or parse failed")
+        } else {
+            XLog.w("Diag parse result: blockSms=%s", parseResult.isBlockSms)
+        }
         if (parseResult != null) {
             if (parseResult.isBlockSms) {
                 XLog.d("Blocking code SMS...")
@@ -217,6 +236,15 @@ class SmsHandlerHook : BaseHook() {
                     param.result = null
                 }
             }
+        }
+    }
+
+    private fun getPduCount(intent: Intent): Int {
+        return try {
+            Telephony.Sms.Intents.getMessagesFromIntent(intent)?.size ?: -1
+        } catch (t: Throwable) {
+            XLog.w("Diag getPduCount failed: %s", t.message ?: "unknown")
+            -1
         }
     }
 

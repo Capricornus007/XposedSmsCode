@@ -32,6 +32,12 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
     private fun parseSmsMsg(): Bundle? {
         val intent = mSmsIntent ?: return null
         val smsMsg = SmsMsg.fromIntent(intent)
+        XLog.w(
+            "Diag SMS parsed from intent: senderPresent=%s, bodyLength=%d, timestamp=%d",
+            !smsMsg.sender.isNullOrBlank(),
+            smsMsg.body?.length ?: 0,
+            smsMsg.date,
+        )
         // Update the member variable of super class if possible, but it's val.
         // Actually, CallableAction should have var mSmsMsg or we use the local one.
         // Wait, CallableAction has @JvmField protected val mSmsMsg.
@@ -50,6 +56,7 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
         }
 
         if (TextUtils.isEmpty(sender) || TextUtils.isEmpty(msgBody)) {
+            XLog.w("Diag SMS parse aborted: sender/body is empty")
             return null
         }
 
@@ -61,6 +68,7 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
             )
         }
         if (TextUtils.isEmpty(smsCode)) { // isn't code message
+            XLog.w("Diag SMS parsed but no code matched")
             return null
         }
 
@@ -73,6 +81,11 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
             company = company,
             date = timestamp,
             packageName = SmsCodeUtils.findPackageNameByLabel(mPhoneContext, company),
+        )
+        XLog.w(
+            "Diag SMS code matched: companyPresent=%s, codeLength=%d",
+            !company.isNullOrBlank(),
+            smsCode.length,
         )
 
         val bundle = Bundle()

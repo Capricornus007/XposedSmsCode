@@ -73,7 +73,6 @@ class PackageManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(classLoa
         private const val CLASS_PACKAGE_MANAGER_SERVICE = "com.android.server.pm.PackageManagerService"
         private const val CLASS_PACKAGE_PARSER_PACKAGE = "android.content.pm.PackageParser.Package"
 
-        @Suppress("UNCHECKED_CAST")
         private fun grantPermissionsLPwSinceM(param: XC_MethodHook.MethodHookParam) {
             // API 23 (Android 6.0)
             val pkg = param.args[0]
@@ -84,13 +83,13 @@ class PackageManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(classLoa
                     XLog.d("PackageName: %s", packageName)
                     val extras = XposedHelpers.getObjectField(pkg, "mExtras")
                     val permissionsState = XposedHelpers.callMethod(extras, "getPermissionsState")
-                    val requestedPermissions = XposedHelpers.getObjectField(pkg, "requestedPermissions") as List<String>
+                    val requestedPermissions = XposedHelpers.getObjectField(pkg, "requestedPermissions") as? List<*>
                     val settings = XposedHelpers.getObjectField(param.thisObject, "mSettings")
                     val permissions = XposedHelpers.getObjectField(settings, "mPermissions")
 
                     val permissionsToGrant = PACKAGE_PERMISSIONS[packageName] ?: continue
                     for (permissionToGrant in permissionsToGrant) {
-                        if (!requestedPermissions.contains(permissionToGrant)) {
+                        if (requestedPermissions?.contains(permissionToGrant) != true) {
                             val granted = XposedHelpers.callMethod(
                                 permissionsState,
                                 "hasInstallPermission",
@@ -113,7 +112,6 @@ class PackageManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(classLoa
             }
         }
 
-        @Suppress("UNCHECKED_CAST")
         private fun grantPermissionsLPwSinceK(param: XC_MethodHook.MethodHookParam) {
             // API 19 (Android 4.4)
             val pkg = param.args[0]
@@ -126,15 +124,16 @@ class PackageManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(classLoa
                     val grantedPermissions = XposedHelpers.getObjectField(
                         extra,
                         "grantedPermissions",
-                    ) as MutableSet<String>
+                    )
                     val settings = XposedHelpers.getObjectField(param.thisObject, "mSettings")
                     val permissions = XposedHelpers.getObjectField(settings, "mPermissions")
 
                     val permissionsToGrant = PACKAGE_PERMISSIONS[packageName] ?: continue
                     for (permissionToGrant in permissionsToGrant) {
-                        if (!grantedPermissions.contains(permissionToGrant)) {
+                        val granted = (grantedPermissions as? Collection<*>)?.contains(permissionToGrant) == true
+                        if (!granted) {
                             val bpToGrant = XposedHelpers.callMethod(permissions, "get", permissionToGrant)
-                            grantedPermissions.add(permissionToGrant)
+                            XposedHelpers.callMethod(grantedPermissions, "add", permissionToGrant)
 
                             val gpGids = XposedHelpers.getObjectField(extra, "gids") as IntArray
                             val bpGids = XposedHelpers.getObjectField(bpToGrant, "gids") as IntArray

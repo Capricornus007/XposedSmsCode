@@ -1,7 +1,6 @@
 package com.tianma.xsmscode.data.db
 
 import android.content.Context
-import android.database.sqlite.SQLiteDatabase
 import com.tianma.xsmscode.data.db.dao.AppInfoDao
 import com.tianma.xsmscode.data.db.dao.SmsCodeRuleDao
 import com.tianma.xsmscode.data.db.dao.SmsMsgDao
@@ -20,18 +19,6 @@ class DBManager private constructor(context: Context) {
     private val mSmsCodeRuleDao: SmsCodeRuleDao = mDatabase.smsCodeRuleDao()
     private val mSmsMsgDao: SmsMsgDao = mDatabase.smsMsgDao()
     private val mAppInfoDao: AppInfoDao = mDatabase.appInfoDao()
-
-    @Deprecated(
-        "Use Room DAOs directly if possible. This returns a raw SQLiteDatabase for legacy ContentProvider support.",
-    )
-    fun getSQLiteDatabase(): SQLiteDatabase {
-        // Warning: Room uses SupportSQLiteDatabase, but DBProvider expects android.database.sqlite.SQLiteDatabase
-        // We will try to open the database file directly for raw SQL if needed,
-        // or refactor DBProvider to use SupportSQLiteDatabase if possible.
-        // For now, let's keep it compatible by opening the file.
-        val path = mDatabase.openHelper.writableDatabase.path ?: throw IllegalStateException("Database path is null")
-        return SQLiteDatabase.openOrCreateDatabase(path, null)
-    }
 
     suspend fun updateSmsCodeRuleSuspend(smsCodeRule: SmsCodeRule) {
         withContext(Dispatchers.IO) {
@@ -64,6 +51,8 @@ class DBManager private constructor(context: Context) {
     }
 
     fun queryAllSmsCodeRules(): List<SmsCodeRule> = mSmsCodeRuleDao.getAll()
+
+    fun querySmsCodeRuleById(id: Long): SmsCodeRule? = mSmsCodeRuleDao.getById(id)
 
     suspend fun queryAllSmsCodeRulesSuspend(): List<SmsCodeRule> = withContext(Dispatchers.IO) {
         mSmsCodeRuleDao.getAll()
@@ -100,9 +89,7 @@ class DBManager private constructor(context: Context) {
         }
     }
 
-    fun addSmsMsg(smsMsg: SmsMsg) {
-        mSmsMsgDao.insert(smsMsg)
-    }
+    fun addSmsMsg(smsMsg: SmsMsg): Long = mSmsMsgDao.insert(smsMsg)
 
     fun addSmsMsgList(smsMsgList: List<SmsMsg>) {
         mSmsMsgDao.insertAll(smsMsgList)
@@ -110,12 +97,29 @@ class DBManager private constructor(context: Context) {
 
     fun queryAllSmsMsg(): List<SmsMsg> = mSmsMsgDao.getAll()
 
+    fun querySmsMsgById(id: Long): SmsMsg? = mSmsMsgDao.getById(id)
+
+    fun updateSmsMsg(smsMsg: SmsMsg): Int {
+        val id = smsMsg.id ?: return 0
+        if (mSmsMsgDao.getById(id) == null) {
+            return 0
+        }
+        mSmsMsgDao.update(smsMsg)
+        return 1
+    }
+
     fun queryAllSmsMsgFlow(): Flow<List<SmsMsg>> = mSmsMsgDao.getAllFlow()
 
     fun queryAllSmsMsgCountFlow(): Flow<Long> = mSmsMsgDao.countFlow()
 
     fun removeSmsMsgList(smsMsgList: List<SmsMsg>) {
         mSmsMsgDao.deleteInTx(smsMsgList)
+    }
+
+    fun removeSmsMsgById(id: Long): Int {
+        val item = mSmsMsgDao.getById(id) ?: return 0
+        mSmsMsgDao.delete(item)
+        return 1
     }
 
     suspend fun removeSmsMsgListSuspend(smsMsgList: List<SmsMsg>) {
@@ -131,6 +135,20 @@ class DBManager private constructor(context: Context) {
     }
 
     fun queryAllBlockedApps(): List<AppInfo> = mAppInfoDao.getAll()
+
+    fun queryAppInfoByPackageName(packageName: String): AppInfo? = mAppInfoDao.getByPackageName(packageName)
+
+    fun upsertAppInfo(appInfo: AppInfo): Int {
+        mAppInfoDao.insert(appInfo)
+        return 1
+    }
+
+    fun removeBlockedAppsByPackage(packageNames: List<String>): Int {
+        if (packageNames.isEmpty()) {
+            return 0
+        }
+        return mAppInfoDao.deleteByPackageNames(packageNames)
+    }
 
     suspend fun queryAllBlockedAppsSuspend(): List<AppInfo> = withContext(Dispatchers.IO) { mAppInfoDao.getAll() }
 
@@ -161,15 +179,21 @@ class DBManager private constructor(context: Context) {
         }
     }
 
-    @Suppress("UNCHECKED_CAST")
     fun <T> insertOrReplaceInTx(entityClass: Class<T>, entities: List<T>) {
         if (entityClass == AppInfo::class.java) {
-            mAppInfoDao.insertAll(entities as List<AppInfo>)
+            mAppInfoDao.insertAll(castEntities(entities, AppInfo::class.java))
         } else if (entityClass == SmsCodeRule::class.java) {
-            mSmsCodeRuleDao.insertAll(entities as List<SmsCodeRule>)
+            mSmsCodeRuleDao.insertAll(castEntities(entities, SmsCodeRule::class.java))
         } else if (entityClass == SmsMsg::class.java) {
-            mSmsMsgDao.insertAll(entities as List<SmsMsg>)
+            mSmsMsgDao.insertAll(castEntities(entities, SmsMsg::class.java))
         }
+    }
+
+    private fun <T : Any> castEntities(entities: List<*>, clazz: Class<T>): List<T> {
+        if (entities.any { !clazz.isInstance(it) }) {
+            throw IllegalArgumentException("Entity list contains unexpected type for ${clazz.name}")
+        }
+        return entities.map { clazz.cast(it)!! }
     }
 
     suspend fun <T> insertOrReplaceInTxSuspend(entityClass: Class<T>, entities: List<T>) {

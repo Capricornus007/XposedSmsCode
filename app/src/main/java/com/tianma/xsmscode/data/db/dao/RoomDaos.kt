@@ -49,6 +49,9 @@ interface SmsMsgDao {
     @Query("SELECT * FROM sms_msg ORDER BY date DESC")
     fun getAll(): List<SmsMsg>
 
+    @Query("SELECT * FROM sms_msg WHERE id = :id LIMIT 1")
+    fun getById(id: Long): SmsMsg?
+
     @Query("SELECT * FROM sms_msg ORDER BY date DESC")
     fun getAllFlow(): Flow<List<SmsMsg>>
 
@@ -57,6 +60,9 @@ interface SmsMsgDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertAll(msgs: List<SmsMsg>)
+
+    @Update
+    fun update(msg: SmsMsg)
 
     @Query("DELETE FROM sms_msg")
     fun clearAll()
@@ -102,6 +108,9 @@ interface AppInfoDao {
 
     @Delete
     fun deleteInTx(appInfos: List<AppInfo>)
+
+    @Query("DELETE FROM app_info WHERE package_name IN (:packageNames)")
+    fun deleteByPackageNames(packageNames: List<String>): Int
 
     @Query("DELETE FROM app_info")
     fun clearAll()

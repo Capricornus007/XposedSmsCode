@@ -2,6 +2,8 @@ package com.tianma.xsmscode.common.utils
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -9,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.IntDef
+import androidx.core.content.pm.PackageInfoCompat
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.tianma8023.xposed.smscode.R
 import com.tianma.xsmscode.common.constant.Const
@@ -62,8 +65,8 @@ object PackageUtils {
     fun isPackageInstalled(context: Context, packageName: String): Boolean {
         val pm = context.packageManager
         return try {
-            val packageInfo = pm.getPackageInfo(packageName, 0)
-            packageInfo != null
+            getPackageInfoCompat(pm, packageName)
+            true
         } catch (ignored: PackageManager.NameNotFoundException) {
             false
         }
@@ -76,7 +79,7 @@ object PackageUtils {
     fun isPackageEnabled(context: Context, packageName: String): Boolean {
         val pm = context.packageManager
         return try {
-            val appInfo = pm.getApplicationInfo(packageName, 0)
+            val appInfo = getApplicationInfoCompat(pm, packageName)
             appInfo.enabled
         } catch (ignored: PackageManager.NameNotFoundException) {
             false
@@ -87,19 +90,30 @@ object PackageUtils {
     fun getPackageVersion(context: Context, packageName: String): Pair<String, Long>? {
         val pm = context.packageManager
         return try {
-            val packageInfo = pm.getPackageInfo(packageName, 0)
+            val packageInfo = getPackageInfoCompat(pm, packageName)
             val versionName = packageInfo.versionName ?: ""
-            val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                packageInfo.longVersionCode
-            } else {
-                @Suppress("DEPRECATION")
-                packageInfo.versionCode.toLong()
-            }
+            val versionCode = PackageInfoCompat.getLongVersionCode(packageInfo)
             versionName to versionCode
         } catch (ignored: PackageManager.NameNotFoundException) {
             null
         }
     }
+
+    private fun getPackageInfoCompat(pm: PackageManager, packageName: String): PackageInfo =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getPackageInfo(packageName, 0)
+        }
+
+    private fun getApplicationInfoCompat(pm: PackageManager, packageName: String): ApplicationInfo =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.getApplicationInfo(packageName, PackageManager.ApplicationInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getApplicationInfo(packageName, 0)
+        }
 
     @JvmStatic
     fun getLsposedModuleVersion(): String? {

@@ -117,7 +117,6 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
     /**
      * After a package is installed, check if it's a target and grant permissions.
      */
-    @Suppress("UNCHECKED_CAST")
     private fun afterOnPackageInstalled(param: XC_MethodHook.MethodHookParam) {
         val pkg = param.args[0]
         val packageName = XposedHelpers.callMethod(pkg, "getPackageName") as String

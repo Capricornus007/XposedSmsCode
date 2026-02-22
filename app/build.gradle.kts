@@ -199,9 +199,10 @@ androidComponents {
             val abi = output.filters.find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }?.identifier ?: "universal"
             // Use reflection or search for the property if outputFileName is unresolved
             try {
-                @Suppress("UNCHECKED_CAST")
-                val outputFileName = output.javaClass.getMethod("getOutputFileName").invoke(output) as org.gradle.api.provider.Property<String>
-                outputFileName.set(releaseApkName(vName, variant.buildType ?: "", abi))
+                val outputFileName = output.javaClass.getMethod("getOutputFileName").invoke(output)
+                outputFileName.javaClass
+                    .getMethod("set", Any::class.java)
+                    .invoke(outputFileName, releaseApkName(vName, variant.buildType ?: "", abi))
             } catch (e: Exception) {
                 // Ignore for now, build will fail if this is wrong
             }
