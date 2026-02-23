@@ -1,7 +1,7 @@
 package com.tianma.xsmscode.ui.app.base
 
 import android.app.Activity
-import android.view.Window
+import android.graphics.Color
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -19,15 +19,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowCompat
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowInsetsControllerCompat
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 
-fun applyEdgeToEdge(window: Window) {
-    WindowCompat.setDecorFitsSystemWindows(window, false)
+private const val LIGHT_NAV_SCRIM = 0xE6FFFFFF.toInt()
+private const val DARK_NAV_SCRIM = 0x801B1B1B.toInt()
+
+fun applyEdgeToEdge(activity: ComponentActivity) {
+    activity.enableEdgeToEdge(
+        statusBarStyle = SystemBarStyle.auto(
+            lightScrim = Color.TRANSPARENT,
+            darkScrim = Color.TRANSPARENT,
+        ),
+        navigationBarStyle = SystemBarStyle.auto(
+            lightScrim = LIGHT_NAV_SCRIM,
+            darkScrim = DARK_NAV_SCRIM,
+        ),
+    )
 }
 
 @Composable

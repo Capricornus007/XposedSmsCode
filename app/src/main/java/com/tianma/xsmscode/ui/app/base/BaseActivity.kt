@@ -10,6 +10,6 @@ abstract class BaseActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        applyEdgeToEdge(window)
+        applyEdgeToEdge(this)
     }
 }
