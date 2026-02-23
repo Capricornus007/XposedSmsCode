@@ -4,28 +4,26 @@
 
 ---
 
-## [v3.1.4] - 2026-02-21
+## [v3.1.5-beta.2] - 2026-02-23
 ### 修复 (Fixed)
-- 修复验证码测试弹窗在部分场景下无响应的问题（#80）。
-- 修复 Android 13 环境下自动输入相关 Hook 的兼容性问题（#78）。
-- 补齐设置页国际化文案，修复中文环境中模糊配置项回退英文的问题。
+- 修复 DataStore 在并发访问下可能创建重复活跃实例并触发 `FileStorage.createConnection` 崩溃的问题（#104）。
+- 修复 Android 36 系统 Hook 兼容性问题：改为方法集合匹配，避免 `NoSuchMethodError` 等签名漂移导致的 Hook 失败（#105）。
+- 修复 Android 13 下状态栏沉浸不完整问题，改为官方 `enableEdgeToEdge(SystemBarStyle...)` 实现（#106）。
 
 ### 功能与体验 (Features & UX)
-- 新增隐藏图标恢复能力与秘密代码/快捷方式入口（#79）。
-- README 结构调整：星图与下载按钮前置，并补充原始项目致谢与兼容性说明。
+- 调整通知相关设置：将 Toast 提示与状态栏通知放到同一分组，避免语义分散（#103）。
+- 优化通知文案，明确“状态栏通知（部分系统显示为电话服务）”与 Toast 的区别（#103）。
+- 将“标记为已读”暂时关闭并置灰，设置中明确当前不可用（#103）。
+- 完成一轮 M3 Expressive 一致性优化：记录详情动作区升级、对话框 ButtonGroup 语义统一、加载指示器 token 收敛（#100/#101/#102）。
 
-### 构建与 CI (Build & CI)
-- 发布流程切换为语义化标签触发（`vX.Y.Z`），修复旧标签格式导致的触发/命名问题。
-- Draft Release 默认内置 Google Play / GitHub 下载按钮（本仓库与 Xposed 模块仓库同步）。
-- 新增 README 徽章自动同步工作流，并补充提交活跃度/贡献者等徽章。
-- 调整 Gradle Wrapper 定时更新策略，优化自动更新时效。
-- 升级到 `versionCode 87` / `versionName 3.1.4`。
+### 构建与发布 (Build & Release)
+- 升级到 `versionCode 89` / `versionName 3.1.5-beta.2`。
 
-> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.1.3...v3.1.4
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.1.5-beta...v3.1.5-beta.2
 
 ---
 
-## [v3.1.5] - 2026-02-23
+## [v3.1.5-beta] - 2026-02-23
 ### 修复 (Fixed)
 - 修复短信拦截链路在进程回收场景下的稳定性问题（#81）。
 - 修复短信删除在部分系统短信数据库通路中的失效问题（#85）。
@@ -48,7 +46,28 @@
 - 例行更新 Gradle Wrapper 夜版工具链（#97）。
 - 升级到 `versionCode 88` / `versionName 3.1.5`。
 
-> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.1.4...v3.1.5
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.1.4...v3.1.5-beta
+
+---
+
+## [v3.1.4] - 2026-02-21
+### 修复 (Fixed)
+- 修复验证码测试弹窗在部分场景下无响应的问题（#80）。
+- 修复 Android 13 环境下自动输入相关 Hook 的兼容性问题（#78）。
+- 补齐设置页国际化文案，修复中文环境中模糊配置项回退英文的问题。
+
+### 功能与体验 (Features & UX)
+- 新增隐藏图标恢复能力与秘密代码/快捷方式入口（#79）。
+- README 结构调整：星图与下载按钮前置，并补充原始项目致谢与兼容性说明。
+
+### 构建与 CI (Build & CI)
+- 发布流程切换为语义化标签触发（`vX.Y.Z`），修复旧标签格式导致的触发/命名问题。
+- Draft Release 默认内置 Google Play / GitHub 下载按钮（本仓库与 Xposed 模块仓库同步）。
+- 新增 README 徽章自动同步工作流，并补充提交活跃度/贡献者等徽章。
+- 调整 Gradle Wrapper 定时更新策略，优化自动更新时效。
+- 升级到 `versionCode 87` / `versionName 3.1.4`。
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.1.3...v3.1.4
 
 ---
 
