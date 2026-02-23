@@ -24,12 +24,13 @@ object AppPreferencesDataStore {
     @Volatile
     private var INSTANCE: DataStore<Preferences>? = null
 
-    private fun getInstance(context: Context): DataStore<Preferences> = INSTANCE ?: synchronized(this) {
-        val instance = PreferenceDataStoreFactory.create {
-            File(context.dataDir, "datastore/$DATASTORE_FILE_NAME")
+    private fun getInstance(context: Context): DataStore<Preferences> {
+        INSTANCE?.let { return it }
+        return synchronized(this) {
+            INSTANCE ?: PreferenceDataStoreFactory.create {
+                File(context.applicationContext.dataDir, "datastore/$DATASTORE_FILE_NAME")
+            }.also { INSTANCE = it }
         }
-        INSTANCE = instance
-        instance
     }
 
     private fun getDataStoreFile(context: Context): File = File(context.dataDir, "datastore/$DATASTORE_FILE_NAME")
