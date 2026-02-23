@@ -37,6 +37,9 @@ class SystemInputInjectorHook : BaseHook() {
     @Volatile
     private var mainHandler: Handler? = null
 
+    @Volatile
+    private var amsSystemReadyHooked = false
+
     override fun hookInitZygote(): Boolean = true
 
     override fun initZygote(startupParam: de.robv.android.xposed.IXposedHookZygoteInit.StartupParam) {
@@ -98,26 +101,49 @@ class SystemInputInjectorHook : BaseHook() {
             XLog.w("Failed to get system context in onLoadPackage: ${t.message}")
         }
 
-        // Attempt 2: Hook ActivityManagerService.systemReady as fallback
+        hookAmsSystemReadyFallback(lpparam.classLoader)
+    }
+
+    private fun hookAmsSystemReadyFallback(classLoader: ClassLoader?) {
+        if (amsSystemReadyHooked) return
         try {
-            XposedHelpers.findAndHookMethod(
-                "com.android.server.am.ActivityManagerService",
-                lpparam.classLoader,
-                "systemReady",
-                object : XC_MethodHook() {
-                    override fun afterHookedMethod(param: MethodHookParam) {
-                        if (receiverRegistered) return
-                        XLog.i("XSmsCode: ActivityManagerService.systemReady hook triggered")
-                        val context = XposedHelpers.getObjectField(param.thisObject, "mContext") as? Context
-                        if (context != null) {
-                            scheduleRegister(context)
+            val amsClass = XposedHelpers.findClass("com.android.server.am.ActivityManagerService", classLoader)
+            val methods = amsClass.declaredMethods.filter { it.name == "systemReady" }
+            if (methods.isEmpty()) {
+                XLog.w("SystemInputInjectorHook: no ActivityManagerService.systemReady method found, skip fallback hook")
+                return
+            }
+            methods.forEach { method ->
+                XposedBridge.hookMethod(
+                    method,
+                    object : XC_MethodHook() {
+                        override fun afterHookedMethod(param: MethodHookParam) {
+                            if (receiverRegistered) return
+                            XLog.i("XSmsCode: ActivityManagerService.systemReady hook triggered")
+                            val context = resolveSystemContext(param.thisObject)
+                            if (context != null) {
+                                scheduleRegister(context)
+                            }
                         }
-                    }
-                }
-            )
-            XLog.w("SystemInputInjectorHook: hooked ActivityManagerService.systemReady as fallback")
+                    },
+                )
+            }
+            amsSystemReadyHooked = true
+            XLog.w("SystemInputInjectorHook: hooked ActivityManagerService.systemReady overloads as fallback")
         } catch (t: Throwable) {
-            XLog.e("SystemInputInjectorHook: failed to hook AMS.systemReady", t)
+            XLog.e("SystemInputInjectorHook: failed to hook AMS.systemReady overloads", t)
+        }
+    }
+
+    private fun resolveSystemContext(systemService: Any): Context? {
+        return try {
+            XposedHelpers.getObjectField(systemService, "mContext") as? Context
+        } catch (_: Throwable) {
+            try {
+                XposedHelpers.getObjectField(systemService, "mSystemContext") as? Context
+            } catch (_: Throwable) {
+                null
+            }
         }
     }
 

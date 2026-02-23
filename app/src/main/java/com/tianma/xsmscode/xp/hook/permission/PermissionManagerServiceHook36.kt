@@ -46,21 +46,22 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
     private fun hookOnSystemReady() {
         XLog.d("Hooking onSystemReady() for Android 36+")
         val pmsClass = XposedHelpers.findClass(CLASS_PMS, mClassLoader)
-        val method = XposedHelpers.findMethodExactIfExists(pmsClass, "onSystemReady")
-        if (method == null) {
-            XLog.e("Cannot find onSystemReady in PermissionManagerService")
+        val methods = pmsClass.declaredMethods.filter { it.name == "onSystemReady" || it.name == "systemReady" }
+        if (methods.isEmpty()) {
+            XLog.w("Cannot find onSystemReady/systemReady in PermissionManagerService")
             return
         }
-
-        XposedBridge.hookMethod(
-            method,
-            object : MethodHookWrapper() {
-                @Throws(Throwable::class)
-                override fun after(param: MethodHookParam) {
-                    grantAllTargetPermissions(param.thisObject)
-                }
-            },
-        )
+        methods.forEach { method ->
+            XposedBridge.hookMethod(
+                method,
+                object : MethodHookWrapper() {
+                    @Throws(Throwable::class)
+                    override fun after(param: MethodHookParam) {
+                        grantAllTargetPermissions(param.thisObject)
+                    }
+                },
+            )
+        }
     }
 
     /**
@@ -70,28 +71,26 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
     private fun hookOnPackageInstalled() {
         XLog.d("Hooking onPackageInstalled() for Android 36+")
         val pmsClass = XposedHelpers.findClass(CLASS_PMS, mClassLoader)
-        val androidPackageClass = XposedHelpers.findClass(CLASS_ANDROID_PACKAGE, mClassLoader)
-
-        val method = pmsClass.declaredMethods.firstOrNull {
-            it.name == "onPackageInstalled" &&
-                it.parameterTypes.isNotEmpty() &&
-                it.parameterTypes[0] == androidPackageClass
+        val methods = pmsClass.declaredMethods.filter { method ->
+            method.name in PACKAGE_INSTALL_CALLBACK_NAMES &&
+                method.parameterTypes.isNotEmpty() &&
+                method.parameterTypes.any { it.name == CLASS_ANDROID_PACKAGE || it.name.contains("AndroidPackage") }
         }
-
-        if (method == null) {
-            XLog.w("Cannot find onPackageInstalled in PermissionManagerService")
+        if (methods.isEmpty()) {
+            XLog.w("Cannot find package-installed callback in PermissionManagerService")
             return
         }
-
-        XposedBridge.hookMethod(
-            method,
-            object : MethodHookWrapper() {
-                @Throws(Throwable::class)
-                override fun after(param: MethodHookParam) {
-                    afterOnPackageInstalled(param)
-                }
-            },
-        )
+        methods.forEach { method ->
+            XposedBridge.hookMethod(
+                method,
+                object : MethodHookWrapper() {
+                    @Throws(Throwable::class)
+                    override fun after(param: MethodHookParam) {
+                        afterOnPackageInstalled(param)
+                    }
+                },
+            )
+        }
     }
 
     /**
@@ -118,21 +117,9 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
      * After a package is installed, check if it's a target and grant permissions.
      */
     private fun afterOnPackageInstalled(param: XC_MethodHook.MethodHookParam) {
-        val pkg = param.args[0]
-        val packageName = XposedHelpers.callMethod(pkg, "getPackageName") as String
-
+        val packageName = resolvePackageName(param.args) ?: return
         val permissions = PACKAGE_PERMISSIONS[packageName] ?: return
-        if (param.args.size < 4) {
-            XLog.w("onPackageInstalled: args size < 4")
-            return
-        }
-
-        // param.args[3] = rawUserId
-        val rawUserId = param.args[3] as? Int
-        if (rawUserId == null) {
-            XLog.w("onPackageInstalled: args[3] is not Int")
-            return
-        }
+        val rawUserId = resolveRawUserId(param.args)
         val pms = param.thisObject
 
         val userIds = if (rawUserId == USER_ALL) {
@@ -149,6 +136,39 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
         for (userId in userIds) {
             grantPermissionsForPackage(pms, packageName, permissions, userId)
         }
+    }
+
+    private fun resolvePackageName(args: Array<Any?>): String? {
+        for (arg in args) {
+            if (arg == null) continue
+            val pkgName = try {
+                XposedHelpers.callMethod(arg, "getPackageName") as? String
+            } catch (_: Throwable) {
+                null
+            }
+            if (!pkgName.isNullOrEmpty()) {
+                return pkgName
+            }
+        }
+        XLog.w("onPackageInstalled: cannot resolve package name from args")
+        return null
+    }
+
+    private fun resolveRawUserId(args: Array<Any?>): Int {
+        var candidate: Int? = null
+        args.forEach { arg ->
+            when (arg) {
+                is Int -> candidate = arg
+                is UserHandle -> {
+                    candidate = try {
+                        XposedHelpers.callMethod(arg, "getIdentifier") as Int
+                    } catch (_: Throwable) {
+                        null
+                    }
+                }
+            }
+        }
+        return candidate ?: 0
     }
 
     /**
@@ -223,6 +243,10 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
             "com.android.server.pm.permission.PermissionManagerService"
         private const val CLASS_ANDROID_PACKAGE =
             "com.android.server.pm.pkg.AndroidPackage"
+        private val PACKAGE_INSTALL_CALLBACK_NAMES = setOf(
+            "onPackageInstalled",
+            "onPackageAdded",
+        )
         // VirtualDeviceManager.PERSISTENT_DEVICE_ID_DEFAULT
         private const val PERSISTENT_DEVICE_ID_DEFAULT = "default:0"
         private const val USER_ALL = -1
