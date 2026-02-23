@@ -39,8 +39,8 @@
 
     <!-- preferences sms code -->
     <string name="pref_sms_code_title">SMS Code</string>
-    <string name="pref_show_toast_title">Show toast</string>
-    <string name="pref_show_toast_summary">Show toast when the SMS code is copied</string>
+    <string name="pref_show_toast_title">Show toast hint</string>
+    <string name="pref_show_toast_summary">Show a toast hint when an SMS code is extracted</string>
     <string name="pref_copy_to_clipboard_title">Copy to clipboard</string>
     <string name="pref_copy_to_clipboard_summary">Copy code to clipboard if it\'s extracted</string>
     <string name="pref_block_sms_title">Block code SMS</string>
@@ -63,8 +63,8 @@
 
     <!-- preference code notification -->
     <string name="pref_notification_title">Notification</string>
-    <string name="pref_show_code_notification_title">Show notification</string>
-    <string name="pref_show_code_notification_summary">Show notification when the SMS code is extracted</string>
+    <string name="pref_show_code_notification_title">Show status bar notification</string>
+    <string name="pref_show_code_notification_summary">Show a status bar notification when an SMS code is extracted (some systems may label it as Phone Services)</string>
     <string name="pref_auto_cancel_notification_title">Auto cancel notification</string>
     <string name="pref_auto_cancel_notification_summary">Auto cancel SMS code notification</string>
     <!-- notification retention time -->
@@ -139,7 +139,7 @@
     <!-- preference experimental -->
     <string name="pref_experimental_title">Experimental</string>
     <string name="pref_mark_as_read_title">Mark as read</string>
-    <string name="pref_mark_as_read_summary">Mark code SMS as read if extract succeed</string>
+    <string name="pref_mark_as_read_summary">Currently unavailable (temporarily disabled)</string>
     <string name="pref_delete_sms_title">Delete SMS</string>
     <string name="pref_delete_sms_summary">Warning! Code SMS will be deleted if extract succeed</string>
     <!-- preference experimental end -->

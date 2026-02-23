@@ -167,6 +167,11 @@ fun ComposeSettingsScreen(
         reloadSettingsData()
     }
 
+    LaunchedEffect(Unit) {
+        AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_MARK_AS_READ, false)
+        AppPreferencesDataStore.syncToSharedPrefs(context)
+    }
+
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
             isActivated = ModuleUtils.isModuleEnabled() || ModuleActivationStore.isActivatedRecently(context)
@@ -377,13 +382,6 @@ fun ComposeSettingsScreen(
 
             SectionHeader(text = stringResource(id = R.string.pref_sms_code_title))
             SwitchItem(
-                title = stringResource(id = R.string.pref_show_toast_title),
-                summary = stringResource(id = R.string.pref_show_toast_summary),
-                key = PrefConst.KEY_SHOW_TOAST,
-                defaultValue = true,
-                onSaved = markPrefsSaved,
-            )
-            SwitchItem(
                 title = stringResource(id = R.string.pref_copy_to_clipboard_title),
                 summary = stringResource(id = R.string.pref_copy_to_clipboard_summary),
                 key = PrefConst.KEY_COPY_TO_CLIPBOARD,
@@ -402,11 +400,14 @@ fun ComposeSettingsScreen(
             HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
 
             SectionHeader(text = stringResource(id = R.string.pref_experimental_title))
+            val markAsReadState = remember { mutableStateOf(false) }
             SwitchItem(
                 title = stringResource(id = R.string.pref_mark_as_read_title),
                 summary = stringResource(id = R.string.pref_mark_as_read_summary),
                 key = PrefConst.KEY_MARK_AS_READ,
                 defaultValue = false,
+                stateOverride = markAsReadState,
+                enabled = false,
                 onSaved = markPrefsSaved,
             )
             SwitchItem(
@@ -451,6 +452,13 @@ fun ComposeSettingsScreen(
             HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
 
             SectionHeader(text = stringResource(id = R.string.pref_notification_title))
+            SwitchItem(
+                title = stringResource(id = R.string.pref_show_toast_title),
+                summary = stringResource(id = R.string.pref_show_toast_summary),
+                key = PrefConst.KEY_SHOW_TOAST,
+                defaultValue = true,
+                onSaved = markPrefsSaved,
+            )
             SwitchItem(
                 title = stringResource(id = R.string.pref_show_code_notification_title),
                 summary = stringResource(id = R.string.pref_show_code_notification_summary),
@@ -897,6 +905,7 @@ fun SwitchItem(
     defaultValue: Boolean,
     modifier: Modifier = Modifier,
     stateOverride: MutableState<Boolean>? = null,
+    enabled: Boolean = true,
     onToggle: ((Boolean) -> Unit)? = null,
     onSaved: (() -> Unit)? = null,
 ) {
@@ -905,6 +914,7 @@ fun SwitchItem(
     val checkedState = stateOverride ?: rememberPrefBoolean(key, defaultValue)
 
     fun toggle(checked: Boolean) {
+        if (!enabled) return
         checkedState.value = checked
         scope.launch {
             AppPreferencesDataStore.setBoolean(context, key, checked)
@@ -928,9 +938,13 @@ fun SwitchItem(
             null
         },
         trailingContent = {
-            Switch(checked = checkedState.value, onCheckedChange = { toggle(it) })
+            Switch(
+                checked = checkedState.value,
+                onCheckedChange = { toggle(it) },
+                enabled = enabled,
+            )
         },
-        modifier = modifier.clickable { toggle(!checkedState.value) },
+        modifier = modifier.clickable(enabled = enabled) { toggle(!checkedState.value) },
     )
 }
 

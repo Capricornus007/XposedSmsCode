@@ -39,8 +39,8 @@
 
     <!-- preferences sms code -->
     <string name="pref_sms_code_title">驗證碼</string>
-    <string name="pref_show_toast_title">顯示快顯訊息</string>
-    <string name="pref_show_toast_summary">擷取到驗證碼時顯示快顯訊息</string>
+    <string name="pref_show_toast_title">顯示 Toast 提示</string>
+    <string name="pref_show_toast_summary">擷取到驗證碼時顯示 Toast 提示</string>
     <string name="pref_copy_to_clipboard_title">複製到剪貼簿</string>
     <string name="pref_copy_to_clipboard_summary">擷取成功後將驗證碼複製到剪貼簿</string>
     <string name="pref_block_sms_title">攔截驗證碼簡訊</string>
@@ -63,8 +63,8 @@
 
     <!-- preference code notification -->
     <string name="pref_notification_title">通知</string>
-    <string name="pref_show_code_notification_title">顯示通知</string>
-    <string name="pref_show_code_notification_summary">擷取到驗證碼時顯示通知</string>
+    <string name="pref_show_code_notification_title">顯示狀態列通知</string>
+    <string name="pref_show_code_notification_summary">擷取到驗證碼時顯示狀態列通知（部分系統顯示為電話服務）</string>
     <string name="pref_auto_cancel_notification_title">自動取消通知</string>
     <string name="pref_auto_cancel_notification_summary">自動取消驗證碼通知</string>
     <!-- notification retention time -->
@@ -140,7 +140,7 @@
     <!-- preference experimental -->
     <string name="pref_experimental_title">實驗性功能</string>
     <string name="pref_mark_as_read_title">標記為已讀</string>
-    <string name="pref_mark_as_read_summary">將驗證碼簡訊標記為已讀</string>
+    <string name="pref_mark_as_read_summary">目前不可用（暫時關閉）</string>
     <string name="pref_delete_sms_title">簡訊刪除</string>
     <string name="pref_delete_sms_summary">警告：擷取成功后驗證碼簡訊將被刪除</string>
     <!-- preference experimental end -->
