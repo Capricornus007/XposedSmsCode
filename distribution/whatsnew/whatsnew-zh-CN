@@ -1,5 +1,5 @@
 - 修复：DataStore 并发访问偶发崩溃（`FileStorage.createConnection`），补齐单例并发保护（#104）
-- 修复：Android 36 Hook 兼容，避免 `AMS/PMS` 签名变化导致的 Hook 失败（#105）
+- 修复：Android 16 Hook 兼容，避免 `AMS/PMS` 签名变化导致的 Hook 失败（#105）
 - 修复：Android 13 状态栏沉浸效果，改为官方 `enableEdgeToEdge` 实现（#106）
 - 优化：统一通知相关设置分组与命名，Toast 与状态栏通知放到同一分组（#103）
 - 调整：`标记为已读` 暂时关闭并置灰，设置中明确当前不可用（#103）

@@ -7,7 +7,7 @@
 ## [v3.1.5-beta.2] - 2026-02-23
 ### 修复 (Fixed)
 - 修复 DataStore 在并发访问下可能创建重复活跃实例并触发 `FileStorage.createConnection` 崩溃的问题（#104）。
-- 修复 Android 36 系统 Hook 兼容性问题：改为方法集合匹配，避免 `NoSuchMethodError` 等签名漂移导致的 Hook 失败（#105）。
+- 修复 Android 16 系统 Hook 兼容性问题：改为方法集合匹配，避免 `NoSuchMethodError` 等签名漂移导致的 Hook 失败（#105）。
 - 修复 Android 13 下状态栏沉浸不完整问题，改为官方 `enableEdgeToEdge(SystemBarStyle...)` 实现（#106）。
 
 ### 功能与体验 (Features & UX)
