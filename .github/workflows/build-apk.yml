@@ -10,8 +10,24 @@ permissions:
   contents: read
 
 jobs:
+  validate-release:
+    name: Validate Release Metadata
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate release notes and tag/version consistency
+        run: |
+          chmod +x scripts/check_release_guard.sh
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            scripts/check_release_guard.sh "${GITHUB_REF_NAME}"
+          else
+            scripts/check_release_guard.sh
+          fi
+
   build-apk:
     name: Build APKs
+    needs: [validate-release]
     runs-on: ubuntu-latest
     env:
       HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
@@ -55,6 +71,7 @@ jobs:
 
   build-aab:
     name: Build Bundle
+    needs: [validate-release]
     runs-on: ubuntu-latest
     env:
       HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
