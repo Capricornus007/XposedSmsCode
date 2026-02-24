@@ -46,7 +46,8 @@ object SmsCodeUtils {
         }
     }
 
-    private suspend fun loadCodeKeywordsBySP(context: Context): String? = SPUtils.getSMSCodeKeywords(context)
+    // Hook side should avoid direct DataStore reads because createPackageContext/applicationContext can be unstable.
+    private suspend fun loadCodeKeywordsBySP(context: Context): String? = PrefsReader.getSMSCodeKeywords(context)
 
     /**
      * 解析文本中的验证码并返回，如果不存在返回空字符

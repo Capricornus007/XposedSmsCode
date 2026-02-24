@@ -28,7 +28,9 @@ object AppPreferencesDataStore {
         INSTANCE?.let { return it }
         return synchronized(this) {
             INSTANCE ?: PreferenceDataStoreFactory.create {
-                File(context.applicationContext.dataDir, "datastore/$DATASTORE_FILE_NAME")
+                // In Xposed/createPackageContext scenarios applicationContext may be null.
+                val safeContext = context.applicationContext ?: context
+                File(safeContext.dataDir, "datastore/$DATASTORE_FILE_NAME")
             }.also { INSTANCE = it }
         }
     }

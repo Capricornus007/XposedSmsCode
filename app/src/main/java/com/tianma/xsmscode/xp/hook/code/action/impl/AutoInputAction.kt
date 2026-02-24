@@ -3,6 +3,7 @@ package com.tianma.xsmscode.xp.hook.code.action.impl
 import android.app.ActivityManager
 import android.content.Context
 import android.os.Bundle
+import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBProvider
 import com.tianma.xsmscode.data.db.entity.AppInfo
@@ -34,8 +35,7 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
     @Suppress("TooGenericExceptionCaught")
     private fun autoInputCode(code: String?) {
         try {
-            val autoEnter = mPluginContext.getSharedPreferences("xposed_prefs", Context.MODE_PRIVATE)
-                .getBoolean(com.tianma.xsmscode.common.constant.PrefConst.KEY_ENABLE_AUTO_ENTER_CODE, false)
+            val autoEnter = PrefsReader.autoEnterCodeEnabled(mPluginContext)
             InputHelper.sendText(mPhoneContext, code, autoEnter)
             XLog.d("Auto input code succeed, autoEnter: $autoEnter")
         } catch (throwable: Throwable) {

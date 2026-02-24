@@ -1,14 +1,27 @@
 package com.tianma.xsmscode.common.utils
 
+import android.content.SharedPreferences
 import android.content.Context
 import com.tianma.xsmscode.common.constant.PrefConst
 
 object PrefsReader {
-    private fun getSharedPrefs(context: Context) = context.getSharedPreferences("xposed_prefs", Context.MODE_PRIVATE)
+    private const val PREFS_NAME = "xposed_prefs"
+
+    private fun getSharedPrefs(context: Context): SharedPreferences? {
+        return runCatching {
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        }.getOrElse {
+            // CE storage may be unavailable before user unlock; fallback to DP storage context.
+            runCatching {
+                context.createDeviceProtectedStorageContext()
+                    .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            }.getOrNull()
+        }
+    }
 
     private fun getBooleanViaSharedPrefs(context: Context, key: String, defaultValue: Boolean): Boolean {
         return try {
-            getSharedPrefs(context).getBoolean(key, defaultValue)
+            getSharedPrefs(context)?.getBoolean(key, defaultValue) ?: defaultValue
         } catch (t: Throwable) {
             XLog.w("PrefsReader: sharedPrefs boolean '%s' failed, default=%s", key, defaultValue, t)
             defaultValue
@@ -17,7 +30,7 @@ object PrefsReader {
 
     private fun getStringViaSharedPrefs(context: Context, key: String, defaultValue: String): String {
         return try {
-            getSharedPrefs(context).getString(key, defaultValue) ?: defaultValue
+            getSharedPrefs(context)?.getString(key, defaultValue) ?: defaultValue
         } catch (t: Throwable) {
             XLog.w("PrefsReader: sharedPrefs string '%s' failed, default=%s", key, defaultValue, t)
             defaultValue
@@ -26,7 +39,7 @@ object PrefsReader {
 
     private fun getIntViaSharedPrefs(context: Context, key: String, defaultValue: Int): Int {
         return try {
-            when (val any = getSharedPrefs(context).all[key]) {
+            when (val any = getSharedPrefs(context)?.all?.get(key)) {
                 is Int -> any
                 is Long -> any.toInt()
                 is String -> any.toIntOrNull() ?: defaultValue
@@ -109,6 +122,12 @@ object PrefsReader {
     fun autoInputCodeEnabled(context: Context): Boolean {
         val defaultValue = true
         return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, defaultValue)
+    }
+
+    @JvmStatic
+    fun autoEnterCodeEnabled(context: Context): Boolean {
+        val defaultValue = false
+        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_AUTO_ENTER_CODE, defaultValue)
     }
 
     @JvmStatic
