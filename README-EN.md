@@ -24,7 +24,7 @@ An Xposed module which can recognize, parse SMS code and copy it to clipboard wh
 [中文版说明](./README.md)
 
 # Screenshots
-<img src="./art/en/01.png" width="180"/><img src="./art/en/02.png" width="180"/><img src="./art/en/03.png" width="180"/>
+<img src="./art/en/01.png" width="180"/><img src="./art/en/02.png" width="180"/><img src="./art/en/03.png" width="180"/><img src="./art/en/04.png" width="180"/>
 
 # Communication & Feedback
 - [Telegram Group](https://t.me/+NR2QaQ4dlEgxYmNl)
