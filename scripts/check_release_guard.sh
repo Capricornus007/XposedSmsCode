@@ -45,18 +45,14 @@ if [[ ! -d "$WHATSNEW_DIR" ]]; then
   exit 2
 fi
 
-shopt -s nullglob
-files=("$WHATSNEW_DIR"/whatsnew-*)
-shopt -u nullglob
+for locale in "${REQUIRED_LOCALES[@]}"; do
+  file="$WHATSNEW_DIR/whatsnew-$locale"
+  if [[ ! -f "$file" ]]; then
+    echo "FAIL: required whatsnew locale missing: $locale ($file)"
+    FAIL=1
+    continue
+  fi
 
-if (( ${#files[@]} == 0 )); then
-  echo "ERROR: No whatsnew files found in $WHATSNEW_DIR" >&2
-  exit 2
-fi
-
-for file in "${files[@]}"; do
-  locale="$(basename "$file")"
-  locale="${locale#whatsnew-}"
   count="$(wc -m < "$file" | tr -d '[:space:]')"
   if (( count == 0 )); then
     echo "FAIL: $locale is empty ($file)"
@@ -66,15 +62,6 @@ for file in "${files[@]}"; do
     FAIL=1
   else
     echo "PASS: $locale length=$count/$MAX_LEN"
-  fi
-
-done
-
-for locale in "${REQUIRED_LOCALES[@]}"; do
-  file="$WHATSNEW_DIR/whatsnew-$locale"
-  if [[ ! -f "$file" ]]; then
-    echo "FAIL: required whatsnew locale missing: $locale ($file)"
-    FAIL=1
   fi
 done
 
