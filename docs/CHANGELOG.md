@@ -4,6 +4,14 @@
 
 ---
 
+## [v3.1.5-beta.3] - 2026-02-24
+### 修复 (Fixed)
+- 修复 Hook 进程中因 `Context/dataDir` 与未解锁阶段 CE 偏好读取导致的验证码解析失败问题（#108）。
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.1.5-beta.2...v3.1.5-beta.3
+
+---
+
 ## [v3.1.5-beta.2] - 2026-02-23
 ### 修复 (Fixed)
 - 修复 DataStore 在并发访问下可能创建重复活跃实例并触发 `FileStorage.createConnection` 崩溃的问题（#104）。

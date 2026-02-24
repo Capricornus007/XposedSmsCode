@@ -1,3 +1,4 @@
+- 修复：Hook 进程中 `Context/dataDir` 与未解锁阶段 CE 偏好读取导致的验证码解析失败问题（#108）
 - 修复：DataStore 并发访问偶发崩溃（`FileStorage.createConnection`），补齐单例并发保护（#104）
 - 修复：Android 16 Hook 兼容，避免 `AMS/PMS` 签名变化导致的 Hook 失败（#105）
 - 修复：Android 13 状态栏沉浸效果，改为官方 `enableEdgeToEdge` 实现（#106）
