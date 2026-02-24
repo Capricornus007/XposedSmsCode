@@ -759,6 +759,7 @@ fun CodeRecordItem(
     modifier: Modifier = Modifier,
 ) {
     val dateFormatter = remember { SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()) }
+    val context = LocalContext.current
 
     Row(
         modifier = modifier
@@ -782,12 +783,33 @@ fun CodeRecordItem(
         }
 
         // Left Side: Icon + App Name
-        val displayLabel = (smsMsg.company ?: smsMsg.sender ?: stringResource(R.string.unknown)).trim().trim('【', '】', '[', ']')
-        val iconLabel = displayLabel.replace(Regex("[【】\\[\\]]"), "").trim()
+        val fallbackLabel = (smsMsg.company ?: smsMsg.sender ?: stringResource(R.string.unknown))
+            .trim()
+            .trim('【', '】', '[', ']')
+        val appLabel = remember(smsMsg.packageName) {
+            val pkg = smsMsg.packageName
+            if (pkg.isNullOrBlank()) {
+                null
+            } else {
+                runCatching {
+                    val pm = context.packageManager
+                    val appInfo = pm.getApplicationInfo(pkg, 0)
+                    pm.getApplicationLabel(appInfo).toString()
+                }.getOrNull()
+            }
+        }
+        val displayLabel = appLabel ?: fallbackLabel
+        val iconLabel = if (smsMsg.packageName.isNullOrBlank()) {
+            fallbackLabel.replace(Regex("[【】\\[\\]]"), "").trim()
+        } else {
+            null
+        }
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(end = 16.dp),
+            modifier = Modifier
+                .width(92.dp)
+                .padding(end = 16.dp),
         ) {
             AppIconImage(
                 packageName = smsMsg.packageName,
@@ -800,7 +822,9 @@ fun CodeRecordItem(
                 style = MaterialTheme.typography.labelMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.basicMarquee(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .basicMarquee(),
             )
         }
 

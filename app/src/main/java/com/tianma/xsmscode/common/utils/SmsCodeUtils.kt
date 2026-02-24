@@ -232,13 +232,8 @@ object SmsCodeUtils {
 
     @JvmStatic
     fun parseCompany(content: String): String {
-        val regex = "((?<=【)(.*?)(?=】))|((?<=\\[)(.*?)(?=\\]))"
-        val pattern = Pattern.compile(regex)
-        val matcher = pattern.matcher(content)
-        val possibleCompanies = mutableListOf<String>()
-        while (matcher.find()) {
-            possibleCompanies.add(matcher.group())
-        }
+        val possibleCompanies = parseCompanyCandidates(content)
+        if (possibleCompanies.isEmpty()) return ""
         val sb = StringBuilder()
         var needSpace = false
         for (company in possibleCompanies) {
@@ -250,6 +245,18 @@ object SmsCodeUtils {
             sb.append(company)
         }
         return sb.toString()
+    }
+
+    @JvmStatic
+    fun parseCompanyCandidates(content: String): List<String> {
+        val regex = "((?<=【)(.*?)(?=】))|((?<=\\[)(.*?)(?=\\]))"
+        val pattern = Pattern.compile(regex)
+        val matcher = pattern.matcher(content)
+        val possibleCompanies = mutableListOf<String>()
+        while (matcher.find()) {
+            possibleCompanies.add(matcher.group())
+        }
+        return possibleCompanies
     }
 
     fun findPackageNameByLabel(context: Context, label: String?): String? {

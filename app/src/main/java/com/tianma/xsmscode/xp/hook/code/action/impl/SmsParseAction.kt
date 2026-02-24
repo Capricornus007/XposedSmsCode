@@ -70,13 +70,31 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
 
         val timestamp = if (smsMsg.date > 0) smsMsg.date else System.currentTimeMillis()
 
-        // Update mSmsMsg using copy() to maintain immutability pattern
-        val company = SmsCodeUtils.parseCompany(msgBodyNotNull)
+        // Prefer the first bracket label that can be mapped to an installed package.
+        // Once package is resolved, keep that label only and do not append other tokens.
+        val companyCandidates = SmsCodeUtils.parseCompanyCandidates(msgBodyNotNull)
+            .map { it.trim().trim('【', '】', '[', ']') }
+            .filter { it.isNotBlank() }
+        var company = SmsCodeUtils.parseCompany(msgBodyNotNull)
+            .trim()
+            .trim('【', '】', '[', ']')
+        var resolvedPackageName: String? = null
+        for (candidate in companyCandidates) {
+            val pkg = SmsCodeUtils.findPackageNameByLabel(mPhoneContext, candidate)
+            if (!pkg.isNullOrBlank()) {
+                company = candidate
+                resolvedPackageName = pkg
+                break
+            }
+        }
+        if (resolvedPackageName.isNullOrBlank()) {
+            resolvedPackageName = SmsCodeUtils.findPackageNameByLabel(mPhoneContext, company)
+        }
         mSmsMsg = smsMsg.copy(
             smsCode = smsCode,
             company = company,
             date = timestamp,
-            packageName = SmsCodeUtils.findPackageNameByLabel(mPhoneContext, company),
+            packageName = resolvedPackageName,
         )
         XLog.w(
             "Diag SMS code matched: companyPresent=%s, codeLength=%d",
