@@ -125,10 +125,13 @@
     <string name="pref_sms_blacklist_action_block_title">阻斷黑名單簡訊廣播</string>
     <string name="pref_sms_blacklist_action_block_summary">命中後不再向應用分發簡訊廣播。</string>
     <string name="pref_sms_blacklist_numbers_title">黑名單號碼</string>
+    <string name="pref_sms_blacklist_numbers_summary">示例：10086</string>
     <string name="pref_sms_blacklist_prefixes_title">黑名單號段</string>
+    <string name="pref_sms_blacklist_prefixes_summary">示例：1069</string>
     <string name="pref_sms_blacklist_regex_title">黑名單正則規則</string>
-    <string name="pref_sms_blacklist_regex_hint">支援中英文 regex。示例：(?i)\\b(驗證碼|otp|verification|verify|pin|passcode|password|code|secure\\s*code)\\b</string>
+    <string name="pref_sms_blacklist_regex_hint">示例：(?i)\\b(退訂|黑名單)\\b</string>
     <string name="pref_sms_blacklist_content_title">黑名單內容規則</string>
+    <string name="pref_sms_blacklist_content_summary">示例：退訂回T</string>
     <string name="blacklist_not_set">未設定</string>
     <string name="blacklist_rule_count">已配置 %1$d 條規則</string>
     <string name="sms_content_hint">簡訊內容</string>

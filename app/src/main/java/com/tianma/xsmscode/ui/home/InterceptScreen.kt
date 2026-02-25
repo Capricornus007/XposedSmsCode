@@ -149,11 +149,19 @@ fun InterceptScreen(
                 )
                 Item(
                     title = stringResource(R.string.pref_sms_blacklist_numbers_title),
-                    summary = formatSummary(smsBlacklistNumbers),
+                    summary = buildString {
+                        append(formatSummary(smsBlacklistNumbers))
+                        append('\n')
+                        append(stringResource(R.string.pref_sms_blacklist_numbers_summary))
+                    },
                 ) { showSmsBlacklistNumbersDialog = true }
                 Item(
                     title = stringResource(R.string.pref_sms_blacklist_prefixes_title),
-                    summary = formatSummary(smsBlacklistPrefixes),
+                    summary = buildString {
+                        append(formatSummary(smsBlacklistPrefixes))
+                        append('\n')
+                        append(stringResource(R.string.pref_sms_blacklist_prefixes_summary))
+                    },
                 ) { showSmsBlacklistPrefixesDialog = true }
                 Item(
                     title = stringResource(R.string.pref_sms_blacklist_regex_title),
@@ -165,7 +173,11 @@ fun InterceptScreen(
                 ) { showSmsBlacklistRegexDialog = true }
                 Item(
                     title = stringResource(R.string.pref_sms_blacklist_content_title),
-                    summary = formatSummary(smsBlacklistContent),
+                    summary = buildString {
+                        append(formatSummary(smsBlacklistContent))
+                        append('\n')
+                        append(stringResource(R.string.pref_sms_blacklist_content_summary))
+                    },
                 ) { showSmsBlacklistContentDialog = true }
 
                 HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))

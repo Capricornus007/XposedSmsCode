@@ -125,10 +125,13 @@
     <string name="pref_sms_blacklist_action_block_title">阻断黑名单短信广播</string>
     <string name="pref_sms_blacklist_action_block_summary">命中后不再向应用分发短信广播。</string>
     <string name="pref_sms_blacklist_numbers_title">黑名单号码</string>
+    <string name="pref_sms_blacklist_numbers_summary">示例：10086</string>
     <string name="pref_sms_blacklist_prefixes_title">黑名单号段</string>
+    <string name="pref_sms_blacklist_prefixes_summary">示例：1069</string>
     <string name="pref_sms_blacklist_regex_title">黑名单正则规则</string>
-    <string name="pref_sms_blacklist_regex_hint">支持中英文 regex。示例：(?i)\\b(验证码|otp|verification|verify|pin|passcode|password|code|secure\\s*code)\\b</string>
+    <string name="pref_sms_blacklist_regex_hint">示例：(?i)\\b(退订|黑名单)\\b</string>
     <string name="pref_sms_blacklist_content_title">黑名单内容规则</string>
+    <string name="pref_sms_blacklist_content_summary">示例：退订回T</string>
     <string name="blacklist_not_set">未设置</string>
     <string name="blacklist_rule_count">已配置 %1$d 条规则</string>
     <string name="sms_content_hint">短信内容</string>

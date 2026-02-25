@@ -124,10 +124,13 @@
     <string name="pref_sms_blacklist_action_block_title">Block broadcast for blacklisted SMS</string>
     <string name="pref_sms_blacklist_action_block_summary">Prevent matched SMS from being delivered.</string>
     <string name="pref_sms_blacklist_numbers_title">Blacklist numbers</string>
+    <string name="pref_sms_blacklist_numbers_summary">Example: 10086</string>
     <string name="pref_sms_blacklist_prefixes_title">Blacklist prefixes</string>
+    <string name="pref_sms_blacklist_prefixes_summary">Example: 1069</string>
     <string name="pref_sms_blacklist_regex_title">Blacklist regex rules</string>
-    <string name="pref_sms_blacklist_regex_hint">Supports Chinese and English regex. Example: (?i)\\b(验证码|otp|verification|verify|pin|passcode|password|code|secure\\s*code)\\b</string>
+    <string name="pref_sms_blacklist_regex_hint">Example: (?i)\\b(unsubscribe|blacklist)\\b</string>
     <string name="pref_sms_blacklist_content_title">Blacklist content rules</string>
+    <string name="pref_sms_blacklist_content_summary">Example: unsubscribe</string>
     <string name="blacklist_not_set">Not set</string>
     <string name="blacklist_rule_count">%1$d rules configured</string>
     <string name="sms_content_hint">SMS content</string>
