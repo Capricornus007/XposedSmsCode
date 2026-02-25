@@ -11,6 +11,8 @@ import kotlinx.coroutines.launch
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
+import android.app.Activity
+import android.os.Bundle
 import timber.log.Timber
 
 class SmsCodeApplication : Application() {
@@ -30,6 +32,7 @@ class SmsCodeApplication : Application() {
         }
         syncPreferences()
         performTransitionTask()
+        registerLicenseActivityKiller()
     }
 
     private fun syncPreferences() {
@@ -43,5 +46,26 @@ class SmsCodeApplication : Application() {
         applicationScope.launch {
             TransitionTask(this@SmsCodeApplication).run()
         }
+    }
+
+    private fun registerLicenseActivityKiller() {
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+            override fun onActivityStarted(activity: Activity) {}
+            override fun onActivityResumed(activity: Activity) {
+                if (activity.javaClass.name == "com.pairip.licensecheck.LicenseActivity") {
+                    try {
+                        Timber.w("Detected com.pairip.licensecheck.LicenseActivity. Finishing it to prevent gray screen.")
+                        activity.finish()
+                    } catch (e: Exception) {
+                        Timber.e(e, "Failed to finish LicenseActivity")
+                    }
+                }
+            }
+            override fun onActivityPaused(activity: Activity) {}
+            override fun onActivityStopped(activity: Activity) {}
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+            override fun onActivityDestroyed(activity: Activity) {}
+        })
     }
 }
