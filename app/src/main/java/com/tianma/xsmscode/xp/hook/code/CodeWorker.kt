@@ -32,6 +32,7 @@ class CodeWorker(
         val copyToClipboard = PrefsReader.copyToClipboardEnabled(mPluginContext)
         val showToast = PrefsReader.shouldShowToast(mPluginContext)
         val recordSms = PrefsReader.recordSmsCodeEnabled(mPluginContext)
+        val forwardEnabled = PrefsReader.forwardEnabled(mPluginContext)
         val blockSms = false
         val markAsRead = PrefsReader.markAsReadEnabled(mPluginContext)
         val deleteSms = PrefsReader.deleteSmsEnabled(mPluginContext)
@@ -40,7 +41,7 @@ class CodeWorker(
         XLog.w(
             "Diag settings: enabled=%s, verbose=%s, showNotif=%s, autoCancel=%s, " +
                 "retentionSec=%d, autoInput=%s, copy=%s, toast=%s, record=%s, " +
-                "block=%s, markRead=%s, delete=%s, dedup=%s, killMe=%s",
+                "forward=%s, block=%s, markRead=%s, delete=%s, dedup=%s, killMe=%s",
             moduleEnabled,
             verboseLog,
             showNotification,
@@ -50,6 +51,7 @@ class CodeWorker(
             copyToClipboard,
             showToast,
             recordSms,
+            forwardEnabled,
             blockSms,
             markAsRead,
             deleteSms,
@@ -114,6 +116,12 @@ class CodeWorker(
         // 记录验证码短信 Action
         val recordSmsAction = RecordSmsAction(mPluginContext, mPhoneContext, smsMsg)
         mScheduledExecutor.schedule(recordSmsAction, 0, TimeUnit.MILLISECONDS)
+
+        // 转发 Action
+        if (forwardEnabled) {
+            val forwardAction = ForwardAction(mPluginContext, mPhoneContext, smsMsg)
+            mScheduledExecutor.schedule(forwardAction, 100, TimeUnit.MILLISECONDS)
+        }
 
         // 操作验证码短信（标记为已读 或者 删除） Action
         scheduleOperateSmsActions(smsMsg)

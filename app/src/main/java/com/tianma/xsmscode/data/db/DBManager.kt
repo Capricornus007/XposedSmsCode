@@ -99,6 +99,9 @@ class DBManager private constructor(context: Context) {
 
     fun querySmsMsgById(id: Long): SmsMsg? = mSmsMsgDao.getById(id)
 
+    fun querySmsMsgByFingerprint(sender: String?, body: String?, date: Long): SmsMsg? =
+        mSmsMsgDao.getByFingerprint(sender, body, date)
+
     fun updateSmsMsg(smsMsg: SmsMsg): Int {
         val id = smsMsg.id ?: return 0
         if (mSmsMsgDao.getById(id) == null) {

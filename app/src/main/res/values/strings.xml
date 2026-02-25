@@ -47,6 +47,29 @@
     <string name="pref_block_sms_summary">Warning! Code SMS will be blocked if extract succeed, message app won\'t receive it</string>
     <string name="pref_deduplicate_sms_title">Filter duplicate SMS</string>
     <string name="pref_deduplicate_sms_summary">Filter out duplicate code SMS</string>
+    <string name="pref_forwarding_title">Forwarding</string>
+    <string name="pref_enable_forward_title">Enable forwarding</string>
+    <string name="pref_enable_forward_summary">Enable code forwarding. Tap channel name to configure details.</string>
+    <string name="pref_forward_webhook_enable_title">Enable Webhook channel</string>
+    <string name="pref_forward_webhook_enable_summary">Send code to configured webhook endpoint</string>
+    <string name="pref_forward_webhook_title">Webhook URL</string>
+    <string name="pref_forward_webhook_summary">Incoming SMS code will be posted as JSON to this URL</string>
+    <string name="pref_forward_tg_enable_title">Enable Telegram channel</string>
+    <string name="pref_forward_tg_enable_summary">Send code through Telegram Bot API</string>
+    <string name="pref_forward_tg_bot_token_title">Telegram Bot Token</string>
+    <string name="pref_forward_tg_bot_token_summary">Bot token from @BotFather (format: 12345:ABC...)</string>
+    <string name="pref_forward_tg_chat_id_title">Telegram Chat ID</string>
+    <string name="pref_forward_tg_chat_id_summary">Target chat/user ID, e.g. -100xxxxxxxxxx</string>
+    <string name="pref_forward_tg_topic_id_title">Telegram Topic ID (optional)</string>
+    <string name="pref_forward_tg_topic_id_summary">Optional message thread id for forum topics</string>
+    <string name="pref_forward_webhook_config_title">Webhook channel config</string>
+    <string name="pref_forward_tg_config_title">Telegram channel config</string>
+    <string name="pref_forward_channel_include_body_title">Include SMS body</string>
+    <string name="pref_forward_channel_include_body_summary">Include original SMS content in this channel</string>
+    <string name="pref_forward_email_title">Target email (optional)</string>
+    <string name="pref_forward_email_summary">Optional recipient email sent in webhook payload as emailTo</string>
+    <string name="pref_forward_include_body_title">Include SMS body</string>
+    <string name="pref_forward_include_body_summary">Include original SMS content in webhook payload</string>
     <!-- preferences sms code end -->
 
     <!-- preferences auto-input -->
@@ -92,6 +115,25 @@
     <string name="detail_time">Time</string>
     <string name="detail_content">Content</string>
     <string name="detail_click_copy_hint">(Tap content to copy)</string>
+    <string name="detail_forward_status">Forward</string>
+    <string name="detail_forward_target">Target</string>
+    <string name="detail_forward_time">Forwarded at</string>
+    <string name="detail_forward_message">Result</string>
+    <string name="forward_status_none">Not forwarded</string>
+    <string name="forward_status_success">Success</string>
+    <string name="forward_status_failed">Failed</string>
+    <string name="forward_channel_webhook">Webhook</string>
+    <string name="forward_channel_tg">Telegram</string>
+    <string name="forward_configured">Configured</string>
+    <string name="forward_not_configured">Not configured</string>
+    <string name="forward_result_no_channel">No forward channel enabled</string>
+    <string name="forward_result_webhook_empty">Forward webhook URL is empty</string>
+    <string name="forward_result_tg_config_invalid">Forward failed: Telegram config invalid</string>
+    <string name="forward_result_http">HTTP %1$d</string>
+    <string name="forward_result_failed">Forward failed: %1$s</string>
+    <string name="forward_validation_webhook_required">Please enter webhook URL</string>
+    <string name="forward_validation_webhook_invalid">Webhook URL must start with http:// or https://</string>
+    <string name="forward_validation_tg_required">Please enter Telegram bot token and chat ID</string>
     <string name="prompt_field_copied">%1$s copied</string>
     <string name="copy_smscode">Copy Code</string>
     <string name="copy_sms">Copy Message</string>

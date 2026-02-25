@@ -260,6 +260,58 @@ object PrefsReader {
     }
 
     @JvmStatic
+    fun forwardEnabled(context: Context): Boolean {
+        val defaultValue = false
+        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_FORWARD, defaultValue)
+    }
+
+    @JvmStatic
+    fun forwardWebhookEnabled(context: Context): Boolean {
+        val defaultValue = true
+        return getBooleanViaProvider(context, PrefConst.KEY_FORWARD_WEBHOOK_ENABLED, defaultValue)
+    }
+
+    @JvmStatic
+    fun forwardWebhookUrl(context: Context): String =
+        getStringViaProvider(context, PrefConst.KEY_FORWARD_WEBHOOK_URL, "")
+
+    @JvmStatic
+    fun forwardWebhookIncludeBody(context: Context): Boolean {
+        val defaultValue = false
+        return getBooleanViaProvider(context, PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY, defaultValue)
+    }
+
+    @JvmStatic
+    fun forwardTelegramEnabled(context: Context): Boolean {
+        val defaultValue = false
+        return getBooleanViaProvider(context, PrefConst.KEY_FORWARD_TG_ENABLED, defaultValue)
+    }
+
+    @JvmStatic
+    fun forwardTelegramBotToken(context: Context): String =
+        getStringViaProvider(context, PrefConst.KEY_FORWARD_TG_BOT_TOKEN, "")
+
+    @JvmStatic
+    fun forwardTelegramChatId(context: Context): String =
+        getStringViaProvider(context, PrefConst.KEY_FORWARD_TG_CHAT_ID, "")
+
+    @JvmStatic
+    fun forwardTelegramTopicId(context: Context): String =
+        getStringViaProvider(context, PrefConst.KEY_FORWARD_TG_TOPIC_ID, "")
+
+    @JvmStatic
+    fun forwardTelegramIncludeBody(context: Context): Boolean {
+        val defaultValue = false
+        return getBooleanViaProvider(context, PrefConst.KEY_FORWARD_TG_INCLUDE_BODY, defaultValue)
+    }
+
+    @JvmStatic
+    fun forwardIncludeBody(context: Context): Boolean {
+        val defaultValue = false
+        return getBooleanViaProvider(context, PrefConst.KEY_FORWARD_INCLUDE_BODY, defaultValue)
+    }
+
+    @JvmStatic
     fun getHistoryLimit(context: Context): Int {
         val value = getStringViaProvider(
             context,

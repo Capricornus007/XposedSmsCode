@@ -36,6 +36,11 @@ class RecordSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
                 put("date", smsMsg.date)
                 put("sender", smsMsg.sender)
                 put("sms_code", smsMsg.smsCode)
+                put("package_name", smsMsg.packageName)
+                put("forward_status", smsMsg.forwardStatus)
+                put("forward_target", smsMsg.forwardTarget)
+                put("forward_message", smsMsg.forwardMessage)
+                put("forward_time", smsMsg.forwardTime)
             }
 
             resolver.insert(smsMsgUri, values)

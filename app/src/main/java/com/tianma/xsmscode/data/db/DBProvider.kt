@@ -36,6 +36,10 @@ class DBProvider : ContentProvider() {
                     company = values?.getAsString("company"),
                     smsCode = values?.getAsString("sms_code"),
                     packageName = values?.getAsString("package_name"),
+                    forwardStatus = values?.getAsInteger("forward_status") ?: SmsMsg.FORWARD_STATUS_NONE,
+                    forwardTarget = values?.getAsString("forward_target"),
+                    forwardMessage = values?.getAsString("forward_message"),
+                    forwardTime = values?.getAsLong("forward_time") ?: 0L,
                 )
                 id = mDbManager!!.addSmsMsg(msg)
                 path = "$PATH_SMS_MSG/$id"
@@ -110,7 +114,19 @@ class DBProvider : ContentProvider() {
                 else -> list
             }
         }
-        val columns = projection ?: arrayOf("_id", "sender", "body", "date", "company", "sms_code", "package_name")
+        val columns = projection ?: arrayOf(
+            "_id",
+            "sender",
+            "body",
+            "date",
+            "company",
+            "sms_code",
+            "package_name",
+            "forward_status",
+            "forward_target",
+            "forward_message",
+            "forward_time",
+        )
         val cursor = MatrixCursor(columns)
         rows.forEach { msg ->
             cursor.addRow(buildRow(columns) { column -> valueFromSmsMsg(msg, column) })
@@ -120,7 +136,19 @@ class DBProvider : ContentProvider() {
 
     private fun querySmsMsgById(projection: Array<String>?, uri: Uri): Cursor {
         val id = uri.lastPathSegment?.toLongOrNull() ?: throw IllegalArgumentException("Invalid URI: $uri")
-        val columns = projection ?: arrayOf("_id", "sender", "body", "date", "company", "sms_code", "package_name")
+        val columns = projection ?: arrayOf(
+            "_id",
+            "sender",
+            "body",
+            "date",
+            "company",
+            "sms_code",
+            "package_name",
+            "forward_status",
+            "forward_target",
+            "forward_message",
+            "forward_time",
+        )
         val cursor = MatrixCursor(columns)
         val msg = mDbManager!!.querySmsMsgById(id)
         if (msg != null) {
@@ -196,6 +224,10 @@ class DBProvider : ContentProvider() {
             "company" -> msg.company
             "sms_code" -> msg.smsCode
             "package_name" -> msg.packageName
+            "forward_status" -> msg.forwardStatus
+            "forward_target" -> msg.forwardTarget
+            "forward_message" -> msg.forwardMessage
+            "forward_time" -> msg.forwardTime
             else -> null
         }
 
@@ -248,6 +280,10 @@ class DBProvider : ContentProvider() {
             company = values?.getAsString("company") ?: existing.company,
             smsCode = values?.getAsString("sms_code") ?: existing.smsCode,
             packageName = values?.getAsString("package_name") ?: existing.packageName,
+            forwardStatus = values?.getAsInteger("forward_status") ?: existing.forwardStatus,
+            forwardTarget = values?.getAsString("forward_target") ?: existing.forwardTarget,
+            forwardMessage = values?.getAsString("forward_message") ?: existing.forwardMessage,
+            forwardTime = values?.getAsLong("forward_time") ?: existing.forwardTime,
         )
         return mDbManager!!.updateSmsMsg(updated)
     }

@@ -11,7 +11,7 @@ import com.tianma.xsmscode.data.db.entity.AppInfo
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 
-@Database(entities = [SmsCodeRule::class, SmsMsg::class, AppInfo::class], version = 3, exportSchema = false)
+@Database(entities = [SmsCodeRule::class, SmsMsg::class, AppInfo::class], version = 4, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun smsCodeRuleDao(): SmsCodeRuleDao
@@ -42,12 +42,22 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_3_4 = object : androidx.room.migration.Migration(3, 4) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE sms_msg ADD COLUMN forward_status INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE sms_msg ADD COLUMN forward_target TEXT")
+                db.execSQL("ALTER TABLE sms_msg ADD COLUMN forward_message TEXT")
+                db.execSQL("ALTER TABLE sms_msg ADD COLUMN forward_time INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase = instance ?: synchronized(this) {
+            val dbContext = context.applicationContext ?: context
             instance ?: Room.databaseBuilder(
-                context.applicationContext,
+                dbContext,
                 AppDatabase::class.java,
                 DATABASE_NAME,
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .allowMainThreadQueries() // For legacy compatibility
                 .build().also { instance = it }
         }

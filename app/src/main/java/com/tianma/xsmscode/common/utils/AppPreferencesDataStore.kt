@@ -237,6 +237,46 @@ object AppPreferencesDataStore {
             PrefConst.KEY_SMS_BLACKLIST_ACTION_BLOCK,
             getBoolean(context, PrefConst.KEY_SMS_BLACKLIST_ACTION_BLOCK, false),
         )
+        editor.putBoolean(
+            PrefConst.KEY_ENABLE_FORWARD,
+            getBoolean(context, PrefConst.KEY_ENABLE_FORWARD, false),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_FORWARD_WEBHOOK_ENABLED,
+            getBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_ENABLED, true),
+        )
+        editor.putString(
+            PrefConst.KEY_FORWARD_WEBHOOK_URL,
+            getString(context, PrefConst.KEY_FORWARD_WEBHOOK_URL, ""),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY,
+            getBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY, false),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_FORWARD_TG_ENABLED,
+            getBoolean(context, PrefConst.KEY_FORWARD_TG_ENABLED, false),
+        )
+        editor.putString(
+            PrefConst.KEY_FORWARD_TG_BOT_TOKEN,
+            getString(context, PrefConst.KEY_FORWARD_TG_BOT_TOKEN, ""),
+        )
+        editor.putString(
+            PrefConst.KEY_FORWARD_TG_CHAT_ID,
+            getString(context, PrefConst.KEY_FORWARD_TG_CHAT_ID, ""),
+        )
+        editor.putString(
+            PrefConst.KEY_FORWARD_TG_TOPIC_ID,
+            getString(context, PrefConst.KEY_FORWARD_TG_TOPIC_ID, ""),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_FORWARD_TG_INCLUDE_BODY,
+            getBoolean(context, PrefConst.KEY_FORWARD_TG_INCLUDE_BODY, false),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_FORWARD_INCLUDE_BODY,
+            getBoolean(context, PrefConst.KEY_FORWARD_INCLUDE_BODY, false),
+        )
         editor.putString(PrefConst.KEY_HISTORY_LIMIT, getString(context, PrefConst.KEY_HISTORY_LIMIT, "0"))
         editor.putBoolean(
             PrefConst.KEY_AUTO_UPDATE_ON_START,

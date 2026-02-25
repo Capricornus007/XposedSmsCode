@@ -47,6 +47,29 @@
     <string name="pref_block_sms_summary">警告！如果提取成功，验证码短信将被拦截，短信应用将无法收到</string>
     <string name="pref_deduplicate_sms_title">过滤重复短信</string>
     <string name="pref_deduplicate_sms_summary">过滤掉重复的验证码短信</string>
+    <string name="pref_forwarding_title">转发</string>
+    <string name="pref_enable_forward_title">启用转发</string>
+    <string name="pref_enable_forward_summary">启用验证码转发，点击渠道名可进入详细配置</string>
+    <string name="pref_forward_webhook_enable_title">启用 Webhook 通道</string>
+    <string name="pref_forward_webhook_enable_summary">将验证码发送到配置的 Webhook 地址</string>
+    <string name="pref_forward_webhook_title">Webhook 地址</string>
+    <string name="pref_forward_webhook_summary">收到验证码后将以 JSON POST 到此地址</string>
+    <string name="pref_forward_tg_enable_title">启用 Telegram 通道</string>
+    <string name="pref_forward_tg_enable_summary">通过 Telegram Bot API 发送验证码</string>
+    <string name="pref_forward_tg_bot_token_title">Telegram Bot Token</string>
+    <string name="pref_forward_tg_bot_token_summary">来自 @BotFather 的 Token（格式：12345:ABC...）</string>
+    <string name="pref_forward_tg_chat_id_title">Telegram Chat ID</string>
+    <string name="pref_forward_tg_chat_id_summary">目标聊天/用户 ID，例如 -100xxxxxxxxxx</string>
+    <string name="pref_forward_tg_topic_id_title">Telegram Topic ID（可选）</string>
+    <string name="pref_forward_tg_topic_id_summary">论坛话题消息线程 ID，可选</string>
+    <string name="pref_forward_webhook_config_title">Webhook 通道配置</string>
+    <string name="pref_forward_tg_config_title">Telegram 通道配置</string>
+    <string name="pref_forward_channel_include_body_title">包含短信正文</string>
+    <string name="pref_forward_channel_include_body_summary">在该通道中附带原始短信内容</string>
+    <string name="pref_forward_email_title">目标邮箱（可选）</string>
+    <string name="pref_forward_email_summary">可选，作为 emailTo 字段随 webhook 一起发送</string>
+    <string name="pref_forward_include_body_title">包含短信正文</string>
+    <string name="pref_forward_include_body_summary">将原始短信内容一并放入 webhook 负载</string>
     <!-- preferences sms code end -->
 
     <!-- preferences auto-input -->
@@ -93,6 +116,25 @@
     <string name="detail_time">时间</string>
     <string name="detail_content">内容</string>
     <string name="detail_click_copy_hint">（点击复制内容）</string>
+    <string name="detail_forward_status">转发状态</string>
+    <string name="detail_forward_target">转发目标</string>
+    <string name="detail_forward_time">转发时间</string>
+    <string name="detail_forward_message">转发结果</string>
+    <string name="forward_status_none">未转发</string>
+    <string name="forward_status_success">成功</string>
+    <string name="forward_status_failed">失败</string>
+    <string name="forward_channel_webhook">Webhook</string>
+    <string name="forward_channel_tg">Telegram</string>
+    <string name="forward_configured">已配置</string>
+    <string name="forward_not_configured">未配置</string>
+    <string name="forward_result_no_channel">未启用任何转发通道</string>
+    <string name="forward_result_webhook_empty">转发失败：Webhook 地址为空</string>
+    <string name="forward_result_tg_config_invalid">转发失败：Telegram 配置无效</string>
+    <string name="forward_result_http">HTTP %1$d</string>
+    <string name="forward_result_failed">转发失败：%1$s</string>
+    <string name="forward_validation_webhook_required">请输入 Webhook 地址</string>
+    <string name="forward_validation_webhook_invalid">Webhook 地址必须以 http:// 或 https:// 开头</string>
+    <string name="forward_validation_tg_required">请输入 Telegram Bot Token 和 Chat ID</string>
     <string name="prompt_field_copied">%1$s已复制</string>
     <string name="copy_smscode">复制验证码</string>
     <string name="copy_sms">复制短信</string>

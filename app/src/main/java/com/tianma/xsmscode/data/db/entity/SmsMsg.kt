@@ -49,9 +49,29 @@ data class SmsMsg(
     @ColumnInfo(name = "package_name")
     @SerialName("packageName")
     val packageName: String? = null,
+
+    @ColumnInfo(name = "forward_status")
+    @SerialName("forwardStatus")
+    val forwardStatus: Int = FORWARD_STATUS_NONE,
+
+    @ColumnInfo(name = "forward_target")
+    @SerialName("forwardTarget")
+    val forwardTarget: String? = null,
+
+    @ColumnInfo(name = "forward_message")
+    @SerialName("forwardMessage")
+    val forwardMessage: String? = null,
+
+    @ColumnInfo(name = "forward_time")
+    @SerialName("forwardTime")
+    val forwardTime: Long = 0L,
 ) : Parcelable {
 
     companion object {
+        const val FORWARD_STATUS_NONE = 0
+        const val FORWARD_STATUS_SUCCESS = 1
+        const val FORWARD_STATUS_FAILED = 2
+
         @JvmStatic
         fun fromIntent(intent: Intent): SmsMsg {
             val smsMessageParts = SmsMessageUtils.fromIntent(intent)

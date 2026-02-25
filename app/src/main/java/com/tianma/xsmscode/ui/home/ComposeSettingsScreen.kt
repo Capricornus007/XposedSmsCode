@@ -17,6 +17,8 @@ import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -88,9 +90,17 @@ fun ComposeSettingsScreen(
     var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
     var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
     var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
+    var forwardWebhookUrl by remember { mutableStateOf("") }
+    var forwardWebhookIncludeBody by remember { mutableStateOf(false) }
+    var forwardTgBotToken by remember { mutableStateOf("") }
+    var forwardTgChatId by remember { mutableStateOf("") }
+    var forwardTgTopicId by remember { mutableStateOf("") }
+    var forwardTgIncludeBody by remember { mutableStateOf(false) }
     var showAutoInputDialog by remember { mutableStateOf(false) }
     var showRetentionDialog by remember { mutableStateOf(false) }
     var showSmsTestDialog by remember { mutableStateOf(false) }
+    var showForwardWebhookConfigDialog by remember { mutableStateOf(false) }
+    var showForwardTgConfigDialog by remember { mutableStateOf(false) }
     var smsTestInput by remember { mutableStateOf("") }
     var showThemeDialog by remember { mutableStateOf(false) }
     var showDonateDialog by remember { mutableStateOf(false) }
@@ -119,6 +129,36 @@ fun ComposeSettingsScreen(
             context,
             PrefConst.KEY_SMSCODE_KEYWORDS,
             PrefConst.SMSCODE_KEYWORDS_DEFAULT,
+        )
+        forwardWebhookUrl = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_FORWARD_WEBHOOK_URL,
+            "",
+        )
+        forwardWebhookIncludeBody = AppPreferencesDataStore.getBoolean(
+            context,
+            PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY,
+            false,
+        )
+        forwardTgBotToken = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_FORWARD_TG_BOT_TOKEN,
+            "",
+        )
+        forwardTgChatId = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_FORWARD_TG_CHAT_ID,
+            "",
+        )
+        forwardTgTopicId = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_FORWARD_TG_TOPIC_ID,
+            "",
+        )
+        forwardTgIncludeBody = AppPreferencesDataStore.getBoolean(
+            context,
+            PrefConst.KEY_FORWARD_TG_INCLUDE_BODY,
+            false,
         )
         settingsViewModel.setInternalFilesWritable()
         settingsDataLoaded = true
@@ -399,6 +439,61 @@ fun ComposeSettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
 
+            SectionHeader(text = stringResource(id = R.string.pref_forwarding_title))
+            val forwardEnabledState = rememberPrefBoolean(PrefConst.KEY_ENABLE_FORWARD, false)
+            SwitchItem(
+                title = stringResource(id = R.string.pref_enable_forward_title),
+                summary = stringResource(id = R.string.pref_enable_forward_summary),
+                key = PrefConst.KEY_ENABLE_FORWARD,
+                defaultValue = false,
+                stateOverride = forwardEnabledState,
+                onSaved = markPrefsSaved,
+            )
+            if (forwardEnabledState.value) {
+                val webhookForwardEnabled = rememberPrefBoolean(PrefConst.KEY_FORWARD_WEBHOOK_ENABLED, true)
+                val tgForwardEnabled = rememberPrefBoolean(PrefConst.KEY_FORWARD_TG_ENABLED, false)
+                val webhookConfigured = forwardWebhookUrl.isNotBlank()
+                val tgConfigured = forwardTgBotToken.isNotBlank() && forwardTgChatId.isNotBlank()
+                ForwardChannelItem(
+                    title = stringResource(id = R.string.forward_channel_webhook),
+                    summary = if (webhookConfigured) {
+                        stringResource(id = R.string.forward_configured)
+                    } else {
+                        stringResource(id = R.string.forward_not_configured)
+                    },
+                    checked = webhookForwardEnabled.value,
+                    onCheckedChange = { checked ->
+                        webhookForwardEnabled.value = checked
+                        scope.launch {
+                            AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_ENABLED, checked)
+                            AppPreferencesDataStore.syncToSharedPrefs(context)
+                            markPrefsSaved()
+                        }
+                    },
+                    onClick = { showForwardWebhookConfigDialog = true },
+                )
+                ForwardChannelItem(
+                    title = stringResource(id = R.string.forward_channel_tg),
+                    summary = if (tgConfigured) {
+                        stringResource(id = R.string.forward_configured)
+                    } else {
+                        stringResource(id = R.string.forward_not_configured)
+                    },
+                    checked = tgForwardEnabled.value,
+                    onCheckedChange = { checked ->
+                        tgForwardEnabled.value = checked
+                        scope.launch {
+                            AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_TG_ENABLED, checked)
+                            AppPreferencesDataStore.syncToSharedPrefs(context)
+                            markPrefsSaved()
+                        }
+                    },
+                    onClick = { showForwardTgConfigDialog = true },
+                )
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
+
             SectionHeader(text = stringResource(id = R.string.pref_experimental_title))
             SwitchItem(
                 title = stringResource(id = R.string.pref_mark_as_read_title),
@@ -602,6 +697,50 @@ fun ComposeSettingsScreen(
         onExit = onExit,
         onSetTheme = { mode, x, y -> settingsViewModel.setThemeMode(mode, x, y) },
     )
+
+    if (showForwardWebhookConfigDialog) {
+        ForwardWebhookConfigDialog(
+            webhookUrl = forwardWebhookUrl,
+            includeBody = forwardWebhookIncludeBody,
+            onDismiss = { showForwardWebhookConfigDialog = false },
+        ) { url, includeBody ->
+            forwardWebhookUrl = url.trim()
+            forwardWebhookIncludeBody = includeBody
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_WEBHOOK_URL, forwardWebhookUrl)
+                AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY, includeBody)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                pendingSavedToast = true
+                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+            }
+            showForwardWebhookConfigDialog = false
+        }
+    }
+
+    if (showForwardTgConfigDialog) {
+        ForwardTelegramConfigDialog(
+            botToken = forwardTgBotToken,
+            chatId = forwardTgChatId,
+            topicId = forwardTgTopicId,
+            includeBody = forwardTgIncludeBody,
+            onDismiss = { showForwardTgConfigDialog = false },
+        ) { token, chatId, topicId, includeBody ->
+            forwardTgBotToken = token.trim()
+            forwardTgChatId = chatId.trim()
+            forwardTgTopicId = topicId.trim()
+            forwardTgIncludeBody = includeBody
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_TG_BOT_TOKEN, forwardTgBotToken)
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_TG_CHAT_ID, forwardTgChatId)
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_TG_TOPIC_ID, forwardTgTopicId)
+                AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_TG_INCLUDE_BODY, includeBody)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                pendingSavedToast = true
+                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+            }
+            showForwardTgConfigDialog = false
+        }
+    }
 }
 
 private fun handleSettingsEvent(
@@ -895,6 +1034,38 @@ fun Item(title: String, summary: String, modifier: Modifier = Modifier, onClick:
 }
 
 @Composable
+fun ForwardChannelItem(
+    title: String,
+    summary: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ListItem(
+        headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = if (summary.isNotEmpty()) {
+            {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            null
+        },
+        trailingContent = {
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+            )
+        },
+        modifier = modifier.clickable(onClick = onClick),
+    )
+}
+
+@Composable
 fun SwitchItem(
     title: String,
     summary: String,
@@ -946,6 +1117,210 @@ fun SwitchItem(
 }
 
 @Composable
+fun ForwardWebhookConfigDialog(
+    webhookUrl: String,
+    includeBody: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String, Boolean) -> Unit,
+) {
+    val context = LocalContext.current
+    var url by remember(webhookUrl) { mutableStateOf(webhookUrl) }
+    var includeBodyState by remember(includeBody) { mutableStateOf(includeBody) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.pref_forward_webhook_config_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(stringResource(id = R.string.pref_forward_webhook_title)) },
+                    supportingText = { Text(stringResource(id = R.string.pref_forward_webhook_summary)) },
+                    trailingIcon = {
+                        if (url.isNotEmpty()) {
+                            IconButton(onClick = { url = "" }) {
+                                Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
+                            }
+                        }
+                    },
+                )
+                ForwardChannelBodySwitch(
+                    checked = includeBodyState,
+                    onCheckedChange = { includeBodyState = it },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val trimmed = url.trim()
+                    if (trimmed.isBlank()) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.forward_validation_webhook_required),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                        return@TextButton
+                    }
+                    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.forward_validation_webhook_invalid),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                        return@TextButton
+                    }
+                    onConfirm(trimmed, includeBodyState)
+                },
+            ) {
+                Text(stringResource(id = R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(id = R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+fun ForwardTelegramConfigDialog(
+    botToken: String,
+    chatId: String,
+    topicId: String,
+    includeBody: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String, String, Boolean) -> Unit,
+) {
+    val context = LocalContext.current
+    var token by remember(botToken) { mutableStateOf(botToken) }
+    var chat by remember(chatId) { mutableStateOf(chatId) }
+    var topic by remember(topicId) { mutableStateOf(topicId) }
+    var includeBodyState by remember(includeBody) { mutableStateOf(includeBody) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.pref_forward_tg_config_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = token,
+                    onValueChange = { token = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(stringResource(id = R.string.pref_forward_tg_bot_token_title)) },
+                    supportingText = { Text(stringResource(id = R.string.pref_forward_tg_bot_token_summary)) },
+                    trailingIcon = {
+                        if (token.isNotEmpty()) {
+                            IconButton(onClick = { token = "" }) {
+                                Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
+                            }
+                        }
+                    },
+                )
+                OutlinedTextField(
+                    value = chat,
+                    onValueChange = { chat = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(stringResource(id = R.string.pref_forward_tg_chat_id_title)) },
+                    supportingText = { Text(stringResource(id = R.string.pref_forward_tg_chat_id_summary)) },
+                    trailingIcon = {
+                        if (chat.isNotEmpty()) {
+                            IconButton(onClick = { chat = "" }) {
+                                Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
+                            }
+                        }
+                    },
+                )
+                OutlinedTextField(
+                    value = topic,
+                    onValueChange = { topic = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(stringResource(id = R.string.pref_forward_tg_topic_id_title)) },
+                    supportingText = { Text(stringResource(id = R.string.pref_forward_tg_topic_id_summary)) },
+                    trailingIcon = {
+                        if (topic.isNotEmpty()) {
+                            IconButton(onClick = { topic = "" }) {
+                                Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
+                            }
+                        }
+                    },
+                )
+                ForwardChannelBodySwitch(
+                    checked = includeBodyState,
+                    onCheckedChange = { includeBodyState = it },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val tokenTrimmed = token.trim()
+                    val chatTrimmed = chat.trim()
+                    if (tokenTrimmed.isBlank() || chatTrimmed.isBlank()) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.forward_validation_tg_required),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                        return@TextButton
+                    }
+                    onConfirm(tokenTrimmed, chatTrimmed, topic.trim(), includeBodyState)
+                },
+            ) {
+                Text(stringResource(id = R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(id = R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ForwardChannelBodySwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = stringResource(id = R.string.pref_forward_channel_include_body_title),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = stringResource(id = R.string.pref_forward_channel_include_body_summary),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
+    }
+    HorizontalDivider(
+        modifier = Modifier.padding(top = 8.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+    )
+}
+
+@Composable
 fun rememberPrefBoolean(key: String, defaultValue: Boolean): MutableState<Boolean> {
     val context = LocalContext.current
     val state = remember { mutableStateOf(defaultValue) }
@@ -983,11 +1358,11 @@ fun TextInputDialog(
         modifier = modifier,
         title = { Text(text = title) },
         text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = {
-                    text = it
-                    if (validator != null) {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = {
+                        text = it
+                        if (validator != null) {
                         errorMessage = validator(it)
                     }
                 },
@@ -1003,6 +1378,13 @@ fun TextInputDialog(
                 singleLine = singleLine,
                 maxLines = maxLines,
                 isError = errorMessage != null,
+                trailingIcon = {
+                    if (text.isNotEmpty()) {
+                        IconButton(onClick = { text = "" }) {
+                            Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
+                        }
+                    }
+                },
                 supportingText = if (errorMessage != null || supportingText != null) {
                     { Text(text = errorMessage ?: supportingText!!) }
                 } else null,
