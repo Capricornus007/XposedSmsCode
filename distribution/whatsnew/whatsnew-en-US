@@ -1,7 +1,8 @@
-- Fix: Hook-process SMS parse failure with Context/dataDir and pre-unlock CE prefs (#108)
+- Fix: SMS parse failure with pre-unlock CE prefs (#108)
 - Fix: DataStore multi-instance crash (#104)
-- Fix: Android 16 AMS/PMS hook signature compatibility (#105)
-- Fix: Android 13 status bar edge-to-edge (`enableEdgeToEdge`) (#106)
-- UX: Group Toast + status-bar notification settings (#103)
-- Change: `Mark as read` still disabled (#103)
-- UX: M3 polish for actions, dialogs, loading (#100/#101/#102)
+- Fix: Android 16 hook signature compatibility (#105)
+- Fix: Android 13 edge-to-edge setup (#106)
+- Fix: App icon-name alignment & label lock in records list (#110)
+- UX: Re-enable 'Mark as read', add blacklist format check & tips
+- UX: Group notification settings (#103)
+- UX: M3 polish for actions, dialogs, loading
