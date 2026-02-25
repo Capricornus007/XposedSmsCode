@@ -219,11 +219,6 @@ fun ComposeSettingsScreen(
         reloadSettingsData()
     }
 
-    LaunchedEffect(Unit) {
-        AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_MARK_AS_READ, false)
-        AppPreferencesDataStore.syncToSharedPrefs(context)
-    }
-
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
             isActivated = ModuleUtils.isModuleEnabled() || ModuleActivationStore.isActivatedRecently(context)
