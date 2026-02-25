@@ -25,6 +25,11 @@ import java.util.concurrent.TimeUnit
  */
 class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg) :
     CallableAction(pluginContext, phoneContext, smsMsg) {
+    private enum class WebhookType {
+        GENERIC,
+        FEISHU,
+        DINGTALK,
+    }
 
     private data class ChannelResult(
         val target: String,
@@ -100,11 +105,11 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
     }
 
     private fun forwardToWebhook(webhookUrl: String, includeBody: Boolean, isCodeSms: Boolean): ChannelResult {
-        val isFeishuWebhook = isFeishuWebhookUrl(webhookUrl)
-        val payload = if (isFeishuWebhook) {
-            buildFeishuPayload(includeBody, isCodeSms)
-        } else {
-            buildGenericPayload(includeBody, isCodeSms)
+        val webhookType = detectWebhookType(webhookUrl)
+        val payload = when (webhookType) {
+            WebhookType.FEISHU -> buildFeishuPayload(includeBody, isCodeSms)
+            WebhookType.DINGTALK -> buildDingTalkPayload(includeBody, isCodeSms)
+            WebhookType.GENERIC -> buildGenericPayload(includeBody, isCodeSms)
         }
         val request = Request.Builder()
             .url(webhookUrl)
@@ -113,11 +118,11 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
         return runCatching {
             CLIENT.newCall(request).execute().use { response ->
                 val responseBody = response.body.string()
-                val responseSummary = parseWebhookResponseSummary(response, responseBody, isFeishuWebhook)
-                val success = if (isFeishuWebhook) {
-                    response.isSuccessful && responseSummary.feishuCode == 0
-                } else {
-                    response.isSuccessful
+                val responseSummary = parseWebhookResponseSummary(response, responseBody, webhookType)
+                val success = when (webhookType) {
+                    WebhookType.FEISHU -> response.isSuccessful && responseSummary.feishuCode == 0
+                    WebhookType.DINGTALK -> response.isSuccessful && responseSummary.dingTalkCode == 0
+                    WebhookType.GENERIC -> response.isSuccessful
                 }
                 ChannelResult(
                     target = "${mPluginContext.getString(R.string.forward_channel_webhook)}:$webhookUrl",
@@ -185,48 +190,102 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
         }
     }
 
+    private fun buildDingTalkPayload(includeBody: Boolean, isCodeSms: Boolean): JSONObject {
+        val text = buildString {
+            if (isCodeSms) {
+                append("Code: ").append(mSmsMsg.smsCode.orEmpty())
+                append('\n').append("Sender: ").append(mSmsMsg.sender.orEmpty())
+                if (!mSmsMsg.company.isNullOrBlank()) {
+                    append('\n').append("Company: ").append(mSmsMsg.company)
+                }
+                append('\n').append("Time: ").append(mSmsMsg.date)
+            }
+            if (!isCodeSms) {
+                append(mSmsMsg.body.orEmpty())
+            } else if (includeBody) {
+                append('\n').append("Body: ").append(mSmsMsg.body.orEmpty())
+            }
+        }
+        return JSONObject().apply {
+            put("msgtype", "text")
+            put(
+                "text",
+                JSONObject().apply {
+                    put("content", text)
+                },
+            )
+        }
+    }
+
     private data class WebhookResponseSummary(
         val message: String,
         val feishuCode: Int? = null,
+        val dingTalkCode: Int? = null,
     )
 
     private fun parseWebhookResponseSummary(
         response: Response,
         responseBody: String,
-        isFeishuWebhook: Boolean,
+        webhookType: WebhookType,
     ): WebhookResponseSummary {
-        if (!isFeishuWebhook) {
-            return WebhookResponseSummary(
-                message = "${mPluginContext.getString(R.string.forward_channel_webhook)} " +
-                    mPluginContext.getString(R.string.forward_result_http, response.code),
-            )
-        }
-
-        return runCatching {
-            val json = JSONObject(responseBody)
-            val code = if (json.has("code")) json.optInt("code", -1) else json.optInt("StatusCode", -1)
-            val msg = json.optString("msg", json.optString("StatusMessage", ""))
-            val suffix = if (msg.isNotBlank()) "($msg)" else ""
-            WebhookResponseSummary(
-                message = "${mPluginContext.getString(R.string.forward_channel_webhook)} HTTP ${response.code}, code=$code$suffix",
-                feishuCode = code,
-            )
-        }.getOrElse {
-            WebhookResponseSummary(
-                message = "${mPluginContext.getString(R.string.forward_channel_webhook)} HTTP ${response.code}",
-                feishuCode = if (response.isSuccessful) 0 else -1,
-            )
+        return when (webhookType) {
+            WebhookType.FEISHU -> {
+                runCatching {
+                    val json = JSONObject(responseBody)
+                    val code = if (json.has("code")) json.optInt("code", -1) else json.optInt("StatusCode", -1)
+                    val msg = json.optString("msg", json.optString("StatusMessage", ""))
+                    val suffix = if (msg.isNotBlank()) "($msg)" else ""
+                    WebhookResponseSummary(
+                        message = "${mPluginContext.getString(R.string.forward_channel_webhook)} HTTP ${response.code}, code=$code$suffix",
+                        feishuCode = code,
+                    )
+                }.getOrElse {
+                    WebhookResponseSummary(
+                        message = "${mPluginContext.getString(R.string.forward_channel_webhook)} HTTP ${response.code}",
+                        feishuCode = if (response.isSuccessful) 0 else -1,
+                    )
+                }
+            }
+            WebhookType.DINGTALK -> {
+                runCatching {
+                    val json = JSONObject(responseBody)
+                    val code = json.optInt("errcode", -1)
+                    val msg = json.optString("errmsg", "")
+                    val suffix = if (msg.isNotBlank()) "($msg)" else ""
+                    WebhookResponseSummary(
+                        message = "${mPluginContext.getString(R.string.forward_channel_webhook)} HTTP ${response.code}, errcode=$code$suffix",
+                        dingTalkCode = code,
+                    )
+                }.getOrElse {
+                    WebhookResponseSummary(
+                        message = "${mPluginContext.getString(R.string.forward_channel_webhook)} HTTP ${response.code}",
+                        dingTalkCode = -1,
+                    )
+                }
+            }
+            WebhookType.GENERIC -> {
+                WebhookResponseSummary(
+                    message = "${mPluginContext.getString(R.string.forward_channel_webhook)} " +
+                        mPluginContext.getString(R.string.forward_result_http, response.code),
+                )
+            }
         }
     }
 
-    private fun isFeishuWebhookUrl(url: String): Boolean {
+    private fun detectWebhookType(url: String): WebhookType {
         return runCatching {
             val parsed = URL(url)
             val host = parsed.host.lowercase()
             val path = parsed.path.lowercase()
-            host.contains("feishu.cn") || host.contains("larksuite.com") ||
-                path.contains("/open-apis/bot/") || path.contains("/base/automation/webhook/")
-        }.getOrDefault(false)
+            when {
+                host.contains("feishu.cn") || host.contains("larksuite.com") ||
+                    path.contains("/open-apis/bot/") || path.contains("/base/automation/webhook/") ->
+                    WebhookType.FEISHU
+                host.contains("dingtalk.com") && path.contains("/robot/send") ->
+                    WebhookType.DINGTALK
+                else -> WebhookType.GENERIC
+            }
+        }.getOrDefault(WebhookType.GENERIC)
     }
 
     private fun forwardToTelegram(
