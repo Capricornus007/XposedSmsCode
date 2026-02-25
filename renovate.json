@@ -18,6 +18,12 @@
             ],
             "groupName": "all non-major dependencies",
             "groupSlug": "all-minor-patch"
+        },
+        {
+            "matchPackageNames": [
+                "int:LOG_LEVEL"
+            ],
+            "enabled": false
         }
     ]
 }
