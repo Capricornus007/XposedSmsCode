@@ -820,6 +820,7 @@ fun CodeRecordItem(
             Text(
                 text = displayLabel,
                 style = MaterialTheme.typography.labelMedium,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
