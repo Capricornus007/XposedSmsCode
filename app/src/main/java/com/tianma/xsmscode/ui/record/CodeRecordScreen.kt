@@ -572,6 +572,14 @@ private fun RecordDetailOverlay(
     val sender = sms.sender ?: sms.company ?: context.getString(R.string.unknown)
     val time = detailDateFormatter.format(Date(sms.date))
     val content = sms.body.orEmpty()
+    val forwardStatusText = when (sms.forwardStatus) {
+        SmsMsg.FORWARD_STATUS_SUCCESS -> stringResource(R.string.forward_status_success)
+        SmsMsg.FORWARD_STATUS_FAILED -> stringResource(R.string.forward_status_failed)
+        else -> stringResource(R.string.forward_status_none)
+    }
+    val forwardTarget = sanitizeForwardTarget(sms.forwardTarget)
+    val forwardTime = if (sms.forwardTime > 0L) detailDateFormatter.format(Date(sms.forwardTime)) else "-"
+    val forwardMessage = sms.forwardMessage ?: "-"
     val dismissInteraction = remember { MutableInteractionSource() }
 
     Box(
@@ -677,6 +685,62 @@ private fun RecordDetailOverlay(
                         }
                     },
                 )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = "${stringResource(R.string.detail_forward_status)}:",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = forwardStatusText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = "${stringResource(R.string.detail_forward_target)}:",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = forwardTarget,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = "${stringResource(R.string.detail_forward_time)}:",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = forwardTime,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = "${stringResource(R.string.detail_forward_message)}:",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = forwardMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
                 HorizontalDivider()
                 ButtonGroup(
                     modifier = Modifier.fillMaxWidth(),
@@ -745,6 +809,19 @@ private fun RecordDetailOverlay(
             }
         }
     }
+}
+
+private fun sanitizeForwardTarget(rawTarget: String?): String {
+    if (rawTarget.isNullOrBlank()) return "-"
+    val channels = rawTarget.split("|")
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .map { segment ->
+            val channel = segment.substringBefore(":", segment).trim()
+            if (channel.isEmpty()) segment else channel
+        }
+        .distinct()
+    return if (channels.isEmpty()) "-" else channels.joinToString(" | ")
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -860,6 +937,19 @@ fun CodeRecordItem(
                     modifier = Modifier.clickable { onDetailClick() },
                 )
             }
+            Spacer(modifier = Modifier.height(2.dp))
+            val forwardStatus = when (smsMsg.forwardStatus) {
+                SmsMsg.FORWARD_STATUS_SUCCESS -> stringResource(R.string.forward_status_success)
+                SmsMsg.FORWARD_STATUS_FAILED -> stringResource(R.string.forward_status_failed)
+                else -> stringResource(R.string.forward_status_none)
+            }
+            Text(
+                text = "${stringResource(R.string.detail_forward_status)}: $forwardStatus",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
