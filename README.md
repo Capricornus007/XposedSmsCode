@@ -64,6 +64,7 @@
 - [更新日志 (Changelog)](docs/CHANGELOG.md)
 - [重构汇总 (Refactoring Summary)](docs/REFACTORING.md)
 - [隐私政策 (Privacy Policy)](docs/PRIVACY.md)
+- [赞助与捐赠 (Donations)](docs/DONATIONS.md)
 
 # 感谢
 - [原始项目 (tianma8023/XposedSmsCode)](https://github.com/tianma8023/XposedSmsCode)
@@ -84,8 +85,10 @@
 所有的源码均遵循 [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt) 协议
 
 # 赞助与捐赠
-如果您觉得本项目对您有所帮助，欢迎给开发者投喂一杯咖啡。您的支持是我坚持维护的最大动力！
+如果本项目对你有帮助，欢迎支持开发者。你的支持会直接用于项目维护与持续迭代。
 
-| 支付宝红包口令 | 支付宝收款码 | 微信赞赏码 |
+赞助名单与说明请见：[赞助与捐赠文档](docs/DONATIONS.md)。
+
+| 支付宝收款码 | 微信赞赏码 | 微信收款码 |
 | :---: | :---: | :---: |
-| ![Alipay Red Packet](./art/sponsorship/alipay_pocket.png) | ![Alipay](./art/sponsorship/alipay.png) | ![WeChat](./art/sponsorship/wx.png) |
+| ![Alipay](./art/sponsorship/alipay.png) | ![WeChat Appreciation](./art/sponsorship/wx.png) | ![WeChat Collect](./art/sponsorship/wx_collect.png) |

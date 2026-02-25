@@ -62,6 +62,7 @@ Welcome any feedbacks.
 # Documentation
 - [Release Logs](docs/CHANGELOG.md)
 - [Privacy Policy](docs/PRIVACY.md)
+- [Donations](docs/DONATIONS.md)
 
 # Thanks To
 - [Original Project (tianma8023/XposedSmsCode)](https://github.com/tianma8023/XposedSmsCode)
@@ -81,6 +82,6 @@ All code is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt)
 # Donation
 If you find this project helpful, please consider rewarding the developer with a cup of coffee. Your support is the greatest motivation for my persistent maintenance!
 
-| Alipay Red Packet | Alipay Receipt | WeChat Appreciation |
+| Alipay Receipt | WeChat Appreciation | WeChat Collect |
 | :---: | :---: | :---: |
-| ![Alipay Red Packet](./art/sponsorship/alipay_pocket.png) | ![Alipay](./art/sponsorship/alipay.png) | ![WeChat](./art/sponsorship/wx.png) |
+| ![Alipay](./art/sponsorship/alipay.png) | ![WeChat Appreciation](./art/sponsorship/wx.png) | ![WeChat Collect](./art/sponsorship/wx_collect.png) |
