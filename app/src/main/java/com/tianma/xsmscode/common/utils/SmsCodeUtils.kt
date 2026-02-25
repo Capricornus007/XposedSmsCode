@@ -53,11 +53,9 @@ object SmsCodeUtils {
      * 解析文本中的验证码并返回，如果不存在返回空字符
      */
     suspend fun parseSmsCodeIfExists(context: Context, content: String): String {
-        var result = parseByCustomRules(context, content)
-        if (TextUtils.isEmpty(result)) {
-            result = parseByDefaultRule(context, content)
-        }
-        return result
+        val customResult = parseByCustomRules(context, content)
+        val defaultResult = parseByDefaultRule(context, content)
+        return pickBetterCode(customResult, defaultResult)
     }
 
     /**
@@ -68,11 +66,9 @@ object SmsCodeUtils {
         val keywordsRegex = loadCodeKeywordsBySP(context) ?: ""
         val keyword = parseKeyword(keywordsRegex, content)
         if (!TextUtils.isEmpty(keyword)) {
-            result = if (containsChinese(content)) {
-                getSmsCodeCN(keyword, content)
-            } else {
-                getSmsCodeEN(keyword, content)
-            }
+            val cnCode = if (containsChinese(content)) getSmsCodeCN(keyword, content) else ""
+            val enCode = getSmsCodeEN(keyword, content)
+            result = pickBetterCode(cnCode, enCode)
         }
         return result
     }
@@ -153,13 +149,33 @@ object SmsCodeUtils {
         else -> LEVEL_TEXT
     }
 
+    private fun pickBetterCode(first: String, second: String): String {
+        if (first.isEmpty()) return second
+        if (second.isEmpty()) return first
+        val firstLevel = getMatchLevel(first)
+        val secondLevel = getMatchLevel(second)
+        return if (secondLevel > firstLevel) second else first
+    }
+
     private fun isNearToKeyword(keyword: String, possibleCode: String, content: String): Boolean =
         distanceToKeyword(keyword, possibleCode, content) <= KEYWORD_DISTANCE_THRESHOLD
 
     private fun distanceToKeyword(keyword: String, possibleCode: String, content: String): Int {
-        val keywordIdx = content.indexOf(keyword)
         val possibleCodeIdx = content.indexOf(possibleCode)
-        return Math.abs(keywordIdx - possibleCodeIdx)
+        if (possibleCodeIdx < 0) return content.length
+
+        var minDistance = content.length
+        var searchStart = 0
+        while (searchStart < content.length) {
+            val keywordIdx = content.indexOf(keyword, startIndex = searchStart)
+            if (keywordIdx < 0) break
+            val distance = Math.abs(keywordIdx - possibleCodeIdx)
+            if (distance < minDistance) {
+                minDistance = distance
+            }
+            searchStart = keywordIdx + keyword.length
+        }
+        return minDistance
     }
 
     private suspend fun parseByCustomRules(context: Context, content: String): String {
