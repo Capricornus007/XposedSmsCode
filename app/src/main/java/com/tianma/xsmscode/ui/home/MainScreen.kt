@@ -27,7 +27,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.github.tianma8023.xposed.smscode.R
-import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.ui.block.AppBlockScreen
 import com.tianma.xsmscode.ui.nav.*
 import com.tianma.xsmscode.ui.record.CodeRecordScreen
@@ -43,7 +42,6 @@ private const val TAB_DOUBLE_TAP_REFRESH_WINDOW_MS = 350L
 
 @Composable
 fun MainScreen(
-    onNavigateToRuleEdit: (Int, SmsCodeRule?) -> Unit,
     initialTab: Any? = null,
     onInitialTabConsumed: (() -> Unit)? = null,
     hazeState: HazeState,
