@@ -146,8 +146,8 @@
 
     <!-- preference experimental -->
     <string name="pref_experimental_title">试验性功能</string>
-    <string name="pref_mark_as_read_title">验证码短信标记为已读</string>
-    <string name="pref_mark_as_read_summary">当前不可用（暂时关闭）</string>
+    <string name="pref_mark_as_read_title">验证码短信标记为已读 (可能不生效)</string>
+    <string name="pref_mark_as_read_summary">收到验证码短信后，尝试将其标记为已读。由于系统权限或定制 ROM 限制，该功能可能在某些设备上无法生效。</string>
     <string name="pref_delete_sms_title">验证码短信删除</string>
     <string name="pref_delete_sms_summary">警告：提取成功后验证码短信将被删除</string>
     <!-- preference experimental end -->

@@ -145,8 +145,8 @@
 
     <!-- preference experimental -->
     <string name="pref_experimental_title">Experimental</string>
-    <string name="pref_mark_as_read_title">Mark as read</string>
-    <string name="pref_mark_as_read_summary">Currently unavailable (temporarily disabled)</string>
+    <string name="pref_mark_as_read_title">Mark as read (Experimental, may not work)</string>
+    <string name="pref_mark_as_read_summary">Attempt to mark the verification code SMS as read. Due to system limitations, this feature may not work on some devices.</string>
     <string name="pref_delete_sms_title">Delete SMS</string>
     <string name="pref_delete_sms_summary">Warning! Code SMS will be deleted if extract succeed</string>
     <!-- preference experimental end -->

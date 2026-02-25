@@ -146,8 +146,8 @@
 
     <!-- preference experimental -->
     <string name="pref_experimental_title">實驗性功能</string>
-    <string name="pref_mark_as_read_title">標記為已讀</string>
-    <string name="pref_mark_as_read_summary">目前不可用（暫時關閉）</string>
+    <string name="pref_mark_as_read_title">標記為已讀 (可能不生效)</string>
+    <string name="pref_mark_as_read_summary">收到驗證碼簡訊後，嘗試將其標記為已讀。由於系統權限或定制 ROM 限制，該功能可能在某些設備上無法生效。</string>
     <string name="pref_delete_sms_title">簡訊刪除</string>
     <string name="pref_delete_sms_summary">警告：擷取成功后驗證碼簡訊將被刪除</string>
     <!-- preference experimental end -->

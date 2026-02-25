@@ -400,14 +400,11 @@ fun ComposeSettingsScreen(
             HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
 
             SectionHeader(text = stringResource(id = R.string.pref_experimental_title))
-            val markAsReadState = remember { mutableStateOf(false) }
             SwitchItem(
                 title = stringResource(id = R.string.pref_mark_as_read_title),
                 summary = stringResource(id = R.string.pref_mark_as_read_summary),
                 key = PrefConst.KEY_MARK_AS_READ,
                 defaultValue = false,
-                stateOverride = markAsReadState,
-                enabled = false,
                 onSaved = markPrefsSaved,
             )
             SwitchItem(
