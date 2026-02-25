@@ -54,12 +54,11 @@ class SmsCodeApplication : Application() {
             override fun onActivityStarted(activity: Activity) {}
             override fun onActivityResumed(activity: Activity) {
                 if (activity.javaClass.name == "com.pairip.licensecheck.LicenseActivity") {
-                    try {
+                    runCatching {
                         Timber.w("Detected com.pairip.licensecheck.LicenseActivity. Finishing it to prevent gray screen.")
                         activity.finish()
-                    } catch (e: Exception) {
-                        Timber.e(e, "Failed to finish LicenseActivity")
                     }
+                        .onFailure { Timber.e(it, "Failed to finish LicenseActivity") }
                 }
             }
             override fun onActivityPaused(activity: Activity) {}

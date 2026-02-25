@@ -112,7 +112,7 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
             .build()
         return runCatching {
             CLIENT.newCall(request).execute().use { response ->
-                val responseBody = response.body?.string().orEmpty()
+                val responseBody = response.body.string()
                 val responseSummary = parseWebhookResponseSummary(response, responseBody, isFeishuWebhook)
                 val success = if (isFeishuWebhook) {
                     response.isSuccessful && responseSummary.feishuCode == 0
@@ -268,7 +268,11 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
                 ChannelResult(
                     target = "${mPluginContext.getString(R.string.forward_channel_tg)}:$chatId",
                     success = response.isSuccessful,
-                    message = "${mPluginContext.getString(R.string.forward_channel_tg)} ${mPluginContext.getString(R.string.forward_result_http, response.code)}",
+                    message = buildString {
+                        append(mPluginContext.getString(R.string.forward_channel_tg))
+                        append(' ')
+                        append(mPluginContext.getString(R.string.forward_result_http, response.code))
+                    },
                 )
             }
         }.getOrElse { t ->
