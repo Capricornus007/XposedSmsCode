@@ -185,13 +185,37 @@ fun InterceptScreen(
         }
     }
 
+    val separatorHint = stringResource(id = R.string.pref_sms_blacklist_separator_hint)
+    val invalidSeparatorError = stringResource(id = R.string.pref_sms_blacklist_invalid_separator_error)
+    val separatorValidator: (String) -> String? = { value ->
+        if (value.contains("，") || value.contains("；") || value.contains("|")) {
+            invalidSeparatorError
+        } else {
+            null
+        }
+    }
+
+    val regexSeparatorHint = stringResource(id = R.string.pref_sms_blacklist_regex_separator_hint)
+    val invalidRegexSeparatorError = stringResource(id = R.string.pref_sms_blacklist_invalid_regex_separator_error)
+    val regexSeparatorValidator: (String) -> String? = { value ->
+        if (value.contains("，") || value.contains("；")) {
+            invalidRegexSeparatorError
+        } else {
+            null
+        }
+    }
+
     if (showSmsBlacklistNumbersDialog) {
         TextInputDialog(
             title = stringResource(id = R.string.pref_sms_blacklist_numbers_title),
             initialValue = smsBlacklistNumbers,
             onDismiss = { showSmsBlacklistNumbersDialog = false },
+            supportingText = separatorHint,
+            validator = separatorValidator,
             onFocusLost = { value ->
-                saveStringIfChanged(smsBlacklistNumbers, PrefConst.KEY_SMS_BLACKLIST_NUMBERS, value) { smsBlacklistNumbers = it }
+                if (separatorValidator(value) == null) {
+                    saveStringIfChanged(smsBlacklistNumbers, PrefConst.KEY_SMS_BLACKLIST_NUMBERS, value) { smsBlacklistNumbers = it }
+                }
             },
             singleLine = false,
             maxLines = 10,
@@ -206,8 +230,12 @@ fun InterceptScreen(
             title = stringResource(id = R.string.pref_sms_blacklist_prefixes_title),
             initialValue = smsBlacklistPrefixes,
             onDismiss = { showSmsBlacklistPrefixesDialog = false },
+            supportingText = separatorHint,
+            validator = separatorValidator,
             onFocusLost = { value ->
-                saveStringIfChanged(smsBlacklistPrefixes, PrefConst.KEY_SMS_BLACKLIST_PREFIXES, value) { smsBlacklistPrefixes = it }
+                if (separatorValidator(value) == null) {
+                    saveStringIfChanged(smsBlacklistPrefixes, PrefConst.KEY_SMS_BLACKLIST_PREFIXES, value) { smsBlacklistPrefixes = it }
+                }
             },
             singleLine = false,
             maxLines = 10,
@@ -222,8 +250,12 @@ fun InterceptScreen(
             title = stringResource(id = R.string.pref_sms_blacklist_regex_title),
             initialValue = smsBlacklistRegex,
             onDismiss = { showSmsBlacklistRegexDialog = false },
+            supportingText = regexSeparatorHint,
+            validator = regexSeparatorValidator,
             onFocusLost = { value ->
-                saveStringIfChanged(smsBlacklistRegex, PrefConst.KEY_SMS_BLACKLIST_REGEX, value) { smsBlacklistRegex = it }
+                if (regexSeparatorValidator(value) == null) {
+                    saveStringIfChanged(smsBlacklistRegex, PrefConst.KEY_SMS_BLACKLIST_REGEX, value) { smsBlacklistRegex = it }
+                }
             },
             singleLine = false,
             maxLines = 10,
@@ -238,8 +270,12 @@ fun InterceptScreen(
             title = stringResource(id = R.string.pref_sms_blacklist_content_title),
             initialValue = smsBlacklistContent,
             onDismiss = { showSmsBlacklistContentDialog = false },
+            supportingText = separatorHint,
+            validator = separatorValidator,
             onFocusLost = { value ->
-                saveStringIfChanged(smsBlacklistContent, PrefConst.KEY_SMS_BLACKLIST_CONTENT, value) { smsBlacklistContent = it }
+                if (separatorValidator(value) == null) {
+                    saveStringIfChanged(smsBlacklistContent, PrefConst.KEY_SMS_BLACKLIST_CONTENT, value) { smsBlacklistContent = it }
+                }
             },
             singleLine = false,
             maxLines = 10,

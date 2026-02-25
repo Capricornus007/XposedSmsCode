@@ -967,12 +967,15 @@ fun TextInputDialog(
     modifier: Modifier = Modifier,
     singleLine: Boolean = true,
     maxLines: Int = if (singleLine) 1 else 6,
+    supportingText: String? = null,
+    validator: ((String) -> String?)? = null,
     onFocusLost: ((String) -> Unit)? = null,
     onDismissWithValue: ((String) -> Unit)? = null,
     onConfirm: (String) -> Unit,
 ) {
     var text by remember { mutableStateOf(initialValue) }
     var hadFocus by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     val cancelLabel = stringResource(id = R.string.cancel)
     val confirmLabel = stringResource(id = R.string.confirm)
     AlertDialog(
@@ -985,7 +988,12 @@ fun TextInputDialog(
         text = {
             OutlinedTextField(
                 value = text,
-                onValueChange = { text = it },
+                onValueChange = {
+                    text = it
+                    if (validator != null) {
+                        errorMessage = validator(it)
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .onFocusChanged { state ->
@@ -997,6 +1005,10 @@ fun TextInputDialog(
                     },
                 singleLine = singleLine,
                 maxLines = maxLines,
+                isError = errorMessage != null,
+                supportingText = if (errorMessage != null || supportingText != null) {
+                    { Text(text = errorMessage ?: supportingText!!) }
+                } else null,
             )
         },
         confirmButton = {
@@ -1013,7 +1025,19 @@ fun TextInputDialog(
                     weight = 1f,
                 )
                 clickableItem(
-                    onClick = { onConfirm(text) },
+                    onClick = {
+                        var hasError = false
+                        if (validator != null) {
+                            val error = validator(text)
+                            if (error != null) {
+                                errorMessage = error
+                                hasError = true
+                            }
+                        }
+                        if (!hasError) {
+                            onConfirm(text)
+                        }
+                    },
                     label = confirmLabel,
                     weight = 1f,
                 )
