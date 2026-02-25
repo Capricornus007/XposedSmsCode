@@ -282,6 +282,12 @@ object PrefsReader {
     }
 
     @JvmStatic
+    fun forwardWebhookNonCodeEnabled(context: Context): Boolean {
+        val defaultValue = false
+        return getBooleanViaProvider(context, PrefConst.KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED, defaultValue)
+    }
+
+    @JvmStatic
     fun forwardTelegramEnabled(context: Context): Boolean {
         val defaultValue = false
         return getBooleanViaProvider(context, PrefConst.KEY_FORWARD_TG_ENABLED, defaultValue)
@@ -303,6 +309,12 @@ object PrefsReader {
     fun forwardTelegramIncludeBody(context: Context): Boolean {
         val defaultValue = false
         return getBooleanViaProvider(context, PrefConst.KEY_FORWARD_TG_INCLUDE_BODY, defaultValue)
+    }
+
+    @JvmStatic
+    fun forwardTelegramNonCodeEnabled(context: Context): Boolean {
+        val defaultValue = false
+        return getBooleanViaProvider(context, PrefConst.KEY_FORWARD_TG_NON_CODE_ENABLED, defaultValue)
     }
 
     @JvmStatic

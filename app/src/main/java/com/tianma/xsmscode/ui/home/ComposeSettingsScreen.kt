@@ -92,10 +92,12 @@ fun ComposeSettingsScreen(
     var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
     var forwardWebhookUrl by remember { mutableStateOf("") }
     var forwardWebhookIncludeBody by remember { mutableStateOf(false) }
+    var forwardWebhookNonCodeEnabled by remember { mutableStateOf(false) }
     var forwardTgBotToken by remember { mutableStateOf("") }
     var forwardTgChatId by remember { mutableStateOf("") }
     var forwardTgTopicId by remember { mutableStateOf("") }
     var forwardTgIncludeBody by remember { mutableStateOf(false) }
+    var forwardTgNonCodeEnabled by remember { mutableStateOf(false) }
     var showAutoInputDialog by remember { mutableStateOf(false) }
     var showRetentionDialog by remember { mutableStateOf(false) }
     var showSmsTestDialog by remember { mutableStateOf(false) }
@@ -140,6 +142,11 @@ fun ComposeSettingsScreen(
             PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY,
             false,
         )
+        forwardWebhookNonCodeEnabled = AppPreferencesDataStore.getBoolean(
+            context,
+            PrefConst.KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED,
+            false,
+        )
         forwardTgBotToken = AppPreferencesDataStore.getString(
             context,
             PrefConst.KEY_FORWARD_TG_BOT_TOKEN,
@@ -158,6 +165,11 @@ fun ComposeSettingsScreen(
         forwardTgIncludeBody = AppPreferencesDataStore.getBoolean(
             context,
             PrefConst.KEY_FORWARD_TG_INCLUDE_BODY,
+            false,
+        )
+        forwardTgNonCodeEnabled = AppPreferencesDataStore.getBoolean(
+            context,
+            PrefConst.KEY_FORWARD_TG_NON_CODE_ENABLED,
             false,
         )
         settingsViewModel.setInternalFilesWritable()
@@ -702,13 +714,16 @@ fun ComposeSettingsScreen(
         ForwardWebhookConfigDialog(
             webhookUrl = forwardWebhookUrl,
             includeBody = forwardWebhookIncludeBody,
+            nonCodeEnabled = forwardWebhookNonCodeEnabled,
             onDismiss = { showForwardWebhookConfigDialog = false },
-        ) { url, includeBody ->
+        ) { url, includeBody, nonCodeEnabled ->
             forwardWebhookUrl = url.trim()
             forwardWebhookIncludeBody = includeBody
+            forwardWebhookNonCodeEnabled = nonCodeEnabled
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_WEBHOOK_URL, forwardWebhookUrl)
                 AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY, includeBody)
+                AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED, nonCodeEnabled)
                 AppPreferencesDataStore.syncToSharedPrefs(context)
                 pendingSavedToast = true
                 Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
@@ -723,17 +738,20 @@ fun ComposeSettingsScreen(
             chatId = forwardTgChatId,
             topicId = forwardTgTopicId,
             includeBody = forwardTgIncludeBody,
+            nonCodeEnabled = forwardTgNonCodeEnabled,
             onDismiss = { showForwardTgConfigDialog = false },
-        ) { token, chatId, topicId, includeBody ->
+        ) { token, chatId, topicId, includeBody, nonCodeEnabled ->
             forwardTgBotToken = token.trim()
             forwardTgChatId = chatId.trim()
             forwardTgTopicId = topicId.trim()
             forwardTgIncludeBody = includeBody
+            forwardTgNonCodeEnabled = nonCodeEnabled
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_TG_BOT_TOKEN, forwardTgBotToken)
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_TG_CHAT_ID, forwardTgChatId)
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_TG_TOPIC_ID, forwardTgTopicId)
                 AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_TG_INCLUDE_BODY, includeBody)
+                AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_TG_NON_CODE_ENABLED, nonCodeEnabled)
                 AppPreferencesDataStore.syncToSharedPrefs(context)
                 pendingSavedToast = true
                 Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
@@ -1120,12 +1138,14 @@ fun SwitchItem(
 fun ForwardWebhookConfigDialog(
     webhookUrl: String,
     includeBody: Boolean,
+    nonCodeEnabled: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, Boolean) -> Unit,
+    onConfirm: (String, Boolean, Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     var url by remember(webhookUrl) { mutableStateOf(webhookUrl) }
     var includeBodyState by remember(includeBody) { mutableStateOf(includeBody) }
+    var nonCodeEnabledState by remember(nonCodeEnabled) { mutableStateOf(nonCodeEnabled) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.pref_forward_webhook_config_title)) },
@@ -1150,6 +1170,10 @@ fun ForwardWebhookConfigDialog(
                     checked = includeBodyState,
                     onCheckedChange = { includeBodyState = it },
                 )
+                ForwardChannelNonCodeSwitch(
+                    checked = nonCodeEnabledState,
+                    onCheckedChange = { nonCodeEnabledState = it },
+                )
             }
         },
         confirmButton = {
@@ -1172,7 +1196,7 @@ fun ForwardWebhookConfigDialog(
                         ).show()
                         return@TextButton
                     }
-                    onConfirm(trimmed, includeBodyState)
+                    onConfirm(trimmed, includeBodyState, nonCodeEnabledState)
                 },
             ) {
                 Text(stringResource(id = R.string.confirm))
@@ -1192,14 +1216,16 @@ fun ForwardTelegramConfigDialog(
     chatId: String,
     topicId: String,
     includeBody: Boolean,
+    nonCodeEnabled: Boolean,
     onDismiss: () -> Unit,
-    onConfirm: (String, String, String, Boolean) -> Unit,
+    onConfirm: (String, String, String, Boolean, Boolean) -> Unit,
 ) {
     val context = LocalContext.current
     var token by remember(botToken) { mutableStateOf(botToken) }
     var chat by remember(chatId) { mutableStateOf(chatId) }
     var topic by remember(topicId) { mutableStateOf(topicId) }
     var includeBodyState by remember(includeBody) { mutableStateOf(includeBody) }
+    var nonCodeEnabledState by remember(nonCodeEnabled) { mutableStateOf(nonCodeEnabled) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.pref_forward_tg_config_title)) },
@@ -1254,6 +1280,10 @@ fun ForwardTelegramConfigDialog(
                     checked = includeBodyState,
                     onCheckedChange = { includeBodyState = it },
                 )
+                ForwardChannelNonCodeSwitch(
+                    checked = nonCodeEnabledState,
+                    onCheckedChange = { nonCodeEnabledState = it },
+                )
             }
         },
         confirmButton = {
@@ -1269,7 +1299,7 @@ fun ForwardTelegramConfigDialog(
                         ).show()
                         return@TextButton
                     }
-                    onConfirm(tokenTrimmed, chatTrimmed, topic.trim(), includeBodyState)
+                    onConfirm(tokenTrimmed, chatTrimmed, topic.trim(), includeBodyState, nonCodeEnabledState)
                 },
             ) {
                 Text(stringResource(id = R.string.confirm))
@@ -1305,6 +1335,43 @@ private fun ForwardChannelBodySwitch(
             )
             Text(
                 text = stringResource(id = R.string.pref_forward_channel_include_body_summary),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
+    }
+    HorizontalDivider(
+        modifier = Modifier.padding(top = 8.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+    )
+}
+
+@Composable
+private fun ForwardChannelNonCodeSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = stringResource(id = R.string.pref_forward_channel_non_code_title),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = stringResource(id = R.string.pref_forward_channel_non_code_summary),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

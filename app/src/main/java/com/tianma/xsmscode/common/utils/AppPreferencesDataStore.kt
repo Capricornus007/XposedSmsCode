@@ -254,6 +254,10 @@ object AppPreferencesDataStore {
             getBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY, false),
         )
         editor.putBoolean(
+            PrefConst.KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED,
+            getBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED, false),
+        )
+        editor.putBoolean(
             PrefConst.KEY_FORWARD_TG_ENABLED,
             getBoolean(context, PrefConst.KEY_FORWARD_TG_ENABLED, false),
         )
@@ -272,6 +276,10 @@ object AppPreferencesDataStore {
         editor.putBoolean(
             PrefConst.KEY_FORWARD_TG_INCLUDE_BODY,
             getBoolean(context, PrefConst.KEY_FORWARD_TG_INCLUDE_BODY, false),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_FORWARD_TG_NON_CODE_ENABLED,
+            getBoolean(context, PrefConst.KEY_FORWARD_TG_NON_CODE_ENABLED, false),
         )
         editor.putBoolean(
             PrefConst.KEY_FORWARD_INCLUDE_BODY,

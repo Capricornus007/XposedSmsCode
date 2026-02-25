@@ -36,12 +36,14 @@ object PrefConst {
     const val KEY_FORWARD_WEBHOOK_ENABLED = "pref_forward_webhook_enabled"
     const val KEY_FORWARD_WEBHOOK_URL = "pref_forward_webhook_url"
     const val KEY_FORWARD_WEBHOOK_INCLUDE_BODY = "pref_forward_webhook_include_body"
+    const val KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED = "pref_forward_webhook_non_code_enabled"
     const val KEY_FORWARD_EMAIL = "pref_forward_email"
     const val KEY_FORWARD_TG_ENABLED = "pref_forward_tg_enabled"
     const val KEY_FORWARD_TG_BOT_TOKEN = "pref_forward_tg_bot_token"
     const val KEY_FORWARD_TG_CHAT_ID = "pref_forward_tg_chat_id"
     const val KEY_FORWARD_TG_TOPIC_ID = "pref_forward_tg_topic_id"
     const val KEY_FORWARD_TG_INCLUDE_BODY = "pref_forward_tg_include_body"
+    const val KEY_FORWARD_TG_NON_CODE_ENABLED = "pref_forward_tg_non_code_enabled"
     const val KEY_FORWARD_INCLUDE_BODY = "pref_forward_include_body"
 
     // Code Notification

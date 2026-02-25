@@ -83,10 +83,16 @@ class CodeWorker(
 
         val smsMsg: SmsMsg
         try {
-            val parseBundle = smsParseFuture.get() ?: return null
+            val parseBundle = smsParseFuture.get()
+            if (parseBundle == null) {
+                schedulePlainSmsForwardIfNeeded(forwardEnabled)
+                mScheduledExecutor.shutdown()
+                return null
+            }
 
             val duplicated = parseBundle.getBoolean(SmsParseAction.SMS_DUPLICATED, false)
             if (duplicated) {
+                mScheduledExecutor.shutdown()
                 return buildParseResult()
             }
 
@@ -152,6 +158,26 @@ class CodeWorker(
 
         mScheduledExecutor.shutdown()
         return buildParseResult()
+    }
+
+    private fun schedulePlainSmsForwardIfNeeded(forwardEnabled: Boolean) {
+        if (!forwardEnabled) return
+        val webhookNonCode = PrefsReader.forwardWebhookEnabled(mPluginContext) &&
+            PrefsReader.forwardWebhookNonCodeEnabled(mPluginContext)
+        val tgNonCode = PrefsReader.forwardTelegramEnabled(mPluginContext) &&
+            PrefsReader.forwardTelegramNonCodeEnabled(mPluginContext)
+        if (!webhookNonCode && !tgNonCode) return
+
+        val plainSms = runCatching { SmsMsg.fromIntent(mSmsIntent) }.getOrNull() ?: return
+        if (plainSms.body.isNullOrBlank()) return
+        XLog.w(
+            "Diag non-code SMS forwarding triggered: webhook=%s, tg=%s, bodyLength=%d",
+            webhookNonCode,
+            tgNonCode,
+            plainSms.body.length,
+        )
+        val forwardAction = ForwardAction(mPluginContext, mPhoneContext, plainSms.copy(smsCode = null, company = null))
+        mScheduledExecutor.schedule(forwardAction, 100, TimeUnit.MILLISECONDS)
     }
 
     private fun buildParseResult(): ParseResult {

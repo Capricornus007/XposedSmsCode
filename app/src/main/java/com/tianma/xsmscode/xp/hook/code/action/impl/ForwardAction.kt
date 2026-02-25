@@ -35,14 +35,17 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
     override fun action(): Bundle? {
         if (!PrefsReader.forwardEnabled(mPluginContext)) return null
 
+        val isCodeSms = !mSmsMsg.smsCode.isNullOrBlank()
         val webhookEnabled = PrefsReader.forwardWebhookEnabled(mPluginContext)
         val webhookUrl = PrefsReader.forwardWebhookUrl(mPluginContext).trim()
         val webhookIncludeBody = PrefsReader.forwardWebhookIncludeBody(mPluginContext)
+        val webhookNonCodeEnabled = PrefsReader.forwardWebhookNonCodeEnabled(mPluginContext)
         val tgEnabled = PrefsReader.forwardTelegramEnabled(mPluginContext)
         val tgBotToken = PrefsReader.forwardTelegramBotToken(mPluginContext).trim()
         val tgChatId = PrefsReader.forwardTelegramChatId(mPluginContext).trim()
         val tgTopicId = PrefsReader.forwardTelegramTopicId(mPluginContext).trim()
         val tgIncludeBody = PrefsReader.forwardTelegramIncludeBody(mPluginContext)
+        val tgNonCodeEnabled = PrefsReader.forwardTelegramNonCodeEnabled(mPluginContext)
         if (webhookUrl.isBlank()) {
             if (!tgEnabled) {
                 persistForwardResult(
@@ -56,7 +59,7 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
 
         val channelResults = mutableListOf<ChannelResult>()
 
-        if (webhookEnabled) {
+        if (webhookEnabled && (isCodeSms || webhookNonCodeEnabled)) {
             if (webhookUrl.isBlank()) {
                 channelResults += ChannelResult(
                     target = mPluginContext.getString(R.string.forward_channel_webhook),
@@ -64,11 +67,11 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
                     message = mPluginContext.getString(R.string.forward_result_webhook_empty),
                 )
             } else {
-                channelResults += forwardToWebhook(webhookUrl, webhookIncludeBody)
+                channelResults += forwardToWebhook(webhookUrl, webhookIncludeBody, isCodeSms)
             }
         }
 
-        if (tgEnabled) {
+        if (tgEnabled && (isCodeSms || tgNonCodeEnabled)) {
             if (tgBotToken.isBlank() || tgChatId.isBlank()) {
                 channelResults += ChannelResult(
                     target = mPluginContext.getString(R.string.forward_channel_tg),
@@ -76,7 +79,7 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
                     message = mPluginContext.getString(R.string.forward_result_tg_config_invalid),
                 )
             } else {
-                channelResults += forwardToTelegram(tgBotToken, tgChatId, tgTopicId, tgIncludeBody)
+                channelResults += forwardToTelegram(tgBotToken, tgChatId, tgTopicId, tgIncludeBody, isCodeSms)
             }
         }
 
@@ -96,12 +99,12 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
         return null
     }
 
-    private fun forwardToWebhook(webhookUrl: String, includeBody: Boolean): ChannelResult {
+    private fun forwardToWebhook(webhookUrl: String, includeBody: Boolean, isCodeSms: Boolean): ChannelResult {
         val isFeishuWebhook = isFeishuWebhookUrl(webhookUrl)
         val payload = if (isFeishuWebhook) {
-            buildFeishuPayload(includeBody)
+            buildFeishuPayload(includeBody, isCodeSms)
         } else {
-            buildGenericPayload(includeBody)
+            buildGenericPayload(includeBody, isCodeSms)
         }
         val request = Request.Builder()
             .url(webhookUrl)
@@ -136,7 +139,12 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
         }
     }
 
-    private fun buildGenericPayload(includeBody: Boolean): JSONObject {
+    private fun buildGenericPayload(includeBody: Boolean, isCodeSms: Boolean): JSONObject {
+        if (!isCodeSms) {
+            return JSONObject().apply {
+                put("body", mSmsMsg.body.orEmpty())
+            }
+        }
         return JSONObject().apply {
             put("sender", mSmsMsg.sender)
             put("company", mSmsMsg.company)
@@ -150,15 +158,19 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
         }
     }
 
-    private fun buildFeishuPayload(includeBody: Boolean): JSONObject {
+    private fun buildFeishuPayload(includeBody: Boolean, isCodeSms: Boolean): JSONObject {
         val text = buildString {
-            append("Code: ").append(mSmsMsg.smsCode.orEmpty())
-            append('\n').append("Sender: ").append(mSmsMsg.sender.orEmpty())
-            if (!mSmsMsg.company.isNullOrBlank()) {
-                append('\n').append("Company: ").append(mSmsMsg.company)
+            if (isCodeSms) {
+                append("Code: ").append(mSmsMsg.smsCode.orEmpty())
+                append('\n').append("Sender: ").append(mSmsMsg.sender.orEmpty())
+                if (!mSmsMsg.company.isNullOrBlank()) {
+                    append('\n').append("Company: ").append(mSmsMsg.company)
+                }
+                append('\n').append("Time: ").append(mSmsMsg.date)
             }
-            append('\n').append("Time: ").append(mSmsMsg.date)
-            if (includeBody) {
+            if (!isCodeSms) {
+                append(mSmsMsg.body.orEmpty())
+            } else if (includeBody) {
                 append('\n').append("Body: ").append(mSmsMsg.body.orEmpty())
             }
         }
@@ -222,16 +234,21 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
         chatId: String,
         topicId: String,
         includeBody: Boolean,
+        isCodeSms: Boolean,
     ): ChannelResult {
         val tgApi = "https://api.telegram.org/bot$botToken/sendMessage"
         val text = buildString {
-            append("Code: ").append(mSmsMsg.smsCode.orEmpty())
-            append('\n').append("Sender: ").append(mSmsMsg.sender.orEmpty())
-            if (!mSmsMsg.company.isNullOrBlank()) {
-                append('\n').append("Company: ").append(mSmsMsg.company)
+            if (isCodeSms) {
+                append("Code: ").append(mSmsMsg.smsCode.orEmpty())
+                append('\n').append("Sender: ").append(mSmsMsg.sender.orEmpty())
+                if (!mSmsMsg.company.isNullOrBlank()) {
+                    append('\n').append("Company: ").append(mSmsMsg.company)
+                }
+                append('\n').append("Time: ").append(mSmsMsg.date)
             }
-            append('\n').append("Time: ").append(mSmsMsg.date)
-            if (includeBody) {
+            if (!isCodeSms) {
+                append(mSmsMsg.body.orEmpty())
+            } else if (includeBody) {
                 append('\n').append("Body: ").append(mSmsMsg.body.orEmpty())
             }
         }

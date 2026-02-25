@@ -66,6 +66,8 @@
     <string name="pref_forward_tg_config_title">Telegram channel config</string>
     <string name="pref_forward_channel_include_body_title">Include SMS body</string>
     <string name="pref_forward_channel_include_body_summary">Include original SMS content in this channel</string>
+    <string name="pref_forward_channel_non_code_title">Forward non-code SMS</string>
+    <string name="pref_forward_channel_non_code_summary">Forward regular SMS as body-only in this channel</string>
     <string name="pref_forward_email_title">Target email (optional)</string>
     <string name="pref_forward_email_summary">Optional recipient email sent in webhook payload as emailTo</string>
     <string name="pref_forward_include_body_title">Include SMS body</string>

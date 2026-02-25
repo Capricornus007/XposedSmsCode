@@ -66,6 +66,8 @@
     <string name="pref_forward_tg_config_title">Telegram 通道配置</string>
     <string name="pref_forward_channel_include_body_title">包含短信正文</string>
     <string name="pref_forward_channel_include_body_summary">在该通道中附带原始短信内容</string>
+    <string name="pref_forward_channel_non_code_title">转发非验证码短信</string>
+    <string name="pref_forward_channel_non_code_summary">该通道中普通短信仅转发正文</string>
     <string name="pref_forward_email_title">目标邮箱（可选）</string>
     <string name="pref_forward_email_summary">可选，作为 emailTo 字段随 webhook 一起发送</string>
     <string name="pref_forward_include_body_title">包含短信正文</string>

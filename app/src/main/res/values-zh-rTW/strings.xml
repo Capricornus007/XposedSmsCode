@@ -66,6 +66,8 @@
     <string name="pref_forward_tg_config_title">Telegram 通道設定</string>
     <string name="pref_forward_channel_include_body_title">包含簡訊正文</string>
     <string name="pref_forward_channel_include_body_summary">在此通道中附帶原始簡訊內容</string>
+    <string name="pref_forward_channel_non_code_title">轉發非驗證碼簡訊</string>
+    <string name="pref_forward_channel_non_code_summary">此通道中一般簡訊僅轉發正文</string>
     <string name="pref_forward_email_title">目標信箱（可選）</string>
     <string name="pref_forward_email_summary">可選，作為 emailTo 欄位隨 webhook 一起送出</string>
     <string name="pref_forward_include_body_title">包含簡訊正文</string>
