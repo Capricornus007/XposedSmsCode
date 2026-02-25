@@ -1,8 +1,5 @@
-- Fix: SMS parse failure with pre-unlock CE prefs (#108)
-- Fix: DataStore multi-instance crash (#104)
-- Fix: Android 16 hook signature compatibility (#105)
-- Fix: Android 13 edge-to-edge setup (#106)
-- Fix: App icon-name alignment & label lock in records list (#110)
-- UX: Re-enable 'Mark as read', add blacklist format check & tips
-- UX: Group notification settings (#103)
-- UX: M3 polish for actions, dialogs, loading
+- New: Webhook + Telegram forwarding channels with forwarding records (#119)
+- New: Per-channel toggle to forward non-code SMS as body-only (#120)
+- Fix: OTP parser now prefers numeric codes over brand words (e.g. Wise/PayPal) (#117)
+- Fix: Forward target in record details now shows channel names only (#118)
+- Fix: Resolve gray screen when returning from background on license page (#116)
