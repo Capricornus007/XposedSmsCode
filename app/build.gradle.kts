@@ -105,6 +105,13 @@ android {
         buildConfig = true
         compose = true
     }
+    packaging {
+        resources {
+            excludes += "**/*.kotlin_*"
+            excludes += "META-INF/NOTICE.md"
+            excludes += "META-INF/LICENSE.md"
+        }
+    }
 
     signingConfigs {
         create("release") {
@@ -157,11 +164,6 @@ android {
             lint {
                 disable += "MissingTranslation"
                 checkReleaseBuilds = false
-            }
-            packaging {
-                resources {
-                    excludes += "**/*.kotlin_*"
-                }
             }
         }
     }
@@ -249,6 +251,7 @@ dependencies {
     implementation(libs.retrofit.converter.scalars)
 
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
 

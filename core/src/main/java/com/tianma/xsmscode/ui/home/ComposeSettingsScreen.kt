@@ -1,0 +1,1936 @@
+package com.tianma.xsmscode.ui.home
+
+import android.app.Activity
+import android.content.Intent
+import android.os.SystemClock
+import android.util.Log
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
+import com.tianma.xsmscode.core.BuildConfig
+import com.tianma.xsmscode.core.R
+import com.tianma.xsmscode.common.constant.Const
+import com.tianma.xsmscode.common.constant.PrefConst
+import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
+import com.tianma.xsmscode.common.utils.ModuleActivationStore
+import com.tianma.xsmscode.common.utils.ModuleUtils
+import com.tianma.xsmscode.common.utils.PackageUtils
+import com.tianma.xsmscode.common.utils.RuntimeLogStore
+import com.tianma.xsmscode.common.utils.SPUtils
+import com.tianma.xsmscode.common.utils.Utils
+import com.tianma.xsmscode.common.utils.XLog
+import com.tianma.xsmscode.ui.common.LoadingIndicatorTokens
+import com.tianma.xsmscode.ui.common.PolygonMorphLoadingIndicator
+import com.tianma.xsmscode.ui.common.SessionLoadingRegistry
+import com.tianma.xsmscode.ui.common.rememberMinDurationLoading
+import com.tianma.xsmscode.ui.privacy.PrivacyPolicyPage
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import org.koin.compose.viewmodel.koinViewModel
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun ComposeSettingsScreen(
+    hazeState: HazeState,
+    hazeStyle: HazeStyle,
+    viewModel: SettingsViewModel? = null,
+    refreshTrigger: Int = 0,
+    onExit: () -> Unit = {},
+) {
+    val context = LocalContext.current
+    val activityOwner = context as? ComponentActivity
+    val settingsViewModel = viewModel ?: if (activityOwner != null) {
+        koinViewModel(viewModelStoreOwner = activityOwner)
+    } else {
+        koinViewModel()
+    }
+    val scope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val themeState by settingsViewModel.themeState.collectAsStateWithLifecycle()
+    val themeMode = themeState.mode
+
+    var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
+    var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
+    var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
+    var forwardWebhookUrl by remember { mutableStateOf("") }
+    var forwardWebhookIncludeBody by remember { mutableStateOf(false) }
+    var forwardWebhookNonCodeEnabled by remember { mutableStateOf(false) }
+    var forwardTgBotToken by remember { mutableStateOf("") }
+    var forwardTgChatId by remember { mutableStateOf("") }
+    var forwardTgTopicId by remember { mutableStateOf("") }
+    var forwardTgIncludeBody by remember { mutableStateOf(false) }
+    var forwardTgNonCodeEnabled by remember { mutableStateOf(false) }
+    var showAutoInputDialog by remember { mutableStateOf(false) }
+    var showRetentionDialog by remember { mutableStateOf(false) }
+    var showSmsTestDialog by remember { mutableStateOf(false) }
+    var showForwardWebhookConfigDialog by remember { mutableStateOf(false) }
+    var showForwardTgConfigDialog by remember { mutableStateOf(false) }
+    var smsTestInput by remember { mutableStateOf("") }
+    var showThemeDialog by remember { mutableStateOf(false) }
+    var showDonateDialog by remember { mutableStateOf(false) }
+    var showAlipayChoiceDialog by remember { mutableStateOf(false) }
+    var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
+    var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
+    var showPrivacyPolicyPage by remember { mutableStateOf(false) }
+    var showVerboseLogViewer by remember { mutableStateOf(false) }
+    var showKeywordsDialog by remember { mutableStateOf(false) }
+    var isActivated by remember { mutableStateOf(ModuleUtils.isModuleEnabled()) }
+    var pendingSavedToast by remember { mutableStateOf(false) }
+    var settingsDataLoaded by remember { mutableStateOf(false) }
+    var manualRefreshing by remember { mutableStateOf(false) }
+
+    val reloadSettingsData: suspend () -> Unit = {
+        autoInputDelay = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_AUTO_INPUT_CODE_DELAY,
+            PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT,
+        )
+        retentionTime = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_NOTIFICATION_RETENTION_TIME,
+            PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT,
+        )
+        smsCodeKeywords = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_SMSCODE_KEYWORDS,
+            PrefConst.SMSCODE_KEYWORDS_DEFAULT,
+        )
+        forwardWebhookUrl = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_FORWARD_WEBHOOK_URL,
+            "",
+        )
+        forwardWebhookIncludeBody = AppPreferencesDataStore.getBoolean(
+            context,
+            PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY,
+            false,
+        )
+        forwardWebhookNonCodeEnabled = AppPreferencesDataStore.getBoolean(
+            context,
+            PrefConst.KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED,
+            false,
+        )
+        forwardTgBotToken = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_FORWARD_TG_BOT_TOKEN,
+            "",
+        )
+        forwardTgChatId = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_FORWARD_TG_CHAT_ID,
+            "",
+        )
+        forwardTgTopicId = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_FORWARD_TG_TOPIC_ID,
+            "",
+        )
+        forwardTgIncludeBody = AppPreferencesDataStore.getBoolean(
+            context,
+            PrefConst.KEY_FORWARD_TG_INCLUDE_BODY,
+            false,
+        )
+        forwardTgNonCodeEnabled = AppPreferencesDataStore.getBoolean(
+            context,
+            PrefConst.KEY_FORWARD_TG_NON_CODE_ENABLED,
+            false,
+        )
+        settingsViewModel.setInternalFilesWritable()
+        settingsDataLoaded = true
+    }
+
+    suspend fun runManualRefresh() {
+        val startedAt = SystemClock.elapsedRealtime()
+        manualRefreshing = true
+        reloadSettingsData()
+        val elapsed = SystemClock.elapsedRealtime() - startedAt
+        val remaining = (LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS - elapsed).coerceAtLeast(0L)
+        if (remaining > 0L) delay(remaining)
+        manualRefreshing = false
+    }
+
+    var showBackupDialog by remember { mutableStateOf(false) }
+    var showRestoreDialog by remember { mutableStateOf(false) }
+    var restoreUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var backupFlags by remember { mutableStateOf(Triple(true, true, true)) } // config, rules, records
+
+    val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                settingsViewModel.performBackup(uri, backupFlags.first, backupFlags.second, backupFlags.third)
+            }
+        }
+    }
+
+    val restoreLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            result.data?.data?.let { uri ->
+                settingsViewModel.handleBackupArguments(uri)
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        if (!SPUtils.isPrivacyPolicyAccepted(context)) {
+            showPrivacyPolicyDialog = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        reloadSettingsData()
+    }
+
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            isActivated = ModuleUtils.isModuleEnabled() || ModuleActivationStore.isActivatedRecently(context)
+            delay(1000L)
+            isActivated = ModuleUtils.isModuleEnabled() || ModuleActivationStore.isActivatedRecently(context)
+        }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP && pendingSavedToast) {
+                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+                pendingSavedToast = false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val markPrefsSaved = { pendingSavedToast = true }
+
+    LaunchedEffect(settingsViewModel, lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+            settingsViewModel.eventsFlow.collect { event ->
+                handleSettingsEvent(
+                    event = event,
+                    context = context,
+                    activity = activityOwner ?: (context as? Activity),
+                    scope = scope,
+                    onShowPrivacyPolicy = { showPrivacyPolicyDialog = true },
+                    onShowDonate = { showDonateDialog = true },
+                    onShowRestoreConfirm = { uri ->
+                        restoreUri = uri
+                        showRestoreDialog = true
+                    },
+                )
+            }
+        }
+    }
+
+    val scrollState = rememberScrollState()
+    val showTopDivider by remember {
+        derivedStateOf { scrollState.value > 0 }
+    }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val shouldShowInitialLoading = remember { SessionLoadingRegistry.shouldShowInitial("settings") }
+    val showLoading = rememberMinDurationLoading(
+        actualLoading = shouldShowInitialLoading && !settingsDataLoaded,
+        minDurationMillis = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
+    )
+    val pullToRefreshState = rememberPullToRefreshState()
+
+    LaunchedEffect(settingsDataLoaded, showLoading, shouldShowInitialLoading) {
+        if (shouldShowInitialLoading && settingsDataLoaded && !showLoading) {
+            SessionLoadingRegistry.markShown("settings")
+        }
+    }
+
+    LaunchedEffect(refreshTrigger) {
+        if (refreshTrigger > 0) {
+            runManualRefresh()
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
+            Const.TOP_BAR_HEIGHT.dp // TopBar height
+        val isCompact = LocalConfiguration.current.screenWidthDp < 600
+        val bottomPadding =
+            WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
+                if (isCompact) Const.BOTTOM_SPACE_HEIGHT.dp else 0.dp
+
+        PullToRefreshBox(
+            state = pullToRefreshState,
+            isRefreshing = manualRefreshing,
+            onRefresh = {
+                scope.launch { runManualRefresh() }
+            },
+            indicator = {
+                PullToRefreshDefaults.LoadingIndicator(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing),
+                    isRefreshing = manualRefreshing,
+                    state = pullToRefreshState,
+                )
+            },
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            if (showLoading && !manualRefreshing) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    PolygonMorphLoadingIndicator(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing),
+                    )
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .hazeSource(hazeState)
+                        .padding(bottom = bottomPadding)
+                        .nestedScroll(scrollBehavior.nestedScrollConnection)
+                        .verticalScroll(scrollState),
+                    verticalArrangement = Arrangement.spacedBy(Const.SPACING_EXTRA_SMALL.dp),
+                ) {
+                // Add top padding manually as the first item or Spacer
+                Spacer(modifier = Modifier.height(topPadding))
+                SectionHeader(text = stringResource(id = R.string.pref_general_title))
+                SwitchItem(
+                    title = stringResource(id = R.string.pref_enable_title),
+                    summary = stringResource(id = R.string.pref_enable_summary),
+                    key = PrefConst.KEY_ENABLE,
+                    defaultValue = true,
+                    onSaved = markPrefsSaved,
+                )
+                Item(
+                    title = stringResource(id = R.string.pref_create_shortcut_title),
+                    summary = stringResource(id = R.string.pref_create_shortcut_summary),
+                ) { settingsViewModel.pinShortcutToDesktop() }
+                Item(
+                    title = stringResource(id = R.string.pref_choose_theme_title),
+                    summary = stringResource(id = R.string.pref_choose_theme_summary),
+                ) { showThemeDialog = true }
+
+            var showLanguageDialog by remember { mutableStateOf(false) }
+            Item(
+                title = stringResource(id = R.string.pref_language_title),
+                summary = stringResource(id = R.string.pref_language_summary),
+            ) { showLanguageDialog = true }
+
+            if (showLanguageDialog) {
+                LanguageChooserDialog(
+                    onDismiss = { showLanguageDialog = false },
+                    onLanguageSelected = { tag ->
+                        val locales = if (tag.isEmpty()) {
+                            androidx.core.os.LocaleListCompat.getEmptyLocaleList()
+                        } else {
+                            androidx.core.os.LocaleListCompat.forLanguageTags(tag)
+                        }
+                        androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(locales)
+                        showLanguageDialog = false
+                    },
+                )
+            }
+
+            val blurRadius = rememberPrefInt(PrefConst.KEY_HAZE_BLUR_RADIUS, 25)
+            val tintAlpha = rememberPrefFloat(PrefConst.KEY_HAZE_TINT_ALPHA, 0.2f)
+            var showBlurRadiusDialog by remember { mutableStateOf(false) }
+            var showTintAlphaDialog by remember { mutableStateOf(false) }
+
+            Item(
+                title = stringResource(id = R.string.pref_haze_blur_radius_title),
+                summary = "${blurRadius.intValue}dp",
+            ) { showBlurRadiusDialog = true }
+
+            Item(
+                title = stringResource(id = R.string.pref_haze_tint_alpha_title),
+                summary = "%.2f".format(tintAlpha.floatValue),
+            ) { showTintAlphaDialog = true }
+
+            if (showBlurRadiusDialog) {
+                SliderDialog(
+                    title = stringResource(id = R.string.pref_haze_blur_radius_title),
+                    value = blurRadius.intValue.toFloat(),
+                    valueRange = 0f..100f,
+                    steps = 0,
+                    onDismiss = { showBlurRadiusDialog = false },
+                    onValueChange = {
+                        val newVal = it.toInt()
+                        blurRadius.intValue = newVal
+                        scope.launch {
+                            AppPreferencesDataStore.setInt(context, PrefConst.KEY_HAZE_BLUR_RADIUS, newVal)
+                            AppPreferencesDataStore.syncToSharedPrefs(context)
+                            markPrefsSaved()
+                        }
+                        showBlurRadiusDialog = false
+                    },
+                    valueFormatter = { "${it.toInt()}dp" }
+                )
+            }
+
+            if (showTintAlphaDialog) {
+                SliderDialog(
+                    title = stringResource(id = R.string.pref_haze_tint_alpha_title),
+                    value = tintAlpha.floatValue,
+                    valueRange = 0f..1f,
+                    steps = 0,
+                    onDismiss = { showTintAlphaDialog = false },
+                    onValueChange = {
+                        tintAlpha.floatValue = it
+                        scope.launch {
+                            AppPreferencesDataStore.setFloat(context, PrefConst.KEY_HAZE_TINT_ALPHA, it)
+                            AppPreferencesDataStore.syncToSharedPrefs(context)
+                            markPrefsSaved()
+                        }
+                        showTintAlphaDialog = false
+                    }
+                )
+            }
+
+
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
+
+            SectionHeader(text = stringResource(id = R.string.pref_sms_code_title))
+            SwitchItem(
+                title = stringResource(id = R.string.pref_copy_to_clipboard_title),
+                summary = stringResource(id = R.string.pref_copy_to_clipboard_summary),
+                key = PrefConst.KEY_COPY_TO_CLIPBOARD,
+                defaultValue = false,
+                onSaved = markPrefsSaved,
+            )
+            Item(
+                title = stringResource(id = R.string.pref_smscode_keywords_title),
+                summary = stringResource(id = R.string.pref_smscode_keywords_summary),
+            ) { showKeywordsDialog = true }
+            Item(
+                title = stringResource(id = R.string.pref_smscode_test_title),
+                summary = stringResource(id = R.string.pref_smscode_test_summary),
+            ) { showSmsTestDialog = true }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
+
+            SectionHeader(text = stringResource(id = R.string.pref_forwarding_title))
+            val forwardEnabledState = rememberPrefBoolean(PrefConst.KEY_ENABLE_FORWARD, false)
+            SwitchItem(
+                title = stringResource(id = R.string.pref_enable_forward_title),
+                summary = stringResource(id = R.string.pref_enable_forward_summary),
+                key = PrefConst.KEY_ENABLE_FORWARD,
+                defaultValue = false,
+                stateOverride = forwardEnabledState,
+                onSaved = markPrefsSaved,
+            )
+            if (forwardEnabledState.value) {
+                val webhookForwardEnabled = rememberPrefBoolean(PrefConst.KEY_FORWARD_WEBHOOK_ENABLED, true)
+                val tgForwardEnabled = rememberPrefBoolean(PrefConst.KEY_FORWARD_TG_ENABLED, false)
+                val webhookConfigured = forwardWebhookUrl.isNotBlank()
+                val tgConfigured = forwardTgBotToken.isNotBlank() && forwardTgChatId.isNotBlank()
+                ForwardChannelItem(
+                    title = stringResource(id = R.string.forward_channel_webhook),
+                    summary = if (webhookConfigured) {
+                        stringResource(id = R.string.forward_configured)
+                    } else {
+                        stringResource(id = R.string.forward_not_configured)
+                    },
+                    checked = webhookForwardEnabled.value,
+                    onCheckedChange = { checked ->
+                        webhookForwardEnabled.value = checked
+                        scope.launch {
+                            AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_ENABLED, checked)
+                            AppPreferencesDataStore.syncToSharedPrefs(context)
+                            markPrefsSaved()
+                        }
+                    },
+                    onClick = { showForwardWebhookConfigDialog = true },
+                )
+                ForwardChannelItem(
+                    title = stringResource(id = R.string.forward_channel_tg),
+                    summary = if (tgConfigured) {
+                        stringResource(id = R.string.forward_configured)
+                    } else {
+                        stringResource(id = R.string.forward_not_configured)
+                    },
+                    checked = tgForwardEnabled.value,
+                    onCheckedChange = { checked ->
+                        tgForwardEnabled.value = checked
+                        scope.launch {
+                            AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_TG_ENABLED, checked)
+                            AppPreferencesDataStore.syncToSharedPrefs(context)
+                            markPrefsSaved()
+                        }
+                    },
+                    onClick = { showForwardTgConfigDialog = true },
+                )
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
+
+            SectionHeader(text = stringResource(id = R.string.pref_experimental_title))
+            SwitchItem(
+                title = stringResource(id = R.string.pref_mark_as_read_title),
+                summary = stringResource(id = R.string.pref_mark_as_read_summary),
+                key = PrefConst.KEY_MARK_AS_READ,
+                defaultValue = false,
+                onSaved = markPrefsSaved,
+            )
+            SwitchItem(
+                title = stringResource(id = R.string.pref_delete_sms_title),
+                summary = stringResource(id = R.string.pref_delete_sms_summary),
+                key = PrefConst.KEY_DELETE_SMS,
+                defaultValue = false,
+                onSaved = markPrefsSaved,
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
+
+            SectionHeader(text = stringResource(id = R.string.pref_category_auto_input_title))
+            val autoInputEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, true)
+            SwitchItem(
+                title = stringResource(id = R.string.pref_enable_auto_input_code_title),
+                summary = stringResource(id = R.string.pref_enable_auto_input_code_summary),
+                key = PrefConst.KEY_ENABLE_AUTO_INPUT_CODE,
+                defaultValue = true,
+                stateOverride = autoInputEnabled,
+                onSaved = markPrefsSaved,
+            )
+            SwitchItem(
+                title = stringResource(id = R.string.pref_enable_auto_enter_code_title),
+                summary = stringResource(id = R.string.pref_enable_auto_enter_code_summary),
+                key = PrefConst.KEY_ENABLE_AUTO_ENTER_CODE,
+                defaultValue = false,
+                onSaved = markPrefsSaved,
+            )
+            SwitchItem(
+                title = stringResource(id = R.string.pref_kill_me_title),
+                summary = stringResource(id = R.string.pref_kill_me_summary),
+                key = PrefConst.KEY_KILL_ME,
+                defaultValue = false,
+                onSaved = markPrefsSaved,
+            )
+            Item(
+                title = stringResource(id = R.string.pref_auto_input_code_delay_title),
+                summary = stringResource(id = R.string.pref_auto_input_code_delay_summary, autoInputDelay),
+            ) { showAutoInputDialog = true }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
+
+            SectionHeader(text = stringResource(id = R.string.pref_notification_title))
+            SwitchItem(
+                title = stringResource(id = R.string.pref_show_toast_title),
+                summary = stringResource(id = R.string.pref_show_toast_summary),
+                key = PrefConst.KEY_SHOW_TOAST,
+                defaultValue = true,
+                onSaved = markPrefsSaved,
+            )
+            SwitchItem(
+                title = stringResource(id = R.string.pref_show_code_notification_title),
+                summary = stringResource(id = R.string.pref_show_code_notification_summary),
+                key = PrefConst.KEY_SHOW_CODE_NOTIFICATION,
+                defaultValue = true,
+                onSaved = markPrefsSaved,
+            )
+            SwitchItem(
+                title = stringResource(id = R.string.pref_auto_cancel_notification_title),
+                summary = stringResource(id = R.string.pref_auto_cancel_notification_summary),
+                key = PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
+                defaultValue = false,
+                onSaved = markPrefsSaved,
+            )
+            Item(
+                title = stringResource(id = R.string.pref_notification_retention_time_title),
+                summary = run {
+                    val entries = stringArrayResource(id = R.array.notification_retention_time_entry_list)
+                    val values = stringArrayResource(id = R.array.notification_retention_time_list)
+                    val index = values.indexOf(retentionTime)
+                    if (index >= 0) entries[index] else retentionTime
+                },
+            ) { showRetentionDialog = true }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
+
+            SectionHeader(text = stringResource(id = R.string.pref_backup_restore_title))
+            Item(
+                title = stringResource(id = R.string.pref_backup_title),
+                summary = stringResource(id = R.string.pref_backup_summary),
+            ) { showBackupDialog = true }
+            Item(
+                title = stringResource(id = R.string.pref_restore_title),
+                summary = stringResource(id = R.string.pref_restore_summary),
+            ) {
+                val intent = com.tianma.xsmscode.feature.backup.BackupManager.getImportRuleListSAFIntent(context)
+                restoreLauncher.launch(intent)
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
+            SectionHeader(text = stringResource(id = R.string.pref_others_title))
+            SwitchItem(
+                title = stringResource(id = R.string.pref_verbose_log_mode_title),
+                summary = stringResource(id = R.string.pref_verbose_log_mode_summary),
+                key = PrefConst.KEY_VERBOSE_LOG_MODE,
+                defaultValue = false,
+                onItemClick = { showVerboseLogViewer = true },
+                onToggle = { on ->
+                    RuntimeLogStore.setEnabled(on)
+                    XLog.setLogLevel(if (on) Log.VERBOSE else com.tianma.xsmscode.storage.BuildConfig.LOG_LEVEL)
+                },
+                onSaved = markPrefsSaved,
+            )
+            val autoUpdateEnabled = rememberPrefBoolean(PrefConst.KEY_AUTO_UPDATE_ON_START, true)
+            SwitchItem(
+                title = stringResource(id = R.string.pref_auto_update_on_start_title),
+                summary = stringResource(id = R.string.pref_auto_update_on_start_summary),
+                key = PrefConst.KEY_AUTO_UPDATE_ON_START,
+                defaultValue = true,
+                stateOverride = autoUpdateEnabled,
+                onSaved = markPrefsSaved,
+            )
+            if (autoUpdateEnabled.value) {
+                SwitchItem(
+                    title = stringResource(id = R.string.pref_auto_update_wifi_only_title),
+                    summary = stringResource(id = R.string.pref_auto_update_wifi_only_summary),
+                    key = PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
+                    defaultValue = false,
+                    onSaved = markPrefsSaved,
+                )
+            }
+            Item(
+                title = stringResource(id = R.string.pref_privacy_policy_title),
+                summary = "",
+            ) { showPrivacyPolicyPage = true }
+
+                    Spacer(modifier = Modifier.height(Const.SPACING_SMALL.dp))
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter),
+        ) {
+            TopAppBar(
+                title = { Text(text = stringResource(id = R.string.pref_general_title)) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
+                ),
+                scrollBehavior = scrollBehavior,
+                windowInsets = WindowInsets.statusBars,
+                modifier = Modifier
+                    .hazeEffect(hazeState, hazeStyle) {
+                        forceInvalidateOnPreDraw = true
+                    },
+            )
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
+        )
+    }
+
+    SettingsDialogs(
+        context = context,
+        scope = scope,
+        themeMode = themeMode,
+        autoInputDelay = autoInputDelay,
+        retentionTime = retentionTime,
+        smsTestInput = smsTestInput,
+        smsCodeKeywords = smsCodeKeywords,
+        showAutoInputDialog = showAutoInputDialog,
+        showRetentionDialog = showRetentionDialog,
+        showSmsTestDialog = showSmsTestDialog,
+        showKeywordsDialog = showKeywordsDialog,
+        showThemeDialog = showThemeDialog,
+        showDonateDialog = showDonateDialog,
+        showAlipayChoiceDialog = showAlipayChoiceDialog,
+        showQRCodeDialog = showQRCodeDialog,
+        showPrivacyPolicyDialog = showPrivacyPolicyDialog,
+        showPrivacyPolicyPage = showPrivacyPolicyPage,
+        showBackupDialog = showBackupDialog,
+        showRestoreDialog = showRestoreDialog,
+        restoreUri = restoreUri,
+        onAutoInputDelayChange = { autoInputDelay = it },
+        onRetentionTimeChange = { retentionTime = it },
+        onSmsTestInputChange = { smsTestInput = it },
+        onSmsKeywordsChange = { smsCodeKeywords = it },
+        onShowAutoInputDialogChange = { showAutoInputDialog = it },
+        onShowRetentionDialogChange = { showRetentionDialog = it },
+        onShowSmsTestDialogChange = { showSmsTestDialog = it },
+        onShowKeywordsDialogChange = { showKeywordsDialog = it },
+        onShowThemeDialogChange = { showThemeDialog = it },
+        onShowDonateDialogChange = { showDonateDialog = it },
+        onShowAlipayChoiceDialogChange = { showAlipayChoiceDialog = it },
+        onShowQrCodeDialogChange = { showQRCodeDialog = it },
+        onShowPrivacyPolicyDialogChange = { showPrivacyPolicyDialog = it },
+        onShowPrivacyPolicyPageChange = { showPrivacyPolicyPage = it },
+        onShowBackupDialogChange = { showBackupDialog = it },
+        onShowRestoreDialogChange = { showRestoreDialog = it },
+        onBackupFlagsChange = { backupFlags = it },
+        onPendingSavedToast = { pendingSavedToast = true },
+        backupLauncher = backupLauncher,
+        settingsViewModel = settingsViewModel,
+        onExit = onExit,
+        onSetTheme = { mode, x, y -> settingsViewModel.setThemeMode(mode, x, y) },
+    )
+
+    if (showForwardWebhookConfigDialog) {
+        ForwardWebhookConfigDialog(
+            webhookUrl = forwardWebhookUrl,
+            includeBody = forwardWebhookIncludeBody,
+            nonCodeEnabled = forwardWebhookNonCodeEnabled,
+            onDismiss = { showForwardWebhookConfigDialog = false },
+        ) { url, includeBody, nonCodeEnabled ->
+            forwardWebhookUrl = url.trim()
+            forwardWebhookIncludeBody = includeBody
+            forwardWebhookNonCodeEnabled = nonCodeEnabled
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_WEBHOOK_URL, forwardWebhookUrl)
+                AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY, includeBody)
+                AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED, nonCodeEnabled)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                pendingSavedToast = true
+                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+            }
+            showForwardWebhookConfigDialog = false
+        }
+    }
+
+    if (showForwardTgConfigDialog) {
+        ForwardTelegramConfigDialog(
+            botToken = forwardTgBotToken,
+            chatId = forwardTgChatId,
+            topicId = forwardTgTopicId,
+            includeBody = forwardTgIncludeBody,
+            nonCodeEnabled = forwardTgNonCodeEnabled,
+            onDismiss = { showForwardTgConfigDialog = false },
+        ) { token, chatId, topicId, includeBody, nonCodeEnabled ->
+            forwardTgBotToken = token.trim()
+            forwardTgChatId = chatId.trim()
+            forwardTgTopicId = topicId.trim()
+            forwardTgIncludeBody = includeBody
+            forwardTgNonCodeEnabled = nonCodeEnabled
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_TG_BOT_TOKEN, forwardTgBotToken)
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_TG_CHAT_ID, forwardTgChatId)
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_TG_TOPIC_ID, forwardTgTopicId)
+                AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_TG_INCLUDE_BODY, includeBody)
+                AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_TG_NON_CODE_ENABLED, nonCodeEnabled)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                pendingSavedToast = true
+                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+            }
+            showForwardTgConfigDialog = false
+        }
+    }
+
+    if (showVerboseLogViewer) {
+        RuntimeLogViewerSheet(
+            onDismiss = { showVerboseLogViewer = false },
+        )
+    }
+}
+
+private fun handleSettingsEvent(
+    event: SettingsEvent,
+    context: android.content.Context,
+    activity: Activity?,
+    scope: kotlinx.coroutines.CoroutineScope,
+    onShowPrivacyPolicy: () -> Unit,
+    onShowDonate: () -> Unit,
+    onShowRestoreConfirm: (android.net.Uri) -> Unit,
+) {
+    when (event) {
+        is SettingsEvent.SmsCodeTestResult -> {
+            val text = if (event.code.isBlank()) {
+                context.getString(R.string.cannot_parse_smscode)
+            } else {
+                context.getString(R.string.current_sms_code, event.code)
+            }
+            android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_LONG).show()
+        }
+
+        is SettingsEvent.ShowPrivacyPolicy -> onShowPrivacyPolicy()
+        is SettingsEvent.ShowAlipayPacket -> onShowDonate()
+        is SettingsEvent.BackupResultEvent -> {
+            val msg = if (event.success) R.string.backup_success else R.string.backup_failed
+            android.widget.Toast.makeText(context, context.getString(msg), android.widget.Toast.LENGTH_SHORT).show()
+        }
+
+        is SettingsEvent.RestoreResultEvent -> {
+            val msg = if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
+                R.string.restore_success
+            } else {
+                R.string.restore_failed
+            }
+            android.widget.Toast.makeText(context, context.getString(msg), android.widget.Toast.LENGTH_SHORT).show()
+
+            if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
+                Toast.makeText(context, context.getString(R.string.restore_success), Toast.LENGTH_SHORT).show()
+                scope.launch {
+                    delay(1200L)
+                    if (activity != null) {
+                        val intent = activity.packageManager.getLaunchIntentForPackage(activity.packageName)
+                        if (intent != null) {
+                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                            activity.startActivity(intent)
+                        }
+                        activity.finish()
+                    }
+                    android.os.Process.killProcess(android.os.Process.myPid())
+                }
+            }
+        }
+
+        is SettingsEvent.ImportDialogConfirm -> onShowRestoreConfirm(event.uri)
+        else -> Unit
+    }
+}
+
+@Composable
+private fun SettingsDialogs(
+    context: android.content.Context,
+    scope: kotlinx.coroutines.CoroutineScope,
+    themeMode: Int,
+    autoInputDelay: String,
+    retentionTime: String,
+    smsTestInput: String,
+    smsCodeKeywords: String,
+    showAutoInputDialog: Boolean,
+    showRetentionDialog: Boolean,
+    showSmsTestDialog: Boolean,
+    showKeywordsDialog: Boolean,
+    showThemeDialog: Boolean,
+    showDonateDialog: Boolean,
+    showAlipayChoiceDialog: Boolean,
+    showQRCodeDialog: Pair<Int, String>?,
+    showPrivacyPolicyDialog: Boolean,
+    showPrivacyPolicyPage: Boolean,
+    showBackupDialog: Boolean,
+    showRestoreDialog: Boolean,
+    restoreUri: android.net.Uri?,
+    onAutoInputDelayChange: (String) -> Unit,
+    onRetentionTimeChange: (String) -> Unit,
+    onSmsTestInputChange: (String) -> Unit,
+    onSmsKeywordsChange: (String) -> Unit,
+    onShowAutoInputDialogChange: (Boolean) -> Unit,
+    onShowRetentionDialogChange: (Boolean) -> Unit,
+    onShowSmsTestDialogChange: (Boolean) -> Unit,
+    onShowKeywordsDialogChange: (Boolean) -> Unit,
+    onShowThemeDialogChange: (Boolean) -> Unit,
+    onShowDonateDialogChange: (Boolean) -> Unit,
+    onShowAlipayChoiceDialogChange: (Boolean) -> Unit,
+    onShowQrCodeDialogChange: (Pair<Int, String>?) -> Unit,
+    onShowPrivacyPolicyDialogChange: (Boolean) -> Unit,
+    onShowPrivacyPolicyPageChange: (Boolean) -> Unit,
+    onShowBackupDialogChange: (Boolean) -> Unit,
+    onShowRestoreDialogChange: (Boolean) -> Unit,
+    onBackupFlagsChange: (Triple<Boolean, Boolean, Boolean>) -> Unit,
+    onPendingSavedToast: () -> Unit,
+    backupLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
+    settingsViewModel: SettingsViewModel,
+    onExit: () -> Unit,
+    onSetTheme: (Int, Float, Float) -> Unit,
+) {
+    if (showAutoInputDialog) {
+        TextInputDialog(
+            title = stringResource(id = R.string.pref_auto_input_code_delay_title),
+            initialValue = autoInputDelay,
+            onDismiss = { onShowAutoInputDialogChange(false) },
+        ) { value ->
+            onAutoInputDelayChange(value)
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, value)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                onPendingSavedToast()
+            }
+            onShowAutoInputDialogChange(false)
+        }
+    }
+
+    if (showRetentionDialog) {
+        RetentionDialog(
+            selectedValue = retentionTime,
+            onDismiss = { onShowRetentionDialogChange(false) },
+        ) { value ->
+            onRetentionTimeChange(value)
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, value)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                onPendingSavedToast()
+            }
+            onShowRetentionDialogChange(false)
+        }
+    }
+
+    if (showSmsTestDialog) {
+        TextInputDialog(
+            title = stringResource(id = R.string.pref_smscode_test_title),
+            initialValue = smsTestInput,
+            onDismiss = { onShowSmsTestDialogChange(false) },
+            singleLine = false,
+            maxLines = 8,
+        ) { value ->
+            onSmsTestInputChange(value)
+            settingsViewModel.performSmsCodeTest(value)
+            onShowSmsTestDialogChange(false)
+        }
+    }
+
+    if (showKeywordsDialog) {
+        TextInputDialog(
+            title = stringResource(id = R.string.pref_smscode_keywords_title),
+            initialValue = smsCodeKeywords,
+            onDismiss = { onShowKeywordsDialogChange(false) },
+            singleLine = false,
+            maxLines = 10,
+        ) { value ->
+            val updated = if (value.isBlank()) PrefConst.SMSCODE_KEYWORDS_DEFAULT else value
+            onSmsKeywordsChange(updated)
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_SMSCODE_KEYWORDS, updated)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                onPendingSavedToast()
+            }
+            onShowKeywordsDialogChange(false)
+        }
+    }
+
+    if (showThemeDialog) {
+        ThemeChooserDialog(
+            currentMode = themeMode,
+            onDismiss = { onShowThemeDialogChange(false) },
+            onThemeSelected = { mode, x, y ->
+                onSetTheme(mode, x, y)
+                onShowThemeDialogChange(false)
+            },
+        )
+    }
+
+    if (showDonateDialog) {
+        DonateDialog(
+            onDismiss = { onShowDonateDialogChange(false) },
+            onAlipay = {
+                onShowDonateDialogChange(false)
+                onShowAlipayChoiceDialogChange(true)
+            },
+            onWechat = {
+                onShowDonateDialogChange(false)
+                onShowQrCodeDialogChange(Pair(R.drawable.wx, "wechat"))
+            },
+        )
+    }
+
+    if (showAlipayChoiceDialog) {
+        AlipayChoiceDialog(
+            onDismiss = { onShowAlipayChoiceDialogChange(false) },
+            onQRCode = {
+                onShowAlipayChoiceDialogChange(false)
+                onShowQrCodeDialogChange(Pair(R.drawable.alipay, "alipay"))
+            },
+            onToken = {
+                onShowAlipayChoiceDialogChange(false)
+                PackageUtils.copyAlipayPocketToken(context)
+                PackageUtils.startAlipayActivity(context)
+            },
+        )
+    }
+
+    showQRCodeDialog?.let { pair ->
+        QRCodeDialog(
+            resId = pair.first,
+            type = pair.second,
+            onDismiss = { onShowQrCodeDialogChange(null) },
+            onSave = { Utils.saveImageToGallery(context, pair.first, "${pair.second}_qrcode") },
+        )
+    }
+
+    if (showPrivacyPolicyDialog) {
+        PrivacyPolicyDialog(
+            onDismiss = { onShowPrivacyPolicyDialogChange(false) },
+            onConfirm = {
+                scope.launch { SPUtils.setPrivacyPolicyAccepted(context, true) }
+                onShowPrivacyPolicyDialogChange(false)
+            },
+            onCancel = {
+                scope.launch { SPUtils.setPrivacyPolicyAccepted(context, false) }
+                onShowPrivacyPolicyDialogChange(false)
+                onExit()
+            },
+            onViewPolicy = {
+                onShowPrivacyPolicyPageChange(true)
+            },
+        )
+    }
+
+    if (showPrivacyPolicyPage) {
+        PrivacyPolicyPage(onDismiss = { onShowPrivacyPolicyPageChange(false) })
+    }
+
+    if (showBackupDialog) {
+        BackupDialog(
+            onDismiss = { onShowBackupDialogChange(false) },
+            onConfirm = { config, rules, records ->
+                onBackupFlagsChange(Triple(config, rules, records))
+                onShowBackupDialogChange(false)
+                val intent = com.tianma.xsmscode.feature.backup.BackupManager.getExportRuleListSAFIntent(context)
+                backupLauncher.launch(intent)
+            },
+        )
+    }
+
+    if (showRestoreDialog && restoreUri != null) {
+        RestoreConfirmDialog(
+            onDismiss = { onShowRestoreDialogChange(false) },
+            onConfirm = { config, rules, records ->
+                settingsViewModel.performRestore(restoreUri, config, rules, records)
+                onShowRestoreDialogChange(false)
+            },
+        )
+    }
+}
+
+// Helper Composables (extracted and made standalone)
+
+@Composable
+fun SectionHeader(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier.padding(horizontal = Const.PADDING_MEDIUM.dp, vertical = Const.SPACING_SMALL.dp),
+    )
+}
+
+@Composable
+fun Item(title: String, summary: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    ListItem(
+        headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = if (summary.isNotEmpty()) {
+            {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            null
+        },
+        modifier = modifier.clickable(onClick = onClick),
+    )
+}
+
+@Composable
+fun ForwardChannelItem(
+    title: String,
+    summary: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ListItem(
+        headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = if (summary.isNotEmpty()) {
+            {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            null
+        },
+        trailingContent = {
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+            )
+        },
+        modifier = modifier.clickable(onClick = onClick),
+    )
+}
+
+@Composable
+fun SwitchItem(
+    title: String,
+    summary: String,
+    key: String,
+    defaultValue: Boolean,
+    modifier: Modifier = Modifier,
+    stateOverride: MutableState<Boolean>? = null,
+    enabled: Boolean = true,
+    onItemClick: (() -> Unit)? = null,
+    onToggle: ((Boolean) -> Unit)? = null,
+    onSaved: (() -> Unit)? = null,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val checkedState = stateOverride ?: rememberPrefBoolean(key, defaultValue)
+
+    fun toggle(checked: Boolean) {
+        if (!enabled) return
+        checkedState.value = checked
+        scope.launch {
+            AppPreferencesDataStore.setBoolean(context, key, checked)
+            AppPreferencesDataStore.syncToSharedPrefs(context)
+            onSaved?.invoke()
+        }
+        onToggle?.invoke(checked)
+    }
+
+    ListItem(
+        headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = if (summary.isNotEmpty()) {
+            {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            null
+        },
+        trailingContent = {
+            Switch(
+                checked = checkedState.value,
+                onCheckedChange = { toggle(it) },
+                enabled = enabled,
+            )
+        },
+        modifier = modifier.clickable(enabled = enabled) {
+            if (onItemClick != null) {
+                onItemClick()
+            } else {
+                toggle(!checkedState.value)
+            }
+        },
+    )
+}
+
+@Composable
+fun ForwardWebhookConfigDialog(
+    webhookUrl: String,
+    includeBody: Boolean,
+    nonCodeEnabled: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String, Boolean, Boolean) -> Unit,
+) {
+    val context = LocalContext.current
+    var url by remember(webhookUrl) { mutableStateOf(webhookUrl) }
+    var includeBodyState by remember(includeBody) { mutableStateOf(includeBody) }
+    var nonCodeEnabledState by remember(nonCodeEnabled) { mutableStateOf(nonCodeEnabled) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.pref_forward_webhook_config_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = { url = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(stringResource(id = R.string.pref_forward_webhook_title)) },
+                    supportingText = { Text(stringResource(id = R.string.pref_forward_webhook_summary)) },
+                    trailingIcon = {
+                        if (url.isNotEmpty()) {
+                            IconButton(onClick = { url = "" }) {
+                                Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
+                            }
+                        }
+                    },
+                )
+                ForwardChannelBodySwitch(
+                    checked = includeBodyState,
+                    onCheckedChange = { includeBodyState = it },
+                )
+                ForwardChannelNonCodeSwitch(
+                    checked = nonCodeEnabledState,
+                    onCheckedChange = { nonCodeEnabledState = it },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val trimmed = url.trim()
+                    if (trimmed.isBlank()) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.forward_validation_webhook_required),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                        return@TextButton
+                    }
+                    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.forward_validation_webhook_invalid),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                        return@TextButton
+                    }
+                    onConfirm(trimmed, includeBodyState, nonCodeEnabledState)
+                },
+            ) {
+                Text(stringResource(id = R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(id = R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+fun ForwardTelegramConfigDialog(
+    botToken: String,
+    chatId: String,
+    topicId: String,
+    includeBody: Boolean,
+    nonCodeEnabled: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String, String, Boolean, Boolean) -> Unit,
+) {
+    val context = LocalContext.current
+    var token by remember(botToken) { mutableStateOf(botToken) }
+    var chat by remember(chatId) { mutableStateOf(chatId) }
+    var topic by remember(topicId) { mutableStateOf(topicId) }
+    var includeBodyState by remember(includeBody) { mutableStateOf(includeBody) }
+    var nonCodeEnabledState by remember(nonCodeEnabled) { mutableStateOf(nonCodeEnabled) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.pref_forward_tg_config_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = token,
+                    onValueChange = { token = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(stringResource(id = R.string.pref_forward_tg_bot_token_title)) },
+                    supportingText = { Text(stringResource(id = R.string.pref_forward_tg_bot_token_summary)) },
+                    trailingIcon = {
+                        if (token.isNotEmpty()) {
+                            IconButton(onClick = { token = "" }) {
+                                Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
+                            }
+                        }
+                    },
+                )
+                OutlinedTextField(
+                    value = chat,
+                    onValueChange = { chat = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(stringResource(id = R.string.pref_forward_tg_chat_id_title)) },
+                    supportingText = { Text(stringResource(id = R.string.pref_forward_tg_chat_id_summary)) },
+                    trailingIcon = {
+                        if (chat.isNotEmpty()) {
+                            IconButton(onClick = { chat = "" }) {
+                                Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
+                            }
+                        }
+                    },
+                )
+                OutlinedTextField(
+                    value = topic,
+                    onValueChange = { topic = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = { Text(stringResource(id = R.string.pref_forward_tg_topic_id_title)) },
+                    supportingText = { Text(stringResource(id = R.string.pref_forward_tg_topic_id_summary)) },
+                    trailingIcon = {
+                        if (topic.isNotEmpty()) {
+                            IconButton(onClick = { topic = "" }) {
+                                Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
+                            }
+                        }
+                    },
+                )
+                ForwardChannelBodySwitch(
+                    checked = includeBodyState,
+                    onCheckedChange = { includeBodyState = it },
+                )
+                ForwardChannelNonCodeSwitch(
+                    checked = nonCodeEnabledState,
+                    onCheckedChange = { nonCodeEnabledState = it },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val tokenTrimmed = token.trim()
+                    val chatTrimmed = chat.trim()
+                    if (tokenTrimmed.isBlank() || chatTrimmed.isBlank()) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.forward_validation_tg_required),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                        return@TextButton
+                    }
+                    onConfirm(tokenTrimmed, chatTrimmed, topic.trim(), includeBodyState, nonCodeEnabledState)
+                },
+            ) {
+                Text(stringResource(id = R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(id = R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun ForwardChannelBodySwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = stringResource(id = R.string.pref_forward_channel_include_body_title),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = stringResource(id = R.string.pref_forward_channel_include_body_summary),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
+    }
+    HorizontalDivider(
+        modifier = Modifier.padding(top = 8.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+    )
+}
+
+@Composable
+private fun ForwardChannelNonCodeSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = stringResource(id = R.string.pref_forward_channel_non_code_title),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+            Text(
+                text = stringResource(id = R.string.pref_forward_channel_non_code_summary),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
+    }
+    HorizontalDivider(
+        modifier = Modifier.padding(top = 8.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+    )
+}
+
+@Composable
+fun rememberPrefBoolean(key: String, defaultValue: Boolean): MutableState<Boolean> {
+    val context = LocalContext.current
+    val state = remember { mutableStateOf(defaultValue) }
+    LaunchedEffect(key) {
+        state.value = AppPreferencesDataStore.getBoolean(context, key, defaultValue)
+    }
+    return state
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+fun TextInputDialog(
+    title: String,
+    initialValue: String,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    singleLine: Boolean = true,
+    maxLines: Int = if (singleLine) 1 else 6,
+    supportingText: String? = null,
+    validator: ((String) -> String?)? = null,
+    onFocusLost: ((String) -> Unit)? = null,
+    onDismissWithValue: ((String) -> Unit)? = null,
+    onConfirm: (String) -> Unit,
+) {
+    var text by remember { mutableStateOf(initialValue) }
+    var hadFocus by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val cancelLabel = stringResource(id = R.string.cancel)
+    val confirmLabel = stringResource(id = R.string.confirm)
+    AlertDialog(
+        onDismissRequest = {
+            onDismissWithValue?.invoke(text)
+            onDismiss()
+        },
+        modifier = modifier,
+        title = { Text(text = title) },
+        text = {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = {
+                        text = it
+                        if (validator != null) {
+                        errorMessage = validator(it)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { state ->
+                        if (state.isFocused) {
+                            hadFocus = true
+                        } else if (hadFocus) {
+                            onFocusLost?.invoke(text)
+                        }
+                    },
+                singleLine = singleLine,
+                maxLines = maxLines,
+                isError = errorMessage != null,
+                trailingIcon = {
+                    if (text.isNotEmpty()) {
+                        IconButton(onClick = { text = "" }) {
+                            Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
+                        }
+                    }
+                },
+                supportingText = if (errorMessage != null || supportingText != null) {
+                    { Text(text = errorMessage ?: supportingText!!) }
+                } else null,
+            )
+        },
+        confirmButton = {
+            ButtonGroup(
+                overflowIndicator = { menuState ->
+                    ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                clickableItem(
+                    onClick = onDismiss,
+                    label = cancelLabel,
+                    weight = 1f,
+                )
+                clickableItem(
+                    onClick = {
+                        var hasError = false
+                        if (validator != null) {
+                            val error = validator(text)
+                            if (error != null) {
+                                errorMessage = error
+                                hasError = true
+                            }
+                        }
+                        if (!hasError) {
+                            onConfirm(text)
+                        }
+                    },
+                    label = confirmLabel,
+                    weight = 1f,
+                )
+            }
+        },
+        dismissButton = {},
+    )
+}
+
+@Composable
+fun RetentionDialog(
+    selectedValue: String,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    titleId: Int = R.string.pref_notification_retention_time_title,
+    entriesId: Int = R.array.notification_retention_time_entry_list,
+    valuesId: Int = R.array.notification_retention_time_list,
+    onConfirm: (String) -> Unit,
+) {
+    val entries = stringArrayResource(id = entriesId)
+    val values = stringArrayResource(id = valuesId)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        modifier = modifier,
+        title = { Text(stringResource(id = titleId)) },
+        text = {
+            Column {
+                entries.forEachIndexed { index, entry ->
+                    val value = values.getOrNull(index) ?: return@forEachIndexed
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onConfirm(value) }
+                            .padding(vertical = Const.PADDING_MEDIUM.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = value == selectedValue, onClick = { onConfirm(value) })
+                        Text(text = entry, modifier = Modifier.padding(start = Const.SPACING_MEDIUM.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+    )
+}
+
+@Composable
+fun ThemeChooserDialog(currentMode: Int, onDismiss: () -> Unit, onThemeSelected: (Int, Float, Float) -> Unit) {
+    val modes = listOf(
+        stringResource(id = R.string.theme_follow_system) to 0,
+        stringResource(id = R.string.theme_light) to 1,
+        stringResource(id = R.string.theme_dark) to 2,
+        stringResource(id = R.string.theme_black) to 3,
+    )
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.pref_choose_theme_title)) },
+        text = {
+            Column {
+                modes.forEach { (label, mode) ->
+                    var rowCoords: LayoutCoordinates? by remember { mutableStateOf(null) }
+                    val view = LocalView.current
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp)
+                            .onGloballyPositioned { rowCoords = it }
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onTap = { tapOffset ->
+                                        val locationOnScreen = IntArray(2)
+                                        view.getLocationOnScreen(locationOnScreen)
+
+                                        val rootCoords =
+                                            rowCoords?.positionInRoot() ?: androidx.compose.ui.geometry.Offset.Zero
+
+                                        // Dialog Window Offset + Item Offset in Dialog + Tap Offset
+                                        val finalX = locationOnScreen[0] + rootCoords.x + tapOffset.x
+                                        val finalY = locationOnScreen[1] + rootCoords.y + tapOffset.y
+
+                                        onThemeSelected(mode, finalX, finalY)
+                                    },
+                                )
+                            },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = mode == currentMode, onClick = null)
+                        Text(text = label, modifier = Modifier.padding(start = 16.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+    )
+}
+
+@Composable
+fun LanguageChooserDialog(onDismiss: () -> Unit, onLanguageSelected: (String) -> Unit) {
+    val context = LocalContext.current
+    val currentLocales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+    val currentTag = if (currentLocales.isEmpty) "" else currentLocales.get(0)?.toLanguageTag() ?: ""
+
+    val languages = listOf(
+        stringResource(id = R.string.language_follow_system) to "",
+        stringResource(id = R.string.language_en) to "en",
+        stringResource(id = R.string.language_zh_cn) to "zh-CN",
+        stringResource(id = R.string.language_zh_tw) to "zh-TW",
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.pref_language_title)) },
+        text = {
+            Column {
+                languages.forEach { (label, tag) ->
+                    val selected = if (tag.isEmpty()) currentTag.isEmpty() else currentTag.startsWith(tag)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onLanguageSelected(tag) }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = selected,
+                            onClick = { onLanguageSelected(tag) },
+                        )
+                        Text(text = label, modifier = Modifier.padding(start = 16.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+    )
+}
+
+@Composable
+fun DonateDialog(onDismiss: () -> Unit, onAlipay: () -> Unit, onWechat: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.dialog_donate_title)) },
+        text = { Text(stringResource(id = R.string.dialog_donate_content)) },
+        confirmButton = {
+            FilledTonalButton(onClick = onAlipay) { Text(stringResource(id = R.string.dialog_donate_alipay)) }
+            OutlinedButton(onClick = onWechat) { Text(stringResource(id = R.string.dialog_donate_wechat)) }
+        },
+    )
+}
+
+@Composable
+fun AlipayChoiceDialog(onDismiss: () -> Unit, onQRCode: () -> Unit, onToken: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.dialog_donate_alipay)) },
+        confirmButton = {
+            FilledTonalButton(onClick = onQRCode) { Text(stringResource(id = R.string.dialog_donate_alipay_qrcode)) }
+            OutlinedButton(onClick = onToken) { Text(stringResource(id = R.string.dialog_donate_alipay_token)) }
+        },
+    )
+}
+
+@Composable
+fun QRCodeDialog(resId: Int, type: String, onDismiss: () -> Unit, onSave: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                if (type == "alipay") {
+                    stringResource(
+                        id = R.string.dialog_donate_alipay,
+                    )
+                } else {
+                    stringResource(id = R.string.dialog_donate_wechat)
+                },
+            )
+        },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                androidx.compose.foundation.Image(
+                    painter = painterResource(id = resId),
+                    contentDescription = if (type == "alipay") {
+                        stringResource(
+                            id = R.string.dialog_donate_alipay,
+                        )
+                    } else {
+                        stringResource(id = R.string.dialog_donate_wechat)
+                    },
+                    modifier = Modifier.size(200.dp),
+                )
+            }
+        },
+        confirmButton = {
+            FilledTonalButton(onClick = onSave) { Text(stringResource(id = R.string.save_to_gallery)) }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) }
+        },
+    )
+}
+
+@Composable
+fun PrivacyPolicyDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, onCancel: () -> Unit, onViewPolicy: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.privacy_dialog_title)) },
+        text = {
+            Column {
+                Text(stringResource(id = R.string.privacy_dialog_content))
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = onViewPolicy,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                ) {
+                    Text(stringResource(id = R.string.privacy_policy_button))
+                }
+            }
+        },
+        confirmButton = {
+            FilledTonalButton(onClick = onConfirm) {
+                Text(stringResource(id = R.string.privacy_dialog_confirm))
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onCancel) {
+                Text(stringResource(id = R.string.privacy_dialog_cancel))
+            }
+        },
+    )
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+fun BackupDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Boolean) -> Unit) {
+    var checkConfig by remember { mutableStateOf(true) }
+    var checkRules by remember { mutableStateOf(true) }
+    var checkRecords by remember { mutableStateOf(true) }
+    val cancelLabel = stringResource(id = R.string.cancel)
+    val confirmLabel = stringResource(id = R.string.confirm)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.dialog_backup_title)) },
+        text = {
+            Column {
+                Text(stringResource(id = R.string.dialog_backup_msg), modifier = Modifier.padding(bottom = 8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig },
+                ) {
+                    Checkbox(checked = checkConfig, onCheckedChange = { checkConfig = it })
+                    Text(stringResource(id = R.string.item_config))
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkRules = !checkRules },
+                ) {
+                    Checkbox(checked = checkRules, onCheckedChange = { checkRules = it })
+                    Text(stringResource(id = R.string.item_rules))
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkRecords = !checkRecords },
+                ) {
+                    Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
+                    Text(stringResource(id = R.string.item_records))
+                }
+            }
+        },
+        confirmButton = {
+            ButtonGroup(
+                overflowIndicator = { menuState ->
+                    ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                clickableItem(
+                    onClick = onDismiss,
+                    label = cancelLabel,
+                    weight = 1f,
+                )
+                clickableItem(
+                    onClick = { onConfirm(checkConfig, checkRules, checkRecords) },
+                    label = confirmLabel,
+                    weight = 1f,
+                )
+            }
+        },
+        dismissButton = {},
+    )
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Boolean) -> Unit) {
+    var checkConfig by remember { mutableStateOf(true) }
+    var checkRules by remember { mutableStateOf(true) }
+    var checkRecords by remember { mutableStateOf(true) }
+    val cancelLabel = stringResource(id = R.string.cancel)
+    val confirmLabel = stringResource(id = R.string.confirm)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.dialog_restore_title)) },
+        text = {
+            Column {
+                Text(stringResource(id = R.string.dialog_restore_msg), modifier = Modifier.padding(bottom = 8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig },
+                ) {
+                    Checkbox(checked = checkConfig, onCheckedChange = { checkConfig = it })
+                    Text(stringResource(id = R.string.item_config))
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkRules = !checkRules },
+                ) {
+                    Checkbox(checked = checkRules, onCheckedChange = { checkRules = it })
+                    Text(stringResource(id = R.string.item_rules))
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkRecords = !checkRecords },
+                ) {
+                    Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
+                    Text(stringResource(id = R.string.item_records))
+                }
+                Text(
+                    text = stringResource(id = R.string.restore_warning_msg),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+        },
+        confirmButton = {
+            ButtonGroup(
+                overflowIndicator = { menuState ->
+                    ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                clickableItem(
+                    onClick = onDismiss,
+                    label = cancelLabel,
+                    weight = 1f,
+                )
+                clickableItem(
+                    onClick = { onConfirm(checkConfig, checkRules, checkRecords) },
+                    label = confirmLabel,
+                    weight = 1f,
+                )
+            }
+        },
+        dismissButton = {},
+    )
+}
+
+@Composable
+fun rememberPrefInt(key: String, defaultValue: Int): MutableIntState {
+    val context = LocalContext.current
+    val state = remember { mutableIntStateOf(defaultValue) }
+    LaunchedEffect(key) {
+        state.intValue = AppPreferencesDataStore.getInt(context, key, defaultValue)
+    }
+    return state
+}
+
+@Composable
+fun rememberPrefFloat(key: String, defaultValue: Float): MutableFloatState {
+    val context = LocalContext.current
+    val state = remember { mutableFloatStateOf(defaultValue) }
+    LaunchedEffect(key) {
+        state.floatValue = AppPreferencesDataStore.getFloat(context, key, defaultValue)
+    }
+    return state
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+fun SliderDialog(
+    title: String,
+    value: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    steps: Int = 0,
+    onDismiss: () -> Unit,
+    onValueChange: (Float) -> Unit,
+    valueFormatter: (Float) -> String = { "%.2f".format(it) }
+) {
+    var sliderValue by remember { mutableFloatStateOf(value) }
+    val cancelLabel = stringResource(id = R.string.cancel)
+    val confirmLabel = stringResource(id = R.string.confirm)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = title) },
+        text = {
+            Column {
+                Text(
+                    text = valueFormatter(sliderValue),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+                Slider(
+                    value = sliderValue,
+                    onValueChange = { sliderValue = it },
+                    valueRange = valueRange,
+                    steps = steps
+                )
+            }
+        },
+        confirmButton = {
+            ButtonGroup(
+                overflowIndicator = { menuState ->
+                    ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                clickableItem(
+                    onClick = onDismiss,
+                    label = cancelLabel,
+                    weight = 1f,
+                )
+                clickableItem(
+                    onClick = { onValueChange(sliderValue) },
+                    label = confirmLabel,
+                    weight = 1f,
+                )
+            }
+        },
+        dismissButton = {},
+    )
+}

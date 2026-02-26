@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">XposedSmsCode</string>
+    <string name="xposed_description">Extract code from new SMS message and copy it to clipboard. It can also Auto-input SMS code</string>
+
+    <!-- general -->
+    <string name="i_know">I see</string>
+    <string name="ignore">Ignore</string>
+    <string name="confirm">Confirm</string>
+    <string name="cancel">Cancel</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="okay">OK</string>
+    <!-- general end -->
+
+    <!-- preferences general -->
+    <string name="pref_general_title">General</string>
+    <string name="pref_enable_title">Main switch</string>
+    <string name="pref_enable_summary">Module active</string>
+    <string name="pref_create_shortcut_title">Create Desktop Shortcut</string>
+    <string name="pref_create_shortcut_summary">Pin a shortcut to the launcher for quick access</string>
+    <string name="pref_choose_theme_title">Theme</string>
+    <string name="pref_choose_theme_summary">Follow System, Light, Dark or Pure Black</string>
+    <string name="theme_follow_system">Automatic (Follow System)</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_black">Pure Black</string>
+    <string name="pref_language_title">Language</string>
+    <string name="pref_language_summary">Select language</string>
+    <string name="language_follow_system">System Default/跟随系统</string>
+    <string name="language_en">English</string>
+    <string name="language_zh_cn">简体中文</string>
+    <string name="language_zh_tw">繁體中文</string>
+    <string name="module_status_active">Active</string>
+    <string name="module_status_inactive">Inactive</string>
+    <string name="pref_haze_blur_radius_title">Background blur radius</string>
+    <string name="pref_haze_tint_alpha_title">Blur mask alpha</string>
+    <!-- preferences general end -->
+
+    <!-- preferences sms code -->
+    <string name="pref_sms_code_title">SMS Code</string>
+    <string name="pref_show_toast_title">Show toast hint</string>
+    <string name="pref_show_toast_summary">Show a toast hint when an SMS code is extracted</string>
+    <string name="pref_copy_to_clipboard_title">Copy to clipboard</string>
+    <string name="pref_copy_to_clipboard_summary">Copy code to clipboard if it\'s extracted</string>
+    <string name="pref_block_sms_title">Block code SMS</string>
+    <string name="pref_block_sms_summary">Warning! Code SMS will be blocked if extract succeed, message app won\'t receive it</string>
+    <string name="pref_deduplicate_sms_title">Filter duplicate SMS</string>
+    <string name="pref_deduplicate_sms_summary">Filter out duplicate code SMS</string>
+    <string name="pref_forwarding_title">Forwarding</string>
+    <string name="pref_enable_forward_title">Enable forwarding</string>
+    <string name="pref_enable_forward_summary">Enable code forwarding. Tap channel name to configure details.</string>
+    <string name="pref_forward_webhook_enable_title">Enable Webhook channel</string>
+    <string name="pref_forward_webhook_enable_summary">Send code to configured webhook endpoint</string>
+    <string name="pref_forward_webhook_title">Webhook URL</string>
+    <string name="pref_forward_webhook_summary">Incoming SMS code will be posted as JSON to this URL</string>
+    <string name="pref_forward_tg_enable_title">Enable Telegram channel</string>
+    <string name="pref_forward_tg_enable_summary">Send code through Telegram Bot API</string>
+    <string name="pref_forward_tg_bot_token_title">Telegram Bot Token</string>
+    <string name="pref_forward_tg_bot_token_summary">Bot token from @BotFather (format: 12345:ABC...)</string>
+    <string name="pref_forward_tg_chat_id_title">Telegram Chat ID</string>
+    <string name="pref_forward_tg_chat_id_summary">Target chat/user ID, e.g. -100xxxxxxxxxx</string>
+    <string name="pref_forward_tg_topic_id_title">Telegram Topic ID (optional)</string>
+    <string name="pref_forward_tg_topic_id_summary">Optional message thread id for forum topics</string>
+    <string name="pref_forward_webhook_config_title">Webhook channel config</string>
+    <string name="pref_forward_tg_config_title">Telegram channel config</string>
+    <string name="pref_forward_channel_include_body_title">Include SMS body</string>
+    <string name="pref_forward_channel_include_body_summary">Include original SMS content in this channel</string>
+    <string name="pref_forward_channel_non_code_title">Forward non-code SMS</string>
+    <string name="pref_forward_channel_non_code_summary">Forward regular SMS as body-only in this channel</string>
+    <string name="pref_forward_email_title">Target email (optional)</string>
+    <string name="pref_forward_email_summary">Optional recipient email sent in webhook payload as emailTo</string>
+    <string name="pref_forward_include_body_title">Include SMS body</string>
+    <string name="pref_forward_include_body_summary">Include original SMS content in webhook payload</string>
+    <!-- preferences sms code end -->
+
+    <!-- preferences auto-input -->
+    <string name="pref_category_auto_input_title">Auto Input</string>
+    <string name="pref_enable_auto_input_code_title">Auto input SMS code</string>
+    <string name="pref_enable_auto_input_code_summary">Try to input SMS code automatically</string>
+    <string name="pref_enable_auto_enter_code_title">Auto-Enter/Submit</string>
+    <string name="pref_enable_auto_enter_code_summary">Automatically trigger Enter after filling the code</string>
+    <string name="pref_kill_me_title">Kill app after auto input</string>
+    <string name="pref_kill_me_summary">After auto input finishes, kill the app process to reduce background residency</string>
+    <string name="pref_auto_input_code_delay_title">Auto input delay</string>
+    <string name="pref_auto_input_code_delay_summary">Delay %ss</string>
+    <!-- preferences auto-input end -->
+
+    <!-- preference code notification -->
+    <string name="pref_notification_title">Notification</string>
+    <string name="pref_show_code_notification_title">Show status bar notification</string>
+    <string name="pref_show_code_notification_summary">Show a status bar notification when an SMS code is extracted (some systems may label it as Phone Services)</string>
+    <string name="pref_auto_cancel_notification_title">Auto cancel notification</string>
+    <string name="pref_auto_cancel_notification_summary">Auto cancel SMS code notification</string>
+    <!-- notification retention time -->
+    <string name="pref_notification_retention_time_title">Notification retention time</string>
+    <string name="notification_retention_time_5_secs_entry">5 s</string>
+    <string name="notification_retention_time_10_secs_entry">10 s</string>
+    <string name="notification_retention_time_30_secs_entry">30 s</string>
+    <string name="notification_retention_time_1_min_entry">1 min</string>
+    <string name="notification_retention_time_5_mins_entry">5 mins</string>
+    <!-- notification retention time end -->
+    <!-- preference code notification -->
+
+    <!-- preference code records -->
+    <string name="pref_entry_code_records_title">SMS code records</string>
+    <string name="pref_entry_code_records_summary">Total %d records</string>
+    <string name="pref_code_records_title">SMS Code Records</string>
+    <string name="smscode_records">Code Records</string>
+    <string name="edit_smscode_records">Edit Code Records</string>
+    <string name="prompt_sms_code_copied">SMS Code copied: %s</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_select_all">Select All</string>
+    <string name="some_items_removed">Removed %d record(s)</string>
+    <string name="message_details">Message Details</string>
+    <string name="detail_sender">Sender</string>
+    <string name="detail_time">Time</string>
+    <string name="detail_content">Content</string>
+    <string name="detail_click_copy_hint">(Tap content to copy)</string>
+    <string name="detail_forward_status">Forward</string>
+    <string name="detail_forward_target">Target</string>
+    <string name="detail_forward_time">Forwarded at</string>
+    <string name="detail_forward_message">Result</string>
+    <string name="forward_status_none">Not forwarded</string>
+    <string name="forward_status_success">Success</string>
+    <string name="forward_status_failed">Failed</string>
+    <string name="forward_channel_webhook">Webhook</string>
+    <string name="forward_channel_tg">Telegram</string>
+    <string name="forward_configured">Configured</string>
+    <string name="forward_not_configured">Not configured</string>
+    <string name="forward_result_no_channel">No forward channel enabled</string>
+    <string name="forward_result_webhook_empty">Forward webhook URL is empty</string>
+    <string name="forward_result_tg_config_invalid">Forward failed: Telegram config invalid</string>
+    <string name="forward_result_http">HTTP %1$d</string>
+    <string name="forward_result_failed">Forward failed: %1$s</string>
+    <string name="forward_validation_webhook_required">Please enter webhook URL</string>
+    <string name="forward_validation_webhook_invalid">Webhook URL must start with http:// or https://</string>
+    <string name="forward_validation_tg_required">Please enter Telegram bot token and chat ID</string>
+    <string name="prompt_field_copied">%1$s copied</string>
+    <string name="copy_smscode">Copy Code</string>
+    <string name="copy_sms">Copy Message</string>
+    <string name="delete_sms_action">Delete SMS</string>
+    <string name="prompt_sms_copied">SMS copied</string>
+    <string name="pref_enable_code_records_title">Reserve SMS code records</string>
+    <string name="selected_count">%d selected</string>
+    <string name="pref_history_limit_title">History record limit</string>
+    <string name="pref_history_limit_summary">Keep only %s recent records</string>
+    <string name="history_limit_10_entry">10 records</string>
+    <string name="history_limit_20_entry">20 records</string>
+    <string name="history_limit_50_entry">50 records</string>
+    <string name="history_limit_all_entry">All records</string>
+    <string name="history_limit_custom_entry">Custom</string>
+    <string name="records_column_code_title">Code SMS</string>
+    <string name="records_column_plain_title">Plain SMS</string>
+    <string name="records_column_code_empty">No code SMS yet</string>
+    <string name="records_column_plain_empty">No plain SMS yet</string>
+    <!-- preference code records end -->
+
+    <!-- preference code rules -->
+    <string name="pref_match_rules">Match Rules</string>
+    <string name="pref_smscode_keywords_title">Keywords</string>
+    <string name="pref_smscode_keywords_summary">Keyword regex for SMS code extraction. Supports Chinese and English regex, e.g. (?i)\\b(验证码|otp|verification|verify|pin|passcode|password|code|secure\\s*code)\\b</string>
+    <string name="reset">Reset</string>
+    <string name="code_keywords_hint">Keywords(Regular Expressions)</string>
+    <string name="pref_smscode_test_title">SMS code test</string>
+    <string name="pref_smscode_test_summary">Test whether SMS code can be recognized or not</string>
+    <string name="pref_sms_blacklist_title">SMS blacklist</string>
+    <string name="pref_enable_sms_blacklist_title">Enable SMS blacklist</string>
+    <string name="pref_enable_sms_blacklist_summary">Match by number, prefix, regex and content.</string>
+    <string name="pref_sms_blacklist_action_delete_title">Delete blacklisted SMS</string>
+    <string name="pref_sms_blacklist_action_delete_summary">Delete matched SMS automatically.</string>
+    <string name="pref_sms_blacklist_action_block_title">Block broadcast for blacklisted SMS</string>
+    <string name="pref_sms_blacklist_action_block_summary">Prevent matched SMS from being delivered.</string>
+    <string name="pref_sms_blacklist_numbers_title">Blacklist numbers</string>
+    <string name="pref_sms_blacklist_numbers_summary">Example: 10086, 10010</string>
+    <string name="pref_sms_blacklist_prefixes_title">Blacklist prefixes</string>
+    <string name="pref_sms_blacklist_prefixes_summary">Example: 1069, 1065</string>
+    <string name="pref_sms_blacklist_regex_title">Blacklist regex rules</string>
+    <string name="pref_sms_blacklist_regex_hint">Example: (?i)\\b(unsubscribe|blacklist)\\b</string>
+    <string name="pref_sms_blacklist_content_title">Blacklist content rules</string>
+    <string name="pref_sms_blacklist_content_summary">Example: unsubscribe, opt-out</string>
+    <string name="pref_sms_blacklist_separator_hint">Separate multiple items with commas (,), semicolons (;), or line breaks.</string>
+    <string name="pref_sms_blacklist_invalid_separator_error">Do not use full-width punctuation (， ；) or pipe (|) as separators</string>
+    <string name="pref_sms_blacklist_regex_separator_hint">Separate multiple routines with commas (,), semicolons (;), or line breaks.</string>
+    <string name="pref_sms_blacklist_invalid_regex_separator_error">Do not use full-width punctuation (， ；) as separators</string>
+    <string name="blacklist_not_set">Not set</string>
+    <string name="blacklist_rule_count">%1$d rules configured</string>
+    <string name="sms_content_hint">SMS content</string>
+    <string name="test">Test</string>
+    <string name="current_sms_code">Current SMS code is %s</string>
+    <string name="cannot_parse_smscode">Cannot parse SMS code.</string>
+    <!-- preference code rules end -->
+
+    <!-- preference experimental -->
+    <string name="pref_experimental_title">Experimental</string>
+    <string name="pref_mark_as_read_title">Mark as read (Experimental, may not work)</string>
+    <string name="pref_mark_as_read_summary">Attempt to mark the verification code SMS as read. Due to system limitations, this feature may not work on some devices.</string>
+    <string name="pref_delete_sms_title">Delete SMS</string>
+    <string name="pref_delete_sms_summary">Warning! Code SMS will be deleted if extract succeed</string>
+    <!-- preference experimental end -->
+
+
+    <!-- preference others -->
+    <string name="pref_others_title">Others</string>
+    <string name="pref_verbose_log_mode_title">Detailed log</string>
+    <string name="pref_verbose_log_mode_summary">Print detailed log(only for debug)</string>
+    <string name="pref_auto_update_on_start_title">Auto update on launch</string>
+    <string name="pref_auto_update_on_start_summary">Run update strategy once when app starts</string>
+    <string name="pref_auto_update_wifi_only_title">Wi-Fi only for auto update</string>
+    <string name="pref_auto_update_wifi_only_summary">Only run startup update check on Wi-Fi</string>
+    <string name="github_update_dialog_title">New version found</string>
+    <string name="github_update_dialog_message">Version %1$s is available. Download now?</string>
+    <string name="github_update_ignore_this_version">Ignore this version</string>
+    <string name="github_update_download">Download</string>
+    <string name="app_already_newest">Current version is the latest.</string>
+    <!-- preference others end -->
+
+    <!-- preference about -->
+    <string name="pref_about_title">About</string>
+    <string name="pref_version_title">Version</string>
+    <string name="pref_version_summary"><![CDATA[Current version: %1$s (%2$d)]]></string>
+    <string name="pref_join_qq_group_title">QQ</string>
+    <string name="pref_join_qq_group_summary">Tap to join</string>
+    <string name="qq_group_number">1075934453</string>
+    <string name="prompt_join_qq_group_failed">Please install QQ first</string>
+    <string name="pref_join_telegram_group_title">Telegram</string>
+    <string name="pref_join_telegram_group_summary">Tap to join</string>
+    <string name="pref_source_code_title">Source code</string>
+    <string name="browser_install_or_enable_prompt">Please install or enable browser first</string>
+    <string name="pref_source_code_summary">Welcome to star</string>
+    <string name="pref_donate_by_alipay_title">Donation Appreciation</string>
+    <string name="alipay_install_prompt">Please install Alipay</string>
+    <string name="alipay_enable_prompt">Please enable Alipay</string>
+    <string name="wechat_install_prompt">Please install Wechat</string>
+    <string name="wechat_enable_prompt">Please enable Wechat</string>
+    <string name="pref_privacy_policy_title">Privacy Policy</string>
+    <!-- preference about end -->
+
+    <!-- auto-input block settings -->
+    <string name="app_block_settings">Auto Input Block List</string>
+    <string name="tab_overview">Overview</string>
+    <string name="tab_blacklist">Blacklist</string>
+    <string name="tab_intercept">Intercept</string>
+    <string name="tab_faq">FAQ</string>
+    <string name="tab_records">Records</string>
+    <string name="tab_advanced">Advanced</string>
+    <string name="tab_forward">Forward</string>
+    <string name="tab_senders">Senders</string>
+    <string name="tab_settings">Settings</string>
+    <string name="action_sort_title">App sorting</string>
+    <string name="action_sort_reverse">Reverse order</string>
+    <string name="action_hide_system_apps">Hide system apps</string>
+    <string name="app_block_summary">Choose Apps that auto-input banned</string>
+    <string name="action_sort">Sort Order</string>
+    <string name="action_sort_by_label">App name</string>
+    <string name="action_sort_by_pkg">Package name</string>
+    <string name="action_sort_by_usage">Usage frequency</string>
+    <string name="action_search">Search</string>
+    <string name="action_accomplish">Accomplish</string>
+    <string name="usage_permission_prompt">Sorting by usage frequency requires Usage Access permission. Please grant it in Settings.</string>
+    <string name="save_failed">Save failed, try it again.</string>
+    <string name="load_failed">Load failed, try it again.</string>
+    <!-- auto-input block settings end -->
+
+    <!-- code rules -->
+    <string name="rule_company_hint">Institution or Company</string>
+    <string name="rule_keyword_hint">SMS Code Keyword</string>
+    <string name="rule_code_type">SMS code type</string>
+    <string name="rule_code_length">SMS code length</string>
+    <string name="rule_code_regex_hint">SMS code regular expression</string>
+    <string name="pref_code_rules_title">SMS code match rules</string>
+    <string name="pref_code_rules_summary">Custom code match rules for specific SMS</string>
+    <string name="quick_choose">Quick Choose</string>
+    <string name="sms_code_type_digit_entry">Digit Only [0\-9]</string>
+    <string name="sms_code_type_letter_entry">Letter Only [a\-zA\-Z]</string>
+    <string name="sms_code_type_text_entry">Text [a\-zA\-Z0\-9]</string>
+    <string name="action_rule_edit_done">Done</string>
+    <string name="action_import_rules">Import</string>
+    <string name="action_export_rules">Export</string>
+    <string name="revoke">Revoke</string>
+    <string name="removed">Removed</string>
+    <string name="remove">Remove</string>
+    <string name="edit">Edit</string>
+    <string name="actions">Actions</string>
+    <string name="list_empty_prompt">No items yet!</string>
+    <string name="rule_list_empty_snack_prompt">Rule list is empty, no need to export.</string>
+    <string name="code_length_empty_prompt">Please enter the code length</string>
+    <string name="rule_company_empty_hint">Please enter institution or company</string>
+    <string name="rule_keyword_empty_hint">Please enter SMS code keyword</string>
+    <string name="rule_code_regex_empty_hint">Please enter SMS code regular expression</string>
+    <string name="rule_duplicated_prompt">Rule exists, please reedit it or exit</string>
+    <string name="rule_list">Code Rule List</string>
+    <string name="create_rule">New Rule</string>
+    <string name="edit_rule">Edit Rule</string>
+    <string name="import_succeed">Import succeed</string>
+    <string name="import_failed_version_missed">Import failed, version missed</string>
+    <string name="import_failed_version_unknown">Import failed, version unknown</string>
+    <string name="import_failed_backup_invalid">Import failed, backup invalid</string>
+    <string name="import_failed_read_error">Import failed, read file error</string>
+    <string name="import_failed_version_too_new">Import failed, backup version is newer</string>
+    <string name="import_failed_version_too_old">Import failed, backup version is too old</string>
+    <string name="import_warning_app_version_mismatch">Backup created by a different app version. Please verify rules.</string>
+    <string name="import_compatibility_title">Import compatibility tips</string>
+    <string name="import_compatibility_message">This backup may be from an older or incompatible version. Consider exporting a new backup from the same app version before importing.</string>
+    <string name="export_succeed">Export succeed</string>
+    <string name="export_failed">Export failed, try again please</string>
+    <string name="import_confirmation_title">Import confirmation</string>
+    <string name="import_rules_confirm_msg">Retain current rules when import new rules?</string>
+    <string name="import_confirmation_message">Retain current rules when import new rules?</string>
+    <string name="importing">Importing</string>
+    <string name="please_wait">Please wait...</string>
+    <string name="import_failed">Import failed</string>
+    <string name="export_success_simple">Export success</string>
+    <string name="no_backup_exists">No backup file exists</string>
+    <string name="choose_backup_file">Choose backup file</string>
+    <string name="backup_file_dir">Backup location:\n%s</string>
+    <string name="backup_file_name">Backup filename</string>
+    <string name="exporting">Exporting</string>
+    <string name="action_save_as_template">Save as template</string>
+    <string name="save_template_succeed">Save template succeed</string>
+    <string name="save_template_failed">Save template failed</string>
+    <string name="action_rule_help">Help</string>
+    <string name="share">Share</string>
+    <string name="import_rules">Import Rules</string>
+    <string name="no_permission_prompt">No relative permissions, reboot and try again</string>
+    <string name="documents_ui_not_found">DocumentsUI app not found</string>
+    <!-- code rules end -->
+
+    <!-- theme color -->
+    <string name="red">Red</string>
+    <string name="pink">Pink</string>
+    <string name="yellow">Yellow</string>
+    <string name="teal">Teal</string>
+    <string name="green">Green</string>
+    <string name="blue">Blue</string>
+    <string name="violet">Violet</string>
+    <string name="black">Dark</string>
+    <!-- theme color end -->
+
+    <!-- code parsing notification -->
+    <string name="channel_name_smscode_notification">SMS code notification</string>
+    <string name="code_notification_content">SMS code: %s</string>
+    <!-- code parsing notification end -->
+
+    <!-- faq -->
+    <string name="action_home_faq_title">FAQ</string>
+    <string name="simplified_question">Q:\u00A0</string>
+    <string name="simplified_answer">A:\u00A0</string>
+    <!-- faq end -->
+
+    <!-- alipay packet start -->
+    <string name="pref_get_alipay_packet_title">Get red packet to save me</string>
+    <string name="pref_get_alipay_packet_summary">Get free alipay red packet everyday to support me T_T</string>
+    <string name="pref_get_alipay_packet_content">Please, search this token in Alipay to get free red packet, so I can afford some meat %s</string>
+    <string name="copy_packet_code_open_alipay"><![CDATA[Copy token & Open Alipay]]></string>
+    <string name="alipay_red_packet_code_copied">Red packet token copied, go get it: %s</string>
+    <string name="get_red_packet">Get red packet</string>
+    <string name="dialog_donate_title">Buy me a coffee T_T</string>
+    <string name="dialog_donate_summary">Thanks to the developer</string>
+    <string name="dialog_donate_content">I\'m starving and can barely code. Please show some mercy and buy me a coffee! Whether it\'s WeChat or Alipay, even a penny is a huge rescue for me ✿✿ヽ(°▽°)ノ✿</string>
+    <string name="dialog_donate_wechat">Coffee (WeChat)</string>
+    <string name="dialog_donate_alipay">Coffee (Alipay)</string>
+    <string name="dialog_donate_alipay_choice_title">Choose support method</string>
+    <string name="dialog_donate_alipay_choice_content">You can \"Copy Red Packet Token\" to support me for free, or \"Save QR Code\" to donate directly. Saving the image will automatically open Alipay for you~</string>
+    <string name="dialog_donate_alipay_token">Copy Token</string>
+    <string name="dialog_donate_alipay_qrcode">Save QR Code</string>
+    <string name="dialog_donate_cancel">Next Time</string>
+    <string name="long_press_save_hint">Long press image to save to gallery</string>
+    <string name="save_to_gallery_success">Image saved to gallery, opening %s...</string>
+    <string name="pref_sync_toast">Settings saved</string>
+    <string name="save_to_gallery_failed">Save failed, please check file permissions</string>
+    <string name="save_to_gallery">Save to Gallery</string>
+    <!-- alipay packet end -->
+
+
+    <!-- check update -->
+    <string name="check_update_title">Check for updates</string>
+    <string name="check_update_summary">Tap to check updates</string>
+    <string name="check_update_failed">Check update failed.</string>
+    <!-- check update end -->
+
+
+    <!-- faq -->
+    <string-array name="question_list">
+        <item>Module inactive after being updated.</item>
+        <item>Which Rom is this module suitable for?</item>
+        <item>Why can\'t it mark SMS as read or delete SMS?</item>
+        <item>What\'s the original intention of this App?</item>
+    </string-array>
+    <string-array name="answer_list">
+        <item>Re-check this module in module list, and re-launch this app, and reboot system if it\'s necessary</item>
+        <item>It\'s suitable for AOSP Rom, may not be suitable for other third-party heavily customized Rom.</item>
+        <item>If the system default SMS app uses its own SMS database instead of the system\'s, it will not take effect for marking SMS as read or deleting SMS. If this happens, it may not work well on your device.</item>
+        <item>Don\'t be evil. Green Android.</item>
+    </string-array>
+    <!-- faq end -->
+
+    <!-- privacy policy start -->
+    <string name="privacy_dialog_title">Privacy Policy</string>
+    <string name="privacy_dialog_content">We have updated our Privacy Policy. Please read it carefully before proceeding.\n\nClick "Private Policy" below to read the full policy online.</string>
+    <string name="privacy_dialog_cancel">Exit</string>
+    <string name="privacy_dialog_confirm">Agree and Continue</string>
+    <string name="privacy_policy_button">Privacy Policy</string>
+    <!-- privacy policy end -->
+    <string name="rule_list_empty_prompt">No rules yet. Click + to add one.</string>
+    <string name="rule_keyword_prefix">Keyword: </string>
+    <string name="rule_regex_prefix">Regex: </string>
+    <string name="save">Save</string>
+    <string name="app_icon_description">Icon for %s</string>
+    <string name="sms_icon_description">SMS Icon</string>
+    <string name="action_block_app">Block %s</string>
+    <string name="action_unblock_app">Unblock %s</string>
+    <string name="action_back">Back</string>
+
+    <!-- backup and restore -->
+    <string name="pref_backup_restore_title">Backup &amp; Restore</string>
+    <string name="pref_backup_title">Backup</string>
+    <string name="pref_backup_summary">Export settings, rules and records</string>
+    <string name="pref_restore_title">Restore</string>
+    <string name="pref_restore_summary">Restore data from backup file</string>
+    <string name="dialog_backup_title">Backup Selection</string>
+    <string name="dialog_restore_title">Confirm Restore</string>
+    <string name="dialog_backup_msg">Select data to backup:</string>
+    <string name="dialog_restore_msg">Select data to restore:</string>
+    <string name="backup_success">Backup success</string>
+    <string name="backup_failed">Backup failed</string>
+    <string name="restore_success">Restore success</string>
+    <string name="restore_failed">Restore failed</string>
+    <string name="item_config">Configuration</string>
+    <string name="item_rules">Rules</string>
+    <string name="item_records">Records</string>
+    <string name="restore_warning_msg">Existing data will be merged or overwritten.</string>
+    <!-- backup and restore end -->
+
+    <!-- overview -->
+    <string name="unknown">Unknown</string>
+    <string name="not_installed">Not installed</string>
+    <string name="version_name">Version name</string>
+    <string name="version_code">Version code</string>
+    <string name="root_permission_hint">Root permission required to read</string>
+    <string name="framework_type">Framework type</string>
+    <string name="framework_version">Framework version</string>
+    <string name="android_version">Android version</string>
+    <string name="android_codename">OS Codename</string>
+    <string name="api_level">API level</string>
+    <string name="manufacturer">Manufacturer</string>
+    <string name="model">Model</string>
+    <string name="status_working">Working normally</string>
+    <string name="status_not_active">Inactive</string>
+    <string name="status_tip">Please enable in manager and reboot device</string>
+    <string name="rule_company_placeholder">eg. Verification Code</string>
+    <string name="rule_regex_field_prefix">RE: </string>
+    <!-- overview end -->
+</resources>

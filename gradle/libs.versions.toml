@@ -1,18 +1,21 @@
 [versions]
-activity-compose = "1.12.4"
-adaptive = "1.2.0"
 # Build SDK versions
 compileSdk = "36"
 compileSdkExtension = "1"
 minSdk = "24"
 targetSdk = "36"
 ndk = "28.2.13676358"
+
 # JVM versions
 java = "25"
 javaBytecode = "25"
+
 # App version
 versionCode = "92"
 versionName = "3.1.6-beta"
+
+activity-compose = "1.12.4"
+adaptive = "1.2.0"
 agp = "9.2.0-alpha01"
 androidx-browser = "1.9.0"
 androidx-core-ktx = "1.17.0"
@@ -33,6 +36,7 @@ kotlinx-collections-immutable = "0.4.0"
 kotlinx-serialization = "1.10.0"
 ksp = "2.3.6"
 lifecycle = "2.10.0"
+gson = "2.10.1"
 navigation = "2.9.7"
 okhttp = "5.3.2"
 play-app-update = "2.1.0"
@@ -46,6 +50,11 @@ commons-lang3 = "3.20.0"
 jose4j = "0.9.6"
 jdom2 = "2.0.6.1"
 detekt = "2.0.0-alpha.2"
+material = "1.12.0"
+androidx-preference = "1.2.1"
+jakarta-mail = "2.0.1"
+paho-mqtt = "1.2.5"
+
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activity-compose" }
@@ -56,6 +65,7 @@ androidx-compose-material3-adaptive = { module = "androidx.compose.material3.ada
 androidx-compose-material3-adaptive-layout = { module = "androidx.compose.material3.adaptive:adaptive-layout", version.ref = "adaptive" }
 androidx-compose-material3-adaptive-navigation = { module = "androidx.compose.material3.adaptive:adaptive-navigation", version.ref = "adaptive" }
 androidx-compose-material3-windowSizeClass = { module = "androidx.compose.material3:material3-window-size-class", version.ref = "androidx-material3" }
+androidx-compose-runtime = { module = "androidx.compose.runtime:runtime" }
 androidx-compose-runtime-livedata = { module = "androidx.compose.runtime:runtime-livedata" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "androidx-core-ktx" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }
@@ -86,6 +96,7 @@ kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collec
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 okhttp-logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp" }
 play-app-update = { module = "com.google.android.play:app-update", version.ref = "play-app-update" }
@@ -107,6 +118,10 @@ apache-commons-lang3 = { module = "org.apache.commons:commons-lang3", version.re
 jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "jose4j" }
 jdom2 = { module = "org.jdom:jdom2", version.ref = "jdom2" }
 detekt-rules-ktlint = { module = "dev.detekt:detekt-rules-ktlint-wrapper", version.ref = "detekt" }
+material = { module = "com.google.android.material:material", version.ref = "material" }
+androidx-preference = { module = "androidx.preference:preference", version.ref = "androidx-preference" }
+jakarta-mail = { module = "com.sun.mail:jakarta.mail", version.ref = "jakarta-mail" }
+paho-mqtt = { module = "org.eclipse.paho:org.eclipse.paho.client.mqttv3", version.ref = "paho-mqtt" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
