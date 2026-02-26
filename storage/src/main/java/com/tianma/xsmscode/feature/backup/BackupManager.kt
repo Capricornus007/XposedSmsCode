@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
-import android.util.Log
 import androidx.core.content.FileProvider
+import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.feature.backup.exception.BackupInvalidException
 import com.tianma.xsmscode.feature.backup.exception.VersionInvalidException
 import com.tianma.xsmscode.feature.backup.exception.VersionMissedException
@@ -80,7 +80,7 @@ object BackupManager {
                 return ExportResult.SUCCESS
             }
         } catch (e: IOException) {
-            Log.e("BackupManager", "Export SmsCode rules failed", e)
+            XLog.e("Export SmsCode rules failed", e)
             return ExportResult.FAILED
         }
     }
@@ -100,7 +100,7 @@ object BackupManager {
                 return ExportResult.SUCCESS
             }
         } catch (e: IOException) {
-            Log.e("BackupManager", "Export SmsCode backup failed", e)
+            XLog.e("Export SmsCode backup failed", e)
             return ExportResult.FAILED
         }
     }
@@ -144,16 +144,16 @@ object BackupManager {
                 warning,
             )
         } catch (e: IOException) {
-            Log.e("BackupManager", "Error occurs in importRuleList", e)
+            XLog.e("Error occurs in importRuleList", e)
             return BackupImportResult(ImportResult.READ_FAILED)
         } catch (e: VersionMissedException) {
-            Log.e("BackupManager", "Error occurs in importRuleList", e)
+            XLog.e("Error occurs in importRuleList", e)
             return BackupImportResult(ImportResult.VERSION_MISSED)
         } catch (e: VersionInvalidException) {
-            Log.e("BackupManager", "Error occurs in importRuleList", e)
+            XLog.e("Error occurs in importRuleList", e)
             return BackupImportResult(ImportResult.VERSION_UNKNOWN)
         } catch (e: BackupInvalidException) {
-            Log.e("BackupManager", "Error occurs in importRuleList", e)
+            XLog.e("Error occurs in importRuleList", e)
             return BackupImportResult(ImportResult.BACKUP_INVALID)
         } finally {
             if (ruleImporter != null) {

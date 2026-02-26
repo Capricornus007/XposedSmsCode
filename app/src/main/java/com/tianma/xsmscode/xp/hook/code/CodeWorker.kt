@@ -36,7 +36,7 @@ class CodeWorker(
         val blockSms = false
         val markAsRead = PrefsReader.markAsReadEnabled(mPluginContext)
         val deleteSms = PrefsReader.deleteSmsEnabled(mPluginContext)
-        val deduplicateSms = false
+        val deduplicateSms = PrefsReader.deduplicateSms(mPluginContext)
         val killMe = PrefsReader.killMeEnabled(mPluginContext)
         XLog.w(
             "Diag settings: enabled=%s, verbose=%s, showNotif=%s, autoCancel=%s, " +
@@ -79,6 +79,7 @@ class CodeWorker(
 
         val smsParseAction = SmsParseAction(mPluginContext, mPhoneContext, null)
         smsParseAction.setSmsIntent(mSmsIntent)
+        smsParseAction.setDeduplicateEnabled(deduplicateSms)
         val smsParseFuture = mScheduledExecutor.schedule(smsParseAction, 0, TimeUnit.MILLISECONDS)
 
         val smsMsg: SmsMsg
@@ -169,12 +170,13 @@ class CodeWorker(
         if (!webhookNonCode && !tgNonCode) return
 
         val plainSms = runCatching { SmsMsg.fromIntent(mSmsIntent) }.getOrNull() ?: return
-        if (plainSms.body.isNullOrBlank()) return
+        val plainBody = plainSms.body
+        if (plainBody.isNullOrBlank()) return
         XLog.w(
             "Diag non-code SMS forwarding triggered: webhook=%s, tg=%s, bodyLength=%d",
             webhookNonCode,
             tgNonCode,
-            plainSms.body.length,
+            plainBody.length,
         )
         val forwardAction = ForwardAction(mPluginContext, mPhoneContext, plainSms.copy(smsCode = null, company = null))
         mScheduledExecutor.schedule(forwardAction, 100, TimeUnit.MILLISECONDS)

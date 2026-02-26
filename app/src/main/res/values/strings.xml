@@ -239,6 +239,9 @@
     <string name="tab_intercept">Intercept</string>
     <string name="tab_faq">FAQ</string>
     <string name="tab_records">Records</string>
+    <string name="tab_advanced">Advanced</string>
+    <string name="tab_forward">Forward</string>
+    <string name="tab_senders">Senders</string>
     <string name="tab_settings">Settings</string>
     <string name="action_sort_title">App sorting</string>
     <string name="action_sort_reverse">Reverse order</string>

@@ -240,6 +240,8 @@
     <string name="tab_intercept">攔截</string>
     <string name="tab_faq">FAQ</string>
     <string name="tab_records">記錄</string>
+    <string name="tab_advanced">高級</string>
+    <string name="tab_senders">轉發</string>
     <string name="tab_settings">設定</string>
     <string name="action_sort_title">應用排序</string>
     <string name="action_sort_reverse">倒序</string>

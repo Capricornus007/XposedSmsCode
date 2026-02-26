@@ -8,6 +8,7 @@ import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.utils.SmsCodeUtils
 import com.tianma.xsmscode.common.utils.StringUtils
 import com.tianma.xsmscode.common.utils.XLog
+import com.tianma.xsmscode.data.db.DBManager
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.xp.hook.code.action.CallableAction
 
@@ -18,9 +19,14 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
     CallableAction(pluginContext, phoneContext, smsMsg ?: SmsMsg()) {
 
     private var mSmsIntent: Intent? = null
+    private var mDeduplicateEnabled: Boolean = false
 
     fun setSmsIntent(smsIntent: Intent?) {
         mSmsIntent = smsIntent
+    }
+
+    fun setDeduplicateEnabled(enabled: Boolean) {
+        mDeduplicateEnabled = enabled
     }
 
     override fun action(): Bundle? = parseSmsMsg()
@@ -57,6 +63,17 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
         }
 
         val msgBodyNotNull = msgBody ?: ""
+        val timestamp = if (smsMsg.date > 0) smsMsg.date else System.currentTimeMillis()
+        if (mDeduplicateEnabled) {
+            val duplicated = runCatching {
+                DBManager.get(mPluginContext).querySmsMsgByFingerprint(sender, msgBodyNotNull, timestamp) != null
+            }.getOrDefault(false)
+            if (duplicated) {
+                XLog.i("Duplicate SMS detected by fingerprint, skip parsing.")
+                return Bundle().apply { putBoolean(SMS_DUPLICATED, true) }
+            }
+        }
+
         val smsCode = kotlinx.coroutines.runBlocking {
             SmsCodeUtils.parseSmsCodeIfExists(
                 mPluginContext,
@@ -67,8 +84,6 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
             XLog.w("Diag SMS parsed but no code matched")
             return null
         }
-
-        val timestamp = if (smsMsg.date > 0) smsMsg.date else System.currentTimeMillis()
 
         // Prefer the first bracket label that can be mapped to an installed package.
         // Once package is resolved, keep that label only and do not append other tokens.

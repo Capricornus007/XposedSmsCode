@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
  
     <queries>
@@ -115,6 +117,28 @@
         <receiver
             android:name="com.tianma.xsmscode.xp.hook.code.AutoCancelReceiver"
             android:exported="false" />
+
+        <receiver
+            android:name="com.tianma.xsmscode.receiver.SmsReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter android:priority="2147483647">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- IPC: receives forwarded SMS payload from the Xposed hook layer.
+             Must be exported=true because Xposed hooks run under the hooked app's UID (cross-UID).
+             Security: intent.setPackage(packageName) in ForwardAction ensures only this module
+             receives the broadcast; no external app can deliver to this receiver via explicit package targeting. -->
+        <receiver
+            android:name="com.github.magisk317.smscode.receiver.ForwardReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.tianma.xsmscode.ACTION_FORWARD_SMS" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

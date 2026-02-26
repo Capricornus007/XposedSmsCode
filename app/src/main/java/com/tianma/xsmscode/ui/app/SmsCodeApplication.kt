@@ -1,9 +1,12 @@
 package com.tianma.xsmscode.ui.app
 
 import android.app.Application
+import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
+import com.tianma.xsmscode.common.utils.RuntimeLogStore
 import com.tianma.xsmscode.di.appModule
 import com.tianma.xsmscode.feature.migrate.TransitionTask
+import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,6 +24,8 @@ class SmsCodeApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        ensureIpcToken()
+        RuntimeLogStore.initialize(this, enableDetailedLogs = false)
         if (com.github.tianma8023.xposed.smscode.BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
@@ -39,6 +44,12 @@ class SmsCodeApplication : Application() {
         applicationScope.launch {
             AppPreferencesDataStore.syncToSharedPrefs(this@SmsCodeApplication)
             AppPreferencesDataStore.ensureReadable(this@SmsCodeApplication)
+            val verboseLog = AppPreferencesDataStore.getBoolean(
+                this@SmsCodeApplication,
+                PrefConst.KEY_VERBOSE_LOG_MODE,
+                false,
+            )
+            RuntimeLogStore.setEnabled(verboseLog)
         }
     }
 
@@ -66,5 +77,17 @@ class SmsCodeApplication : Application() {
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
             override fun onActivityDestroyed(activity: Activity) {}
         })
+    }
+
+    private fun ensureIpcToken() {
+        applicationScope.launch {
+            val token = AppPreferencesDataStore.getString(this@SmsCodeApplication, PrefConst.KEY_IPC_TOKEN, "")
+            if (token.isEmpty()) {
+                val newToken = java.util.UUID.randomUUID().toString()
+                AppPreferencesDataStore.setString(this@SmsCodeApplication, PrefConst.KEY_IPC_TOKEN, newToken)
+                Timber.i("Generated new IPC Security Token via DataStore")
+            }
+            AppPreferencesDataStore.ensureReadable(this@SmsCodeApplication)
+        }
     }
 }

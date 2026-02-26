@@ -1,0 +1,26 @@
+package com.github.magisk317.smscode.forwarder.entity
+
+import android.os.Parcelable
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+import androidx.room.TypeConverters
+import com.github.magisk317.smscode.forwarder.database.ext.ConvertersDate
+import kotlinx.parcelize.Parcelize
+import java.util.Date
+
+@Parcelize
+@Entity(tableName = "Sender")
+@TypeConverters(ConvertersDate::class)
+data class Sender(
+    @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "id") var id: Long,
+    @ColumnInfo(name = "type", defaultValue = "1") var type: Int = 1,
+    @ColumnInfo(name = "name", defaultValue = "") var name: String,
+    @ColumnInfo(name = "json_setting", defaultValue = "") var jsonSetting: String,
+    @ColumnInfo(name = "status", defaultValue = "1") var status: Int = 1,
+    @ColumnInfo(name = "time") var time: Date = Date(),
+    /** 0 = 仅验证码短信，1 = 所有短信（含非验证码）均转发 */
+    @ColumnInfo(name = "receive_non_code", defaultValue = "0") var receiveNonCode: Int = 0,
+) : Parcelable
