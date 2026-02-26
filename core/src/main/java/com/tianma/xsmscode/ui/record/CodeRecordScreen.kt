@@ -40,6 +40,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.toClipEntry
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -378,7 +379,11 @@ fun CodeRecordScreen(
                                 selected = selectedRecordTab == 0,
                                 onClick = { selectedRecordTab = 0 },
                                 label = {
-                                    Text("${stringResource(R.string.records_column_code_title)} ${codeSmsList.size}")
+                                    Text(
+                                        text = "${stringResource(R.string.records_column_code_title)}（${codeSmsList.size}）",
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.Center,
+                                    )
                                 },
                                 modifier = Modifier.weight(1f),
                             )
@@ -386,7 +391,11 @@ fun CodeRecordScreen(
                                 selected = selectedRecordTab == 1,
                                 onClick = { selectedRecordTab = 1 },
                                 label = {
-                                    Text("${stringResource(R.string.records_column_plain_title)} ${plainSmsList.size}")
+                                    Text(
+                                        text = "${stringResource(R.string.records_column_plain_title)}（${plainSmsList.size}）",
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.Center,
+                                    )
                                 },
                                 modifier = Modifier.weight(1f),
                             )
@@ -834,6 +843,8 @@ private fun RecordSplitColumn(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
         tonalElevation = 2.dp,
+        color = Color.Transparent,
+        shadowElevation = 0.dp,
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (showHeader) {
