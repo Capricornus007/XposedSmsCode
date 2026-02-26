@@ -10,6 +10,18 @@ android {
     compileSdk = libs.versions.compileSdk.get().toInt()
     compileSdkExtension = libs.versions.compileSdkExtension.get().toInt()
 
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("play") {
+            dimension = "distribution"
+            buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "false")
+        }
+        create("github") {
+            dimension = "distribution"
+            buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
+        }
+    }
+
     buildFeatures {
         buildConfig = true
     }

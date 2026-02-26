@@ -14,13 +14,13 @@ Welcome to XposedSmsCode ("we," "our," or "us"). We are committed to protecting 
 ### 2. Information We Collect and Use
 
 #### 2.1 SMS and Call Log Data
-Our application's core functionality is to extract verification codes from SMS messages and forward them to destinations you configure (e.g., WeChat, Telegram, Mail, etc.). To achieve this, we request the following sensitive permissions:
+Our application's core functionality is to extract verification codes from SMS messages in Xposed environments and forward them to destinations you configure (e.g., WeChat, Telegram, Mail, etc.). Depending on distribution/channel and feature usage, we may request the following sensitive permissions:
 
-*   **READ_SMS / RECEIVE_SMS:** Used to detect incoming SMS messages and extract verification codes.
+*   **SEND_SMS (GitHub distribution only, optional):** Used only when you enable the SMS forwarding channel to send messages to phone numbers you configured.
 *   **READ_CALL_LOG:** Used to support verification code extraction from incoming phone calls (if applicable/enabled by user).
 
 **Usage:**
-*   We STRICTLY only use these permissions to identify and extract verification codes (e.g., "Your code is 1234").
+*   We STRICTLY only use these permissions for stated functionality (e.g., extracting verification codes or sending SMS to targets explicitly configured by you).
 *   We DO NOT collect, store, or transmit your personal conversations, contacts, or other non-verification-related content to our servers.
 *   All processing of SMS content happens locally on your device.
 
@@ -64,13 +64,13 @@ If you have any questions or suggestions about our Privacy Policy, do not hesita
 ### 2. 我们收集和使用的信息
 
 #### 2.1 短信和通话记录数据
-我们应用的核心功能是从短信中提取验证码，并将其转发到您配置的目标（例如微信、Telegram、邮件等）。为实现此目的，我们需要申请以下敏感权限：
+我们应用的核心功能是在 Xposed 环境中提取短信验证码，并将其转发到您配置的目标（例如微信、Telegram、邮件等）。根据发行渠道与功能启用情况，应用可能申请以下敏感权限：
 
-*   **读取短信 (READ_SMS) / 接收短信 (RECEIVE_SMS):** 用于检测收到的短信并提取其中的验证码。
+*   **发送短信 (SEND_SMS，仅 GitHub 发行版、可选):** 仅在您启用“短信通道转发到手机号”时使用。
 *   **读取通话记录 (READ_CALL_LOG):** 用于支持从来电中提取验证码（如果用户启用适用功能）。
 
 **使用说明：**
-*   我们**仅**使用这些权限来识别和提取验证码（例如“您的验证码是 1234”）。
+*   我们**仅**将这些权限用于声明功能（例如提取验证码，或向您明确配置的目标号码发送短信）。
 *   我们**不会**收集、存储或传输您的个人对话、联系人或其他非验证码相关内容到我们的服务器。
 *   所有针对短信内容的处理均在您的设备本地进行。
 

@@ -18,6 +18,7 @@ import com.github.magisk317.smscode.forwarder.entity.setting.WebhookSetting
 import com.github.magisk317.smscode.forwarder.entity.setting.WeworkAgentSetting
 import com.github.magisk317.smscode.forwarder.entity.setting.WeworkRobotSetting
 import com.google.gson.Gson
+import com.tianma.xsmscode.storage.BuildConfig
 
 data class SenderValidationResult(
     val valid: Boolean,
@@ -78,8 +79,12 @@ object SenderValidator {
                 }
 
                 SenderType.SMS -> {
-                    val setting = gson.fromJson(sender.jsonSetting, SmsSetting::class.java)
-                    if (setting.mobiles.isBlank()) invalid("短信通道目标号码不能为空") else ok()
+                    if (!BuildConfig.ENABLE_SMS_CHANNEL) {
+                        invalid("当前构建版本不支持短信通道")
+                    } else {
+                        val setting = gson.fromJson(sender.jsonSetting, SmsSetting::class.java)
+                        if (setting.mobiles.isBlank()) invalid("短信通道目标号码不能为空") else ok()
+                    }
                 }
 
                 SenderType.FEISHU -> {

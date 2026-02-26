@@ -29,6 +29,7 @@ import com.github.magisk317.smscode.forwarder.entity.ForwardCommonConfig
 import com.github.magisk317.smscode.forwarder.entity.Sender
 import com.github.magisk317.smscode.forwarder.utils.ForwardCommonConfigStore
 import com.github.magisk317.smscode.forwarder.utils.SenderType
+import com.tianma.xsmscode.core.BuildConfig
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -88,6 +89,14 @@ fun SenderListScreen(
     }
 
     if (showTypeDialog) {
+        val otherChannels = mutableListOf(
+            SenderType.EMAIL to "邮件",
+            SenderType.URL_SCHEME to "Url Scheme",
+            SenderType.SOCKET to "Socket",
+        )
+        if (BuildConfig.ENABLE_SMS_CHANNEL) {
+            otherChannels.add(1, SenderType.SMS to "短信")
+        }
         val supportedTypeGroups = listOf(
             "企业协作" to listOf(
                 SenderType.DINGTALK_GROUP_ROBOT to "钉钉群机器人",
@@ -106,10 +115,7 @@ fun SenderListScreen(
                 SenderType.BARK to "Bark",
             ),
             "其他" to listOf(
-                SenderType.EMAIL to "邮件",
-                SenderType.SMS to "短信",
-                SenderType.URL_SCHEME to "Url Scheme",
-                SenderType.SOCKET to "Socket",
+                *otherChannels.toTypedArray(),
             ),
         )
 
@@ -524,7 +530,7 @@ fun getSenderTypeName(type: Int): String {
         SenderType.WEWORK_AGENT -> "企微应用"
         SenderType.SERVERCHAN -> "Server酱"
         SenderType.TELEGRAM -> "Telegram机器人"
-        SenderType.SMS -> "短信"
+        SenderType.SMS -> if (BuildConfig.ENABLE_SMS_CHANNEL) "短信" else "短信(不可用)"
         SenderType.FEISHU -> "飞书机器人"
         SenderType.PUSHPLUS -> "PushPlus"
         SenderType.GOTIFY -> "Gotify"

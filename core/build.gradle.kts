@@ -11,6 +11,18 @@ android {
     namespace = "com.tianma.xsmscode.core"
     compileSdk = compileSdkInt
 
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("play") {
+            dimension = "distribution"
+            buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "false")
+        }
+        create("github") {
+            dimension = "distribution"
+            buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
+        }
+    }
+
     defaultConfig {
         minSdk = minSdkInt
         buildConfigField("int", "VERSION_CODE", libs.versions.versionCode.get())

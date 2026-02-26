@@ -36,6 +36,7 @@ import com.github.magisk317.smscode.forwarder.utils.sender.WebhookUtils
 import com.github.magisk317.smscode.forwarder.utils.sender.WeworkAgentUtils
 import com.github.magisk317.smscode.forwarder.utils.sender.WeworkRobotUtils
 import com.google.gson.Gson
+import com.tianma.xsmscode.storage.BuildConfig
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.AppDatabase
 import kotlinx.coroutines.CoroutineScope
@@ -118,8 +119,12 @@ object SendUtils {
                     TelegramUtils.sendMsg(setting, msgInfo)
                 }
                 SenderType.SMS -> {
-                    val setting = gson.fromJson(sender.jsonSetting, SmsSetting::class.java)
-                    SmsUtils.sendMsg(context, setting, msgInfo)
+                    if (!BuildConfig.ENABLE_SMS_CHANNEL) {
+                        XLog.w("SMS sender disabled in current distribution, skipping sender [%s]", sender.name)
+                    } else {
+                        val setting = gson.fromJson(sender.jsonSetting, SmsSetting::class.java)
+                        SmsUtils.sendMsg(context, setting, msgInfo)
+                    }
                 }
                 SenderType.FEISHU -> {
                     val setting = gson.fromJson(sender.jsonSetting, FeishuSetting::class.java)

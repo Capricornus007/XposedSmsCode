@@ -62,6 +62,18 @@ android {
     compileSdkExtension = sdkExtensionInt
     ndkVersion = ndkVersionStr
 
+    flavorDimensions += "distribution"
+    productFlavors {
+        create("play") {
+            dimension = "distribution"
+            buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "false")
+        }
+        create("github") {
+            dimension = "distribution"
+            buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
+        }
+    }
+
     androidResources {
         localeFilters.addAll(listOf("en", "zh-rCN", "zh-rTW"))
     }
@@ -212,10 +224,10 @@ androidComponents {
     }
 }
 
-tasks.register("renameReleaseAab") {
-    dependsOn("bundleRelease")
-    val bundleFileProvider = layout.buildDirectory.file("outputs/bundle/release/app-release.aab")
-    val targetFileProvider = layout.buildDirectory.file("outputs/bundle/release/${releaseAabName(versionNameStr)}")
+tasks.register("renamePlayReleaseAab") {
+    dependsOn("bundlePlayRelease")
+    val bundleFileProvider = layout.buildDirectory.file("outputs/bundle/playRelease/app-play-release.aab")
+    val targetFileProvider = layout.buildDirectory.file("outputs/bundle/playRelease/${releaseAabName(versionNameStr)}")
     doLast {
         val bundleFile = bundleFileProvider.get().asFile
         if (bundleFile.exists()) {
@@ -225,8 +237,8 @@ tasks.register("renameReleaseAab") {
     }
 }
 
-tasks.matching { it.name == "bundleRelease" }.configureEach {
-    finalizedBy("renameReleaseAab")
+tasks.matching { it.name == "bundlePlayRelease" }.configureEach {
+    finalizedBy("renamePlayReleaseAab")
 }
 
 dependencies {

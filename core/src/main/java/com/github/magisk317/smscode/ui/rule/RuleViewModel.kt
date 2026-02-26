@@ -5,7 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.magisk317.smscode.forwarder.entity.Rule
 import com.github.magisk317.smscode.forwarder.entity.Sender
+import com.github.magisk317.smscode.forwarder.utils.SenderType
 import com.tianma.xsmscode.common.constant.Const
+import com.tianma.xsmscode.core.BuildConfig
 import com.tianma.xsmscode.data.db.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -36,6 +39,13 @@ class RuleViewModel(application: Application) : AndroidViewModel(application) {
         )
 
     val senderList: StateFlow<List<Sender>> = senderDao.getAllFlow()
+        .map { list ->
+            if (BuildConfig.ENABLE_SMS_CHANNEL) {
+                list
+            } else {
+                list.filterNot { it.type == SenderType.SMS }
+            }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(Const.FLOW_STOP_TIMEOUT_MS),

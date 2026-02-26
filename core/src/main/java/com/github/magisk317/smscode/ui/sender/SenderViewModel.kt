@@ -8,9 +8,12 @@ import com.github.magisk317.smscode.forwarder.entity.ForwardCommonConfig
 import com.github.magisk317.smscode.forwarder.entity.Sender
 import com.github.magisk317.smscode.forwarder.utils.DeviceIdentityUtils
 import com.github.magisk317.smscode.forwarder.utils.ForwardCommonConfigStore
+import com.github.magisk317.smscode.forwarder.utils.SenderType
 import com.github.magisk317.smscode.forwarder.utils.SenderValidationResult
 import com.github.magisk317.smscode.forwarder.utils.SenderValidator
+import com.tianma.xsmscode.core.BuildConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,11 +31,19 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
     )
     val forwardCommonConfig: StateFlow<ForwardCommonConfig> = _forwardCommonConfig.asStateFlow()
 
-    val senderList: StateFlow<List<Sender>> = senderDao.getAllFlow().stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList(),
-    )
+    val senderList: StateFlow<List<Sender>> = senderDao.getAllFlow()
+        .map { list ->
+            if (BuildConfig.ENABLE_SMS_CHANNEL) {
+                list
+            } else {
+                list.filterNot { it.type == SenderType.SMS }
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList(),
+        )
     private val _lastSavedStatus = MutableStateFlow<Int?>(null)
     val lastSavedStatus: StateFlow<Int?> = _lastSavedStatus.asStateFlow()
 
@@ -101,6 +112,9 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
 
     suspend fun saveSenderSync(sender: Sender) {
         withContext(Dispatchers.IO) {
+            if (!BuildConfig.ENABLE_SMS_CHANNEL && sender.type == SenderType.SMS) {
+                return@withContext
+            }
             if (sender.id == 0L) {
                 senderDao.insert(sender)
             } else {

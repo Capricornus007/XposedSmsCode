@@ -49,7 +49,7 @@ jobs:
         run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 --decode > app/release.jks
 
       - name: Build APKs with Splits
-        run: ./gradlew assembleRelease -PbuildSplits
+        run: ./gradlew assembleGithubRelease -PbuildSplits
         env:
           KEYSTORE_FILE: release.jks
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
@@ -60,13 +60,13 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: apks
-          path: app/build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/github/release/*.apk
 
       - name: Upload Native Symbols Artifact
         uses: actions/upload-artifact@v6
         with:
-          name: native-symbols
-          path: app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip
+          name: native-symbols-github
+          path: app/build/outputs/native-debug-symbols/githubRelease/native-debug-symbols.zip
           if-no-files-found: warn
 
   build-aab:
@@ -93,7 +93,7 @@ jobs:
         run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 --decode > app/release.jks
 
       - name: Build App Bundle
-        run: ./gradlew bundleRelease
+        run: ./gradlew bundlePlayRelease
         env:
           KEYSTORE_FILE: release.jks
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
@@ -105,8 +105,15 @@ jobs:
         with:
           name: bundle-assets
           path: |
-            app/build/outputs/bundle/release/*.aab
-            app/build/outputs/mapping/release/mapping.txt
+            app/build/outputs/bundle/playRelease/*.aab
+            app/build/outputs/mapping/playRelease/mapping.txt
+
+      - name: Upload Play Native Symbols Artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: native-symbols-play
+          path: app/build/outputs/native-debug-symbols/playRelease/native-debug-symbols.zip
+          if-no-files-found: warn
 
   release:
     name: Create Release
@@ -132,8 +139,8 @@ jobs:
 
       - uses: actions/download-artifact@v7
         with:
-          name: native-symbols
-          path: artifacts/symbols
+          name: native-symbols-play
+          path: artifacts/symbols-play
 
       - name: Extract Version Name from Tag
         id: extract_version
@@ -164,7 +171,7 @@ jobs:
 
           files: |
             artifacts/apks/*.apk
-            artifacts/bundle/bundle/release/*.aab
+            artifacts/bundle/bundle/playRelease/*.aab
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
@@ -189,9 +196,9 @@ jobs:
         with:
           serviceAccountJsonPlainText: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
           packageName: com.github.tianma8023.xposed.smscode
-          releaseFiles: artifacts/bundle/bundle/release/*.aab
-          mappingFile: artifacts/bundle/mapping/release/mapping.txt
-          debugSymbols: artifacts/symbols/native-debug-symbols.zip
+          releaseFiles: artifacts/bundle/bundle/playRelease/*.aab
+          mappingFile: artifacts/bundle/mapping/playRelease/mapping.txt
+          debugSymbols: artifacts/symbols-play/native-debug-symbols/playRelease/native-debug-symbols.zip
           track: ${{ steps.determine_track.outputs.track }}
           status: completed
           whatsNewDirectory: distribution/whatsnew
