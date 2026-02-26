@@ -1,5 +1,3 @@
-- New: Webhook + Telegram forwarding channels with forwarding records (#119)
-- New: Per-channel toggle to forward non-code SMS as body-only (#120)
-- Fix: OTP parser now prefers numeric codes over brand words (e.g. Wise/PayPal) (#117)
-- Fix: Forward target in record details now shows channel names only (#118)
-- Fix: Resolve gray screen when returning from background on license page (#116)
+- Important: The forwarding pipeline was refactored. Legacy forwarding data will be cleared after upgrade, so please back up first.
+- New: Sender channels now support a unified common configuration and improved template editing.
+- Improved: Forwarding metadata handling and template rendering are now cleaner and more stable.
