@@ -41,7 +41,6 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.browser)
-    implementation(libs.material)
     implementation(libs.gson)
     implementation(libs.androidx.room.runtime)
     
@@ -61,7 +60,6 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.androidx.compose.runtime.livedata)
 
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
