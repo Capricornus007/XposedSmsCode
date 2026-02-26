@@ -17,7 +17,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class SenderViewModel(application: Application) : AndroidViewModel(application) {
-    private val senderDao = AppDatabase.getInstance(application).senderDao()
+    private val db = AppDatabase.getInstance(application)
+    private val senderDao = db.senderDao()
 
     val senderList: StateFlow<List<Sender>> = senderDao.getAllFlow().stateIn(
         scope = viewModelScope,
@@ -31,9 +32,25 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
         // no-op: senderList is now reactive from Room Flow.
     }
 
+    /**
+     * Force WAL checkpoint so that data written by the App UI process is flushed
+     * to the main DB file and becomes visible to the Hook process (com.android.phone).
+     */
+    private fun walCheckpoint() {
+        try {
+            db.openHelper.writableDatabase
+                .query("PRAGMA wal_checkpoint(TRUNCATE)")
+                .close()
+        } catch (_: Throwable) {
+            // Best-effort: if checkpoint fails, enableMultiInstanceInvalidation
+            // should still handle cross-process visibility.
+        }
+    }
+
     fun deleteSender(sender: Sender) {
         viewModelScope.launch(Dispatchers.IO) {
             senderDao.delete(sender)
+            walCheckpoint()
         }
     }
 
@@ -41,6 +58,7 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch(Dispatchers.IO) {
             val newStatus = if (enabled) 1 else 0
             senderDao.updateStatusByIds(listOf(sender.id), newStatus)
+            walCheckpoint()
         }
     }
 
@@ -62,6 +80,7 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
                 senderDao.update(sender)
             }
             _lastSavedStatus.value = sender.status
+            walCheckpoint()
         }
     }
 

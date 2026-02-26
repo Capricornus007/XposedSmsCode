@@ -50,6 +50,10 @@ abstract class AppDatabase : RoomDatabase() {
             )
                 // Aggressive mode: prioritize schema convergence over legacy data compatibility.
                 .fallbackToDestructiveMigration(dropAllTables = true)
+                // Enable cross-process data visibility: the Hook runs in com.android.phone
+                // while the App UI runs in its own process. Without this, WAL writes from
+                // one process are invisible to the other.
+                .enableMultiInstanceInvalidation()
                 .build().also { instance = it }
         }
     }
