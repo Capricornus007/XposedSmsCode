@@ -14,7 +14,12 @@ import com.tianma.xsmscode.xp.hook.code.action.CallableAction
 /**
  * Capture SMS code, record it to local DB, and forward to external SmsCode App via Broadcast (IPC).
  */
-class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg) :
+class ForwardAction(
+    pluginContext: Context,
+    phoneContext: Context,
+    smsMsg: SmsMsg,
+    private val mSmsIntent: Intent? = null,
+) :
     CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
@@ -35,6 +40,7 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
             intent.putExtra("company", mSmsMsg.company)
             intent.putExtra("smsCode", mSmsMsg.smsCode)
             intent.putExtra("packageName", mSmsMsg.packageName)
+            copySimExtras(intent)
 
             // Securing IPC with Token: Only the receiver matching our token can process this msg.
             // We use PrefsReader to retrieve token via cross-process Provider.
@@ -69,6 +75,44 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
             )
         }
 
+        return null
+    }
+
+    private fun copySimExtras(target: Intent) {
+        val simSlot = readIntExtra(
+            "slot",
+            "simId",
+            "sim_id",
+            "simSlot",
+            "sim_slot",
+            "android.telephony.extra.SLOT_INDEX",
+        )
+        val subId = readIntExtra(
+            "subscription",
+            "subscription_id",
+            "sub_id",
+            "android.telephony.extra.SUBSCRIPTION_INDEX",
+            "android.telephony.extra.SUBSCRIPTION_ID",
+        )
+        if (simSlot != null) target.putExtra("sim_slot", simSlot)
+        if (subId != null) target.putExtra("sub_id", subId)
+        XLog.d(
+            "ForwardAction SIM extras copied: sim_slot=%s sub_id=%s",
+            simSlot?.toString() ?: "N/A",
+            subId?.toString() ?: "N/A",
+        )
+    }
+
+    private fun readIntExtra(vararg keys: String): Int? {
+        val sourceIntent = mSmsIntent ?: return null
+        for (key in keys) {
+            if (!sourceIntent.hasExtra(key)) continue
+            val intValue = sourceIntent.getIntExtra(key, Int.MIN_VALUE)
+            if (intValue != Int.MIN_VALUE) return intValue
+            val longValue = sourceIntent.getLongExtra(key, Long.MIN_VALUE)
+            if (longValue != Long.MIN_VALUE) return longValue.toInt()
+            sourceIntent.getStringExtra(key)?.toIntOrNull()?.let { return it }
+        }
         return null
     }
 

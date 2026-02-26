@@ -8,6 +8,7 @@ import android.util.Log
 import androidx.core.os.BundleCompat
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.utils.PrefsReader
+import com.tianma.xsmscode.common.utils.SmsCodeUtils
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.xp.hook.code.action.impl.*
@@ -123,7 +124,7 @@ class CodeWorker(
         mScheduledExecutor.schedule(recordSmsAction, 0, TimeUnit.MILLISECONDS)
 
         // 转发 Action
-        val forwardAction = ForwardAction(mPluginContext, mPhoneContext, smsMsg)
+        val forwardAction = ForwardAction(mPluginContext, mPhoneContext, smsMsg, mSmsIntent)
         mScheduledExecutor.schedule(forwardAction, 100, TimeUnit.MILLISECONDS)
 
         // 操作验证码短信（标记为已读 或者 删除） Action
@@ -161,11 +162,29 @@ class CodeWorker(
         val plainSms = runCatching { SmsMsg.fromIntent(mSmsIntent) }.getOrNull() ?: return
         val plainBody = plainSms.body
         if (plainBody.isNullOrBlank()) return
+        val company = SmsCodeUtils.parseCompany(plainBody)
+            .trim()
+            .trim('【', '】', '[', ']')
+            .ifBlank { null }
+        val packageName = if (company.isNullOrBlank()) {
+            null
+        } else {
+            SmsCodeUtils.findPackageNameByLabel(mPhoneContext, company)
+        }
         XLog.w(
             "Diag non-code SMS forwarding triggered: bodyLength=%d",
             plainBody.length,
         )
-        val forwardAction = ForwardAction(mPluginContext, mPhoneContext, plainSms.copy(smsCode = null, company = null))
+        val forwardAction = ForwardAction(
+            mPluginContext,
+            mPhoneContext,
+            plainSms.copy(
+                smsCode = null,
+                company = company,
+                packageName = packageName,
+            ),
+            mSmsIntent,
+        )
         mScheduledExecutor.schedule(forwardAction, 100, TimeUnit.MILLISECONDS)
     }
 

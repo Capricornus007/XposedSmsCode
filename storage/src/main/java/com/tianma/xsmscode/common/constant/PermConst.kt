@@ -20,6 +20,7 @@ object PermConst {
         // Backup import or export
         smsCodePermissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
         smsCodePermissions.add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        smsCodePermissions.add(Manifest.permission.READ_CONTACTS)
 
         val smsCodePackage = BuildConfig.APPLICATION_ID
         (PACKAGE_PERMISSIONS as MutableMap)[smsCodePackage] = smsCodePermissions
