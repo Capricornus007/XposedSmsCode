@@ -57,13 +57,13 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload APK Artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: apks
           path: app/build/outputs/apk/github/release/*.apk
 
       - name: Upload Native Symbols Artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: native-symbols-github
           path: app/build/outputs/native-debug-symbols/githubRelease/native-debug-symbols.zip
@@ -101,7 +101,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Upload AAB Artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: bundle-assets
           path: |
@@ -109,7 +109,7 @@ jobs:
             app/build/outputs/mapping/playRelease/mapping.txt
 
       - name: Upload Play Native Symbols Artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: native-symbols-play
           path: app/build/outputs/native-debug-symbols/playRelease/native-debug-symbols.zip
@@ -127,17 +127,17 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: apks
           path: artifacts/apks
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: bundle-assets
           path: artifacts/bundle
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           name: native-symbols-play
           path: artifacts/symbols-play
@@ -214,7 +214,7 @@ jobs:
       MODULES_REPO: Xposed-Modules-Repo/com.github.tianma8023.xposed.smscode
     steps:
       - name: Download APK Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: apks
           path: artifacts/apks
