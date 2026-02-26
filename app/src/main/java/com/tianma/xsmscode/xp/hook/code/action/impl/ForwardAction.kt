@@ -5,7 +5,6 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.tianma.xsmscode.core.R
 import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBProvider
@@ -19,32 +18,12 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
     CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
-        val isCodeSms = !mSmsMsg.smsCode.isNullOrBlank()
-
-        // New forwarding path is fully driven by Sender data in Room.
-        val enabledSenders = runCatching {
-            com.tianma.xsmscode.data.db.AppDatabase
-                .getInstance(mPluginContext)
-                .senderDao()
-                .getAll()
-                .filter { it.status == 1 }
-        }.getOrDefault(emptyList())
-
-        val hasSender = enabledSenders.isNotEmpty()
-        val hasNonCodeSender = !isCodeSms && enabledSenders.any { it.receiveNonCode == 1 }
-
-        val shouldForward = hasSender && (isCodeSms || hasNonCodeSender)
-
-        if (!shouldForward) {
-            persistForwardResult(
-                success = false,
-                target = "",
-                message = mPluginContext.getString(R.string.forward_result_no_channel),
-            )
-            return null
-        }
-
         try {
+            val isCodeSms = !mSmsMsg.smsCode.isNullOrBlank()
+            XLog.w(
+                "Diag ForwardAction: delegate to app process, isCode=%s",
+                isCodeSms,
+            )
             // Send IPC Broadcast to the integrated SmsCode App Module
             val intent = Intent(ACTION_FORWARD_SMS)
             // ForwardReceiver is now merged into the same APK; target the host app package.

@@ -9,7 +9,6 @@ import androidx.core.os.BundleCompat
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.data.db.AppDatabase
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.xp.hook.code.action.impl.*
 import java.util.concurrent.Executors
@@ -159,20 +158,11 @@ class CodeWorker(
     }
 
     private fun schedulePlainSmsForwardIfNeeded() {
-        val hasNonCodeSender = runCatching {
-            AppDatabase.getInstance(mPluginContext)
-                .senderDao()
-                .getAll()
-                .any { it.status == 1 && it.receiveNonCode == 1 }
-        }.getOrDefault(false)
-        if (!hasNonCodeSender) return
-
         val plainSms = runCatching { SmsMsg.fromIntent(mSmsIntent) }.getOrNull() ?: return
         val plainBody = plainSms.body
         if (plainBody.isNullOrBlank()) return
         XLog.w(
-            "Diag non-code SMS forwarding triggered: hasNonCodeSender=%s, bodyLength=%d",
-            hasNonCodeSender,
+            "Diag non-code SMS forwarding triggered: bodyLength=%d",
             plainBody.length,
         )
         val forwardAction = ForwardAction(mPluginContext, mPhoneContext, plainSms.copy(smsCode = null, company = null))
