@@ -43,37 +43,37 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload Debug APK (arm64-v8a)
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: XposedSmsCode-debug-arm64-v8a
           path: app/build/outputs/apk/debug/*arm64-v8a*.apk
       - name: Upload Debug APK (armeabi-v7a)
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: XposedSmsCode-debug-armeabi-v7a
           path: app/build/outputs/apk/debug/*armeabi-v7a*.apk
       - name: Upload Debug APK (x86)
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: XposedSmsCode-debug-x86
           path: app/build/outputs/apk/debug/*_x86.apk
       - name: Upload Debug APK (x86_64)
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: XposedSmsCode-debug-x86_64
           path: app/build/outputs/apk/debug/*_x86_64.apk
       - name: Upload Debug APK (universal)
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: XposedSmsCode-debug-universal
           path: app/build/outputs/apk/debug/*universal*.apk
       - name: Upload Kover Report
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: kover-report
           path: app/build/reports/kover/htmlDebug
