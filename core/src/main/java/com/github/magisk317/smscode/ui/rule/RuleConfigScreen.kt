@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.magisk317.smscode.forwarder.entity.Rule
 import com.github.magisk317.smscode.forwarder.entity.Sender
@@ -33,7 +34,7 @@ fun RuleConfigScreen(
     var selectedSenderId by remember { mutableStateOf(0L) }
     var smsTemplate by remember { mutableStateOf("") }
 
-    val senders by viewModel.senderList.collectAsState()
+    val senders by viewModel.senderList.collectAsStateWithLifecycle()
 
     LaunchedEffect(ruleId) {
         if (ruleId != 0L) {
@@ -189,7 +190,7 @@ fun SenderDropdown(
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier
                 .fillMaxWidth()
-                .menuAnchor()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             senders.forEach { sender ->

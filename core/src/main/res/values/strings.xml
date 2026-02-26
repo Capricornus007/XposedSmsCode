@@ -17,6 +17,8 @@
     <string name="pref_general_title">General</string>
     <string name="pref_enable_title">Main switch</string>
     <string name="pref_enable_summary">Module active</string>
+    <string name="pref_settings_display_mode_title">Accordion mode</string>
+    <string name="pref_settings_display_mode_summary">On: collapsible groups; Off: show all settings</string>
     <string name="pref_create_shortcut_title">Create Desktop Shortcut</string>
     <string name="pref_create_shortcut_summary">Pin a shortcut to the launcher for quick access</string>
     <string name="pref_choose_theme_title">Theme</string>
@@ -50,28 +52,6 @@
     <string name="pref_forwarding_title">Forwarding</string>
     <string name="pref_enable_forward_title">Enable forwarding</string>
     <string name="pref_enable_forward_summary">Enable code forwarding. Tap channel name to configure details.</string>
-    <string name="pref_forward_webhook_enable_title">Enable Webhook channel</string>
-    <string name="pref_forward_webhook_enable_summary">Send code to configured webhook endpoint</string>
-    <string name="pref_forward_webhook_title">Webhook URL</string>
-    <string name="pref_forward_webhook_summary">Incoming SMS code will be posted as JSON to this URL</string>
-    <string name="pref_forward_tg_enable_title">Enable Telegram channel</string>
-    <string name="pref_forward_tg_enable_summary">Send code through Telegram Bot API</string>
-    <string name="pref_forward_tg_bot_token_title">Telegram Bot Token</string>
-    <string name="pref_forward_tg_bot_token_summary">Bot token from @BotFather (format: 12345:ABC...)</string>
-    <string name="pref_forward_tg_chat_id_title">Telegram Chat ID</string>
-    <string name="pref_forward_tg_chat_id_summary">Target chat/user ID, e.g. -100xxxxxxxxxx</string>
-    <string name="pref_forward_tg_topic_id_title">Telegram Topic ID (optional)</string>
-    <string name="pref_forward_tg_topic_id_summary">Optional message thread id for forum topics</string>
-    <string name="pref_forward_webhook_config_title">Webhook channel config</string>
-    <string name="pref_forward_tg_config_title">Telegram channel config</string>
-    <string name="pref_forward_channel_include_body_title">Include SMS body</string>
-    <string name="pref_forward_channel_include_body_summary">Include original SMS content in this channel</string>
-    <string name="pref_forward_channel_non_code_title">Forward non-code SMS</string>
-    <string name="pref_forward_channel_non_code_summary">Forward regular SMS as body-only in this channel</string>
-    <string name="pref_forward_email_title">Target email (optional)</string>
-    <string name="pref_forward_email_summary">Optional recipient email sent in webhook payload as emailTo</string>
-    <string name="pref_forward_include_body_title">Include SMS body</string>
-    <string name="pref_forward_include_body_summary">Include original SMS content in webhook payload</string>
     <!-- preferences sms code end -->
 
     <!-- preferences auto-input -->

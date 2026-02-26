@@ -3,6 +3,7 @@ package com.github.magisk317.smscode.forwarder.utils.sender
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import android.telephony.SmsManager
 import androidx.core.content.ContextCompat
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
@@ -30,7 +31,7 @@ object SmsUtils {
             throw IllegalArgumentException("未配置目标手机号")
         }
 
-        val smsManager = SmsManager.getDefault()
+        val smsManager = getSmsManager(context)
         val content = msgInfo.content
         runCatching {
             mobiles.forEach { mobile ->
@@ -41,5 +42,13 @@ object SmsUtils {
         }.onFailure {
             SLog.e(TAG, "SMS send failed", it)
         }.getOrElse { throw it }
+    }
+
+    private fun getSmsManager(context: Context): SmsManager {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.getSystemService(SmsManager::class.java)?.let { return it }
+        }
+        @Suppress("DEPRECATION")
+        return SmsManager.getDefault()
     }
 }

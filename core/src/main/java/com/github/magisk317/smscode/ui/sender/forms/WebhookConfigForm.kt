@@ -52,7 +52,7 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
                 }
                 if (setting != null) {
                     webServer = setting.webServer
-                    secret = setting.secret ?: ""
+                    secret = setting.secret
                     method = setting.method
                     webParams = setting.webParams
                 }

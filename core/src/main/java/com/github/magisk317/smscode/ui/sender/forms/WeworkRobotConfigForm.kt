@@ -128,7 +128,7 @@ fun WeworkRobotConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderV
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (senderId == 0L) "新增 企业微信群机器人" else "编辑 企业微信群机器人") },
+                title = { Text(if (senderId == 0L) "新增 企微群机器人" else "编辑 企微群机器人") },
                 navigationIcon = { IconButton(onClick = { showExitDialog = true }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
                 actions = {
                     TextButton(onClick = {

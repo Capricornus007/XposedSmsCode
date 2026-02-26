@@ -11,7 +11,7 @@ import android.os.Bundle
 import android.text.TextUtils
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.github.tianma8023.xposed.smscode.R
+import com.tianma.xsmscode.core.R
 import com.tianma.xsmscode.common.constant.NotificationConst
 import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.common.utils.XLog

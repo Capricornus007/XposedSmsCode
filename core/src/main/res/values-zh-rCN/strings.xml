@@ -17,6 +17,8 @@
     <string name="pref_general_title">通用设置</string>
     <string name="pref_enable_title">主开关</string>
     <string name="pref_enable_summary">模块已激活</string>
+    <string name="pref_settings_display_mode_title">手风琴模式</string>
+    <string name="pref_settings_display_mode_summary">开启：分组可折叠；关闭：全部设置直接展开</string>
     <string name="pref_create_shortcut_title">创建桌面快捷方式</string>
     <string name="pref_create_shortcut_summary">将图标固定到桌面上以便快速访问</string>
     <string name="pref_choose_theme_title">主题</string>
@@ -50,28 +52,6 @@
     <string name="pref_forwarding_title">转发</string>
     <string name="pref_enable_forward_title">启用转发</string>
     <string name="pref_enable_forward_summary">启用验证码转发，点击渠道名可进入详细配置</string>
-    <string name="pref_forward_webhook_enable_title">启用 Webhook 通道</string>
-    <string name="pref_forward_webhook_enable_summary">将验证码发送到配置的 Webhook 地址</string>
-    <string name="pref_forward_webhook_title">Webhook 地址</string>
-    <string name="pref_forward_webhook_summary">收到验证码后将以 JSON POST 到此地址</string>
-    <string name="pref_forward_tg_enable_title">启用 Telegram 通道</string>
-    <string name="pref_forward_tg_enable_summary">通过 Telegram Bot API 发送验证码</string>
-    <string name="pref_forward_tg_bot_token_title">Telegram Bot Token</string>
-    <string name="pref_forward_tg_bot_token_summary">来自 @BotFather 的 Token（格式：12345:ABC...）</string>
-    <string name="pref_forward_tg_chat_id_title">Telegram Chat ID</string>
-    <string name="pref_forward_tg_chat_id_summary">目标聊天/用户 ID，例如 -100xxxxxxxxxx</string>
-    <string name="pref_forward_tg_topic_id_title">Telegram Topic ID（可选）</string>
-    <string name="pref_forward_tg_topic_id_summary">论坛话题消息线程 ID，可选</string>
-    <string name="pref_forward_webhook_config_title">Webhook 通道配置</string>
-    <string name="pref_forward_tg_config_title">Telegram 通道配置</string>
-    <string name="pref_forward_channel_include_body_title">包含短信正文</string>
-    <string name="pref_forward_channel_include_body_summary">在该通道中附带原始短信内容</string>
-    <string name="pref_forward_channel_non_code_title">转发非验证码短信</string>
-    <string name="pref_forward_channel_non_code_summary">该通道中普通短信仅转发正文</string>
-    <string name="pref_forward_email_title">目标邮箱（可选）</string>
-    <string name="pref_forward_email_summary">可选，作为 emailTo 字段随 webhook 一起发送</string>
-    <string name="pref_forward_include_body_title">包含短信正文</string>
-    <string name="pref_forward_include_body_summary">将原始短信内容一并放入 webhook 负载</string>
     <!-- preferences sms code end -->
 
     <!-- preferences auto-input -->

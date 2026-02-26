@@ -5,50 +5,50 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.magisk317.smscode.forwarder.entity.Rule
 import com.github.magisk317.smscode.forwarder.entity.Sender
+import com.tianma.xsmscode.common.constant.Const
 import com.tianma.xsmscode.data.db.AppDatabase
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RuleViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getInstance(application)
     private val ruleDao = db.ruleDao()
     private val senderDao = db.senderDao()
 
-    private val _ruleList = MutableStateFlow<List<Rule>>(emptyList())
-    val ruleList: StateFlow<List<Rule>> = _ruleList.asStateFlow()
+    private val currentSenderId = MutableStateFlow(0L)
 
-    private val _senderList = MutableStateFlow<List<Sender>>(emptyList())
-    val senderList: StateFlow<List<Sender>> = _senderList.asStateFlow()
+    val ruleList: StateFlow<List<Rule>> = currentSenderId
+        .flatMapLatest { senderId ->
+            if (senderId == 0L) ruleDao.observeAll() else ruleDao.observeBySender(senderId)
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(Const.FLOW_STOP_TIMEOUT_MS),
+            initialValue = emptyList(),
+        )
 
-    init {
-        loadRules()
-        loadSenders()
-    }
-
-    private var currentSenderId = 0L
+    val senderList: StateFlow<List<Sender>> = senderDao.getAllFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(Const.FLOW_STOP_TIMEOUT_MS),
+            initialValue = emptyList(),
+        )
 
     fun loadRules(senderId: Long = 0L) {
-        currentSenderId = senderId
-        viewModelScope.launch(Dispatchers.IO) {
-            val all = ruleDao.getAll()
-            _ruleList.value = if (senderId == 0L) all else all.filter { it.senderId == senderId }
-        }
-    }
-
-    private fun loadSenders() {
-        viewModelScope.launch(Dispatchers.IO) {
-            _senderList.value = senderDao.getAll()
-        }
+        currentSenderId.value = senderId
     }
 
     fun deleteRule(rule: Rule) {
         viewModelScope.launch(Dispatchers.IO) {
             ruleDao.delete(rule)
-            loadRules(currentSenderId)
         }
     }
 
@@ -56,7 +56,6 @@ class RuleViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             rule.status = if (enabled) 1 else 0
             ruleDao.update(rule)
-            loadRules(currentSenderId)
         }
     }
 
@@ -77,7 +76,6 @@ class RuleViewModel(application: Application) : AndroidViewModel(application) {
     fun saveRule(rule: Rule) {
         viewModelScope.launch(Dispatchers.IO) {
             saveRuleSync(rule)
-            loadRules(currentSenderId)
         }
     }
 }

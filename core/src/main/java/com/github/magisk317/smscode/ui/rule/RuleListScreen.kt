@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.magisk317.smscode.forwarder.entity.Rule
 import com.github.magisk317.smscode.ui.sender.getSenderTypeName
@@ -25,8 +26,8 @@ fun RuleListScreen(
     onAddClick: () -> Unit,
     onEditClick: (Long) -> Unit
 ) {
-    val rules by viewModel.ruleList.collectAsState()
-    val senders by viewModel.senderList.collectAsState()
+    val rules by viewModel.ruleList.collectAsStateWithLifecycle()
+    val senders by viewModel.senderList.collectAsStateWithLifecycle()
     val senderName = if (senderId != 0L) senders.find { it.id == senderId }?.name else null
 
     LaunchedEffect(senderId) {

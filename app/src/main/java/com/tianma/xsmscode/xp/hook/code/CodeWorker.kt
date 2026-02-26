@@ -9,6 +9,7 @@ import androidx.core.os.BundleCompat
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.common.utils.XLog
+import com.tianma.xsmscode.data.db.AppDatabase
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.xp.hook.code.action.impl.*
 import java.util.concurrent.Executors
@@ -32,7 +33,6 @@ class CodeWorker(
         val copyToClipboard = PrefsReader.copyToClipboardEnabled(mPluginContext)
         val showToast = PrefsReader.shouldShowToast(mPluginContext)
         val recordSms = PrefsReader.recordSmsCodeEnabled(mPluginContext)
-        val forwardEnabled = PrefsReader.forwardEnabled(mPluginContext)
         val blockSms = false
         val markAsRead = PrefsReader.markAsReadEnabled(mPluginContext)
         val deleteSms = PrefsReader.deleteSmsEnabled(mPluginContext)
@@ -41,7 +41,7 @@ class CodeWorker(
         XLog.w(
             "Diag settings: enabled=%s, verbose=%s, showNotif=%s, autoCancel=%s, " +
                 "retentionSec=%d, autoInput=%s, copy=%s, toast=%s, record=%s, " +
-                "forward=%s, block=%s, markRead=%s, delete=%s, dedup=%s, killMe=%s",
+                "block=%s, markRead=%s, delete=%s, dedup=%s, killMe=%s",
             moduleEnabled,
             verboseLog,
             showNotification,
@@ -51,7 +51,6 @@ class CodeWorker(
             copyToClipboard,
             showToast,
             recordSms,
-            forwardEnabled,
             blockSms,
             markAsRead,
             deleteSms,
@@ -86,7 +85,7 @@ class CodeWorker(
         try {
             val parseBundle = smsParseFuture.get()
             if (parseBundle == null) {
-                schedulePlainSmsForwardIfNeeded(forwardEnabled)
+                schedulePlainSmsForwardIfNeeded()
                 mScheduledExecutor.shutdown()
                 return null
             }
@@ -125,10 +124,8 @@ class CodeWorker(
         mScheduledExecutor.schedule(recordSmsAction, 0, TimeUnit.MILLISECONDS)
 
         // 转发 Action
-        if (forwardEnabled) {
-            val forwardAction = ForwardAction(mPluginContext, mPhoneContext, smsMsg)
-            mScheduledExecutor.schedule(forwardAction, 100, TimeUnit.MILLISECONDS)
-        }
+        val forwardAction = ForwardAction(mPluginContext, mPhoneContext, smsMsg)
+        mScheduledExecutor.schedule(forwardAction, 100, TimeUnit.MILLISECONDS)
 
         // 操作验证码短信（标记为已读 或者 删除） Action
         scheduleOperateSmsActions(smsMsg)
@@ -161,21 +158,21 @@ class CodeWorker(
         return buildParseResult()
     }
 
-    private fun schedulePlainSmsForwardIfNeeded(forwardEnabled: Boolean) {
-        if (!forwardEnabled) return
-        val webhookNonCode = PrefsReader.forwardWebhookEnabled(mPluginContext) &&
-            PrefsReader.forwardWebhookNonCodeEnabled(mPluginContext)
-        val tgNonCode = PrefsReader.forwardTelegramEnabled(mPluginContext) &&
-            PrefsReader.forwardTelegramNonCodeEnabled(mPluginContext)
-        if (!webhookNonCode && !tgNonCode) return
+    private fun schedulePlainSmsForwardIfNeeded() {
+        val hasNonCodeSender = runCatching {
+            AppDatabase.getInstance(mPluginContext)
+                .senderDao()
+                .getAll()
+                .any { it.status == 1 && it.receiveNonCode == 1 }
+        }.getOrDefault(false)
+        if (!hasNonCodeSender) return
 
         val plainSms = runCatching { SmsMsg.fromIntent(mSmsIntent) }.getOrNull() ?: return
         val plainBody = plainSms.body
         if (plainBody.isNullOrBlank()) return
         XLog.w(
-            "Diag non-code SMS forwarding triggered: webhook=%s, tg=%s, bodyLength=%d",
-            webhookNonCode,
-            tgNonCode,
+            "Diag non-code SMS forwarding triggered: hasNonCodeSender=%s, bodyLength=%d",
+            hasNonCodeSender,
             plainBody.length,
         )
         val forwardAction = ForwardAction(mPluginContext, mPhoneContext, plainSms.copy(smsCode = null, company = null))

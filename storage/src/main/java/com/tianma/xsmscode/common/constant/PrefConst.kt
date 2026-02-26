@@ -10,6 +10,7 @@ object PrefConst {
     const val KEY_HIDE_LAUNCHER_ICON = "pref_hide_launcher_icon"
     const val KEY_CHOOSE_THEME = "pref_choose_theme"
     const val KEY_COMPOSE_SETTINGS = "pref_compose_settings"
+    const val KEY_SETTINGS_ACCORDION_MODE = "pref_settings_accordion_mode"
     const val KEY_HAZE_BLUR_RADIUS = "pref_haze_blur_radius"
     const val HAZE_BLUR_RADIUS_DEFAULT = 25
     const val KEY_HAZE_TINT_ALPHA = "pref_haze_tint_alpha"
@@ -32,19 +33,6 @@ object PrefConst {
     const val KEY_SMS_BLACKLIST_CONTENT = "pref_sms_blacklist_content"
     const val KEY_SMS_BLACKLIST_ACTION_DELETE = "pref_sms_blacklist_action_delete"
     const val KEY_SMS_BLACKLIST_ACTION_BLOCK = "pref_sms_blacklist_action_block"
-    const val KEY_ENABLE_FORWARD = "pref_enable_forward"
-    const val KEY_FORWARD_WEBHOOK_ENABLED = "pref_forward_webhook_enabled"
-    const val KEY_FORWARD_WEBHOOK_URL = "pref_forward_webhook_url"
-    const val KEY_FORWARD_WEBHOOK_INCLUDE_BODY = "pref_forward_webhook_include_body"
-    const val KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED = "pref_forward_webhook_non_code_enabled"
-    const val KEY_FORWARD_EMAIL = "pref_forward_email"
-    const val KEY_FORWARD_TG_ENABLED = "pref_forward_tg_enabled"
-    const val KEY_FORWARD_TG_BOT_TOKEN = "pref_forward_tg_bot_token"
-    const val KEY_FORWARD_TG_CHAT_ID = "pref_forward_tg_chat_id"
-    const val KEY_FORWARD_TG_TOPIC_ID = "pref_forward_tg_topic_id"
-    const val KEY_FORWARD_TG_INCLUDE_BODY = "pref_forward_tg_include_body"
-    const val KEY_FORWARD_TG_NON_CODE_ENABLED = "pref_forward_tg_non_code_enabled"
-    const val KEY_FORWARD_INCLUDE_BODY = "pref_forward_include_body"
 
     // Code Notification
     const val KEY_SHOW_CODE_NOTIFICATION = "pref_show_code_notification"

@@ -57,6 +57,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val booleanPrefKeys = setOf(
         PrefConst.KEY_ENABLE,
+        PrefConst.KEY_SETTINGS_ACCORDION_MODE,
         PrefConst.KEY_SHOW_TOAST,
         PrefConst.KEY_COPY_TO_CLIPBOARD,
         PrefConst.KEY_ENABLE_AUTO_INPUT_CODE,
@@ -65,14 +66,6 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         PrefConst.KEY_ENABLE_SMS_BLACKLIST,
         PrefConst.KEY_SMS_BLACKLIST_ACTION_DELETE,
         PrefConst.KEY_SMS_BLACKLIST_ACTION_BLOCK,
-        PrefConst.KEY_ENABLE_FORWARD,
-        PrefConst.KEY_FORWARD_WEBHOOK_ENABLED,
-        PrefConst.KEY_FORWARD_TG_ENABLED,
-        PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY,
-        PrefConst.KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED,
-        PrefConst.KEY_FORWARD_TG_INCLUDE_BODY,
-        PrefConst.KEY_FORWARD_TG_NON_CODE_ENABLED,
-        PrefConst.KEY_FORWARD_INCLUDE_BODY,
         PrefConst.KEY_SHOW_CODE_NOTIFICATION,
         PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
         PrefConst.KEY_ENABLE_CODE_RECORDS,

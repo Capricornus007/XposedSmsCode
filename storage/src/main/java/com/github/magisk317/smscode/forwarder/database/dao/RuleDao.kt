@@ -7,6 +7,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import com.github.magisk317.smscode.forwarder.entity.Rule
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface RuleDao {
@@ -38,5 +39,11 @@ interface RuleDao {
 
     @Query("SELECT * FROM Rule ORDER BY id DESC")
     fun getAll(): List<Rule>
+
+    @Query("SELECT * FROM Rule ORDER BY id DESC")
+    fun observeAll(): Flow<List<Rule>>
+
+    @Query("SELECT * FROM Rule WHERE sender_id=:senderId ORDER BY id DESC")
+    fun observeBySender(senderId: Long): Flow<List<Rule>>
 
 }

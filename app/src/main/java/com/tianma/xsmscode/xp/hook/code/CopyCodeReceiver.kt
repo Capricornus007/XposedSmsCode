@@ -7,7 +7,7 @@ import android.content.IntentFilter
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.github.tianma8023.xposed.smscode.BuildConfig
-import com.github.tianma8023.xposed.smscode.R
+import com.tianma.xsmscode.core.R
 import com.tianma.xsmscode.common.utils.ClipboardUtils
 
 /**

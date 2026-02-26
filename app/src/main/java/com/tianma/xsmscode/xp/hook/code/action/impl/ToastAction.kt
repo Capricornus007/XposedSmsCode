@@ -3,7 +3,7 @@ package com.tianma.xsmscode.xp.hook.code.action.impl
 import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
-import com.github.tianma8023.xposed.smscode.R
+import com.tianma.xsmscode.core.R
 import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.xp.hook.code.action.RunnableAction

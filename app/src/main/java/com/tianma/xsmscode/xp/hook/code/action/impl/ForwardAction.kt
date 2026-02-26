@@ -5,7 +5,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import com.github.tianma8023.xposed.smscode.R
+import com.tianma.xsmscode.core.R
 import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBProvider
@@ -19,24 +19,19 @@ class ForwardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMs
     CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
-        if (!PrefsReader.forwardEnabled(mPluginContext)) return null
-
         val isCodeSms = !mSmsMsg.smsCode.isNullOrBlank()
 
-        // Gate: check if there is at least one enabled Sender in the unified DB.
-        // This replaces the old per-channel Prefs flags (webhookEnabled, tgEnabled, etc.).
-        val hasSender = runCatching {
-            val db = com.tianma.xsmscode.data.db.AppDatabase.getInstance(mPluginContext)
-            val enabled = db.senderDao().getAll().count { it.status == 1 }
-            enabled > 0
-        }.getOrDefault(false)
+        // New forwarding path is fully driven by Sender data in Room.
+        val enabledSenders = runCatching {
+            com.tianma.xsmscode.data.db.AppDatabase
+                .getInstance(mPluginContext)
+                .senderDao()
+                .getAll()
+                .filter { it.status == 1 }
+        }.getOrDefault(emptyList())
 
-        // Also respect per-sender receiveNonCode setting:
-        // non-code SMS are forwarded only if at least one enabled sender opts in.
-        val hasNonCodeSender = if (isCodeSms) false else runCatching {
-            val db = com.tianma.xsmscode.data.db.AppDatabase.getInstance(mPluginContext)
-            db.senderDao().getAll().any { it.status == 1 && it.receiveNonCode == 1 }
-        }.getOrDefault(false)
+        val hasSender = enabledSenders.isNotEmpty()
+        val hasNonCodeSender = !isCodeSms && enabledSenders.any { it.receiveNonCode == 1 }
 
         val shouldForward = hasSender && (isCodeSms || hasNonCodeSender)
 

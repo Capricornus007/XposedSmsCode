@@ -127,7 +127,7 @@ fun WeworkAgentConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderV
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (senderId == 0L) "新增 企业微信应用" else "编辑 企业微信应用") },
+                title = { Text(if (senderId == 0L) "新增 企微应用" else "编辑 企微应用") },
                 navigationIcon = { IconButton(onClick = { showExitDialog = true }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, null) } },
                 actions = {
                     TextButton(onClick = {

@@ -8,7 +8,7 @@ import android.os.Binder
 import android.os.Build
 import android.provider.Telephony
 import com.github.tianma8023.xposed.smscode.BuildConfig
-import com.github.tianma8023.xposed.smscode.R
+import com.tianma.xsmscode.core.R
 import com.tianma.xsmscode.common.constant.NotificationConst
 import com.tianma.xsmscode.common.utils.ModuleActivationStore
 import com.tianma.xsmscode.common.utils.NotificationUtils

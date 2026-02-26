@@ -6,6 +6,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.magisk317.smscode.forwarder.utils.SenderType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.magisk317.smscode.ui.sender.forms.*
@@ -32,7 +33,7 @@ fun SenderConfigScreen(
         isLoaded = true
     }
 
-    val lastSavedStatus by viewModel.lastSavedStatus.collectAsState()
+    val lastSavedStatus by viewModel.lastSavedStatus.collectAsStateWithLifecycle()
 
     val handleBack: () -> Unit = {
         // Only reopen type chooser when creating a brand new sender and nothing was saved.

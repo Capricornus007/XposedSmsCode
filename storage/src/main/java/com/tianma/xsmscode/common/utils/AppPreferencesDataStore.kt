@@ -169,6 +169,10 @@ object AppPreferencesDataStore {
     suspend fun syncToSharedPrefs(context: Context) {
         val editor = getSharedPrefs(context).edit()
         editor.putBoolean(PrefConst.KEY_ENABLE, getBoolean(context, PrefConst.KEY_ENABLE, true))
+        editor.putBoolean(
+            PrefConst.KEY_SETTINGS_ACCORDION_MODE,
+            getBoolean(context, PrefConst.KEY_SETTINGS_ACCORDION_MODE, true),
+        )
         editor.putBoolean(PrefConst.KEY_VERBOSE_LOG_MODE, getBoolean(context, PrefConst.KEY_VERBOSE_LOG_MODE, false))
         editor.putBoolean(
             PrefConst.KEY_ENABLE_AUTO_INPUT_CODE,
@@ -236,54 +240,6 @@ object AppPreferencesDataStore {
         editor.putBoolean(
             PrefConst.KEY_SMS_BLACKLIST_ACTION_BLOCK,
             getBoolean(context, PrefConst.KEY_SMS_BLACKLIST_ACTION_BLOCK, false),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_ENABLE_FORWARD,
-            getBoolean(context, PrefConst.KEY_ENABLE_FORWARD, false),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_FORWARD_WEBHOOK_ENABLED,
-            getBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_ENABLED, true),
-        )
-        editor.putString(
-            PrefConst.KEY_FORWARD_WEBHOOK_URL,
-            getString(context, PrefConst.KEY_FORWARD_WEBHOOK_URL, ""),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY,
-            getBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY, false),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED,
-            getBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED, false),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_FORWARD_TG_ENABLED,
-            getBoolean(context, PrefConst.KEY_FORWARD_TG_ENABLED, false),
-        )
-        editor.putString(
-            PrefConst.KEY_FORWARD_TG_BOT_TOKEN,
-            getString(context, PrefConst.KEY_FORWARD_TG_BOT_TOKEN, ""),
-        )
-        editor.putString(
-            PrefConst.KEY_FORWARD_TG_CHAT_ID,
-            getString(context, PrefConst.KEY_FORWARD_TG_CHAT_ID, ""),
-        )
-        editor.putString(
-            PrefConst.KEY_FORWARD_TG_TOPIC_ID,
-            getString(context, PrefConst.KEY_FORWARD_TG_TOPIC_ID, ""),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_FORWARD_TG_INCLUDE_BODY,
-            getBoolean(context, PrefConst.KEY_FORWARD_TG_INCLUDE_BODY, false),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_FORWARD_TG_NON_CODE_ENABLED,
-            getBoolean(context, PrefConst.KEY_FORWARD_TG_NON_CODE_ENABLED, false),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_FORWARD_INCLUDE_BODY,
-            getBoolean(context, PrefConst.KEY_FORWARD_INCLUDE_BODY, false),
         )
         editor.putString(PrefConst.KEY_HISTORY_LIMIT, getString(context, PrefConst.KEY_HISTORY_LIMIT, "0"))
         editor.putBoolean(

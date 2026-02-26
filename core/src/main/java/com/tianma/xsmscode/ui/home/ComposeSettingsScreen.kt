@@ -8,6 +8,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -19,6 +20,8 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,19 +94,9 @@ fun ComposeSettingsScreen(
     var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
     var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
     var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
-    var forwardWebhookUrl by remember { mutableStateOf("") }
-    var forwardWebhookIncludeBody by remember { mutableStateOf(false) }
-    var forwardWebhookNonCodeEnabled by remember { mutableStateOf(false) }
-    var forwardTgBotToken by remember { mutableStateOf("") }
-    var forwardTgChatId by remember { mutableStateOf("") }
-    var forwardTgTopicId by remember { mutableStateOf("") }
-    var forwardTgIncludeBody by remember { mutableStateOf(false) }
-    var forwardTgNonCodeEnabled by remember { mutableStateOf(false) }
     var showAutoInputDialog by remember { mutableStateOf(false) }
     var showRetentionDialog by remember { mutableStateOf(false) }
     var showSmsTestDialog by remember { mutableStateOf(false) }
-    var showForwardWebhookConfigDialog by remember { mutableStateOf(false) }
-    var showForwardTgConfigDialog by remember { mutableStateOf(false) }
     var smsTestInput by remember { mutableStateOf("") }
     var showThemeDialog by remember { mutableStateOf(false) }
     var showDonateDialog by remember { mutableStateOf(false) }
@@ -113,10 +106,17 @@ fun ComposeSettingsScreen(
     var showPrivacyPolicyPage by remember { mutableStateOf(false) }
     var showVerboseLogViewer by remember { mutableStateOf(false) }
     var showKeywordsDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
     var isActivated by remember { mutableStateOf(ModuleUtils.isModuleEnabled()) }
     var pendingSavedToast by remember { mutableStateOf(false) }
     var settingsDataLoaded by remember { mutableStateOf(false) }
     var manualRefreshing by remember { mutableStateOf(false) }
+    var expandGeneral by remember { mutableStateOf(false) }
+    var expandSmsCode by remember { mutableStateOf(false) }
+    var expandAutoInput by remember { mutableStateOf(false) }
+    var expandNotification by remember { mutableStateOf(false) }
+    var expandExperimental by remember { mutableStateOf(false) }
+    var expandOthers by remember { mutableStateOf(false) }
 
     val reloadSettingsData: suspend () -> Unit = {
         autoInputDelay = AppPreferencesDataStore.getString(
@@ -133,46 +133,6 @@ fun ComposeSettingsScreen(
             context,
             PrefConst.KEY_SMSCODE_KEYWORDS,
             PrefConst.SMSCODE_KEYWORDS_DEFAULT,
-        )
-        forwardWebhookUrl = AppPreferencesDataStore.getString(
-            context,
-            PrefConst.KEY_FORWARD_WEBHOOK_URL,
-            "",
-        )
-        forwardWebhookIncludeBody = AppPreferencesDataStore.getBoolean(
-            context,
-            PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY,
-            false,
-        )
-        forwardWebhookNonCodeEnabled = AppPreferencesDataStore.getBoolean(
-            context,
-            PrefConst.KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED,
-            false,
-        )
-        forwardTgBotToken = AppPreferencesDataStore.getString(
-            context,
-            PrefConst.KEY_FORWARD_TG_BOT_TOKEN,
-            "",
-        )
-        forwardTgChatId = AppPreferencesDataStore.getString(
-            context,
-            PrefConst.KEY_FORWARD_TG_CHAT_ID,
-            "",
-        )
-        forwardTgTopicId = AppPreferencesDataStore.getString(
-            context,
-            PrefConst.KEY_FORWARD_TG_TOPIC_ID,
-            "",
-        )
-        forwardTgIncludeBody = AppPreferencesDataStore.getBoolean(
-            context,
-            PrefConst.KEY_FORWARD_TG_INCLUDE_BODY,
-            false,
-        )
-        forwardTgNonCodeEnabled = AppPreferencesDataStore.getBoolean(
-            context,
-            PrefConst.KEY_FORWARD_TG_NON_CODE_ENABLED,
-            false,
         )
         settingsViewModel.setInternalFilesWritable()
         settingsDataLoaded = true
@@ -273,6 +233,14 @@ fun ComposeSettingsScreen(
         minDurationMillis = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
     )
     val pullToRefreshState = rememberPullToRefreshState()
+    val blurRadius = rememberPrefInt(PrefConst.KEY_HAZE_BLUR_RADIUS, 25)
+    val tintAlpha = rememberPrefFloat(PrefConst.KEY_HAZE_TINT_ALPHA, 0.2f)
+    var showBlurRadiusDialog by remember { mutableStateOf(false) }
+    var showTintAlphaDialog by remember { mutableStateOf(false) }
+    val autoInputEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, true)
+    val autoUpdateEnabled = rememberPrefBoolean(PrefConst.KEY_AUTO_UPDATE_ON_START, true)
+    val moduleEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE, true)
+    val accordionMode = rememberPrefBoolean(PrefConst.KEY_SETTINGS_ACCORDION_MODE, true)
 
     LaunchedEffect(settingsDataLoaded, showLoading, shouldShowInitialLoading) {
         if (shouldShowInitialLoading && settingsDataLoaded && !showLoading) {
@@ -328,313 +296,225 @@ fun ComposeSettingsScreen(
                         .padding(bottom = bottomPadding)
                         .nestedScroll(scrollBehavior.nestedScrollConnection)
                         .verticalScroll(scrollState),
-                    verticalArrangement = Arrangement.spacedBy(Const.SPACING_EXTRA_SMALL.dp),
+                    verticalArrangement = Arrangement.spacedBy(Const.SPACING_SMALL.dp),
                 ) {
-                // Add top padding manually as the first item or Spacer
-                Spacer(modifier = Modifier.height(topPadding))
-                SectionHeader(text = stringResource(id = R.string.pref_general_title))
-                SwitchItem(
-                    title = stringResource(id = R.string.pref_enable_title),
-                    summary = stringResource(id = R.string.pref_enable_summary),
-                    key = PrefConst.KEY_ENABLE,
-                    defaultValue = true,
-                    onSaved = markPrefsSaved,
-                )
-                Item(
-                    title = stringResource(id = R.string.pref_create_shortcut_title),
-                    summary = stringResource(id = R.string.pref_create_shortcut_summary),
-                ) { settingsViewModel.pinShortcutToDesktop() }
-                Item(
-                    title = stringResource(id = R.string.pref_choose_theme_title),
-                    summary = stringResource(id = R.string.pref_choose_theme_summary),
-                ) { showThemeDialog = true }
+                    Spacer(modifier = Modifier.height(topPadding))
 
-            var showLanguageDialog by remember { mutableStateOf(false) }
-            Item(
-                title = stringResource(id = R.string.pref_language_title),
-                summary = stringResource(id = R.string.pref_language_summary),
-            ) { showLanguageDialog = true }
+                    SwitchItem(
+                        title = stringResource(id = R.string.pref_enable_title),
+                        summary = stringResource(id = R.string.pref_enable_summary),
+                        key = PrefConst.KEY_ENABLE,
+                        defaultValue = true,
+                        stateOverride = moduleEnabled,
+                        modifier = Modifier.padding(horizontal = Const.PADDING_SMALL.dp),
+                        onSaved = markPrefsSaved,
+                    )
+                    SwitchItem(
+                        title = stringResource(id = R.string.pref_settings_display_mode_title),
+                        summary = stringResource(id = R.string.pref_settings_display_mode_summary),
+                        key = PrefConst.KEY_SETTINGS_ACCORDION_MODE,
+                        defaultValue = true,
+                        stateOverride = accordionMode,
+                        modifier = Modifier.padding(horizontal = Const.PADDING_SMALL.dp),
+                        onSaved = markPrefsSaved,
+                    )
 
-            if (showLanguageDialog) {
-                LanguageChooserDialog(
-                    onDismiss = { showLanguageDialog = false },
-                    onLanguageSelected = { tag ->
-                        val locales = if (tag.isEmpty()) {
-                            androidx.core.os.LocaleListCompat.getEmptyLocaleList()
-                        } else {
-                            androidx.core.os.LocaleListCompat.forLanguageTags(tag)
-                        }
-                        androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(locales)
-                        showLanguageDialog = false
-                    },
-                )
-            }
-
-            val blurRadius = rememberPrefInt(PrefConst.KEY_HAZE_BLUR_RADIUS, 25)
-            val tintAlpha = rememberPrefFloat(PrefConst.KEY_HAZE_TINT_ALPHA, 0.2f)
-            var showBlurRadiusDialog by remember { mutableStateOf(false) }
-            var showTintAlphaDialog by remember { mutableStateOf(false) }
-
-            Item(
-                title = stringResource(id = R.string.pref_haze_blur_radius_title),
-                summary = "${blurRadius.intValue}dp",
-            ) { showBlurRadiusDialog = true }
-
-            Item(
-                title = stringResource(id = R.string.pref_haze_tint_alpha_title),
-                summary = "%.2f".format(tintAlpha.floatValue),
-            ) { showTintAlphaDialog = true }
-
-            if (showBlurRadiusDialog) {
-                SliderDialog(
-                    title = stringResource(id = R.string.pref_haze_blur_radius_title),
-                    value = blurRadius.intValue.toFloat(),
-                    valueRange = 0f..100f,
-                    steps = 0,
-                    onDismiss = { showBlurRadiusDialog = false },
-                    onValueChange = {
-                        val newVal = it.toInt()
-                        blurRadius.intValue = newVal
-                        scope.launch {
-                            AppPreferencesDataStore.setInt(context, PrefConst.KEY_HAZE_BLUR_RADIUS, newVal)
-                            AppPreferencesDataStore.syncToSharedPrefs(context)
-                            markPrefsSaved()
-                        }
-                        showBlurRadiusDialog = false
-                    },
-                    valueFormatter = { "${it.toInt()}dp" }
-                )
-            }
-
-            if (showTintAlphaDialog) {
-                SliderDialog(
-                    title = stringResource(id = R.string.pref_haze_tint_alpha_title),
-                    value = tintAlpha.floatValue,
-                    valueRange = 0f..1f,
-                    steps = 0,
-                    onDismiss = { showTintAlphaDialog = false },
-                    onValueChange = {
-                        tintAlpha.floatValue = it
-                        scope.launch {
-                            AppPreferencesDataStore.setFloat(context, PrefConst.KEY_HAZE_TINT_ALPHA, it)
-                            AppPreferencesDataStore.syncToSharedPrefs(context)
-                            markPrefsSaved()
-                        }
-                        showTintAlphaDialog = false
+                    ExpandableSettingsSection(
+                        title = "通用设置",
+                        expanded = expandGeneral,
+                        onExpandedChange = { expandGeneral = !expandGeneral },
+                        accordionMode = accordionMode.value,
+                    ) {
+                        Item(
+                            title = stringResource(id = R.string.pref_create_shortcut_title),
+                            summary = stringResource(id = R.string.pref_create_shortcut_summary),
+                        ) { settingsViewModel.pinShortcutToDesktop() }
+                        Item(
+                            title = stringResource(id = R.string.pref_choose_theme_title),
+                            summary = stringResource(id = R.string.pref_choose_theme_summary),
+                        ) { showThemeDialog = true }
+                        Item(
+                            title = stringResource(id = R.string.pref_language_title),
+                            summary = stringResource(id = R.string.pref_language_summary),
+                        ) { showLanguageDialog = true }
+                        Item(
+                            title = stringResource(id = R.string.pref_haze_blur_radius_title),
+                            summary = "${blurRadius.intValue}dp",
+                        ) { showBlurRadiusDialog = true }
+                        Item(
+                            title = stringResource(id = R.string.pref_haze_tint_alpha_title),
+                            summary = "%.2f".format(tintAlpha.floatValue),
+                        ) { showTintAlphaDialog = true }
                     }
-                )
-            }
 
+                    ExpandableSettingsSection(
+                        title = "验证码设置",
+                        expanded = expandSmsCode,
+                        onExpandedChange = { expandSmsCode = !expandSmsCode },
+                        accordionMode = accordionMode.value,
+                    ) {
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_copy_to_clipboard_title),
+                            summary = stringResource(id = R.string.pref_copy_to_clipboard_summary),
+                            key = PrefConst.KEY_COPY_TO_CLIPBOARD,
+                            defaultValue = false,
+                            onSaved = markPrefsSaved,
+                        )
+                        Item(
+                            title = stringResource(id = R.string.pref_smscode_keywords_title),
+                            summary = stringResource(id = R.string.pref_smscode_keywords_summary),
+                        ) { showKeywordsDialog = true }
+                        Item(
+                            title = stringResource(id = R.string.pref_smscode_test_title),
+                            summary = stringResource(id = R.string.pref_smscode_test_summary),
+                        ) { showSmsTestDialog = true }
+                    }
 
+                    ExpandableSettingsSection(
+                        title = "自动输入",
+                        expanded = expandAutoInput,
+                        onExpandedChange = { expandAutoInput = !expandAutoInput },
+                        accordionMode = accordionMode.value,
+                    ) {
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_enable_auto_input_code_title),
+                            summary = stringResource(id = R.string.pref_enable_auto_input_code_summary),
+                            key = PrefConst.KEY_ENABLE_AUTO_INPUT_CODE,
+                            defaultValue = true,
+                            stateOverride = autoInputEnabled,
+                            onSaved = markPrefsSaved,
+                        )
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_enable_auto_enter_code_title),
+                            summary = stringResource(id = R.string.pref_enable_auto_enter_code_summary),
+                            key = PrefConst.KEY_ENABLE_AUTO_ENTER_CODE,
+                            defaultValue = false,
+                            onSaved = markPrefsSaved,
+                        )
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_kill_me_title),
+                            summary = stringResource(id = R.string.pref_kill_me_summary),
+                            key = PrefConst.KEY_KILL_ME,
+                            defaultValue = false,
+                            onSaved = markPrefsSaved,
+                        )
+                        Item(
+                            title = stringResource(id = R.string.pref_auto_input_code_delay_title),
+                            summary = stringResource(id = R.string.pref_auto_input_code_delay_summary, autoInputDelay),
+                        ) { showAutoInputDialog = true }
+                    }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
+                    ExpandableSettingsSection(
+                        title = "通知设置",
+                        expanded = expandNotification,
+                        onExpandedChange = { expandNotification = !expandNotification },
+                        accordionMode = accordionMode.value,
+                    ) {
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_show_toast_title),
+                            summary = stringResource(id = R.string.pref_show_toast_summary),
+                            key = PrefConst.KEY_SHOW_TOAST,
+                            defaultValue = true,
+                            onSaved = markPrefsSaved,
+                        )
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_show_code_notification_title),
+                            summary = stringResource(id = R.string.pref_show_code_notification_summary),
+                            key = PrefConst.KEY_SHOW_CODE_NOTIFICATION,
+                            defaultValue = true,
+                            onSaved = markPrefsSaved,
+                        )
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_auto_cancel_notification_title),
+                            summary = stringResource(id = R.string.pref_auto_cancel_notification_summary),
+                            key = PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
+                            defaultValue = false,
+                            onSaved = markPrefsSaved,
+                        )
+                        Item(
+                            title = stringResource(id = R.string.pref_notification_retention_time_title),
+                            summary = run {
+                                val entries = stringArrayResource(id = R.array.notification_retention_time_entry_list)
+                                val values = stringArrayResource(id = R.array.notification_retention_time_list)
+                                val index = values.indexOf(retentionTime)
+                                if (index >= 0) entries[index] else retentionTime
+                            },
+                        ) { showRetentionDialog = true }
+                    }
 
-            SectionHeader(text = stringResource(id = R.string.pref_sms_code_title))
-            SwitchItem(
-                title = stringResource(id = R.string.pref_copy_to_clipboard_title),
-                summary = stringResource(id = R.string.pref_copy_to_clipboard_summary),
-                key = PrefConst.KEY_COPY_TO_CLIPBOARD,
-                defaultValue = false,
-                onSaved = markPrefsSaved,
-            )
-            Item(
-                title = stringResource(id = R.string.pref_smscode_keywords_title),
-                summary = stringResource(id = R.string.pref_smscode_keywords_summary),
-            ) { showKeywordsDialog = true }
-            Item(
-                title = stringResource(id = R.string.pref_smscode_test_title),
-                summary = stringResource(id = R.string.pref_smscode_test_summary),
-            ) { showSmsTestDialog = true }
+                    ExpandableSettingsSection(
+                        title = "实验性功能",
+                        expanded = expandExperimental,
+                        onExpandedChange = { expandExperimental = !expandExperimental },
+                        accordionMode = accordionMode.value,
+                    ) {
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_mark_as_read_title),
+                            summary = stringResource(id = R.string.pref_mark_as_read_summary),
+                            key = PrefConst.KEY_MARK_AS_READ,
+                            defaultValue = false,
+                            onSaved = markPrefsSaved,
+                        )
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_delete_sms_title),
+                            summary = stringResource(id = R.string.pref_delete_sms_summary),
+                            key = PrefConst.KEY_DELETE_SMS,
+                            defaultValue = false,
+                            onSaved = markPrefsSaved,
+                        )
+                    }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
-
-            SectionHeader(text = stringResource(id = R.string.pref_forwarding_title))
-            val forwardEnabledState = rememberPrefBoolean(PrefConst.KEY_ENABLE_FORWARD, false)
-            SwitchItem(
-                title = stringResource(id = R.string.pref_enable_forward_title),
-                summary = stringResource(id = R.string.pref_enable_forward_summary),
-                key = PrefConst.KEY_ENABLE_FORWARD,
-                defaultValue = false,
-                stateOverride = forwardEnabledState,
-                onSaved = markPrefsSaved,
-            )
-            if (forwardEnabledState.value) {
-                val webhookForwardEnabled = rememberPrefBoolean(PrefConst.KEY_FORWARD_WEBHOOK_ENABLED, true)
-                val tgForwardEnabled = rememberPrefBoolean(PrefConst.KEY_FORWARD_TG_ENABLED, false)
-                val webhookConfigured = forwardWebhookUrl.isNotBlank()
-                val tgConfigured = forwardTgBotToken.isNotBlank() && forwardTgChatId.isNotBlank()
-                ForwardChannelItem(
-                    title = stringResource(id = R.string.forward_channel_webhook),
-                    summary = if (webhookConfigured) {
-                        stringResource(id = R.string.forward_configured)
-                    } else {
-                        stringResource(id = R.string.forward_not_configured)
-                    },
-                    checked = webhookForwardEnabled.value,
-                    onCheckedChange = { checked ->
-                        webhookForwardEnabled.value = checked
-                        scope.launch {
-                            AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_ENABLED, checked)
-                            AppPreferencesDataStore.syncToSharedPrefs(context)
-                            markPrefsSaved()
+                    ExpandableSettingsSection(
+                        title = "其他",
+                        expanded = expandOthers,
+                        onExpandedChange = { expandOthers = !expandOthers },
+                        accordionMode = accordionMode.value,
+                    ) {
+                        Item(
+                            title = stringResource(id = R.string.pref_backup_title),
+                            summary = stringResource(id = R.string.pref_backup_summary),
+                        ) { showBackupDialog = true }
+                        Item(
+                            title = stringResource(id = R.string.pref_restore_title),
+                            summary = stringResource(id = R.string.pref_restore_summary),
+                        ) {
+                            val intent = com.tianma.xsmscode.feature.backup.BackupManager.getImportRuleListSAFIntent(context)
+                            restoreLauncher.launch(intent)
                         }
-                    },
-                    onClick = { showForwardWebhookConfigDialog = true },
-                )
-                ForwardChannelItem(
-                    title = stringResource(id = R.string.forward_channel_tg),
-                    summary = if (tgConfigured) {
-                        stringResource(id = R.string.forward_configured)
-                    } else {
-                        stringResource(id = R.string.forward_not_configured)
-                    },
-                    checked = tgForwardEnabled.value,
-                    onCheckedChange = { checked ->
-                        tgForwardEnabled.value = checked
-                        scope.launch {
-                            AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_TG_ENABLED, checked)
-                            AppPreferencesDataStore.syncToSharedPrefs(context)
-                            markPrefsSaved()
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_verbose_log_mode_title),
+                            summary = stringResource(id = R.string.pref_verbose_log_mode_summary),
+                            key = PrefConst.KEY_VERBOSE_LOG_MODE,
+                            defaultValue = false,
+                            onItemClick = { showVerboseLogViewer = true },
+                            onToggle = { on ->
+                                RuntimeLogStore.setEnabled(on)
+                                XLog.setLogLevel(if (on) Log.VERBOSE else com.tianma.xsmscode.storage.BuildConfig.LOG_LEVEL)
+                            },
+                            onSaved = markPrefsSaved,
+                        )
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_auto_update_on_start_title),
+                            summary = stringResource(id = R.string.pref_auto_update_on_start_summary),
+                            key = PrefConst.KEY_AUTO_UPDATE_ON_START,
+                            defaultValue = true,
+                            stateOverride = autoUpdateEnabled,
+                            onSaved = markPrefsSaved,
+                        )
+                        if (autoUpdateEnabled.value) {
+                            SwitchItem(
+                                title = stringResource(id = R.string.pref_auto_update_wifi_only_title),
+                                summary = stringResource(id = R.string.pref_auto_update_wifi_only_summary),
+                                key = PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
+                                defaultValue = false,
+                                onSaved = markPrefsSaved,
+                            )
                         }
-                    },
-                    onClick = { showForwardTgConfigDialog = true },
-                )
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
-
-            SectionHeader(text = stringResource(id = R.string.pref_experimental_title))
-            SwitchItem(
-                title = stringResource(id = R.string.pref_mark_as_read_title),
-                summary = stringResource(id = R.string.pref_mark_as_read_summary),
-                key = PrefConst.KEY_MARK_AS_READ,
-                defaultValue = false,
-                onSaved = markPrefsSaved,
-            )
-            SwitchItem(
-                title = stringResource(id = R.string.pref_delete_sms_title),
-                summary = stringResource(id = R.string.pref_delete_sms_summary),
-                key = PrefConst.KEY_DELETE_SMS,
-                defaultValue = false,
-                onSaved = markPrefsSaved,
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
-
-            SectionHeader(text = stringResource(id = R.string.pref_category_auto_input_title))
-            val autoInputEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, true)
-            SwitchItem(
-                title = stringResource(id = R.string.pref_enable_auto_input_code_title),
-                summary = stringResource(id = R.string.pref_enable_auto_input_code_summary),
-                key = PrefConst.KEY_ENABLE_AUTO_INPUT_CODE,
-                defaultValue = true,
-                stateOverride = autoInputEnabled,
-                onSaved = markPrefsSaved,
-            )
-            SwitchItem(
-                title = stringResource(id = R.string.pref_enable_auto_enter_code_title),
-                summary = stringResource(id = R.string.pref_enable_auto_enter_code_summary),
-                key = PrefConst.KEY_ENABLE_AUTO_ENTER_CODE,
-                defaultValue = false,
-                onSaved = markPrefsSaved,
-            )
-            SwitchItem(
-                title = stringResource(id = R.string.pref_kill_me_title),
-                summary = stringResource(id = R.string.pref_kill_me_summary),
-                key = PrefConst.KEY_KILL_ME,
-                defaultValue = false,
-                onSaved = markPrefsSaved,
-            )
-            Item(
-                title = stringResource(id = R.string.pref_auto_input_code_delay_title),
-                summary = stringResource(id = R.string.pref_auto_input_code_delay_summary, autoInputDelay),
-            ) { showAutoInputDialog = true }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
-
-            SectionHeader(text = stringResource(id = R.string.pref_notification_title))
-            SwitchItem(
-                title = stringResource(id = R.string.pref_show_toast_title),
-                summary = stringResource(id = R.string.pref_show_toast_summary),
-                key = PrefConst.KEY_SHOW_TOAST,
-                defaultValue = true,
-                onSaved = markPrefsSaved,
-            )
-            SwitchItem(
-                title = stringResource(id = R.string.pref_show_code_notification_title),
-                summary = stringResource(id = R.string.pref_show_code_notification_summary),
-                key = PrefConst.KEY_SHOW_CODE_NOTIFICATION,
-                defaultValue = true,
-                onSaved = markPrefsSaved,
-            )
-            SwitchItem(
-                title = stringResource(id = R.string.pref_auto_cancel_notification_title),
-                summary = stringResource(id = R.string.pref_auto_cancel_notification_summary),
-                key = PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
-                defaultValue = false,
-                onSaved = markPrefsSaved,
-            )
-            Item(
-                title = stringResource(id = R.string.pref_notification_retention_time_title),
-                summary = run {
-                    val entries = stringArrayResource(id = R.array.notification_retention_time_entry_list)
-                    val values = stringArrayResource(id = R.array.notification_retention_time_list)
-                    val index = values.indexOf(retentionTime)
-                    if (index >= 0) entries[index] else retentionTime
-                },
-            ) { showRetentionDialog = true }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
-
-            SectionHeader(text = stringResource(id = R.string.pref_backup_restore_title))
-            Item(
-                title = stringResource(id = R.string.pref_backup_title),
-                summary = stringResource(id = R.string.pref_backup_summary),
-            ) { showBackupDialog = true }
-            Item(
-                title = stringResource(id = R.string.pref_restore_title),
-                summary = stringResource(id = R.string.pref_restore_summary),
-            ) {
-                val intent = com.tianma.xsmscode.feature.backup.BackupManager.getImportRuleListSAFIntent(context)
-                restoreLauncher.launch(intent)
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = Const.SPACING_SMALL.dp))
-            SectionHeader(text = stringResource(id = R.string.pref_others_title))
-            SwitchItem(
-                title = stringResource(id = R.string.pref_verbose_log_mode_title),
-                summary = stringResource(id = R.string.pref_verbose_log_mode_summary),
-                key = PrefConst.KEY_VERBOSE_LOG_MODE,
-                defaultValue = false,
-                onItemClick = { showVerboseLogViewer = true },
-                onToggle = { on ->
-                    RuntimeLogStore.setEnabled(on)
-                    XLog.setLogLevel(if (on) Log.VERBOSE else com.tianma.xsmscode.storage.BuildConfig.LOG_LEVEL)
-                },
-                onSaved = markPrefsSaved,
-            )
-            val autoUpdateEnabled = rememberPrefBoolean(PrefConst.KEY_AUTO_UPDATE_ON_START, true)
-            SwitchItem(
-                title = stringResource(id = R.string.pref_auto_update_on_start_title),
-                summary = stringResource(id = R.string.pref_auto_update_on_start_summary),
-                key = PrefConst.KEY_AUTO_UPDATE_ON_START,
-                defaultValue = true,
-                stateOverride = autoUpdateEnabled,
-                onSaved = markPrefsSaved,
-            )
-            if (autoUpdateEnabled.value) {
-                SwitchItem(
-                    title = stringResource(id = R.string.pref_auto_update_wifi_only_title),
-                    summary = stringResource(id = R.string.pref_auto_update_wifi_only_summary),
-                    key = PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
-                    defaultValue = false,
-                    onSaved = markPrefsSaved,
-                )
-            }
-            Item(
-                title = stringResource(id = R.string.pref_privacy_policy_title),
-                summary = "",
-            ) { showPrivacyPolicyPage = true }
+                        Item(
+                            title = stringResource(id = R.string.pref_privacy_policy_title),
+                            summary = "",
+                        ) { showPrivacyPolicyPage = true }
+                    }
 
                     Spacer(modifier = Modifier.height(Const.SPACING_SMALL.dp))
                 }
@@ -711,59 +591,64 @@ fun ComposeSettingsScreen(
         onSetTheme = { mode, x, y -> settingsViewModel.setThemeMode(mode, x, y) },
     )
 
-    if (showForwardWebhookConfigDialog) {
-        ForwardWebhookConfigDialog(
-            webhookUrl = forwardWebhookUrl,
-            includeBody = forwardWebhookIncludeBody,
-            nonCodeEnabled = forwardWebhookNonCodeEnabled,
-            onDismiss = { showForwardWebhookConfigDialog = false },
-        ) { url, includeBody, nonCodeEnabled ->
-            forwardWebhookUrl = url.trim()
-            forwardWebhookIncludeBody = includeBody
-            forwardWebhookNonCodeEnabled = nonCodeEnabled
-            scope.launch {
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_WEBHOOK_URL, forwardWebhookUrl)
-                AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_INCLUDE_BODY, includeBody)
-                AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_WEBHOOK_NON_CODE_ENABLED, nonCodeEnabled)
-                AppPreferencesDataStore.syncToSharedPrefs(context)
-                pendingSavedToast = true
-                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
-            }
-            showForwardWebhookConfigDialog = false
-        }
-    }
-
-    if (showForwardTgConfigDialog) {
-        ForwardTelegramConfigDialog(
-            botToken = forwardTgBotToken,
-            chatId = forwardTgChatId,
-            topicId = forwardTgTopicId,
-            includeBody = forwardTgIncludeBody,
-            nonCodeEnabled = forwardTgNonCodeEnabled,
-            onDismiss = { showForwardTgConfigDialog = false },
-        ) { token, chatId, topicId, includeBody, nonCodeEnabled ->
-            forwardTgBotToken = token.trim()
-            forwardTgChatId = chatId.trim()
-            forwardTgTopicId = topicId.trim()
-            forwardTgIncludeBody = includeBody
-            forwardTgNonCodeEnabled = nonCodeEnabled
-            scope.launch {
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_TG_BOT_TOKEN, forwardTgBotToken)
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_TG_CHAT_ID, forwardTgChatId)
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_FORWARD_TG_TOPIC_ID, forwardTgTopicId)
-                AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_TG_INCLUDE_BODY, includeBody)
-                AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_FORWARD_TG_NON_CODE_ENABLED, nonCodeEnabled)
-                AppPreferencesDataStore.syncToSharedPrefs(context)
-                pendingSavedToast = true
-                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
-            }
-            showForwardTgConfigDialog = false
-        }
-    }
-
     if (showVerboseLogViewer) {
         RuntimeLogViewerSheet(
             onDismiss = { showVerboseLogViewer = false },
+        )
+    }
+
+    if (showLanguageDialog) {
+        LanguageChooserDialog(
+            onDismiss = { showLanguageDialog = false },
+            onLanguageSelected = { tag ->
+                val locales = if (tag.isEmpty()) {
+                    androidx.core.os.LocaleListCompat.getEmptyLocaleList()
+                } else {
+                    androidx.core.os.LocaleListCompat.forLanguageTags(tag)
+                }
+                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(locales)
+                showLanguageDialog = false
+            },
+        )
+    }
+
+    if (showBlurRadiusDialog) {
+        SliderDialog(
+            title = stringResource(id = R.string.pref_haze_blur_radius_title),
+            value = blurRadius.intValue.toFloat(),
+            valueRange = 0f..100f,
+            steps = 0,
+            onDismiss = { showBlurRadiusDialog = false },
+            onValueChange = {
+                val newVal = it.toInt()
+                blurRadius.intValue = newVal
+                scope.launch {
+                    AppPreferencesDataStore.setInt(context, PrefConst.KEY_HAZE_BLUR_RADIUS, newVal)
+                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                    markPrefsSaved()
+                }
+                showBlurRadiusDialog = false
+            },
+            valueFormatter = { "${it.toInt()}dp" },
+        )
+    }
+
+    if (showTintAlphaDialog) {
+        SliderDialog(
+            title = stringResource(id = R.string.pref_haze_tint_alpha_title),
+            value = tintAlpha.floatValue,
+            valueRange = 0f..1f,
+            steps = 0,
+            onDismiss = { showTintAlphaDialog = false },
+            onValueChange = {
+                tintAlpha.floatValue = it
+                scope.launch {
+                    AppPreferencesDataStore.setFloat(context, PrefConst.KEY_HAZE_TINT_ALPHA, it)
+                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                    markPrefsSaved()
+                }
+                showTintAlphaDialog = false
+            },
         )
     }
 }
@@ -1040,6 +925,57 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
+private fun ExpandableSettingsSection(
+    title: String,
+    expanded: Boolean,
+    onExpandedChange: () -> Unit,
+    accordionMode: Boolean,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val sectionExpanded = if (accordionMode) expanded else true
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = Const.PADDING_SMALL.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            ListItem(
+                headlineContent = {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                },
+                trailingContent = {
+                    if (accordionMode) {
+                        Icon(
+                            imageVector = if (sectionExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = accordionMode, onClick = onExpandedChange),
+            )
+
+            AnimatedVisibility(visible = sectionExpanded) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun Item(title: String, summary: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     ListItem(
         headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
@@ -1053,38 +989,6 @@ fun Item(title: String, summary: String, modifier: Modifier = Modifier, onClick:
             }
         } else {
             null
-        },
-        modifier = modifier.clickable(onClick = onClick),
-    )
-}
-
-@Composable
-fun ForwardChannelItem(
-    title: String,
-    summary: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    ListItem(
-        headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
-        supportingContent = if (summary.isNotEmpty()) {
-            {
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        } else {
-            null
-        },
-        trailingContent = {
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange,
-            )
         },
         modifier = modifier.clickable(onClick = onClick),
     )
@@ -1145,259 +1049,6 @@ fun SwitchItem(
                 toggle(!checkedState.value)
             }
         },
-    )
-}
-
-@Composable
-fun ForwardWebhookConfigDialog(
-    webhookUrl: String,
-    includeBody: Boolean,
-    nonCodeEnabled: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: (String, Boolean, Boolean) -> Unit,
-) {
-    val context = LocalContext.current
-    var url by remember(webhookUrl) { mutableStateOf(webhookUrl) }
-    var includeBodyState by remember(includeBody) { mutableStateOf(includeBody) }
-    var nonCodeEnabledState by remember(nonCodeEnabled) { mutableStateOf(nonCodeEnabled) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(id = R.string.pref_forward_webhook_config_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = { url = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(stringResource(id = R.string.pref_forward_webhook_title)) },
-                    supportingText = { Text(stringResource(id = R.string.pref_forward_webhook_summary)) },
-                    trailingIcon = {
-                        if (url.isNotEmpty()) {
-                            IconButton(onClick = { url = "" }) {
-                                Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
-                            }
-                        }
-                    },
-                )
-                ForwardChannelBodySwitch(
-                    checked = includeBodyState,
-                    onCheckedChange = { includeBodyState = it },
-                )
-                ForwardChannelNonCodeSwitch(
-                    checked = nonCodeEnabledState,
-                    onCheckedChange = { nonCodeEnabledState = it },
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val trimmed = url.trim()
-                    if (trimmed.isBlank()) {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.forward_validation_webhook_required),
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                        return@TextButton
-                    }
-                    if (!trimmed.startsWith("http://") && !trimmed.startsWith("https://")) {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.forward_validation_webhook_invalid),
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                        return@TextButton
-                    }
-                    onConfirm(trimmed, includeBodyState, nonCodeEnabledState)
-                },
-            ) {
-                Text(stringResource(id = R.string.confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(id = R.string.cancel))
-            }
-        },
-    )
-}
-
-@Composable
-fun ForwardTelegramConfigDialog(
-    botToken: String,
-    chatId: String,
-    topicId: String,
-    includeBody: Boolean,
-    nonCodeEnabled: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: (String, String, String, Boolean, Boolean) -> Unit,
-) {
-    val context = LocalContext.current
-    var token by remember(botToken) { mutableStateOf(botToken) }
-    var chat by remember(chatId) { mutableStateOf(chatId) }
-    var topic by remember(topicId) { mutableStateOf(topicId) }
-    var includeBodyState by remember(includeBody) { mutableStateOf(includeBody) }
-    var nonCodeEnabledState by remember(nonCodeEnabled) { mutableStateOf(nonCodeEnabled) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(id = R.string.pref_forward_tg_config_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = token,
-                    onValueChange = { token = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(stringResource(id = R.string.pref_forward_tg_bot_token_title)) },
-                    supportingText = { Text(stringResource(id = R.string.pref_forward_tg_bot_token_summary)) },
-                    trailingIcon = {
-                        if (token.isNotEmpty()) {
-                            IconButton(onClick = { token = "" }) {
-                                Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
-                            }
-                        }
-                    },
-                )
-                OutlinedTextField(
-                    value = chat,
-                    onValueChange = { chat = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(stringResource(id = R.string.pref_forward_tg_chat_id_title)) },
-                    supportingText = { Text(stringResource(id = R.string.pref_forward_tg_chat_id_summary)) },
-                    trailingIcon = {
-                        if (chat.isNotEmpty()) {
-                            IconButton(onClick = { chat = "" }) {
-                                Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
-                            }
-                        }
-                    },
-                )
-                OutlinedTextField(
-                    value = topic,
-                    onValueChange = { topic = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(stringResource(id = R.string.pref_forward_tg_topic_id_title)) },
-                    supportingText = { Text(stringResource(id = R.string.pref_forward_tg_topic_id_summary)) },
-                    trailingIcon = {
-                        if (topic.isNotEmpty()) {
-                            IconButton(onClick = { topic = "" }) {
-                                Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
-                            }
-                        }
-                    },
-                )
-                ForwardChannelBodySwitch(
-                    checked = includeBodyState,
-                    onCheckedChange = { includeBodyState = it },
-                )
-                ForwardChannelNonCodeSwitch(
-                    checked = nonCodeEnabledState,
-                    onCheckedChange = { nonCodeEnabledState = it },
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val tokenTrimmed = token.trim()
-                    val chatTrimmed = chat.trim()
-                    if (tokenTrimmed.isBlank() || chatTrimmed.isBlank()) {
-                        Toast.makeText(
-                            context,
-                            context.getString(R.string.forward_validation_tg_required),
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                        return@TextButton
-                    }
-                    onConfirm(tokenTrimmed, chatTrimmed, topic.trim(), includeBodyState, nonCodeEnabledState)
-                },
-            ) {
-                Text(stringResource(id = R.string.confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(stringResource(id = R.string.cancel))
-            }
-        },
-    )
-}
-
-@Composable
-private fun ForwardChannelBodySwitch(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                text = stringResource(id = R.string.pref_forward_channel_include_body_title),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                text = stringResource(id = R.string.pref_forward_channel_include_body_summary),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-        )
-    }
-    HorizontalDivider(
-        modifier = Modifier.padding(top = 8.dp),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-    )
-}
-
-@Composable
-private fun ForwardChannelNonCodeSwitch(
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Text(
-                text = stringResource(id = R.string.pref_forward_channel_non_code_title),
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(
-                text = stringResource(id = R.string.pref_forward_channel_non_code_summary),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-        )
-    }
-    HorizontalDivider(
-        modifier = Modifier.padding(top = 8.dp),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
     )
 }
 

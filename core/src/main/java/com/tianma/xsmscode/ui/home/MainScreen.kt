@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -236,7 +237,7 @@ fun MainScreen(
                     composable<SendersRoute> { backStackEntry ->
                         val reopenTypeDialog by backStackEntry.savedStateHandle
                             .getStateFlow("reopen_type_dialog", false)
-                            .collectAsState()
+                            .collectAsStateWithLifecycle()
                         com.github.magisk317.smscode.ui.sender.SenderListScreen(
                             onAddClick = { type -> navController.navigate(SenderConfigRoute(id = 0L, type = type)) },
                             onEditClick = { id -> navController.navigate(SenderConfigRoute(id = id, type = 1)) },

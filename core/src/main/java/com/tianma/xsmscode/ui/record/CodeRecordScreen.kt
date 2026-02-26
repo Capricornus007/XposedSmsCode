@@ -891,11 +891,12 @@ private fun RecordSplitColumn(
                                 modifier = Modifier.animateItem(),
                             )
                         } else {
-                            val dismissState = rememberSwipeToDismissBoxState(confirmValueChange = { value ->
-                                if (value == SwipeToDismissBoxValue.Settled) return@rememberSwipeToDismissBoxState false
-                                onDelete(smsMsg)
-                                true
-                            })
+                            val dismissState = rememberSwipeToDismissBoxState()
+                            LaunchedEffect(dismissState.currentValue) {
+                                if (dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
+                                    onDelete(smsMsg)
+                                }
+                            }
                             SwipeToDismissBox(
                                 state = dismissState,
                                 enableDismissFromStartToEnd = true,
