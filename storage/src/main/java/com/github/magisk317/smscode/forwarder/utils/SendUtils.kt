@@ -69,6 +69,8 @@ object SendUtils {
                 for (sender in senders) {
                     dispatchToSender(context, sender, msgForSend)
                 }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 XLog.e("Dispatch failed", e)
             }
@@ -146,6 +148,8 @@ object SendUtils {
                 else -> XLog.w("Unsupported sender type: %d, skipping.", sender.type)
             }
             XLog.i("Dispatched to sender [%s] type=%d", sender.name, sender.type)
+        } catch (e: com.google.gson.JsonSyntaxException) {
+            XLog.e("Failed to parse sender setting for [%s]", sender.name, e)
         } catch (e: Exception) {
             XLog.e("Failed to dispatch to sender [%s] type=%d", sender.name, sender.type, e)
         }

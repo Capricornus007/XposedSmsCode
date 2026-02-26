@@ -32,8 +32,8 @@ class SmsReceiver : BroadcastReceiver() {
                 if (parseResult?.isBlockSms == true && isOrderedBroadcast) {
                     abortBroadcast()
                 }
-            } catch (t: Throwable) {
-                XLog.e("SmsReceiver handle SMS failed", t)
+            } catch (e: Exception) {
+                XLog.e("SmsReceiver handle SMS failed", e)
             } finally {
                 pendingResult.finish()
             }

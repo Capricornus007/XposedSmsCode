@@ -34,7 +34,7 @@ object HttpUtils {
                     Result.success(respBody)
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: java.io.IOException) {
             Result.failure(e)
         }
     }
@@ -54,7 +54,7 @@ object HttpUtils {
                     Result.success(respBody)
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: java.io.IOException) {
             Result.failure(e)
         }
     }
