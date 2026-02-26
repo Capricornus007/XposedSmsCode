@@ -4,7 +4,10 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.tianma.xsmscode.data.db.AppDatabase
+import com.github.magisk317.smscode.forwarder.entity.ForwardCommonConfig
 import com.github.magisk317.smscode.forwarder.entity.Sender
+import com.github.magisk317.smscode.forwarder.utils.DeviceIdentityUtils
+import com.github.magisk317.smscode.forwarder.utils.ForwardCommonConfigStore
 import com.github.magisk317.smscode.forwarder.utils.SenderValidationResult
 import com.github.magisk317.smscode.forwarder.utils.SenderValidator
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +23,11 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
     private val db = AppDatabase.getInstance(application)
     private val senderDao = db.senderDao()
 
+    private val _forwardCommonConfig = MutableStateFlow(
+        ForwardCommonConfig(deviceName = DeviceIdentityUtils.resolveDefaultDeviceName()),
+    )
+    val forwardCommonConfig: StateFlow<ForwardCommonConfig> = _forwardCommonConfig.asStateFlow()
+
     val senderList: StateFlow<List<Sender>> = senderDao.getAllFlow().stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
@@ -28,8 +36,27 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
     private val _lastSavedStatus = MutableStateFlow<Int?>(null)
     val lastSavedStatus: StateFlow<Int?> = _lastSavedStatus.asStateFlow()
 
+    init {
+        refreshForwardCommonConfig()
+    }
+
     fun loadSenders() {
         // no-op: senderList is now reactive from Room Flow.
+    }
+
+    fun saveForwardCommonConfig(config: ForwardCommonConfig) {
+        val context = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            ForwardCommonConfigStore.save(context, config)
+            _forwardCommonConfig.value = ForwardCommonConfigStore.load(context)
+        }
+    }
+
+    private fun refreshForwardCommonConfig() {
+        val context = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            _forwardCommonConfig.value = ForwardCommonConfigStore.load(context)
+        }
     }
 
     /**

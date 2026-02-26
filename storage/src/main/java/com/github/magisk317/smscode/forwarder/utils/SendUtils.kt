@@ -64,8 +64,10 @@ object SendUtils {
                     XLog.w("No eligible senders found (isCodeSms=%s), skipping dispatch.", isCodeSms)
                     return@launch
                 }
+                val commonConfig = ForwardCommonConfigStore.load(context)
+                val msgForSend = ForwardCommonConfigStore.applyToMessage(context, msgInfo, commonConfig)
                 for (sender in senders) {
-                    dispatchToSender(context, sender, msgInfo)
+                    dispatchToSender(context, sender, msgForSend)
                 }
             } catch (e: Exception) {
                 XLog.e("Dispatch failed", e)

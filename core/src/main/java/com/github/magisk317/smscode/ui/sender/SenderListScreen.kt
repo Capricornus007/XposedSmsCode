@@ -2,12 +2,16 @@ package com.github.magisk317.smscode.ui.sender
 
 import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -15,14 +19,51 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.github.magisk317.smscode.forwarder.entity.ForwardCommonConfig
 import com.github.magisk317.smscode.forwarder.entity.Sender
+import com.github.magisk317.smscode.forwarder.utils.ForwardCommonConfigStore
 import com.github.magisk317.smscode.forwarder.utils.SenderType
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Locale
+
+private data class TemplateVariable(
+    val label: String,
+    val token: String,
+)
+
+private val forwardTemplateVariables = listOf(
+    TemplateVariable("来源号码", "{{FROM}}"),
+    TemplateVariable("短信内容", "{{SMS}}"),
+    TemplateVariable("卡槽备注", "{{CARD_SLOT}}"),
+    TemplateVariable("卡槽主键", "{{CARD_SUBID}}"),
+    TemplateVariable("来源姓名", "{{CONTACT_NAME}}"),
+    TemplateVariable("来源归属", "{{PHONE_AREA}}"),
+    TemplateVariable("APP包名", "{{PACKAGE_NAME}}"),
+    TemplateVariable("APP应用名", "{{APP_NAME}}"),
+    TemplateVariable("通知标题", "{{TITLE}}"),
+    TemplateVariable("通知内容", "{{MSG}}"),
+    TemplateVariable("电池电量", "{{BATTERY_PCT}}"),
+    TemplateVariable("电池状态", "{{BATTERY_STATUS}}"),
+    TemplateVariable("充电方式", "{{BATTERY_PLUGGED}}"),
+    TemplateVariable("电池完整信息", "{{BATTERY_INFO}}"),
+    TemplateVariable("电池简单信息", "{{BATTERY_INFO_SIMPLE}}"),
+    TemplateVariable("公网IPv4", "{{IPV4}}"),
+    TemplateVariable("公网IPv6", "{{IPV6}}"),
+    TemplateVariable("IP地址列表", "{{IP_LIST}}"),
+    TemplateVariable("网络状态", "{{NET_TYPE}}"),
+    TemplateVariable("接收时间", "{{RECEIVE_TIME}}"),
+    TemplateVariable("当前时间", "{{CURRENT_TIME}}"),
+    TemplateVariable("设备名称", "{{DEVICE_NAME}}"),
+    TemplateVariable("软件版本", "{{APP_VERSION}}"),
+)
+private val templateTokenRegex = Regex("\\{\\{[^{}]+\\}\\}")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +77,9 @@ fun SenderListScreen(
 ) {
     val context = LocalContext.current
     val senders by viewModel.senderList.collectAsStateWithLifecycle()
+    val commonConfig by viewModel.forwardCommonConfig.collectAsStateWithLifecycle()
     var showTypeDialog by remember { mutableStateOf(false) }
+    var showCommonConfigDialog by remember { mutableStateOf(false) }
     LaunchedEffect(forceShowTypeDialog) {
         if (forceShowTypeDialog) {
             showTypeDialog = true
@@ -95,15 +138,15 @@ fun SenderListScreen(
                         }
                         groupItems.forEach { (type, name) ->
                             item {
-                            Button(
-                                onClick = {
-                                    showTypeDialog = false
-                                    onAddClick(type)
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(name)
-                            }
+                                Button(
+                                    onClick = {
+                                        showTypeDialog = false
+                                        onAddClick(type)
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(name)
+                                }
                             }
                         }
                     }
@@ -114,6 +157,17 @@ fun SenderListScreen(
                     Text("取消")
                 }
             }
+        )
+    }
+
+    if (showCommonConfigDialog) {
+        ForwardCommonConfigDialog(
+            currentConfig = commonConfig,
+            onDismiss = { showCommonConfigDialog = false },
+            onSave = {
+                viewModel.saveForwardCommonConfig(it)
+                showCommonConfigDialog = false
+            },
         )
     }
 
@@ -130,23 +184,32 @@ fun SenderListScreen(
             }
         }
     ) { paddingValues ->
-        if (senders.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("暂无发送通道，请点击右下角添加")
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item(key = "forward_common_config") {
+                ForwardCommonConfigCard(
+                    config = commonConfig,
+                    onEdit = { showCommonConfigDialog = true },
+                )
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+
+            if (senders.isEmpty()) {
+                item(key = "no_sender_hint") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("暂无发送通道，请点击右下角添加")
+                    }
+                }
+            } else {
                 items(senders, key = { it.id }) { sender ->
                     SenderCard(
                         sender = sender,
@@ -173,6 +236,233 @@ fun SenderListScreen(
 }
 
 @Composable
+private fun ForwardCommonConfigCard(
+    config: ForwardCommonConfig,
+    onEdit: () -> Unit,
+) {
+    val isDefaultTemplate = config.messageTemplate.isBlank()
+    val templatePreview = if (isDefaultTemplate) {
+        ForwardCommonConfigStore.defaultTemplate()
+    } else {
+        config.messageTemplate
+    }.lineSequence().firstOrNull()?.trim().orEmpty()
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onEdit),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "公共配置",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "设备识别号: ${config.deviceName}",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = if (isDefaultTemplate) {
+                    "模板: 默认模板（留空自动使用）"
+                } else {
+                    "模板: 自定义模板"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (templatePreview.isNotBlank()) {
+                Text(
+                    text = "预览: $templatePreview",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onEdit) {
+                    Text("编辑")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ForwardCommonConfigDialog(
+    currentConfig: ForwardCommonConfig,
+    onDismiss: () -> Unit,
+    onSave: (ForwardCommonConfig) -> Unit,
+) {
+    var deviceName by remember(currentConfig.deviceName) { mutableStateOf(currentConfig.deviceName) }
+    var templateValue by remember(currentConfig.messageTemplate) {
+        mutableStateOf(TextFieldValue(currentConfig.messageTemplate))
+    }
+    val scrollState = rememberScrollState()
+    val fillTemplateInteractionSource = remember { MutableInteractionSource() }
+    val isFillTemplatePressed by fillTemplateInteractionSource.collectIsPressedAsState()
+    var suppressNextClick by remember { mutableStateOf(false) }
+    fun insertToken(token: String) {
+        val start = templateValue.selection.start.coerceIn(0, templateValue.text.length)
+        val end = templateValue.selection.end.coerceIn(0, templateValue.text.length)
+        val newText = buildString {
+            append(templateValue.text.substring(0, start))
+            append(token)
+            append(templateValue.text.substring(end))
+        }
+        val cursor = start + token.length
+        templateValue = templateValue.copy(text = newText, selection = TextRange(cursor))
+    }
+
+    fun normalizeTokenDeletion(oldValue: TextFieldValue, newValue: TextFieldValue): TextFieldValue {
+        val oldText = oldValue.text
+        val newText = newValue.text
+        val oldSelection = oldValue.selection
+        val newSelection = newValue.selection
+        if (oldSelection.start != oldSelection.end) return newValue
+        if (newText.length != oldText.length - 1) return newValue
+
+        val oldCursor = oldSelection.start
+        val isBackspace = newSelection.start == (oldCursor - 1).coerceAtLeast(0)
+        val removeIndex = if (isBackspace) oldCursor - 1 else oldCursor
+        if (removeIndex !in oldText.indices) return newValue
+
+        val token = templateTokenRegex.findAll(oldText).firstOrNull { match ->
+            removeIndex in match.range
+        } ?: return newValue
+
+        val start = token.range.first
+        val endExclusive = token.range.last + 1
+        val merged = oldText.removeRange(start, endExclusive)
+        return TextFieldValue(
+            text = merged,
+            selection = TextRange(start.coerceAtMost(merged.length)),
+        )
+    }
+
+    LaunchedEffect(isFillTemplatePressed) {
+        if (isFillTemplatePressed) {
+            delay(10_000)
+            if (isFillTemplatePressed) {
+                suppressNextClick = true
+                val fullTemplate = ForwardCommonConfigStore.fullInfoTemplate()
+                templateValue = TextFieldValue(
+                    fullTemplate,
+                    selection = TextRange(fullTemplate.length),
+                )
+            }
+        }
+    }
+
+    AlertDialog(
+        modifier = Modifier.fillMaxWidth(0.92f),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        onDismissRequest = onDismiss,
+        title = { Text("公共配置") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 560.dp)
+                    .verticalScroll(scrollState),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedTextField(
+                    value = deviceName,
+                    onValueChange = { deviceName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("设备识别号") },
+                    placeholder = { Text("默认读取系统 prop") },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = templateValue,
+                    onValueChange = { newValue ->
+                        templateValue = normalizeTokenDeletion(templateValue, newValue)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 140.dp),
+                    label = { Text("转发信息模板") },
+                    placeholder = { Text("留空使用默认模板") },
+                    supportingText = { Text("Tip: 按需插入内容标签；可用变量见下方按钮") },
+                )
+                Text(
+                    text = "默认模板示例：\n${ForwardCommonConfigStore.defaultTemplate()}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(
+                        onClick = {
+                            if (suppressNextClick) {
+                                suppressNextClick = false
+                                return@TextButton
+                            }
+                            val defaultTemplate = ForwardCommonConfigStore.defaultTemplate()
+                            templateValue = TextFieldValue(
+                                defaultTemplate,
+                                selection = TextRange(defaultTemplate.length),
+                            )
+                        },
+                        interactionSource = fillTemplateInteractionSource,
+                    ) {
+                        Text("填入默认模板")
+                    }
+                }
+                HorizontalDivider()
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(4),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(forwardTemplateVariables.size) { index ->
+                        val variable = forwardTemplateVariables[index]
+                        OutlinedButton(
+                            onClick = { insertToken(variable.token) },
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        ) {
+                            Text(variable.label, style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onSave(
+                        currentConfig.copy(
+                            deviceName = deviceName.trim(),
+                            messageTemplate = templateValue.text,
+                        ),
+                    )
+                },
+            ) {
+                Text("保存")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        },
+    )
+}
+
+@Composable
 fun SenderCard(
     sender: Sender,
     onEdit: () -> Unit,
@@ -193,7 +483,7 @@ fun SenderCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = sender.name.ifEmpty { "未命名通道" },
+                    text = sender.name.ifEmpty { getSenderTypeName(sender.type) },
                     style = MaterialTheme.typography.titleMedium
                 )
                 Switch(
