@@ -52,6 +52,7 @@ object SourceMetadataResolver {
         }.getOrDefault("")
     }
 
+    @Suppress("MagicNumber")
     fun resolvePhoneArea(rawSender: String): String {
         val normalized = normalizePhoneNumber(rawSender)
         if (normalized.length < 7) return ""
@@ -95,6 +96,7 @@ object SourceMetadataResolver {
         }.getOrDefault("")
     }
 
+    @Suppress("MagicNumber")
     private fun normalizePhoneNumber(rawSender: String): String {
         val digitsOnly = rawSender.filter { it.isDigit() }
         if (digitsOnly.isBlank()) return ""

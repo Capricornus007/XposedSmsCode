@@ -85,7 +85,7 @@ object DingtalkGroupRobotUtils {
         SLog.i(TAG, "Response: $response")
         val resp = try {
             Gson().fromJson(response, DingtalkResult::class.java)
-        } catch (e: Exception) {
+        } catch (@Suppress("SwallowedException") e: com.google.gson.JsonSyntaxException) {
             null
         }
         if (resp?.errcode == 0L) {

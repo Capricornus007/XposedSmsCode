@@ -47,7 +47,7 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
                 receiveNonCode = sender.receiveNonCode == 1
                 val setting = try {
                     Gson().fromJson(sender.jsonSetting, WebhookSetting::class.java)
-                } catch (e: Exception) {
+                } catch (@Suppress("SwallowedException") e: com.google.gson.JsonSyntaxException) {
                     null
                 }
                 if (setting != null) {

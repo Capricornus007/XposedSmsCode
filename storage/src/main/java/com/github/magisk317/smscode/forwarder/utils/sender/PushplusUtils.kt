@@ -49,7 +49,7 @@ object PushplusUtils {
         SLog.i(TAG, "Response: $response")
         val resp = try {
             Gson().fromJson(response, PushplusResult::class.java)
-        } catch (e: Exception) {
+        } catch (@Suppress("SwallowedException") e: com.google.gson.JsonSyntaxException) {
             null
         }
         if (resp?.code == 200L) {

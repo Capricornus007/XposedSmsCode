@@ -49,7 +49,7 @@ fun DingtalkConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
                 receiveNonCode = sender.receiveNonCode == 1
                 val setting = try {
                     Gson().fromJson(sender.jsonSetting, DingtalkGroupRobotSetting::class.java)
-                } catch (e: Exception) {
+                } catch (@Suppress("SwallowedException") e: com.google.gson.JsonSyntaxException) {
                     null
                 }
                 if (setting != null) {

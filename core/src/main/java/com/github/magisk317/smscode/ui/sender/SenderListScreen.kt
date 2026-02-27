@@ -119,6 +119,7 @@ fun SenderListScreen(
             ),
         )
 
+        @Suppress("MagicNumber")
         AlertDialog(
             modifier = Modifier.fillMaxWidth(0.88f),
             properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -351,6 +352,7 @@ private fun ForwardCommonConfigDialog(
         )
     }
 
+    @Suppress("MagicNumber")
     LaunchedEffect(isFillTemplatePressed) {
         if (isFillTemplatePressed) {
             delay(10_000)
@@ -365,6 +367,7 @@ private fun ForwardCommonConfigDialog(
         }
     }
 
+    @Suppress("MagicNumber")
     AlertDialog(
         modifier = Modifier.fillMaxWidth(0.92f),
         properties = DialogProperties(usePlatformDefaultWidth = false),

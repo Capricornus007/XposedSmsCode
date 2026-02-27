@@ -52,7 +52,7 @@ fun TelegramConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
                 receiveNonCode = sender.receiveNonCode == 1
                 val setting = try {
                     Gson().fromJson(sender.jsonSetting, TelegramSetting::class.java)
-                } catch (e: Exception) {
+                } catch (@Suppress("SwallowedException") e: com.google.gson.JsonSyntaxException) {
                     null
                 }
                 if (setting != null) {
@@ -176,8 +176,18 @@ fun TelegramConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
                 FilterChip(selected = parseMode == "MarkdownV2", onClick = { parseMode = "MarkdownV2" }, label = { Text("MarkdownV2") })
             }
 
-            OutlinedTextField(value = proxyHost, onValueChange = { proxyHost = it }, label = { Text("Proxy Host (如 127.0.0.1)") }, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(value = proxyPort, onValueChange = { proxyPort = it }, label = { Text("Proxy Port (如 7890)") }, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(
+                value = proxyHost,
+                onValueChange = { proxyHost = it },
+                label = { Text("Proxy Host (如 127.0.0.1)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = proxyPort,
+                onValueChange = { proxyPort = it },
+                label = { Text("Proxy Port (如 7890)") },
+                modifier = Modifier.fillMaxWidth()
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
             Row(

@@ -224,6 +224,7 @@ fun SegmentedPicker(
     }
 }
 
+@Suppress("MagicNumber")
 private fun getSenderTypeShort(type: Int) = when (type) {
     1 -> "钉钉"
     4 -> "Webhook"
