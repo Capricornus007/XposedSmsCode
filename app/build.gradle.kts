@@ -49,7 +49,7 @@ fun releaseBaseName(versionName: String): String {
 }
 
 fun releaseApkName(versionName: String, buildType: String, abiSuffix: String): String {
-    return "${releaseBaseName(versionName)}_${buildType}_${abiSuffix}.apk"
+    return "${abiSuffix}_${releaseBaseName(versionName)}_${buildType}.apk"
 }
 
 fun releaseAabName(versionName: String): String {
