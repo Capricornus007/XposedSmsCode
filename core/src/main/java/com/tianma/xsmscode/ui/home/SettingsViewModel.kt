@@ -50,7 +50,7 @@ sealed class SettingsEvent {
     data class ImportDialogConfirm(val uri: android.net.Uri) : SettingsEvent()
 }
 
-internal fun resolvePreferredUpdateEvent(installedFromPlay: Boolean): SettingsEvent =
+fun resolvePreferredUpdateEvent(installedFromPlay: Boolean): SettingsEvent =
     if (installedFromPlay) SettingsEvent.StartPlayUpdate else SettingsEvent.StartGithubUpdateCheck
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {

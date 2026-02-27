@@ -32,7 +32,7 @@ object GithubUpdateChecker {
         requestReleaseJson(apiUrl)
     }
 
-    internal suspend fun fetchLatestReleaseWithRequester(
+    suspend fun fetchLatestReleaseWithRequester(
         requestReleaseJson: suspend (String) -> String?,
     ): GithubReleaseInfo? = withContext(Dispatchers.IO) {
         runCatching {
@@ -60,7 +60,7 @@ object GithubUpdateChecker {
     fun isNewer(currentVersion: String, latestVersion: String): Boolean =
         compareVersions(currentVersion, latestVersion) < 0
 
-    internal fun parseLatestReleaseJson(body: String): GithubReleaseInfo? {
+    fun parseLatestReleaseJson(body: String): GithubReleaseInfo? {
         val root = runCatching { Json.parseToJsonElement(body) }.getOrNull() ?: return null
         if (root !is JsonObject) return null
 

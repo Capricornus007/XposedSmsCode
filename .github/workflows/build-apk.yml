@@ -199,7 +199,6 @@ jobs:
           packageName: com.github.tianma8023.xposed.smscode
           releaseFiles: artifacts/bundle/bundle/playRelease/*.aab
           mappingFile: artifacts/bundle/mapping/playRelease/mapping.txt
-          debugSymbols: artifacts/symbols-play/native-debug-symbols/playRelease/native-debug-symbols.zip
           track: ${{ steps.determine_track.outputs.track }}
           status: completed
           whatsNewDirectory: distribution/whatsnew

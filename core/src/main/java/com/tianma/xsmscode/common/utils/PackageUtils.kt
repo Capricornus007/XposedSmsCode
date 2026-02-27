@@ -23,7 +23,7 @@ object PackageUtils {
 
     private const val PLAY_STORE_PACKAGE_NAME = "com.android.vending"
 
-    internal enum class UpdateDestination {
+    enum class UpdateDestination {
         PLAY,
         GITHUB,
     }
@@ -277,7 +277,7 @@ object PackageUtils {
         }
     }
 
-    internal fun resolveUpdateDestination(playStoreAvailable: Boolean): UpdateDestination =
+    fun resolveUpdateDestination(playStoreAvailable: Boolean): UpdateDestination =
         if (playStoreAvailable) UpdateDestination.PLAY else UpdateDestination.GITHUB
 
     @JvmStatic
