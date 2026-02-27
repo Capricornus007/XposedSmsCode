@@ -15,7 +15,7 @@ versionName = "3.1.6-beta.2"
 
 activity-compose = "1.12.4"
 adaptive = "1.2.0"
-agp = "9.2.0-alpha01"
+agp = "9.2.0-alpha02"
 androidx-browser = "1.9.0"
 androidx-core-ktx = "1.17.0"
 androidx-material3 = "1.5.0-alpha15"
