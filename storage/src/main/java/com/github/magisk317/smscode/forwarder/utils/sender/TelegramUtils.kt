@@ -17,8 +17,16 @@ import java.net.URLEncoder
 object TelegramUtils {
     private const val TAG = "TelegramUtils"
 
+    private fun String.escapeMarkdownV2(): String {
+        return this.replace(Regex("""([_*\[\]()~`>#+\-=|{}.!\\])""")) { "\\${it.value}" }
+    }
+
     suspend fun sendMsg(setting: TelegramSetting, msgInfo: MsgInfo) = withContext(Dispatchers.IO) {
-        val content = "<b>SmsCode: ${msgInfo.from}</b>\n${msgInfo.content}"
+        val content = if (setting.parseMode == "MarkdownV2") {
+            "*SmsCode: ${msgInfo.from.escapeMarkdownV2()}*\n${msgInfo.content.escapeMarkdownV2()}"
+        } else {
+            "<b>SmsCode: ${msgInfo.from}</b>\n${msgInfo.content}"
+        }
         var requestUrl = "https://api.telegram.org/bot${setting.apiToken}/sendMessage"
 
         val msgMap: MutableMap<String, Any> = mutableMapOf(
