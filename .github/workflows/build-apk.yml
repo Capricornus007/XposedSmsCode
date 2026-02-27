@@ -138,6 +138,7 @@ jobs:
           path: artifacts/bundle
 
       - uses: actions/download-artifact@v8
+        continue-on-error: true
         with:
           name: native-symbols-play
           path: artifacts/symbols-play

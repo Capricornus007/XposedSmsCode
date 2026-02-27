@@ -23,7 +23,7 @@ jobs:
           java-version: "25"
           cache: gradle
       - name: Build & Test
-        run: ./gradlew --warning-mode all assembleDebug testDebugUnitTest :app:koverVerifyDebug :app:koverHtmlReportDebug -PbuildSplits
+        run: ./gradlew --warning-mode all assembleGithubDebug testGithubDebugUnitTest :app:koverVerifyGithubDebug :app:koverHtmlReportGithubDebug -PbuildSplits
       - name: Write build summary
         if: always()
         run: |
@@ -32,7 +32,7 @@ jobs:
             echo ""
             echo "| File | Size |"
             echo "| --- | --- |"
-            for apk in app/build/outputs/apk/debug/*.apk; do
+            for apk in app/build/outputs/apk/github/debug/*.apk; do
               if [ ! -f "$apk" ]; then
                 continue
               fi
@@ -46,31 +46,31 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: XposedSmsCode-debug-arm64-v8a
-          path: app/build/outputs/apk/debug/*arm64-v8a*.apk
+          path: app/build/outputs/apk/github/debug/*arm64-v8a*.apk
       - name: Upload Debug APK (armeabi-v7a)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: XposedSmsCode-debug-armeabi-v7a
-          path: app/build/outputs/apk/debug/*armeabi-v7a*.apk
+          path: app/build/outputs/apk/github/debug/*armeabi-v7a*.apk
       - name: Upload Debug APK (x86)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: XposedSmsCode-debug-x86
-          path: app/build/outputs/apk/debug/*_x86.apk
+          path: app/build/outputs/apk/github/debug/*_x86.apk
       - name: Upload Debug APK (x86_64)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: XposedSmsCode-debug-x86_64
-          path: app/build/outputs/apk/debug/*_x86_64.apk
+          path: app/build/outputs/apk/github/debug/*_x86_64.apk
       - name: Upload Debug APK (universal)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: XposedSmsCode-debug-universal
-          path: app/build/outputs/apk/debug/*universal*.apk
+          path: app/build/outputs/apk/github/debug/*universal*.apk
       - name: Upload Kover Report
         if: always()
         uses: actions/upload-artifact@v7
