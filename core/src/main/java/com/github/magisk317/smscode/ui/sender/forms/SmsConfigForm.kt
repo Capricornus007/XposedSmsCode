@@ -54,6 +54,7 @@ fun SmsConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewModel
     var simSlot by remember { mutableStateOf("0") }
     var onlyNoNetwork by remember { mutableStateOf(false) }
     var receiveNonCode by remember { mutableStateOf(false) }
+    var receiveAppNotify by remember { mutableStateOf(true) }
     var currentSender by remember { mutableStateOf<Sender?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
 
@@ -63,6 +64,7 @@ fun SmsConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewModel
                 currentSender = sender
                 name = sender.name
                 receiveNonCode = sender.receiveNonCode == 1
+                receiveAppNotify = sender.receiveAppNotify == 1
                 runCatching { Gson().fromJson(sender.jsonSetting, SmsSetting::class.java) }.getOrNull()?.let {
                     mobiles = it.mobiles
                     simSlot = it.simSlot.toString()
@@ -83,6 +85,7 @@ fun SmsConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewModel
             jsonSetting = Gson().toJson(setting),
             status = status,
             receiveNonCode = if (receiveNonCode) 1 else 0,
+            receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
         ) ?: Sender(
             id = 0,
@@ -91,6 +94,7 @@ fun SmsConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewModel
             jsonSetting = Gson().toJson(setting),
             status = status,
             receiveNonCode = if (receiveNonCode) 1 else 0,
+            receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
         )
     }
@@ -155,6 +159,18 @@ fun SmsConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewModel
                     Text("开启后所有短信都会转发", style = MaterialTheme.typography.bodySmall)
                 }
                 Switch(checked = receiveNonCode, onCheckedChange = { receiveNonCode = it })
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("转发应用通知", style = MaterialTheme.typography.bodyMedium)
+                    Text("开启后接收应用通知转发", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = receiveAppNotify, onCheckedChange = { receiveAppNotify = it })
             }
             SenderTestActionRow(channel = "SMS") {
                 SmsUtils.sendMsg(

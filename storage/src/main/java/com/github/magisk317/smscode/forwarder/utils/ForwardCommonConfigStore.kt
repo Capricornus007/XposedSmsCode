@@ -125,6 +125,22 @@ IP地址列表：{{IP_LIST}}
         )
     }
 
+    suspend fun loadAppNotifyTemplate(context: Context): String {
+        return AppPreferencesDataStore.getStringCompat(
+            context = context,
+            key = PrefConst.KEY_FORWARD_APP_NOTIFY_TEMPLATE,
+            defaultValue = "",
+        )
+    }
+
+    suspend fun saveAppNotifyTemplate(context: Context, template: String) {
+        AppPreferencesDataStore.setString(
+            context = context,
+            key = PrefConst.KEY_FORWARD_APP_NOTIFY_TEMPLATE,
+            value = template,
+        )
+    }
+
     fun defaultTemplate(): String = DEFAULT_TEMPLATE.trimIndent()
     fun fullInfoTemplate(): String = FULL_INFO_TEMPLATE.trimIndent()
 
@@ -180,6 +196,11 @@ IP地址列表：{{IP_LIST}}
         var rendered = template
         variables.forEach { (name, value) ->
             rendered = rendered.replace("{{$name}}", value)
+        }
+        if (msgInfo.type == "app_notify") {
+            rendered = rendered
+                .replace(Regex("(?m)^(\\s*)卡槽([:：])"), "$1应用$2")
+                .replace("【卡槽与来源】", "【应用与来源】")
         }
         val cleaned = removeEmptyValueLines(rendered)
         return msgInfo.copy(content = cleaned)

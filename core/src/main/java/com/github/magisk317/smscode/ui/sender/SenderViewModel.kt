@@ -30,6 +30,8 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
         ForwardCommonConfig(deviceName = DeviceIdentityUtils.resolveDefaultDeviceName()),
     )
     val forwardCommonConfig: StateFlow<ForwardCommonConfig> = _forwardCommonConfig.asStateFlow()
+    private val _appNotifyTemplate = MutableStateFlow("")
+    val appNotifyTemplate: StateFlow<String> = _appNotifyTemplate.asStateFlow()
 
     val senderList: StateFlow<List<Sender>> = senderDao.getAllFlow()
         .map { list ->
@@ -49,6 +51,7 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
 
     init {
         refreshForwardCommonConfig()
+        refreshAppNotifyTemplate()
     }
 
     fun loadSenders() {
@@ -67,6 +70,21 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
         val context = getApplication<Application>()
         viewModelScope.launch(Dispatchers.IO) {
             _forwardCommonConfig.value = ForwardCommonConfigStore.load(context)
+        }
+    }
+
+    fun saveAppNotifyTemplate(template: String) {
+        val context = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            ForwardCommonConfigStore.saveAppNotifyTemplate(context, template)
+            _appNotifyTemplate.value = ForwardCommonConfigStore.loadAppNotifyTemplate(context)
+        }
+    }
+
+    private fun refreshAppNotifyTemplate() {
+        val context = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            _appNotifyTemplate.value = ForwardCommonConfigStore.loadAppNotifyTemplate(context)
         }
     }
 

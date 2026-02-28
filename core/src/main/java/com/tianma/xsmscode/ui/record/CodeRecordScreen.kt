@@ -142,7 +142,7 @@ fun CodeRecordScreen(
     var isSelectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(setOf<Long>()) }
     var showSettingsSheet by remember { mutableStateOf(false) }
-    var selectedRecordTab by rememberSaveable { mutableIntStateOf(0) } // 0: code, 1: plain
+    var selectedRecordTab by rememberSaveable { mutableIntStateOf(0) } // 0: code, 1: plain, 2: app_notify
 
     var historyLimit by remember { mutableStateOf("0") }
     var showHistoryLimitDialog by remember { mutableStateOf(false) }
@@ -355,9 +355,14 @@ fun CodeRecordScreen(
                         )
                     }
                 } else {
-                    val codeSmsList = list.filter { !it.smsCode.isNullOrBlank() }
-                    val plainSmsList = list.filter { it.smsCode.isNullOrBlank() }
-                    val activeSmsList = if (selectedRecordTab == 0) codeSmsList else plainSmsList
+                    val codeSmsList = list.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() }
+                    val plainSmsList = list.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && it.smsCode.isNullOrBlank() }
+                    val appNotifyList = list.filter { it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY }
+                    val activeSmsList = when (selectedRecordTab) {
+                        0 -> codeSmsList
+                        1 -> plainSmsList
+                        else -> appNotifyList
+                    }
 
                     Column(
                         modifier = Modifier
@@ -399,17 +404,29 @@ fun CodeRecordScreen(
                                 },
                                 modifier = Modifier.weight(1f),
                             )
+                            FilterChip(
+                                selected = selectedRecordTab == 2,
+                                onClick = { selectedRecordTab = 2 },
+                                label = {
+                                    Text(
+                                        text = "${stringResource(R.string.records_column_app_notify_title)}（${appNotifyList.size}）",
+                                        modifier = Modifier.fillMaxWidth(),
+                                        textAlign = TextAlign.Center,
+                                    )
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
                         }
                         RecordSplitColumn(
-                            title = if (selectedRecordTab == 0) {
-                                stringResource(R.string.records_column_code_title)
-                            } else {
-                                stringResource(R.string.records_column_plain_title)
+                            title = when (selectedRecordTab) {
+                                0 -> stringResource(R.string.records_column_code_title)
+                                1 -> stringResource(R.string.records_column_plain_title)
+                                else -> stringResource(R.string.records_column_app_notify_title)
                             },
-                            emptyHint = if (selectedRecordTab == 0) {
-                                stringResource(R.string.records_column_code_empty)
-                            } else {
-                                stringResource(R.string.records_column_plain_empty)
+                            emptyHint = when (selectedRecordTab) {
+                                0 -> stringResource(R.string.records_column_code_empty)
+                                1 -> stringResource(R.string.records_column_plain_empty)
+                                else -> stringResource(R.string.records_column_app_notify_empty)
                             },
                             list = activeSmsList,
                             isSelectionMode = isSelectionMode,
@@ -474,10 +491,10 @@ fun CodeRecordScreen(
                 actions = {
                     if (isSelectionMode) {
                         IconButton(onClick = {
-                            val visibleIds = if (selectedRecordTab == 0) {
-                                smsList.filter { !it.smsCode.isNullOrBlank() }
-                            } else {
-                                smsList.filter { it.smsCode.isNullOrBlank() }
+                            val visibleIds = when (selectedRecordTab) {
+                                0 -> smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() }
+                                1 -> smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && it.smsCode.isNullOrBlank() }
+                                else -> smsList.filter { it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY }
                             }.mapNotNull { it.id }.toSet()
                             if (visibleIds.isEmpty()) return@IconButton
                             val allVisibleSelected = visibleIds.all { selectedIds.contains(it) }
@@ -892,15 +909,27 @@ private fun RecordSplitColumn(
                     items(list, key = { it.id ?: 0 }) { smsMsg ->
                         val isSelected = selectedIds.contains(smsMsg.id)
                         if (isSelectionMode) {
-                            CodeRecordItem(
-                                smsMsg = smsMsg,
-                                isSelectionMode = true,
-                                isSelected = isSelected,
-                                onClick = { onToggleSelection(smsMsg.id ?: 0) },
-                                onLongClick = {},
-                                onDetailClick = { onShowDetail(smsMsg) },
-                                modifier = Modifier.animateItem(),
-                            )
+                            if (smsMsg.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY) {
+                                AppNotificationItem(
+                                    smsMsg = smsMsg,
+                                    isSelectionMode = true,
+                                    isSelected = isSelected,
+                                    onClick = { onToggleSelection(smsMsg.id ?: 0) },
+                                    onLongClick = {},
+                                    onDetailClick = { onShowDetail(smsMsg) },
+                                    modifier = Modifier.animateItem(),
+                                )
+                            } else {
+                                CodeRecordItem(
+                                    smsMsg = smsMsg,
+                                    isSelectionMode = true,
+                                    isSelected = isSelected,
+                                    onClick = { onToggleSelection(smsMsg.id ?: 0) },
+                                    onLongClick = {},
+                                    onDetailClick = { onShowDetail(smsMsg) },
+                                    modifier = Modifier.animateItem(),
+                                )
+                            }
                         } else {
                             val dismissState = rememberSwipeToDismissBoxState()
                             LaunchedEffect(dismissState.currentValue) {
@@ -934,15 +963,27 @@ private fun RecordSplitColumn(
                                     }
                                 },
                                 content = {
-                                    CodeRecordItem(
-                                        smsMsg = smsMsg,
-                                        isSelectionMode = false,
-                                        isSelected = false,
-                                        onClick = { onCopyCode(smsMsg) },
-                                        onLongClick = { onActivateSelection(smsMsg.id ?: 0) },
-                                        onDetailClick = { onShowDetail(smsMsg) },
-                                        modifier = Modifier.animateItem(),
-                                    )
+                                    if (smsMsg.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY) {
+                                        AppNotificationItem(
+                                            smsMsg = smsMsg,
+                                            isSelectionMode = false,
+                                            isSelected = false,
+                                            onClick = { onCopyCode(smsMsg) },
+                                            onLongClick = { onActivateSelection(smsMsg.id ?: 0) },
+                                            onDetailClick = { onShowDetail(smsMsg) },
+                                            modifier = Modifier.animateItem(),
+                                        )
+                                    } else {
+                                        CodeRecordItem(
+                                            smsMsg = smsMsg,
+                                            isSelectionMode = false,
+                                            isSelected = false,
+                                            onClick = { onCopyCode(smsMsg) },
+                                            onLongClick = { onActivateSelection(smsMsg.id ?: 0) },
+                                            onDetailClick = { onShowDetail(smsMsg) },
+                                            modifier = Modifier.animateItem(),
+                                        )
+                                    }
                                 },
                             )
                         }
@@ -1068,6 +1109,121 @@ fun CodeRecordItem(
                 )
             }
             Spacer(modifier = Modifier.height(2.dp))
+            val forwardStatus = when (smsMsg.forwardStatus) {
+                SmsMsg.FORWARD_STATUS_SUCCESS -> stringResource(R.string.forward_status_success)
+                SmsMsg.FORWARD_STATUS_FAILED -> stringResource(R.string.forward_status_failed)
+                else -> stringResource(R.string.forward_status_none)
+            }
+            Text(
+                text = "${stringResource(R.string.detail_forward_status)}: $forwardStatus",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun AppNotificationItem(
+    smsMsg: SmsMsg,
+    isSelectionMode: Boolean,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    onDetailClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val dateFormatter = remember { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()) }
+    val context = LocalContext.current
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            )
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+            )
+            .padding(vertical = 12.dp, horizontal = 16.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        if (isSelectionMode) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onClick() },
+                modifier = Modifier.padding(end = 16.dp).align(Alignment.CenterVertically),
+            )
+        }
+
+        val fallbackLabel = (smsMsg.company ?: smsMsg.sender ?: stringResource(R.string.unknown))
+            .trim()
+            .trim('【', '】', '[', ']')
+        val appLabel = remember(smsMsg.packageName) {
+            val pkg = smsMsg.packageName
+            if (pkg.isNullOrBlank()) {
+                null
+            } else {
+                runCatching {
+                    val pm = context.packageManager
+                    val appInfo = pm.getApplicationInfo(pkg, 0)
+                    pm.getApplicationLabel(appInfo).toString()
+                }.getOrNull()
+            }
+        }
+        val displayLabel = appLabel ?: fallbackLabel
+
+        AppIconImage(
+            packageName = smsMsg.packageName,
+            label = null,
+            contentDescription = stringResource(R.string.sms_icon_description),
+            modifier = Modifier.size(48.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                Text(
+                    text = displayLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f).padding(end = 8.dp)
+                )
+                Text(
+                    text = dateFormatter.format(Date(smsMsg.date)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = smsMsg.sender ?: "",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            val body = smsMsg.body
+            if (!body.isNullOrEmpty()) {
+                Text(
+                    text = body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clickable { onDetailClick() },
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
             val forwardStatus = when (smsMsg.forwardStatus) {
                 SmsMsg.FORWARD_STATUS_SUCCESS -> stringResource(R.string.forward_status_success)
                 SmsMsg.FORWARD_STATUS_FAILED -> stringResource(R.string.forward_status_failed)

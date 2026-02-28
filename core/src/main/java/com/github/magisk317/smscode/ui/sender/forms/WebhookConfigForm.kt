@@ -34,6 +34,7 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
     var method by remember { mutableStateOf("POST") }
     var webParams by remember { mutableStateOf("") }
     var receiveNonCode by remember { mutableStateOf(false) }
+    var receiveAppNotify by remember { mutableStateOf(true) }
     var isLoaded by remember { mutableStateOf(false) }
     var currentSender by remember { mutableStateOf<Sender?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -45,6 +46,7 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
                 currentSender = sender
                 name = sender.name
                 receiveNonCode = sender.receiveNonCode == 1
+                receiveAppNotify = sender.receiveAppNotify == 1
                 val setting = try {
                     Gson().fromJson(sender.jsonSetting, WebhookSetting::class.java)
                 } catch (@Suppress("SwallowedException") e: com.google.gson.JsonSyntaxException) {
@@ -75,6 +77,7 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
             jsonSetting = json,
             status = status,
             receiveNonCode = if (receiveNonCode) 1 else 0,
+            receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date()
         ) ?: Sender(
             id = 0,
@@ -83,6 +86,7 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
             jsonSetting = json,
             status = status,
             receiveNonCode = if (receiveNonCode) 1 else 0,
+            receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date()
         )
     }
@@ -193,6 +197,18 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(checked = receiveNonCode, onCheckedChange = { receiveNonCode = it })
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("转发应用通知", style = MaterialTheme.typography.bodyMedium)
+                    Text("开启后接收应用通知转发", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = receiveAppNotify, onCheckedChange = { receiveAppNotify = it })
             }
             Spacer(modifier = Modifier.height(8.dp))
             SenderTestActionRow(channel = "Webhook") {

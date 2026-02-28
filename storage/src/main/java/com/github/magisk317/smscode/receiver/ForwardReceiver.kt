@@ -10,6 +10,7 @@ import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.XLog
 import android.telephony.SubscriptionManager
 import kotlinx.coroutines.runBlocking
+import java.util.concurrent.ConcurrentHashMap
 
 class ForwardReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -29,6 +30,7 @@ class ForwardReceiver : BroadcastReceiver() {
                 val smsCode = intent.getStringExtra("smsCode")
                 val packageName = intent.getStringExtra("packageName")
                 val receivedToken = intent.getStringExtra("ipc_token")
+                val msgTypeStr = intent.getStringExtra("msgType") ?: "sms"
                 val subId = readIntExtra(
                     intent,
                     "sub_id",
@@ -61,6 +63,14 @@ class ForwardReceiver : BroadcastReceiver() {
                     XLog.e("IPC Token mismatch! Security breach attempt or uninitialized token. Rejecting broadcast.")
                     return@Thread
                 }
+                if (msgTypeStr == "app_notify" && shouldDropDuplicateAppNotify(packageName, sender, body)) {
+                    XLog.i(
+                        "Drop duplicate app_notify: pkg=%s sender=%s",
+                        packageName.orEmpty(),
+                        sender.orEmpty(),
+                    )
+                    return@Thread
+                }
 
                 XLog.i("IPC verified and received message from: %s", sender ?: "")
                 val normalizedSubId = subId ?: 0
@@ -75,8 +85,9 @@ class ForwardReceiver : BroadcastReceiver() {
                     phoneArea.ifBlank { "<empty>" },
                 )
 
+                val smsMsgType = if (msgTypeStr == "app_notify") com.tianma.xsmscode.data.db.entity.SmsMsg.MSG_TYPE_APP_NOTIFY else com.tianma.xsmscode.data.db.entity.SmsMsg.MSG_TYPE_SMS
                 val msgInfo = MsgInfo(
-                    type = "sms",
+                    type = msgTypeStr,
                     from = sender ?: "",
                     content = body ?: "",
                     date = java.util.Date(date),
@@ -87,12 +98,75 @@ class ForwardReceiver : BroadcastReceiver() {
                     contactName = contactName,
                     phoneArea = phoneArea,
                 )
+                var recordId: Long? = null
+
+                if (msgTypeStr == "app_notify") {
+                    try {
+                        val smsMsgUri = com.tianma.xsmscode.data.db.DBProvider.SMS_MSG_CONTENT_URI
+                        val resolver = context.contentResolver
+                        val values = android.content.ContentValues().apply {
+                            put("body", msgInfo.content)
+                            put("company", msgInfo.simInfo)
+                            put("date", msgInfo.date.time)
+                            put("sender", msgInfo.from)
+                            put("package_name", msgInfo.packageName)
+                            put("msg_type", smsMsgType)
+                        }
+                        // Remove outdated records
+                        val cursor = resolver.query(smsMsgUri, arrayOf("_id"), null, null, "date ASC")
+                        if (cursor != null) {
+                            val count = cursor.count
+                            val limit = runBlocking {
+                                com.tianma.xsmscode.common.utils.AppPreferencesDataStore.getString(
+                                    context,
+                                    com.tianma.xsmscode.common.constant.PrefConst.KEY_HISTORY_LIMIT,
+                                    "0",
+                                ).toIntOrNull() ?: 0
+                            }
+                            if (limit > 0 && count >= limit) {
+                                val selection = "_id = ?"
+                                val operations = ArrayList<android.content.ContentProviderOperation>()
+                                for (i in 0 until (count - limit + 1)) {
+                                    if (cursor.moveToNext()) {
+                                        val id = cursor.getLong(0)
+                                        val operation = android.content.ContentProviderOperation.newDelete(smsMsgUri)
+                                            .withSelection(selection, arrayOf(id.toString()))
+                                            .build()
+                                        operations.add(operation)
+                                    }
+                                }
+                                resolver.applyBatch(com.tianma.xsmscode.data.db.DBProvider.AUTHORITY, operations)
+                            }
+                            cursor.close()
+                        }
+                        recordId = resolver.insert(smsMsgUri, values)?.lastPathSegment?.toLongOrNull()
+                    } catch (e: Exception) {
+                        XLog.e("Failed to record app notification to DB", e)
+                    }
+                } else {
+                    recordId = findRecordIdByFingerprint(
+                        context = context,
+                        sender = msgInfo.from,
+                        body = msgInfo.content,
+                        date = msgInfo.date.time,
+                        msgType = smsMsgType,
+                    )
+                }
+                if (recordId == null) {
+                    recordId = findRecordIdByFingerprint(
+                        context = context,
+                        sender = msgInfo.from,
+                        body = msgInfo.content,
+                        date = msgInfo.date.time,
+                        msgType = smsMsgType,
+                    )
+                }
 
                 // Dispatch to the multi-channel forwarding engine.
                 // isCodeSms: true = verification code SMS, false = regular SMS.
                 // SendUtils will use this to filter per-sender receiveNonCode setting.
                 val isCodeSms = !smsCode.isNullOrBlank()
-                SendUtils.sendMsg(context, msgInfo, isCodeSms)
+                SendUtils.sendMsg(context, msgInfo, isCodeSms, recordId)
             } finally {
                 pendingResult.finish()
             }
@@ -101,6 +175,9 @@ class ForwardReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "ForwardReceiver"
+        private const val APP_NOTIFY_DEDUP_WINDOW_MS = 2500L
+        private const val APP_NOTIFY_DEDUP_MAX_ENTRIES = 256
+        private val recentAppNotify = ConcurrentHashMap<String, Long>()
     }
 
     private fun resolveSimSlot(rawSlot: Int?, subId: Int): Int {
@@ -126,5 +203,67 @@ class ForwardReceiver : BroadcastReceiver() {
             intent.getStringExtra(key)?.toIntOrNull()?.let { return it }
         }
         return null
+    }
+
+    private fun shouldDropDuplicateAppNotify(
+        packageName: String?,
+        sender: String?,
+        body: String?,
+    ): Boolean {
+        val key = buildString {
+            append(packageName.orEmpty().trim())
+            append('|')
+            append(sender.orEmpty().trim())
+            append('|')
+            append(body.orEmpty().trim())
+        }
+        if (key == "||") return false
+
+        val now = System.currentTimeMillis()
+        val previous = recentAppNotify[key]
+        if (previous != null && now - previous < APP_NOTIFY_DEDUP_WINDOW_MS) {
+            return true
+        }
+        recentAppNotify[key] = now
+
+        if (recentAppNotify.size > APP_NOTIFY_DEDUP_MAX_ENTRIES) {
+            val cutoff = now - APP_NOTIFY_DEDUP_WINDOW_MS * 2
+            recentAppNotify.entries.removeIf { it.value < cutoff }
+        }
+        return false
+    }
+
+    private fun findRecordIdByFingerprint(
+        context: Context,
+        sender: String,
+        body: String,
+        date: Long,
+        msgType: Int,
+    ): Long? {
+        val resolver = context.contentResolver
+        val smsMsgUri = com.tianma.xsmscode.data.db.DBProvider.SMS_MSG_CONTENT_URI
+        val projection = arrayOf("_id", "sender", "body", "date", "msg_type")
+        return try {
+            resolver.query(smsMsgUri, projection, null, null, "date DESC")?.use { cursor ->
+                val idIdx = cursor.getColumnIndex("_id")
+                val senderIdx = cursor.getColumnIndex("sender")
+                val bodyIdx = cursor.getColumnIndex("body")
+                val dateIdx = cursor.getColumnIndex("date")
+                val msgTypeIdx = cursor.getColumnIndex("msg_type")
+                while (cursor.moveToNext()) {
+                    val senderValue = if (senderIdx >= 0) cursor.getString(senderIdx) else null
+                    val bodyValue = if (bodyIdx >= 0) cursor.getString(bodyIdx) else null
+                    val dateValue = if (dateIdx >= 0) cursor.getLong(dateIdx) else -1L
+                    val msgTypeValue = if (msgTypeIdx >= 0) cursor.getInt(msgTypeIdx) else com.tianma.xsmscode.data.db.entity.SmsMsg.MSG_TYPE_SMS
+                    if (senderValue == sender && bodyValue == body && dateValue == date && msgTypeValue == msgType) {
+                        return if (idIdx >= 0) cursor.getLong(idIdx) else null
+                    }
+                }
+                null
+            }
+        } catch (t: Throwable) {
+            XLog.w("findRecordIdByFingerprint failed: %s", t.message ?: t.javaClass.simpleName)
+            null
+        }
     }
 }

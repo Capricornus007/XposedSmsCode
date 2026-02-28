@@ -270,6 +270,10 @@ object AppPreferencesDataStore {
             PrefConst.KEY_FORWARD_COMMON_TEMPLATE,
             getString(context, PrefConst.KEY_FORWARD_COMMON_TEMPLATE, ""),
         )
+        editor.putString(
+            PrefConst.KEY_FORWARD_APP_NOTIFY_TEMPLATE,
+            getString(context, PrefConst.KEY_FORWARD_APP_NOTIFY_TEMPLATE, ""),
+        )
         editor.putBoolean(
             PrefConst.KEY_FORWARD_COMMON_INCLUDE_TIME,
             getBoolean(context, PrefConst.KEY_FORWARD_COMMON_INCLUDE_TIME, false),

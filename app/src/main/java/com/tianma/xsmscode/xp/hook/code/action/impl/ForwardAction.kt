@@ -59,13 +59,6 @@ class ForwardAction(
             mPluginContext.sendBroadcast(intent)
             
             XLog.i("Successfully broadcasted SMS info to SmsCode Engine with token (length ${token.length}): ${mSmsMsg.smsCode}")
-
-            // We mark it as successful internally, actual network sending is delegated
-            persistForwardResult(
-                success = true, 
-                target = "SmsCode Engine", 
-                message = "Delegated to unified push engine"
-            )
         } catch (t: Throwable) {
             XLog.e("Failed to broadcast SMS info to SmsCode Engine", t)
             persistForwardResult(

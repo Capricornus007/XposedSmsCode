@@ -36,6 +36,7 @@ fun PushplusConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
     var website by remember { mutableStateOf("www.pushplus.plus") }
     var titleTemplate by remember { mutableStateOf("") }
     var receiveNonCode by remember { mutableStateOf(false) }
+    var receiveAppNotify by remember { mutableStateOf(true) }
 
     var isLoaded by remember { mutableStateOf(false) }
     var currentSender by remember { mutableStateOf<Sender?>(null) }
@@ -48,6 +49,7 @@ fun PushplusConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
                 currentSender = sender
                 name = sender.name
                 receiveNonCode = sender.receiveNonCode == 1
+                receiveAppNotify = sender.receiveAppNotify == 1
                 val setting = try {
                     Gson().fromJson(sender.jsonSetting, PushplusSetting::class.java)
                 } catch (@Suppress("SwallowedException") e: com.google.gson.JsonSyntaxException) {
@@ -81,6 +83,7 @@ fun PushplusConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
             jsonSetting = json,
             status = status,
             receiveNonCode = if (receiveNonCode) 1 else 0,
+            receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date()
         ) ?: Sender(
             id = 0,
@@ -89,6 +92,7 @@ fun PushplusConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
             jsonSetting = json,
             status = status,
             receiveNonCode = if (receiveNonCode) 1 else 0,
+            receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date()
         )
     }
@@ -170,6 +174,18 @@ fun PushplusConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Switch(checked = receiveNonCode, onCheckedChange = { receiveNonCode = it })
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("转发应用通知", style = MaterialTheme.typography.bodyMedium)
+                    Text("开启后接收应用通知转发", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = receiveAppNotify, onCheckedChange = { receiveAppNotify = it })
             }
             Spacer(modifier = Modifier.height(8.dp))
             SenderTestActionRow(channel = "Pushplus") {

@@ -56,6 +56,7 @@ fun WeworkAgentConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderV
     var toUser by remember { mutableStateOf("@all") }
     var customizeAPI by remember { mutableStateOf("https://qyapi.weixin.qq.com") }
     var receiveNonCode by remember { mutableStateOf(false) }
+    var receiveAppNotify by remember { mutableStateOf(true) }
     var currentSender by remember { mutableStateOf<Sender?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
 
@@ -65,6 +66,7 @@ fun WeworkAgentConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderV
                 currentSender = sender
                 name = sender.name
                 receiveNonCode = sender.receiveNonCode == 1
+                receiveAppNotify = sender.receiveAppNotify == 1
                 runCatching { Gson().fromJson(sender.jsonSetting, WeworkAgentSetting::class.java) }.getOrNull()?.let {
                     corpID = it.corpID
                     agentID = it.agentID
@@ -89,6 +91,7 @@ fun WeworkAgentConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderV
             jsonSetting = Gson().toJson(setting),
             status = status,
             receiveNonCode = if (receiveNonCode) 1 else 0,
+            receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
         ) ?: Sender(
             id = 0,
@@ -97,6 +100,7 @@ fun WeworkAgentConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderV
             jsonSetting = Gson().toJson(setting),
             status = status,
             receiveNonCode = if (receiveNonCode) 1 else 0,
+            receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
         )
     }
@@ -160,6 +164,18 @@ fun WeworkAgentConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderV
                     Text("开启后所有短信都会转发", style = MaterialTheme.typography.bodySmall)
                 }
                 Switch(checked = receiveNonCode, onCheckedChange = { receiveNonCode = it })
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("转发应用通知", style = MaterialTheme.typography.bodyMedium)
+                    Text("开启后接收应用通知转发", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = receiveAppNotify, onCheckedChange = { receiveAppNotify = it })
             }
             SenderTestActionRow(channel = "WeworkAgent") {
                 WeworkAgentUtils.sendMsg(

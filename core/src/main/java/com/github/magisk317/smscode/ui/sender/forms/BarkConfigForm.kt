@@ -53,6 +53,7 @@ fun BarkConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMode
     var server by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
     var receiveNonCode by remember { mutableStateOf(false) }
+    var receiveAppNotify by remember { mutableStateOf(true) }
     var currentSender by remember { mutableStateOf<Sender?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
 
@@ -62,6 +63,7 @@ fun BarkConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMode
                 currentSender = sender
                 name = sender.name
                 receiveNonCode = sender.receiveNonCode == 1
+                receiveAppNotify = sender.receiveAppNotify == 1
                 runCatching { Gson().fromJson(sender.jsonSetting, BarkSetting::class.java) }.getOrNull()?.let {
                     server = it.server
                     title = it.title
@@ -77,6 +79,7 @@ fun BarkConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMode
             jsonSetting = Gson().toJson(setting),
             status = status,
             receiveNonCode = if (receiveNonCode) 1 else 0,
+            receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
         ) ?: Sender(
             id = 0,
@@ -85,6 +88,7 @@ fun BarkConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMode
             jsonSetting = Gson().toJson(setting),
             status = status,
             receiveNonCode = if (receiveNonCode) 1 else 0,
+            receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
         )
     }
@@ -147,6 +151,18 @@ fun BarkConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMode
                     Text("开启后所有短信都会转发", style = MaterialTheme.typography.bodySmall)
                 }
                 Switch(checked = receiveNonCode, onCheckedChange = { receiveNonCode = it })
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("转发应用通知", style = MaterialTheme.typography.bodyMedium)
+                    Text("开启后接收应用通知转发", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = receiveAppNotify, onCheckedChange = { receiveAppNotify = it })
             }
             SenderTestActionRow(channel = "Bark") {
                 BarkUtils.sendMsg(

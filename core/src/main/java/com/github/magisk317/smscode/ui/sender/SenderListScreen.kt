@@ -65,6 +65,24 @@ private val forwardTemplateVariables = listOf(
     TemplateVariable("软件版本", "{{APP_VERSION}}"),
 )
 private val templateTokenRegex = Regex("\\{\\{[^{}]+\\}\\}")
+private val cardSlotLineRegex = Regex("(?m)^(\\s*)卡槽([:：])")
+
+private fun toAppNotifyTemplate(template: String): String {
+    return template
+        .replace(cardSlotLineRegex, "$1应用$2")
+        .replace("【卡槽与来源】", "【应用与来源】")
+}
+
+private fun appNotifyDefaultTemplate(): String = toAppNotifyTemplate(ForwardCommonConfigStore.defaultTemplate())
+private fun appNotifyFullTemplate(): String = toAppNotifyTemplate(ForwardCommonConfigStore.fullInfoTemplate())
+
+private val appNotifyTemplateVariables = forwardTemplateVariables.map { variable ->
+    when (variable.token) {
+        "{{CARD_SLOT}}" -> variable.copy(label = "应用备注")
+        "{{CARD_SUBID}}" -> variable.copy(label = "应用主键")
+        else -> variable
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,8 +97,10 @@ fun SenderListScreen(
     val context = LocalContext.current
     val senders by viewModel.senderList.collectAsStateWithLifecycle()
     val commonConfig by viewModel.forwardCommonConfig.collectAsStateWithLifecycle()
+    val appNotifyTemplate by viewModel.appNotifyTemplate.collectAsStateWithLifecycle()
     var showTypeDialog by remember { mutableStateOf(false) }
     var showCommonConfigDialog by remember { mutableStateOf(false) }
+    var showAppNotifyConfigDialog by remember { mutableStateOf(false) }
     LaunchedEffect(forceShowTypeDialog) {
         if (forceShowTypeDialog) {
             showTypeDialog = true
@@ -177,9 +197,19 @@ fun SenderListScreen(
             },
         )
     }
+    if (showAppNotifyConfigDialog) {
+        AppNotifyTemplateDialog(
+            currentTemplate = appNotifyTemplate,
+            onDismiss = { showAppNotifyConfigDialog = false },
+            onSave = {
+                viewModel.saveAppNotifyTemplate(it)
+                showAppNotifyConfigDialog = false
+            },
+        )
+    }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("发送通道") }) },
+        topBar = { TopAppBar(title = { Text("通道配置") }) },
         floatingActionButton = {
             FloatingActionButton(
                 modifier = Modifier
@@ -202,6 +232,12 @@ fun SenderListScreen(
                 ForwardCommonConfigCard(
                     config = commonConfig,
                     onEdit = { showCommonConfigDialog = true },
+                )
+            }
+            item(key = "app_notify_config") {
+                AppNotifyConfigCard(
+                    template = appNotifyTemplate,
+                    onEdit = { showAppNotifyConfigDialog = true },
                 )
             }
 
@@ -262,7 +298,7 @@ private fun ForwardCommonConfigCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "公共配置",
+                text = "短信公共配置",
                 style = MaterialTheme.typography.titleMedium,
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -276,6 +312,55 @@ private fun ForwardCommonConfigCard(
                 } else {
                     "模板: 自定义模板"
                 },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (templatePreview.isNotBlank()) {
+                Text(
+                    text = "预览: $templatePreview",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onEdit) {
+                    Text("编辑")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AppNotifyConfigCard(
+    template: String,
+    onEdit: () -> Unit,
+) {
+    val isDefaultTemplate = template.isBlank()
+    val templatePreview = if (isDefaultTemplate) {
+        appNotifyDefaultTemplate()
+    } else {
+        template
+    }.lineSequence().firstOrNull()?.trim().orEmpty()
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onEdit),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "应用通知配置",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = if (isDefaultTemplate) "模板: 默认模板（留空自动使用）" else "模板: 自定义模板",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -372,7 +457,7 @@ private fun ForwardCommonConfigDialog(
         modifier = Modifier.fillMaxWidth(0.92f),
         properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
-        title = { Text("公共配置") },
+        title = { Text("短信公共配置") },
         text = {
             Column(
                 modifier = Modifier
@@ -460,6 +545,157 @@ private fun ForwardCommonConfigDialog(
                     )
                 },
             ) {
+                Text("保存")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        },
+    )
+}
+
+@Composable
+private fun AppNotifyTemplateDialog(
+    currentTemplate: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+) {
+    var templateValue by remember(currentTemplate) { mutableStateOf(TextFieldValue(currentTemplate)) }
+    val scrollState = rememberScrollState()
+    val fillTemplateInteractionSource = remember { MutableInteractionSource() }
+    val isFillTemplatePressed by fillTemplateInteractionSource.collectIsPressedAsState()
+    var suppressNextClick by remember { mutableStateOf(false) }
+
+    fun insertToken(token: String) {
+        val start = templateValue.selection.start.coerceIn(0, templateValue.text.length)
+        val end = templateValue.selection.end.coerceIn(0, templateValue.text.length)
+        val newText = buildString {
+            append(templateValue.text.substring(0, start))
+            append(token)
+            append(templateValue.text.substring(end))
+        }
+        val cursor = start + token.length
+        templateValue = templateValue.copy(text = newText, selection = TextRange(cursor))
+    }
+
+    fun normalizeTokenDeletion(oldValue: TextFieldValue, newValue: TextFieldValue): TextFieldValue {
+        val oldText = oldValue.text
+        val newText = newValue.text
+        val oldSelection = oldValue.selection
+        val newSelection = newValue.selection
+        if (oldSelection.start != oldSelection.end) return newValue
+        if (newText.length != oldText.length - 1) return newValue
+
+        val oldCursor = oldSelection.start
+        val isBackspace = newSelection.start == (oldCursor - 1).coerceAtLeast(0)
+        val removeIndex = if (isBackspace) oldCursor - 1 else oldCursor
+        if (removeIndex !in oldText.indices) return newValue
+
+        val token = templateTokenRegex.findAll(oldText).firstOrNull { match ->
+            removeIndex in match.range
+        } ?: return newValue
+
+        val start = token.range.first
+        val endExclusive = token.range.last + 1
+        val merged = oldText.removeRange(start, endExclusive)
+        return TextFieldValue(
+            text = merged,
+            selection = TextRange(start.coerceAtMost(merged.length)),
+        )
+    }
+
+    @Suppress("MagicNumber")
+    LaunchedEffect(isFillTemplatePressed) {
+        if (isFillTemplatePressed) {
+            delay(10_000)
+            if (isFillTemplatePressed) {
+                suppressNextClick = true
+                val fullTemplate = appNotifyFullTemplate()
+                templateValue = TextFieldValue(
+                    fullTemplate,
+                    selection = TextRange(fullTemplate.length),
+                )
+            }
+        }
+    }
+
+    AlertDialog(
+        modifier = Modifier.fillMaxWidth(0.92f),
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+        onDismissRequest = onDismiss,
+        title = { Text("应用通知配置") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 560.dp)
+                    .verticalScroll(scrollState),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedTextField(
+                    value = templateValue,
+                    onValueChange = { newValue ->
+                        templateValue = normalizeTokenDeletion(templateValue, newValue)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 140.dp),
+                    label = { Text("应用通知转发模板") },
+                    placeholder = { Text("留空使用默认模板") },
+                    supportingText = { Text("Tip: 按需插入内容标签；可用变量见下方按钮") },
+                )
+                Text(
+                    text = "默认模板示例：\n${appNotifyDefaultTemplate()}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(
+                        onClick = {
+                            if (suppressNextClick) {
+                                suppressNextClick = false
+                                return@TextButton
+                            }
+                            val defaultTemplate = appNotifyDefaultTemplate()
+                            templateValue = TextFieldValue(
+                                defaultTemplate,
+                                selection = TextRange(defaultTemplate.length),
+                            )
+                        },
+                        interactionSource = fillTemplateInteractionSource,
+                    ) {
+                        Text("填入默认模板")
+                    }
+                }
+                HorizontalDivider()
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(4),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 300.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(appNotifyTemplateVariables.size) { index ->
+                        val variable = appNotifyTemplateVariables[index]
+                        OutlinedButton(
+                            onClick = { insertToken(variable.token) },
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        ) {
+                            Text(variable.label, style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(templateValue.text) }) {
                 Text("保存")
             }
         },

@@ -23,4 +23,6 @@ data class Sender(
     @ColumnInfo(name = "time") var time: Date = Date(),
     /** 0 = 仅验证码短信，1 = 所有短信（含非验证码）均转发 */
     @ColumnInfo(name = "receive_non_code", defaultValue = "0") var receiveNonCode: Int = 0,
+    /** 0 = 不转发应用通知，1 = 转发应用通知 */
+    @ColumnInfo(name = "receive_app_notify", defaultValue = "1") var receiveAppNotify: Int = 1,
 ) : Parcelable

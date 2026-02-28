@@ -22,6 +22,7 @@ class HookEntry :
         ModuleUtilsHook(), // ModuleUtils Hook
         PermissionGranterHook(), // PackageManagerService Hook
         SystemInputInjectorHook(), // System Server Input Injection Hook
+        com.tianma.xsmscode.xp.hook.notification.NotificationManagerHook(), // Notification Intercept Hook
     )
 
     @Throws(Throwable::class)

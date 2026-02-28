@@ -39,46 +39,99 @@ import com.google.gson.Gson
 import com.tianma.xsmscode.storage.BuildConfig
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.AppDatabase
+import com.tianma.xsmscode.data.db.entity.SmsMsg
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.util.Date
 
 object SendUtils {
     private const val TAG = "SendUtils"
+    private const val MAX_FORWARD_MESSAGE_LEN = 300
     private val gson = Gson()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private data class SenderDispatchResult(
+        val senderName: String,
+        val success: Boolean,
+        val message: String,
+    )
 
     /**
      * Entry point called from [ForwardReceiver] after receiving IPC broadcast from Xposed layer.
      * Queries all enabled Senders from Room DB and dispatches the message to each channel.
      */
-    fun sendMsg(context: Context, msgInfo: MsgInfo, isCodeSms: Boolean = true) {
+    fun sendMsg(context: Context, msgInfo: MsgInfo, isCodeSms: Boolean = true, recordId: Long? = null) {
         XLog.i("Dispatching MsgInfo to enabled senders: isCodeSms=%s msg=%s", isCodeSms, msgInfo)
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
                 val senders = db.senderDao().getAll().filter { sender ->
-                    sender.status == 1 && (isCodeSms || sender.receiveNonCode == 1)
+                    sender.status == 1 &&
+                        if (msgInfo.type == "app_notify") {
+                            sender.receiveAppNotify == 1
+                        } else {
+                            isCodeSms || sender.receiveNonCode == 1
+                        }
                 }
                 if (senders.isEmpty()) {
-                    XLog.w("No eligible senders found (isCodeSms=%s), skipping dispatch.", isCodeSms)
+                    XLog.w(
+                        "No eligible senders found (isCodeSms=%s, type=%s), skipping dispatch.",
+                        isCodeSms,
+                        msgInfo.type,
+                    )
+                    persistForwardResult(
+                        db = db,
+                        recordId = recordId,
+                        results = emptyList(),
+                        defaultMessage = "未启用任何转发通道",
+                    )
                     return@launch
                 }
                 val commonConfig = ForwardCommonConfigStore.load(context)
-                val msgForSend = ForwardCommonConfigStore.applyToMessage(context, msgInfo, commonConfig)
-                for (sender in senders) {
-                    dispatchToSender(context, sender, msgForSend)
+                val effectiveConfig = if (msgInfo.type == "app_notify" && msgInfo.packageName.isNotBlank()) {
+                    val appConfig = db.appInfoDao().getByPackageName(msgInfo.packageName)
+                    if (appConfig?.notifyTemplate?.isNotBlank() == true) {
+                        commonConfig.copy(messageTemplate = appConfig.notifyTemplate)
+                    } else {
+                        val appNotifyTemplate = ForwardCommonConfigStore.loadAppNotifyTemplate(context)
+                        if (appNotifyTemplate.isNotBlank()) {
+                            commonConfig.copy(messageTemplate = appNotifyTemplate)
+                        } else {
+                            commonConfig
+                        }
+                    }
+                } else {
+                    commonConfig
                 }
+                val msgForSend = ForwardCommonConfigStore.applyToMessage(context, msgInfo, effectiveConfig)
+                val results = mutableListOf<SenderDispatchResult>()
+                for (sender in senders) {
+                    results += dispatchToSender(context, sender, msgForSend)
+                }
+                persistForwardResult(
+                    db = db,
+                    recordId = recordId,
+                    results = results,
+                    defaultMessage = "未启用任何转发通道",
+                )
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 XLog.e("Dispatch failed", e)
+                persistForwardResult(
+                    db = AppDatabase.getInstance(context),
+                    recordId = recordId,
+                    results = emptyList(),
+                    defaultMessage = "转发异常: ${e.message ?: e.javaClass.simpleName}",
+                    forceFailed = true,
+                )
             }
         }
     }
 
-    private suspend fun dispatchToSender(context: Context, sender: Sender, msgInfo: MsgInfo) {
+    private suspend fun dispatchToSender(context: Context, sender: Sender, msgInfo: MsgInfo): SenderDispatchResult {
+        val senderName = sender.name.ifBlank { senderTypeName(sender.type) }
         XLog.d("Dispatching to sender: id=%d, type=%d, name=%s", sender.id, sender.type, sender.name)
         try {
             when (sender.type) {
@@ -150,13 +203,95 @@ object SendUtils {
                     val setting = gson.fromJson(sender.jsonSetting, SocketSetting::class.java)
                     SocketUtils.sendMsg(setting, msgInfo)
                 }
-                else -> XLog.w("Unsupported sender type: %d, skipping.", sender.type)
+                else -> {
+                    val message = "Unsupported sender type: ${sender.type}"
+                    XLog.w(message)
+                    return SenderDispatchResult(senderName = senderName, success = false, message = message)
+                }
             }
             XLog.i("Dispatched to sender [%s] type=%d", sender.name, sender.type)
+            return SenderDispatchResult(senderName = senderName, success = true, message = "OK")
         } catch (e: com.google.gson.JsonSyntaxException) {
             XLog.e("Failed to parse sender setting for [%s]", sender.name, e)
+            return SenderDispatchResult(
+                senderName = senderName,
+                success = false,
+                message = "配置解析失败: ${e.message ?: "JsonSyntaxException"}",
+            )
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             XLog.e("Failed to dispatch to sender [%s] type=%d", sender.name, sender.type, e)
+            return SenderDispatchResult(
+                senderName = senderName,
+                success = false,
+                message = e.message ?: e.javaClass.simpleName,
+            )
+        }
+    }
+
+    private fun persistForwardResult(
+        db: AppDatabase,
+        recordId: Long?,
+        results: List<SenderDispatchResult>,
+        defaultMessage: String,
+        forceFailed: Boolean = false,
+    ) {
+        if (recordId == null) return
+        runCatching {
+            val msgDao = db.smsMsgDao()
+            val existing = msgDao.getById(recordId) ?: return
+            val successResults = results.filter { it.success }
+            val failedResults = results.filterNot { it.success }
+            val status = when {
+                forceFailed -> SmsMsg.FORWARD_STATUS_FAILED
+                successResults.isNotEmpty() -> SmsMsg.FORWARD_STATUS_SUCCESS
+                results.isNotEmpty() -> SmsMsg.FORWARD_STATUS_FAILED
+                else -> SmsMsg.FORWARD_STATUS_FAILED
+            }
+            val target = results.joinToString(", ") { it.senderName }.ifBlank { null }
+            val message = when {
+                forceFailed -> defaultMessage
+                successResults.isNotEmpty() && failedResults.isNotEmpty() -> {
+                    "成功转发到${successResults.size}个通道，失败${failedResults.size}个通道；失败原因：${
+                        failedResults.joinToString(" | ") { "${it.senderName}:${it.message}" }
+                    }"
+                }
+                successResults.isNotEmpty() -> "成功转发到${successResults.size}个通道"
+                failedResults.isNotEmpty() -> failedResults.joinToString(" | ") { "${it.senderName}:${it.message}" }
+                else -> defaultMessage
+            }.take(MAX_FORWARD_MESSAGE_LEN)
+
+            msgDao.update(
+                existing.copy(
+                    forwardStatus = status,
+                    forwardTarget = target,
+                    forwardMessage = message,
+                    forwardTime = Date().time,
+                ),
+            )
+        }.onFailure { t ->
+            XLog.w("Persist forward result failed: %s", t.message ?: t.javaClass.simpleName)
+        }
+    }
+
+    private fun senderTypeName(type: Int): String {
+        return when (type) {
+            SenderType.DINGTALK_GROUP_ROBOT -> "钉钉群机器人"
+            SenderType.EMAIL -> "邮件"
+            SenderType.BARK -> "Bark"
+            SenderType.WEBHOOK -> "Webhook"
+            SenderType.WEWORK_ROBOT -> "企微群机器人"
+            SenderType.WEWORK_AGENT -> "企微应用"
+            SenderType.SERVERCHAN -> "Server酱"
+            SenderType.TELEGRAM -> "Telegram"
+            SenderType.SMS -> "短信"
+            SenderType.FEISHU -> "飞书机器人"
+            SenderType.PUSHPLUS -> "PushPlus"
+            SenderType.GOTIFY -> "Gotify"
+            SenderType.DINGTALK_INNER_ROBOT -> "钉钉内部机器人"
+            SenderType.FEISHU_APP -> "飞书应用"
+            SenderType.URL_SCHEME -> "Url Scheme"
+            SenderType.SOCKET -> "Socket"
+            else -> "通道$type"
         }
     }
 }
