@@ -263,6 +263,8 @@ dependencies {
     implementation(libs.retrofit.converter.scalars)
 
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.ktor.server.core)
+    implementation(libs.ktor.server.cio)
     implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)

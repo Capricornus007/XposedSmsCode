@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 interface SenderDao {
 
     @Insert
-    fun insert(sender: Sender)
+    fun insert(sender: Sender): Long
 
     @Delete
     fun delete(sender: Sender)

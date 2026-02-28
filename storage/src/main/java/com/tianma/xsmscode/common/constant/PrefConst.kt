@@ -82,5 +82,6 @@ object PrefConst {
     const val KEY_FORWARD_COMMON_INCLUDE_TIME = "pref_forward_common_include_time"
     const val KEY_FORWARD_COMMON_INCLUDE_SENDER = "pref_forward_common_include_sender"
     const val KEY_FORWARD_COMMON_INCLUDE_DEVICE_NAME = "pref_forward_common_include_device_name"
+    const val KEY_WEBUI_LAN_ACCESS = "pref_webui_lan_access"
     const val ACTION_FORWARD_SMS = "com.tianma.xsmscode.ACTION_FORWARD_SMS"
 }

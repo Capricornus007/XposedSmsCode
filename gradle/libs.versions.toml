@@ -37,6 +37,7 @@ koin = "4.1.1"
 kotlin = "2.3.20-RC"
 kotlinx-collections-immutable = "0.4.0"
 kotlinx-serialization = "1.10.0"
+kotlin-ktor = "3.4.0"
 kover = "0.9.7"
 ksp = "2.3.6"
 lifecycle = "2.10.0"
@@ -98,6 +99,8 @@ kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collec
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "kotlin-ktor" }
+ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "kotlin-ktor" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 netty-buffer = { module = "io.netty:netty-buffer", version.ref = "netty" }
 netty-codec = { module = "io.netty:netty-codec", version.ref = "netty" }
