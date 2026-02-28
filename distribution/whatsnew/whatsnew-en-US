@@ -1,3 +1,4 @@
-- Important: The forwarding pipeline was refactored. Legacy forwarding data will be cleared after upgrade, so please back up first.
-- New: Sender channels now support a unified common configuration and improved template editing.
-- Improved: Forwarding metadata handling and template rendering are now cleaner and more stable.
+- Important: During refactoring, some data may be lost. Please save your config data first.
+- App Control refactor: new App Control page and per-app detail page with linked toggles and recent forwarding logs.
+- App notification forwarding: added per-channel "Forward App Notifications" switch. Forwarding now requires both app-level and channel-level switches.
+- Forwarding result unified: target now shows real channel names, with success text "Forwarded successfully to X channels".
