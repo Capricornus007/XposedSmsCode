@@ -34,12 +34,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.toClipEntry
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -143,6 +146,7 @@ fun CodeRecordScreen(
     var selectedIds by remember { mutableStateOf(setOf<Long>()) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var selectedRecordTab by rememberSaveable { mutableIntStateOf(0) } // 0: code, 1: plain, 2: app_notify
+    var fixedTopHeightPx by remember { mutableIntStateOf(0) }
 
     var historyLimit by remember { mutableStateOf("0") }
     var showHistoryLimitDialog by remember { mutableStateOf(false) }
@@ -292,11 +296,32 @@ fun CodeRecordScreen(
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val pullToRefreshState = rememberPullToRefreshState()
+    val density = LocalDensity.current
+
+    val codeSmsList = smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() }
+    val plainSmsList = smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && it.smsCode.isNullOrBlank() }
+    val appNotifyList = smsList.filter { it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY }
+    val activeSmsList = when (selectedRecordTab) {
+        0 -> codeSmsList
+        1 -> plainSmsList
+        else -> appNotifyList
+    }
+    val activeTitle = when (selectedRecordTab) {
+        0 -> context.getString(R.string.records_column_code_title)
+        1 -> context.getString(R.string.records_column_plain_title)
+        else -> context.getString(R.string.records_column_app_notify_title)
+    }
+    val activeEmptyHint = when (selectedRecordTab) {
+        0 -> context.getString(R.string.records_column_code_empty)
+        1 -> context.getString(R.string.records_column_plain_empty)
+        else -> context.getString(R.string.records_column_app_notify_empty)
+    }
 
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
-        val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 64.dp
+        val defaultTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 120.dp
+        val fixedTopHeight = if (fixedTopHeightPx > 0) with(density) { fixedTopHeightPx.toDp() } else defaultTopPadding
         val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
 
         PullToRefreshBox(
@@ -311,123 +336,66 @@ fun CodeRecordScreen(
                 PullToRefreshDefaults.LoadingIndicator(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing),
+                        .padding(top = fixedTopHeight + LoadingIndicatorTokens.OverlayTopSpacing),
                     isRefreshing = manualRefreshing,
                     state = pullToRefreshState,
                 )
             },
             modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 0.dp)
+                .fillMaxSize(),
         ) {
-            AnimatedContent(
-                targetState = Pair(showLoading, smsList),
-                transitionSpec = {
-                    fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
-                },
-                label = "CodeRecordState",
-            ) { (loading, list) ->
-                if (loading && !manualRefreshing && list.isEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize()) {
-                        PolygonMorphLoadingIndicator(
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing),
-                        )
-                    }
-                } else if (list.isEmpty() && !loading) {
-                    // Empty View
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Email,
-                            contentDescription = null,
-                            modifier = Modifier.size(64.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            text = stringResource(R.string.list_empty_prompt),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                } else {
-                    val codeSmsList = list.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() }
-                    val plainSmsList = list.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && it.smsCode.isNullOrBlank() }
-                    val appNotifyList = list.filter { it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY }
-                    val activeSmsList = when (selectedRecordTab) {
-                        0 -> codeSmsList
-                        1 -> plainSmsList
-                        else -> appNotifyList
-                    }
-
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .hazeSource(state = hazeState)
-                            .padding(
-                                top = topPadding,
-                                bottom = bottomPadding,
-                                start = 12.dp,
-                                end = 12.dp,
-                            ),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            FilterChip(
-                                selected = selectedRecordTab == 0,
-                                onClick = { selectedRecordTab = 0 },
-                                label = {
-                                    Text(
-                                        text = "${stringResource(R.string.records_column_code_title)}（${codeSmsList.size}）",
-                                        modifier = Modifier.fillMaxWidth(),
-                                        textAlign = TextAlign.Center,
-                                    )
-                                },
-                                modifier = Modifier.weight(1f),
-                            )
-                            FilterChip(
-                                selected = selectedRecordTab == 1,
-                                onClick = { selectedRecordTab = 1 },
-                                label = {
-                                    Text(
-                                        text = "${stringResource(R.string.records_column_plain_title)}（${plainSmsList.size}）",
-                                        modifier = Modifier.fillMaxWidth(),
-                                        textAlign = TextAlign.Center,
-                                    )
-                                },
-                                modifier = Modifier.weight(1f),
-                            )
-                            FilterChip(
-                                selected = selectedRecordTab == 2,
-                                onClick = { selectedRecordTab = 2 },
-                                label = {
-                                    Text(
-                                        text = "${stringResource(R.string.records_column_app_notify_title)}（${appNotifyList.size}）",
-                                        modifier = Modifier.fillMaxWidth(),
-                                        textAlign = TextAlign.Center,
-                                    )
-                                },
-                                modifier = Modifier.weight(1f),
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .hazeSource(state = hazeState),
+            ) {
+                AnimatedContent(
+                    targetState = Pair(showLoading, smsList),
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+                    },
+                    label = "CodeRecordState",
+                ) { (loading, list) ->
+                    if (loading && !manualRefreshing && list.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            PolygonMorphLoadingIndicator(
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = fixedTopHeight + LoadingIndicatorTokens.OverlayTopSpacing),
                             )
                         }
+                    } else if (list.isEmpty() && !loading) {
+                        // Empty View
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Email,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = stringResource(R.string.list_empty_prompt),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    } else {
+                        val codeSmsList = list.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() }
+                        val plainSmsList = list.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && it.smsCode.isNullOrBlank() }
+                        val appNotifyList = list.filter { it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY }
+                        val activeSmsList = when (selectedRecordTab) {
+                            0 -> codeSmsList
+                            1 -> plainSmsList
+                            else -> appNotifyList
+                        }
+
                         RecordSplitColumn(
-                            title = when (selectedRecordTab) {
-                                0 -> stringResource(R.string.records_column_code_title)
-                                1 -> stringResource(R.string.records_column_plain_title)
-                                else -> stringResource(R.string.records_column_app_notify_title)
-                            },
-                            emptyHint = when (selectedRecordTab) {
-                                0 -> stringResource(R.string.records_column_code_empty)
-                                1 -> stringResource(R.string.records_column_plain_empty)
-                                else -> stringResource(R.string.records_column_app_notify_empty)
-                            },
+                            title = activeTitle,
+                            emptyHint = activeEmptyHint,
                             list = activeSmsList,
                             isSelectionMode = isSelectionMode,
                             selectedIds = selectedIds,
@@ -446,10 +414,11 @@ fun CodeRecordScreen(
                             onShowDetail = { detailSmsMsg = it },
                             onDelete = { deleteAndUndo(it) },
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
+                                .fillMaxSize()
+                                .padding(horizontal = 12.dp),
                             scrollBehavior = scrollBehavior,
                             showHeader = false,
+                            listContentPadding = PaddingValues(top = fixedTopHeight, bottom = bottomPadding),
                         )
                     }
                 }
@@ -458,7 +427,13 @@ fun CodeRecordScreen(
 
         Column(
             modifier = Modifier
-                .align(Alignment.TopCenter),
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .onSizeChanged { fixedTopHeightPx = it.height }
+                .hazeEffect(hazeState, hazeStyle) {
+                    forceInvalidateOnPreDraw = true
+                }
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f)),
         ) {
             TopAppBar(
                 title = {
@@ -536,11 +511,52 @@ fun CodeRecordScreen(
                 ),
                 scrollBehavior = scrollBehavior,
                 windowInsets = WindowInsets.statusBars,
-                modifier = Modifier
-                    .hazeEffect(hazeState, hazeStyle) {
-                        forceInvalidateOnPreDraw = true
-                    },
             )
+            if (smsList.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FilterChip(
+                        selected = selectedRecordTab == 0,
+                        onClick = { selectedRecordTab = 0 },
+                        label = {
+                            Text(
+                                text = "${stringResource(R.string.records_column_code_title)}（${codeSmsList.size}）",
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                    FilterChip(
+                        selected = selectedRecordTab == 1,
+                        onClick = { selectedRecordTab = 1 },
+                        label = {
+                            Text(
+                                text = "${stringResource(R.string.records_column_plain_title)}（${plainSmsList.size}）",
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                    FilterChip(
+                        selected = selectedRecordTab == 2,
+                        onClick = { selectedRecordTab = 2 },
+                        label = {
+                            Text(
+                                text = "${stringResource(R.string.records_column_app_notify_title)}（${appNotifyList.size}）",
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center,
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
         }
 
         SnackbarHost(
@@ -854,6 +870,7 @@ private fun RecordSplitColumn(
     modifier: Modifier = Modifier,
     scrollBehavior: TopAppBarScrollBehavior,
     showHeader: Boolean = true,
+    listContentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val listState = rememberLazyListState()
     Surface(
@@ -905,6 +922,7 @@ private fun RecordSplitColumn(
                         .fillMaxSize()
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                     state = listState,
+                    contentPadding = listContentPadding,
                 ) {
                     items(list, key = { it.id ?: 0 }) { smsMsg ->
                         val isSelected = selectedIds.contains(smsMsg.id)
