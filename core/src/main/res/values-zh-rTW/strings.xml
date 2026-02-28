@@ -193,6 +193,8 @@
     <string name="pref_auto_update_on_start_summary">應用啟動時執行一次更新策略</string>
     <string name="pref_auto_update_wifi_only_title">僅 Wi-Fi 自動檢查更新</string>
     <string name="pref_auto_update_wifi_only_summary">僅在 Wi-Fi 下執行啟動更新檢查</string>
+    <string name="pref_webui_lan_access_title">WebUI 區域網存取</string>
+    <string name="pref_webui_lan_access_summary">允許同一區域網裝置存取 WebUI（手機IP:8787），僅建議在可信網路開啟。</string>
     <string name="github_update_dialog_title">發現新版本</string>
     <string name="github_update_dialog_message">檢測到版本 %1$s，可前往下載。</string>
     <string name="github_update_ignore_this_version">此版本不再提示</string>

@@ -286,6 +286,10 @@ object AppPreferencesDataStore {
             PrefConst.KEY_FORWARD_COMMON_INCLUDE_DEVICE_NAME,
             getBoolean(context, PrefConst.KEY_FORWARD_COMMON_INCLUDE_DEVICE_NAME, true),
         )
+        editor.putBoolean(
+            PrefConst.KEY_WEBUI_LAN_ACCESS,
+            getBoolean(context, PrefConst.KEY_WEBUI_LAN_ACCESS, false),
+        )
         editor.apply()
         ensureSharedPrefsReadable(context)
     }

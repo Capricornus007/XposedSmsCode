@@ -194,6 +194,8 @@
     <string name="pref_auto_update_on_start_summary">Run update strategy once when app starts</string>
     <string name="pref_auto_update_wifi_only_title">Wi-Fi only for auto update</string>
     <string name="pref_auto_update_wifi_only_summary">Only run startup update check on Wi-Fi</string>
+    <string name="pref_webui_lan_access_title">WebUI LAN Access</string>
+    <string name="pref_webui_lan_access_summary">Allow devices on the same LAN to access WebUI (phone_ip:8787). Enable only on trusted networks.</string>
     <string name="github_update_dialog_title">New version found</string>
     <string name="github_update_dialog_message">Version %1$s is available. Download now?</string>
     <string name="github_update_ignore_this_version">Ignore this version</string>

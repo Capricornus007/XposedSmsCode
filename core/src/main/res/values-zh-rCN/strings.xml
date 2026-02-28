@@ -194,6 +194,8 @@
     <string name="pref_auto_update_on_start_summary">应用启动时执行一次更新策略</string>
     <string name="pref_auto_update_wifi_only_title">仅 Wi-Fi 自动检查更新</string>
     <string name="pref_auto_update_wifi_only_summary">仅在 Wi-Fi 下执行启动更新检查</string>
+    <string name="pref_webui_lan_access_title">WebUI 局域网访问</string>
+    <string name="pref_webui_lan_access_summary">允许同一局域网设备访问 WebUI（手机IP:8787），仅建议在可信网络开启。</string>
     <string name="github_update_dialog_title">发现新版本</string>
     <string name="github_update_dialog_message">检测到版本 %1$s，可前往下载。</string>
     <string name="github_update_ignore_this_version">此版本不再提示</string>

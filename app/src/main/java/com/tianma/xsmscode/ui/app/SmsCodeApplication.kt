@@ -14,12 +14,16 @@ import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
 import com.tianma.xsmscode.common.utils.RuntimeLogStore
 import com.tianma.xsmscode.di.appModule
 import com.tianma.xsmscode.feature.migrate.TransitionTask
+import com.tianma.xsmscode.web.WebUiServer
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
@@ -28,6 +32,9 @@ import timber.log.Timber
 class SmsCodeApplication : Application() {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var webUiServer: WebUiServer? = null
+    private var webUiServerConfigJob: Job? = null
+    private var webUiLanAccessApplied: Boolean? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -46,6 +53,15 @@ class SmsCodeApplication : Application() {
         performTransitionTask()
         handlePhoneProcessRestartIfNeeded()
         registerLicenseActivityKiller()
+        startWebUiServer()
+    }
+
+    override fun onTerminate() {
+        webUiServerConfigJob?.cancel()
+        webUiServerConfigJob = null
+        webUiServer?.stop()
+        webUiServer = null
+        super.onTerminate()
     }
 
     private fun syncPreferences() {
@@ -126,6 +142,34 @@ class SmsCodeApplication : Application() {
 
             // Mark token handled even when root is unavailable to avoid repeated noisy attempts.
             prefs.edit().putString(KEY_LAST_HANDLED_INSTALL_TOKEN, installToken).apply()
+        }
+    }
+
+    private fun startWebUiServer() {
+        webUiServerConfigJob?.cancel()
+        webUiServerConfigJob = applicationScope.launch {
+            AppPreferencesDataStore.getBooleanFlow(
+                this@SmsCodeApplication,
+                PrefConst.KEY_WEBUI_LAN_ACCESS,
+                false,
+            ).distinctUntilChanged().collect { allowLanAccess ->
+                if (webUiLanAccessApplied == allowLanAccess && webUiServer != null) {
+                    return@collect
+                }
+                runCatching {
+                    webUiServer?.stop()
+                    WebUiServer(
+                        context = this@SmsCodeApplication,
+                        allowLanAccess = allowLanAccess,
+                    ).also {
+                        it.start()
+                        webUiServer = it
+                        webUiLanAccessApplied = allowLanAccess
+                    }
+                }.onFailure {
+                    Timber.e(it, "Failed to start WebUI server (lan=%s)", allowLanAccess)
+                }
+            }
         }
     }
 
