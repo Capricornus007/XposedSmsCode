@@ -27,4 +27,13 @@ data class AppInfo @JvmOverloads constructor(
     @SerialName("blocked")
     @get:JvmName("isBlocked")
     val blocked: Boolean = false,
+
+    @ColumnInfo(name = "forwarding", defaultValue = "0")
+    @SerialName("forwarding")
+    @get:JvmName("isForwarding")
+    val forwarding: Boolean = false,
+
+    @ColumnInfo(name = "notify_template", defaultValue = "")
+    @SerialName("notifyTemplate")
+    val notifyTemplate: String = "",
 ) : Parcelable

@@ -20,6 +20,7 @@ class DBManager private constructor(context: Context) {
     private val mSmsMsgDao: SmsMsgDao = mDatabase.smsMsgDao()
     private val mAppInfoDao: AppInfoDao = mDatabase.appInfoDao()
 
+
     suspend fun updateSmsCodeRuleSuspend(smsCodeRule: SmsCodeRule) {
         withContext(Dispatchers.IO) {
             mSmsCodeRuleDao.update(smsCodeRule)
@@ -137,7 +138,7 @@ class DBManager private constructor(context: Context) {
         }
     }
 
-    fun queryAllBlockedApps(): List<AppInfo> = mAppInfoDao.getAll()
+    fun queryAllAppInfos(): List<AppInfo> = mAppInfoDao.getAll()
 
     fun queryAppInfoByPackageName(packageName: String): AppInfo? = mAppInfoDao.getByPackageName(packageName)
 
@@ -146,21 +147,21 @@ class DBManager private constructor(context: Context) {
         return 1
     }
 
-    fun removeBlockedAppsByPackage(packageNames: List<String>): Int {
+    fun removeAppInfosByPackage(packageNames: List<String>): Int {
         if (packageNames.isEmpty()) {
             return 0
         }
         return mAppInfoDao.deleteByPackageNames(packageNames)
     }
 
-    suspend fun queryAllBlockedAppsSuspend(): List<AppInfo> = withContext(Dispatchers.IO) { mAppInfoDao.getAll() }
+    suspend fun queryAllAppInfosSuspend(): List<AppInfo> = withContext(Dispatchers.IO) { mAppInfoDao.getAll() }
 
-    suspend fun removeBlockedAppsSuspend(appList: List<AppInfo>): List<AppInfo> = withContext(Dispatchers.IO) {
+    suspend fun removeAppInfosSuspend(appList: List<AppInfo>): List<AppInfo> = withContext(Dispatchers.IO) {
         mAppInfoDao.deleteInTx(appList)
         appList
     }
 
-    suspend fun addBlockedAppsSuspend(appList: List<AppInfo>): List<AppInfo> = withContext(Dispatchers.IO) {
+    suspend fun addAppInfosSuspend(appList: List<AppInfo>): List<AppInfo> = withContext(Dispatchers.IO) {
         mAppInfoDao.insertAll(appList)
         appList
     }

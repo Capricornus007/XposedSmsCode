@@ -36,6 +36,7 @@ class DBProvider : ContentProvider() {
                     company = values?.getAsString("company"),
                     smsCode = values?.getAsString("sms_code"),
                     packageName = values?.getAsString("package_name"),
+                    msgType = values?.getAsInteger("msg_type") ?: SmsMsg.MSG_TYPE_SMS,
                     forwardStatus = values?.getAsInteger("forward_status") ?: SmsMsg.FORWARD_STATUS_NONE,
                     forwardTarget = values?.getAsString("forward_target"),
                     forwardMessage = values?.getAsString("forward_message"),
@@ -122,6 +123,7 @@ class DBProvider : ContentProvider() {
             "company",
             "sms_code",
             "package_name",
+            "msg_type",
             "forward_status",
             "forward_target",
             "forward_message",
@@ -144,6 +146,7 @@ class DBProvider : ContentProvider() {
             "company",
             "sms_code",
             "package_name",
+            "msg_type",
             "forward_status",
             "forward_target",
             "forward_message",
@@ -173,17 +176,20 @@ class DBProvider : ContentProvider() {
         selection: String?,
         selectionArgs: Array<String>?,
     ): Cursor {
-        var rows = mDbManager!!.queryAllBlockedApps()
+        var rows = mDbManager!!.queryAllAppInfos()
         if (!selection.isNullOrBlank()) {
             val normalized = selection.replace("`", "").trim().lowercase()
             if (normalized == "blocked = ?" && !selectionArgs.isNullOrEmpty()) {
                 val blocked = selectionArgs[0] == "1" || selectionArgs[0].equals("true", ignoreCase = true)
                 rows = rows.filter { it.blocked == blocked }
+            } else if (normalized == "forwarding = ?" && !selectionArgs.isNullOrEmpty()) {
+                val forwarding = selectionArgs[0] == "1" || selectionArgs[0].equals("true", ignoreCase = true)
+                rows = rows.filter { it.forwarding == forwarding }
             }
         }
-        val columns = projection ?: arrayOf("package_name", "label", "blocked")
+        val columns = projection ?: arrayOf("package_name", "label", "blocked", "forwarding", "notify_template")
         val cursor = MatrixCursor(columns)
-        rows.forEach { app ->
+        rows.forEach { app: AppInfo ->
             cursor.addRow(buildRow(columns) { column -> valueFromAppInfo(app, column) })
         }
         return cursor
@@ -191,7 +197,7 @@ class DBProvider : ContentProvider() {
 
     private fun queryAppInfoByPackageName(projection: Array<String>?, uri: Uri): Cursor {
         val packageName = uri.lastPathSegment.orEmpty()
-        val columns = projection ?: arrayOf("package_name", "label", "blocked")
+        val columns = projection ?: arrayOf("package_name", "label", "blocked", "forwarding", "notify_template")
         val cursor = MatrixCursor(columns)
         if (packageName.isBlank()) {
             return cursor
@@ -224,6 +230,7 @@ class DBProvider : ContentProvider() {
             "company" -> msg.company
             "sms_code" -> msg.smsCode
             "package_name" -> msg.packageName
+            "msg_type" -> msg.msgType
             "forward_status" -> msg.forwardStatus
             "forward_target" -> msg.forwardTarget
             "forward_message" -> msg.forwardMessage
@@ -236,6 +243,8 @@ class DBProvider : ContentProvider() {
             "package_name" -> app.packageName
             "label" -> app.label
             "blocked" -> if (app.blocked) 1 else 0
+            "forwarding" -> if (app.forwarding) 1 else 0
+            "notify_template" -> app.notifyTemplate
             else -> null
         }
 
@@ -280,6 +289,7 @@ class DBProvider : ContentProvider() {
             company = values?.getAsString("company") ?: existing.company,
             smsCode = values?.getAsString("sms_code") ?: existing.smsCode,
             packageName = values?.getAsString("package_name") ?: existing.packageName,
+            msgType = values?.getAsInteger("msg_type") ?: existing.msgType,
             forwardStatus = values?.getAsInteger("forward_status") ?: existing.forwardStatus,
             forwardTarget = values?.getAsString("forward_target") ?: existing.forwardTarget,
             forwardMessage = values?.getAsString("forward_message") ?: existing.forwardMessage,
@@ -300,24 +310,7 @@ class DBProvider : ContentProvider() {
         if (packageName.isBlank()) {
             return 0
         }
-        val existing = mDbManager!!.queryAppInfoByPackageName(packageName) ?: AppInfo(packageName = packageName)
-        val blocked = when {
-            values?.containsKey("blocked") == true -> {
-                val raw = values.get("blocked")
-                when (raw) {
-                    is Boolean -> raw
-                    is Number -> raw.toInt() != 0
-                    is String -> raw == "1" || raw.equals("true", ignoreCase = true)
-                    else -> existing.blocked
-                }
-            }
-            else -> existing.blocked
-        }
-        val label = when {
-            values?.containsKey("label") == true -> values.getAsString("label")
-            else -> existing.label
-        }
-        return mDbManager!!.upsertAppInfo(existing.copy(label = label, blocked = blocked))
+        return updateAppInfoByPackageName(packageName, values)
     }
 
     private fun updateAppInfoByUri(uri: Uri, values: ContentValues?): Int {
@@ -325,24 +318,40 @@ class DBProvider : ContentProvider() {
         if (packageName.isBlank()) {
             return 0
         }
+        return updateAppInfoByPackageName(packageName, values)
+    }
+
+    private fun updateAppInfoByPackageName(packageName: String, values: ContentValues?): Int {
         val existing = mDbManager!!.queryAppInfoByPackageName(packageName) ?: AppInfo(packageName = packageName)
-        val blocked = when {
-            values?.containsKey("blocked") == true -> {
-                val raw = values.get("blocked")
-                when (raw) {
-                    is Boolean -> raw
-                    is Number -> raw.toInt() != 0
-                    is String -> raw == "1" || raw.equals("true", ignoreCase = true)
-                    else -> existing.blocked
-                }
-            }
-            else -> existing.blocked
-        }
+        val blocked = parseBooleanValue(values, "blocked", existing.blocked)
+        val forwarding = parseBooleanValue(values, "forwarding", existing.forwarding)
         val label = when {
             values?.containsKey("label") == true -> values.getAsString("label")
             else -> existing.label
         }
-        return mDbManager!!.upsertAppInfo(existing.copy(label = label, blocked = blocked))
+        val notifyTemplate = when {
+            values?.containsKey("notify_template") == true -> values.getAsString("notify_template").orEmpty()
+            else -> existing.notifyTemplate
+        }
+        return mDbManager!!.upsertAppInfo(
+            existing.copy(
+                label = label,
+                blocked = blocked,
+                forwarding = forwarding,
+                notifyTemplate = notifyTemplate,
+            ),
+        )
+    }
+
+    private fun parseBooleanValue(values: ContentValues?, key: String, defaultValue: Boolean): Boolean {
+        if (values?.containsKey(key) != true) return defaultValue
+        val raw = values.get(key)
+        return when (raw) {
+            is Boolean -> raw
+            is Number -> raw.toInt() != 0
+            is String -> raw == "1" || raw.equals("true", ignoreCase = true)
+            else -> defaultValue
+        }
     }
 
     private fun deleteAppInfoByPackageName(uri: Uri): Int {
@@ -351,7 +360,7 @@ class DBProvider : ContentProvider() {
             return 0
         }
         val app = mDbManager!!.queryAppInfoByPackageName(packageName) ?: return 0
-        return mDbManager!!.removeBlockedAppsByPackage(listOf(app.packageName))
+        return mDbManager!!.removeAppInfosByPackage(listOf(app.packageName))
     }
 
     companion object {

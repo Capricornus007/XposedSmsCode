@@ -133,8 +133,12 @@
     <string name="history_limit_custom_entry">自定義</string>
     <string name="records_column_code_title">驗證碼簡訊</string>
     <string name="records_column_plain_title">普通簡訊</string>
+    <string name="records_column_app_notify_title">應用通知</string>
     <string name="records_column_code_empty">暫無驗證碼簡訊</string>
     <string name="records_column_plain_empty">暫無普通簡訊</string>
+    <string name="records_column_app_notify_empty">暫無應用通知紀錄</string>
+    <string name="title_notification_rules">通知轉發</string>
+    <string name="subtitle_notification_rules">管理應用程式通知的擷取與轉發規則</string>
     <!-- preference code records end -->
 
     <!-- preference code rules -->
@@ -218,14 +222,14 @@
     <!-- preference about end -->
 
     <!-- auto-input block settings -->
-    <string name="app_block_settings">停用自動輸入清單</string>
-    <string name="tab_overview">概覽</string>
-    <string name="tab_blacklist">黑名單</string>
-    <string name="tab_intercept">攔截</string>
+    <string name="app_block_settings">停用自動輸入</string>
+    <string name="tab_overview">總覽</string>
+    <string name="tab_blacklist">應用</string>
+    <string name="tab_intercept">簡訊攔截</string>
     <string name="tab_faq">FAQ</string>
-    <string name="tab_records">記錄</string>
-    <string name="tab_advanced">高級</string>
-    <string name="tab_senders">轉發</string>
+    <string name="tab_records">紀錄</string>
+    <string name="tab_advanced">進階</string>
+    <string name="tab_senders">轉發配置</string>
     <string name="tab_settings">設定</string>
     <string name="action_sort_title">應用排序</string>
     <string name="action_sort_reverse">倒序</string>
@@ -235,6 +239,8 @@
     <string name="action_sort_by_label">應用程式名稱</string>
     <string name="action_sort_by_pkg">包名</string>
     <string name="action_sort_by_usage">使用頻率</string>
+    <string name="action_sort_by_selection">設定優先</string>
+    <string name="app_config_settings">應用控制</string>
     <string name="action_search">搜索</string>
     <string name="action_accomplish">完成</string>
     <string name="usage_permission_prompt">按使用頻率排序需要使用情況存取權限。請在設定中授予該權限。</string>
@@ -398,6 +404,14 @@
     <string name="action_block_app">封鎖 %s</string>
     <string name="action_unblock_app">允許 %s</string>
     <string name="action_back">返回</string>
+    <string name="label_app_info">應用資訊</string>
+    <string name="label_blocked">自動輸入攔截</string>
+    <string name="label_forwarding">應用通知轉發</string>
+    <string name="app_config_detail_not_found">找不到應用設定</string>
+    <string name="app_notify_template_title">應用通知轉發模板</string>
+    <string name="app_notify_template_summary">留空代表使用全域轉發模板。</string>
+    <string name="app_notify_template_placeholder">請輸入該應用專屬模板...</string>
+    <string name="app_config_detail_save_tip">詳情頁修改會先存於記憶體，請返回應用控制頁點擊完成後再儲存。</string>
 
     <!-- backup and restore -->
     <string name="pref_backup_restore_title">備份與還原</string>

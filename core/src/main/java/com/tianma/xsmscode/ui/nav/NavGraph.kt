@@ -46,6 +46,15 @@ data class RulesRoute(val senderId: Long = 0)
 @Serializable
 data class RuleConfigRoute(val id: Long = 0)
 
+@Serializable
+object NotificationRulesRoute
+
+@Serializable
+object AppConfigRoute
+
+@Serializable
+data class AppConfigDetailRoute(val packageName: String)
+
 @Composable
 fun SmsCodeNavHost(
     navController: NavHostController,

@@ -70,13 +70,15 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
             } catch (ignored: Exception) {
                 val appInfoList = EntityStoreManager.loadEntitiesFromFile(
                     mPluginContext,
-                    EntityType.BLOCKED_APP,
+                    EntityType.APP_CONFIG,
                     AppInfo::class.java,
                 )
                 for (appInfo in appInfoList) {
-                    blockedAppList.add(appInfo.packageName)
+                    if (appInfo.blocked) {
+                        blockedAppList.add(appInfo.packageName)
+                    }
                 }
-                XLog.d("Get blocked apps from file")
+                XLog.d("Get blocked apps from file (unified)")
             }
 
             if (blockedAppList.isEmpty()) {

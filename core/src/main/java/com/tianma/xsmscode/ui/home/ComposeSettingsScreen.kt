@@ -320,7 +320,7 @@ fun ComposeSettingsScreen(
                     )
 
                     ExpandableSettingsSection(
-                        title = "通用设置",
+                        title = stringResource(id = R.string.settings_group_general),
                         expanded = expandGeneral,
                         onExpandedChange = { expandGeneral = !expandGeneral },
                         accordionMode = accordionMode.value,
@@ -348,7 +348,7 @@ fun ComposeSettingsScreen(
                     }
 
                     ExpandableSettingsSection(
-                        title = "验证码设置",
+                        title = stringResource(id = R.string.settings_group_smscode),
                         expanded = expandSmsCode,
                         onExpandedChange = { expandSmsCode = !expandSmsCode },
                         accordionMode = accordionMode.value,
@@ -371,7 +371,7 @@ fun ComposeSettingsScreen(
                     }
 
                     ExpandableSettingsSection(
-                        title = "自动输入",
+                        title = stringResource(id = R.string.settings_group_auto_input),
                         expanded = expandAutoInput,
                         onExpandedChange = { expandAutoInput = !expandAutoInput },
                         accordionMode = accordionMode.value,
@@ -405,7 +405,7 @@ fun ComposeSettingsScreen(
                     }
 
                     ExpandableSettingsSection(
-                        title = "通知设置",
+                        title = stringResource(id = R.string.settings_group_notification),
                         expanded = expandNotification,
                         onExpandedChange = { expandNotification = !expandNotification },
                         accordionMode = accordionMode.value,
@@ -443,7 +443,7 @@ fun ComposeSettingsScreen(
                     }
 
                     ExpandableSettingsSection(
-                        title = "实验性功能",
+                        title = stringResource(id = R.string.settings_group_experimental),
                         expanded = expandExperimental,
                         onExpandedChange = { expandExperimental = !expandExperimental },
                         accordionMode = accordionMode.value,
@@ -465,7 +465,7 @@ fun ComposeSettingsScreen(
                     }
 
                     ExpandableSettingsSection(
-                        title = "其他",
+                        title = stringResource(id = R.string.settings_group_others),
                         expanded = expandOthers,
                         onExpandedChange = { expandOthers = !expandOthers },
                         accordionMode = accordionMode.value,

@@ -133,8 +133,12 @@
     <string name="history_limit_custom_entry">自定义</string>
     <string name="records_column_code_title">验证码短信</string>
     <string name="records_column_plain_title">普通短信</string>
+    <string name="records_column_app_notify_title">应用通知</string>
     <string name="records_column_code_empty">暂无验证码短信</string>
     <string name="records_column_plain_empty">暂无普通短信</string>
+    <string name="records_column_app_notify_empty">暂无应用通知</string>
+    <string name="title_notification_rules">通知转发</string>
+    <string name="subtitle_notification_rules">管理应用通知的抓取与转发规则</string>
     <!-- preference code records end -->
 
     <!-- preference code rules -->
@@ -221,12 +225,12 @@
     <!-- auto-input block settings -->
     <string name="app_block_settings">禁用自动输入列表</string>
     <string name="tab_overview">概览</string>
-    <string name="tab_blacklist">黑名单</string>
-    <string name="tab_intercept">拦截</string>
+    <string name="tab_blacklist">应用</string>
+    <string name="tab_intercept">短信拦截</string>
     <string name="tab_faq">FAQ</string>
     <string name="tab_records">记录</string>
     <string name="tab_advanced">高级</string>
-    <string name="tab_senders">转发</string>
+    <string name="tab_senders">转发配置</string>
     <string name="tab_settings">设置</string>
     <string name="action_sort_title">应用排序</string>
     <string name="action_sort_reverse">倒序</string>
@@ -236,6 +240,8 @@
     <string name="action_sort_by_label">应用名称</string>
     <string name="action_sort_by_pkg">包名</string>
     <string name="action_sort_by_usage">使用频率</string>
+    <string name="action_sort_by_selection">配置优先</string>
+    <string name="app_config_settings">应用控制</string>
     <string name="action_search">搜索</string>
     <string name="action_accomplish">完成</string>
     <string name="usage_permission_prompt">按使用频率排序需要使用情况访问权限。请在设置中授予该权限。</string>
@@ -401,6 +407,21 @@
     <string name="action_block_app">屏蔽 %s</string>
     <string name="action_unblock_app">允许 %s</string>
     <string name="action_back">返回</string>
+    <string name="label_operate">操作</string>
+    <string name="label_app_info">应用信息</string>
+    <string name="label_blocked">自动输入拦截</string>
+    <string name="label_forwarding">应用通知转发</string>
+    <string name="app_config_detail_not_found">未找到应用配置</string>
+    <string name="app_notify_template_title">应用通知转发模板</string>
+    <string name="app_notify_template_summary">留空表示使用全局转发模板。</string>
+    <string name="app_notify_template_placeholder">请输入该应用专属模板...</string>
+    <string name="app_config_detail_save_tip">详情页修改会先保存在内存中，请返回应用控制页点击完成后落库。</string>
+    <string name="settings_group_general">通用设置</string>
+    <string name="settings_group_smscode">验证码设置</string>
+    <string name="settings_group_auto_input">自动输入</string>
+    <string name="settings_group_notification">通知设置</string>
+    <string name="settings_group_experimental">实验性功能</string>
+    <string name="settings_group_others">其他</string>
 
     <!-- backup and restore -->
     <string name="pref_backup_restore_title">备份与恢复</string>

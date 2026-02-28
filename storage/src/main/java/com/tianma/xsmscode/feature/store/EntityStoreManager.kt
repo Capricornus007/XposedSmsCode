@@ -21,12 +21,15 @@ object EntityStoreManager {
     private const val CODE_RULE_TEMPLATE_FILE_NAME = "code_rule_template"
     private const val CODE_RULES_FILE_NAME = "code_rules"
     private const val BLOCKED_APPS_FILE_NAME = "blocked_apps"
+    private const val FORWARDING_APPS_FILE_NAME = "forwarding_apps"
+    private const val APP_CONFIGS_FILE_NAME = "app_configs"
     private const val PREV_CODE_RECORD = "prev_code_record"
 
-    @PublishedApi
-    internal fun getStoreFile(context: Context, entityType: EntityType): File {
+    fun getStoreFile(context: Context, entityType: EntityType): File {
         val filename = when (entityType) {
             EntityType.BLOCKED_APP -> BLOCKED_APPS_FILE_NAME
+            EntityType.FORWARDING_APP -> FORWARDING_APPS_FILE_NAME
+            EntityType.APP_CONFIG -> APP_CONFIGS_FILE_NAME
             EntityType.CODE_RULES -> CODE_RULES_FILE_NAME
             EntityType.CODE_RULE_TEMPLATE -> CODE_RULE_TEMPLATE_FILE_NAME
             EntityType.PREV_SMS_MSG -> PREV_CODE_RECORD
@@ -88,7 +91,11 @@ object EntityStoreManager {
 
     @JvmStatic
     fun <T : Any> loadEntitiesFromFile(context: Context, entityType: EntityType, entityClass: Class<T>): List<T> {
-        val storeFile = getStoreFile(context, entityType)
+        return loadEntitiesFromFile(getStoreFile(context, entityType), entityClass)
+    }
+
+    @JvmStatic
+    fun <T : Any> loadEntitiesFromFile(storeFile: File, entityClass: Class<T>): List<T> {
         if (!storeFile.exists()) {
             return ArrayList()
         }
@@ -104,7 +111,7 @@ object EntityStoreManager {
 
             return JsonUtils.listFromJson(isr, entityClass)
         } catch (e: Exception) {
-            XLog.e("load entities from file failed", e)
+            XLog.e("load entities from file failed: ${storeFile.absolutePath}", e)
         } finally {
             if (isr != null) {
                 try {

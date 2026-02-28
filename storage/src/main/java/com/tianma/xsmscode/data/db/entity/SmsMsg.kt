@@ -52,25 +52,33 @@ data class SmsMsg(
 
     @ColumnInfo(name = "forward_status")
     @SerialName("forwardStatus")
-    val forwardStatus: Int = FORWARD_STATUS_NONE,
+    var forwardStatus: Int = FORWARD_STATUS_NONE,
 
     @ColumnInfo(name = "forward_target")
     @SerialName("forwardTarget")
-    val forwardTarget: String? = null,
+    var forwardTarget: String? = null,
 
     @ColumnInfo(name = "forward_message")
     @SerialName("forwardMessage")
-    val forwardMessage: String? = null,
+    var forwardMessage: String? = null,
 
     @ColumnInfo(name = "forward_time")
     @SerialName("forwardTime")
-    val forwardTime: Long = 0L,
+    var forwardTime: Long = 0L,
+
+    @ColumnInfo(name = "msg_type", defaultValue = "0")
+    @SerialName("msgType")
+    val msgType: Int = MSG_TYPE_SMS,
+
 ) : Parcelable {
 
     companion object {
         const val FORWARD_STATUS_NONE = 0
         const val FORWARD_STATUS_SUCCESS = 1
         const val FORWARD_STATUS_FAILED = 2
+
+        const val MSG_TYPE_SMS = 0
+        const val MSG_TYPE_APP_NOTIFY = 1
 
         @JvmStatic
         fun fromIntent(intent: Intent): SmsMsg {
@@ -88,6 +96,7 @@ data class SmsMsg(
                 sender = sender,
                 body = body,
                 date = date,
+                msgType = MSG_TYPE_SMS,
             )
         }
     }

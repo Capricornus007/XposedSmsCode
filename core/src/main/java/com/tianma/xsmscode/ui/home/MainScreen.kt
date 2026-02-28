@@ -29,13 +29,13 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.tianma.xsmscode.core.R
-import com.tianma.xsmscode.ui.block.AppBlockScreen
 import com.tianma.xsmscode.ui.nav.*
 import com.tianma.xsmscode.ui.record.CodeRecordScreen
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import android.os.SystemClock
+import org.koin.compose.viewmodel.koinViewModel
 
 @Immutable
 data class TabItem<T : Any>(val label: String, val icon: ImageVector, val route: T)
@@ -50,6 +50,7 @@ fun MainScreen(
     hazeStyle: HazeStyle,
 ) {
     val navController = rememberNavController()
+    val appConfigViewModel: AppConfigViewModel = koinViewModel()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
 
@@ -66,6 +67,7 @@ fun MainScreen(
         val hierarchy = destination.hierarchy
         return when {
             hierarchy.any { it.hasRoute(OverviewRoute::class) } -> 0
+            hierarchy.any { it.hasRoute(AppConfigDetailRoute::class) } -> 1
             hierarchy.any { it.hasRoute(AppBlockRoute::class) } -> 1
             hierarchy.any { it.hasRoute(RecordsRoute::class) } -> 2
             hierarchy.any { it.hasRoute(AdvancedRoute::class) } ||
@@ -73,7 +75,9 @@ fun MainScreen(
                 hierarchy.any { it.hasRoute(SendersRoute::class) } ||
                 hierarchy.any { it.hasRoute(SenderConfigRoute::class) } ||
                 hierarchy.any { it.hasRoute(RulesRoute::class) } ||
-                hierarchy.any { it.hasRoute(RuleConfigRoute::class) } -> 3
+                hierarchy.any { it.hasRoute(RuleConfigRoute::class) } ||
+                hierarchy.any { it.hasRoute(NotificationRulesRoute::class) } ||
+                hierarchy.any { it.hasRoute(AppConfigRoute::class) } -> 3
             hierarchy.any { it.hasRoute(SettingsRoute::class) } -> 4
             else -> 0
         }
@@ -104,6 +108,7 @@ fun MainScreen(
             is AppBlockRoute -> appBlockRefreshTrigger++
             is RecordsRoute -> recordsRefreshTrigger++
             is InterceptRoute -> interceptRefreshTrigger++
+            is AppConfigRoute -> appBlockRefreshTrigger++
             is SettingsRoute -> settingsRefreshTrigger++
             else -> Unit
         }
@@ -135,6 +140,7 @@ fun MainScreen(
         when (initialTab) {
             is OverviewRoute -> navController.navigate(OverviewRoute)
             is AppBlockRoute -> navController.navigate(AppBlockRoute)
+            is AppConfigRoute -> navController.navigate(AppConfigRoute)
             is InterceptRoute -> navController.navigate(InterceptRoute)
             is RecordsRoute -> navController.navigate(RecordsRoute)
             is SettingsRoute -> navController.navigate(SettingsRoute)
@@ -206,11 +212,31 @@ fun MainScreen(
                         OverviewScreen(hazeState = hazeState, hazeStyle = hazeStyle)
                     }
                     composable<AppBlockRoute> {
-                        AppBlockScreen(
+                        AppConfigScreen(
                             hazeState = hazeState,
                             hazeStyle = hazeStyle,
                             onBack = null,
+                            onAppClick = { app -> navController.navigate(AppConfigDetailRoute(packageName = app.packageName)) },
                             refreshTrigger = appBlockRefreshTrigger,
+                            viewModel = appConfigViewModel,
+                        )
+                    }
+                    composable<AppConfigRoute> {
+                        AppConfigScreen(
+                            hazeState = hazeState,
+                            hazeStyle = hazeStyle,
+                            onBack = { navController.popBackStack() },
+                            onAppClick = { app -> navController.navigate(AppConfigDetailRoute(packageName = app.packageName)) },
+                            refreshTrigger = appBlockRefreshTrigger,
+                            viewModel = appConfigViewModel,
+                        )
+                    }
+                    composable<AppConfigDetailRoute> { backStackEntry ->
+                        val route = backStackEntry.toRoute<AppConfigDetailRoute>()
+                        AppConfigDetailScreen(
+                            packageName = route.packageName,
+                            onBack = { navController.popBackStack() },
+                            viewModel = appConfigViewModel,
                         )
                     }
                     composable<InterceptRoute> {
@@ -232,6 +258,7 @@ fun MainScreen(
                         AdvancedScreen(
                             onInterceptClick = { navController.navigate(InterceptRoute) },
                             onForwardClick = { navController.navigate(SendersRoute) },
+                            onNotificationRulesClick = { navController.navigate(NotificationRulesRoute) },
                         )
                     }
                     composable<SendersRoute> { backStackEntry ->
@@ -246,6 +273,16 @@ fun MainScreen(
                             onForceShowHandled = {
                                 backStackEntry.savedStateHandle["reopen_type_dialog"] = false
                             }
+                        )
+                    }
+                    composable<NotificationRulesRoute> {
+                        AppConfigScreen(
+                            hazeState = hazeState,
+                            hazeStyle = hazeStyle,
+                            onBack = { navController.popBackStack() },
+                            onAppClick = { app -> navController.navigate(AppConfigDetailRoute(packageName = app.packageName)) },
+                            refreshTrigger = appBlockRefreshTrigger,
+                            viewModel = appConfigViewModel,
                         )
                     }
                     composable<SenderConfigRoute> { backStackEntry ->

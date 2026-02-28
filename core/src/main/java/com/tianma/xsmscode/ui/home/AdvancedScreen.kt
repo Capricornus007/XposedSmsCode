@@ -31,6 +31,7 @@ import com.tianma.xsmscode.core.R
 fun AdvancedScreen(
     onInterceptClick: () -> Unit,
     onForwardClick: () -> Unit,
+    onNotificationRulesClick: () -> Unit,
 ) {
     Scaffold(
         topBar = {
@@ -67,6 +68,7 @@ private fun AdvancedEntryCard(
     title: String,
     subtitle: String,
     icon: @Composable () -> Unit,
+    trailingContent: @Composable (() -> Unit)? = null,
     onClick: () -> Unit,
 ) {
     Card(
@@ -86,7 +88,14 @@ private fun AdvancedEntryCard(
         ) {
             icon()
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, style = MaterialTheme.typography.titleMedium)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                    trailingContent?.invoke()
+                }
                 Text(text = subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             Icon(Icons.Default.ChevronRight, contentDescription = null)
