@@ -2,6 +2,7 @@ package com.tianma.xsmscode.xp.hook.code.action.impl
 
 import android.app.ActivityManager
 import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.common.utils.XLog
@@ -46,45 +47,7 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
     // 是否屏蔽自动输入
     @Suppress("TooGenericExceptionCaught")
     private fun autoInputBlockedHere(): Boolean {
-        var result = false
         try {
-            val blockedAppList = mutableListOf<String>()
-            try {
-                val appInfoUri = DBProvider.APP_INFO_URI
-                val resolver = mPluginContext.contentResolver
-
-                val packageColumn = "package_name"
-                val blockedColumn = "blocked"
-
-                val projection = arrayOf(packageColumn)
-                val selection = "$blockedColumn = ?"
-                val selectionArgs = arrayOf("1")
-                val cursor = resolver.query(appInfoUri, projection, selection, selectionArgs, null)
-                if (cursor != null) {
-                    while (cursor.moveToNext()) {
-                        blockedAppList.add(cursor.getString(cursor.getColumnIndexOrThrow(packageColumn)))
-                    }
-                    cursor.close()
-                }
-                XLog.d("Get blocked apps by content provider")
-            } catch (ignored: Exception) {
-                val appInfoList = EntityStoreManager.loadEntitiesFromFile(
-                    mPluginContext,
-                    EntityType.APP_CONFIG,
-                    AppInfo::class.java,
-                )
-                for (appInfo in appInfoList) {
-                    if (appInfo.blocked) {
-                        blockedAppList.add(appInfo.packageName)
-                    }
-                }
-                XLog.d("Get blocked apps from file (unified)")
-            }
-
-            if (blockedAppList.isEmpty()) {
-                return false
-            }
-
             val runningTasks = getRunningTasks(mPhoneContext)
             var topPkgPrimary: String? = null
             if (runningTasks != null && runningTasks.isNotEmpty()) {
@@ -92,7 +55,7 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
                 XLog.d("topPackagePrimary: %s", topPkgPrimary)
             }
 
-            if (topPkgPrimary != null && blockedAppList.contains(topPkgPrimary)) {
+            if (!topPkgPrimary.isNullOrBlank() && isPackageBlocked(topPkgPrimary)) {
                 return true
             }
 
@@ -103,20 +66,56 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
             val topProcessSecondary = appProcesses[0].processName
             XLog.d("topProcessSecondary: %s, topPackages: %s", topProcessSecondary, Arrays.toString(topPkgSecondary))
 
-            if (blockedAppList.contains(topProcessSecondary)) {
-                result = true
-            } else {
-                for (topPackage in topPkgSecondary) {
-                    if (blockedAppList.contains(topPackage)) {
-                        result = true
-                        break
-                    }
+            if (!topProcessSecondary.isNullOrBlank() && isPackageBlocked(topProcessSecondary)) {
+                return true
+            }
+            for (topPackage in topPkgSecondary) {
+                if (isPackageBlocked(topPackage)) {
+                    return true
                 }
             }
         } catch (t: Throwable) {
             XLog.e("", t)
         }
-        return result
+        return false
+    }
+
+    private fun isPackageBlocked(packageName: String): Boolean {
+        queryBlockedStateByProvider(packageName)?.let { return it }
+        val appInfoList = EntityStoreManager.loadEntitiesFromFile(
+            mPluginContext,
+            EntityType.APP_CONFIG,
+            AppInfo::class.java,
+        )
+        val blocked = appInfoList.any { it.packageName == packageName && it.blocked }
+        XLog.d("AutoInput fallback file check: pkg=%s blocked=%s", packageName, blocked)
+        return blocked
+    }
+
+    private fun queryBlockedStateByProvider(packageName: String): Boolean? {
+        return try {
+            val uri: Uri = Uri.withAppendedPath(DBProvider.APP_INFO_URI, packageName)
+            mPluginContext.contentResolver.query(uri, arrayOf("blocked"), null, null, null)?.use { cursor ->
+                if (!cursor.moveToFirst()) {
+                    return false
+                }
+                val index = cursor.getColumnIndex("blocked")
+                if (index < 0) return false
+                val blocked = when (cursor.getType(index)) {
+                    android.database.Cursor.FIELD_TYPE_INTEGER -> cursor.getInt(index) != 0
+                    android.database.Cursor.FIELD_TYPE_STRING -> {
+                        val raw = cursor.getString(index).orEmpty()
+                        raw == "1" || raw.equals("true", ignoreCase = true)
+                    }
+                    else -> false
+                }
+                XLog.d("AutoInput provider check: pkg=%s blocked=%s", packageName, blocked)
+                blocked
+            } ?: false
+        } catch (e: Exception) {
+            XLog.w("AutoInput provider check failed: pkg=%s err=%s", packageName, e.message ?: e.javaClass.simpleName)
+            null
+        }
     }
 
     private fun getRunningAppProcesses(context: Context): List<ActivityManager.RunningAppProcessInfo>? {
