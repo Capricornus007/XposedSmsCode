@@ -1,4 +1,4 @@
-- Important: During refactoring, some data may be lost. Please save your config data first.
-- App Control refactor: new App Control page and per-app detail page with linked toggles and recent forwarding logs.
-- App notification forwarding: added per-channel "Forward App Notifications" switch. Forwarding now requires both app-level and channel-level switches.
-- Forwarding result unified: target now shows real channel names, with success text "Forwarded successfully to X channels".
+- Added built-in WebUI (with LAN toggle) to manage sender channels and inspect forwarding records in browser.
+- Improved forwarding diagnostics: app notifications now carry trace/event_id and delivery acknowledgements; Webhook test logs are more detailed.
+- Upgraded log export/cleanup: one-tap share bundle (app + LSPosed logs) and clear log/crash folders together.
+- Stability fixes: SMTP fallback for email, notification forwarding gate robustness, backup/restore state consistency, and SMS auto-delete reliability.

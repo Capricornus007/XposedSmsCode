@@ -4,6 +4,56 @@
 
 ---
 
+## [v3.1.6-beta.4] - 2026-03-01
+### 功能与体验 (Features & UX)
+- 新增内置 WebUI：支持发送通道增删改查与记录查看，并在高级设置增加 WebUI 局域网访问开关。
+- 增强应用通知转发诊断：补充 `trace/event_id` 贯穿日志、投递回执与更细粒度链路追踪。
+- Webhook 测试日志增强：补充请求上下文，便于定位 4xx/5xx 与配置差异问题。
+
+### 日志与运维 (Log & Ops)
+- 日志导出升级：支持打包分享应用日志 + LSPosed 日志，并完善日志目录清理能力。
+- 日志打包链路加固：修复导出路径与存储细节，降低导出失败概率并统一私有目录策略。
+
+### 修复与稳定性 (Fixed & Stability)
+- 修复应用列表切换/搜索后的视图与过滤状态异常。
+- 修复系统通知转发配置读取不稳定问题（system_server 侧容错增强）。
+- 修复邮件通道 SMTP 传输回退与 provider 兼容问题。
+- 修复备份还原后转发状态不一致问题，补齐恢复一致性。
+- 修复短信记录指纹与 `msg_type` 对齐问题，避免短信/应用通知状态串写。
+- 修复 DataStore/SharedPreferences 类型不一致导致的读取异常。
+- 优化短信自动删除流程：提升触发时机与重试可靠性。
+
+### 工程与测试 (Engineering & Test)
+- 升级 Gradle Wrapper 夜版工具链。
+- 补齐 JUnit Platform Launcher 运行时依赖，修复单测运行环境。
+- 记录页 Haze 分层细节修复，减少视觉错位。
+
+### 提交明细 (Commit Details)
+- `99a284a` build(wrapper): update gradle wrapper to nightly 20260301003351
+- `f06809d` fix(test): add junit platform launcher runtime for unit tests
+- `bfaf804` fix(records-ui): align haze layering with fixed header tabs
+- `8ee8638` feat(webui): add Ktor web ui with sender CRUD and responsive records
+- `6bf187c` feat(settings): add WebUI LAN toggle in advanced settings
+- `d520969` fix(app-config): keep viewport stable and sync search filter state
+- `a4433e9` fix(notification): harden app forwarding lookup in system_server
+- `57d0e84` feat(auto-input): read blocked state from provider with file fallback
+- `a731ae9` fix(webui): preserve app list scroll position after toggle refresh
+- `73beb27` fix(email): add smtp transport fallback and keep mail provider classes
+- `7dde188` docs(donations): add 2026-03-01 wechat sponsorship record
+- `8046638` feat(log): support bundled log share and full log cleanup
+- `dc8ec7d` feat(forward): add trace logs across forwarding flow
+- `cbe8435` feat(webhook): enhance header config and test log context
+- `91f8e27` docs(donations): update donor entry
+- `b409f24` fix(backup): support database restore option and preserve forward state
+- `2319201` fix(db): align sms fingerprint with msg_type
+- `492d586` feat(log): harden log bundle export and private storage
+- `25237e4` fix(prefs): tolerate datastore/sharedprefs type mismatch
+- `02e644c` feat(sms): improve auto-delete reliability with observer flow
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.1.6-beta.3...v3.1.6-beta.4
+
+---
+
 ## [v3.1.6-beta.3] - 2026-02-28
 ### 功能与体验 (Features & UX)
 - 应用控制页重构：底部 Tab“黑名单”更名为“应用”，新增“应用控制”页与每应用详情页。
