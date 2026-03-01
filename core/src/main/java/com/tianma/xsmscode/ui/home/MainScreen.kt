@@ -43,6 +43,7 @@ data class TabItem<T : Any>(val label: String, val icon: ImageVector, val route:
 private const val TAB_DOUBLE_TAP_REFRESH_WINDOW_MS = 350L
 
 @Composable
+@Suppress("CyclomaticComplexMethod")
 fun MainScreen(
     initialTab: Any? = null,
     onInitialTabConsumed: (() -> Unit)? = null,

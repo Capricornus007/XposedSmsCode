@@ -72,6 +72,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Suppress("CyclomaticComplexMethod")
 @Composable
 fun CodeRecordScreen(
     hazeState: HazeState,

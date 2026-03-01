@@ -61,6 +61,7 @@ class WebUiServer(
         Timber.i("WebUI server stopped")
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun Application.configureRoutes() {
         routing {
             get("/") {

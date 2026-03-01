@@ -83,6 +83,7 @@ private val appNotifyTemplateVariables = forwardTemplateVariables.map { variable
         else -> variable
     }
 }
+private const val DIALOG_WIDTH_FRACTION = 0.92f
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -452,9 +453,8 @@ private fun ForwardCommonConfigDialog(
         }
     }
 
-    @Suppress("MagicNumber")
     AlertDialog(
-        modifier = Modifier.fillMaxWidth(0.92f),
+        modifier = Modifier.fillMaxWidth(DIALOG_WIDTH_FRACTION),
         properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         title = { Text("短信公共配置") },
@@ -622,7 +622,7 @@ private fun AppNotifyTemplateDialog(
     }
 
     AlertDialog(
-        modifier = Modifier.fillMaxWidth(0.92f),
+        modifier = Modifier.fillMaxWidth(DIALOG_WIDTH_FRACTION),
         properties = DialogProperties(usePlatformDefaultWidth = false),
         onDismissRequest = onDismiss,
         title = { Text("应用通知配置") },

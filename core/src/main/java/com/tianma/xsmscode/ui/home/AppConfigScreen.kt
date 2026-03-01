@@ -75,6 +75,7 @@ import org.koin.compose.viewmodel.koinViewModel
 
 private val BlockedColumnWidth = 84.dp
 private val ForwardingColumnWidth = 108.dp
+private const val MINI_SWITCH_SCALE = 0.75f
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -497,7 +498,7 @@ private fun MiniSwitch(
         onCheckedChange = onCheckedChange,
         modifier = modifier
             .height(24.dp)
-            .scale(0.75f),
+            .scale(MINI_SWITCH_SCALE),
         thumbContent = null,
     )
 }

@@ -1,6 +1,7 @@
 package com.tianma.xsmscode.data.db
 
 import android.content.Context
+import android.database.sqlite.SQLiteException
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
@@ -17,6 +18,7 @@ import com.tianma.xsmscode.data.db.dao.SmsMsgDao
 import com.tianma.xsmscode.data.db.entity.AppInfo
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.data.db.entity.SmsMsg
+import com.tianma.xsmscode.common.utils.XLog
 
 @Database(entities = [
     SmsCodeRule::class,
@@ -42,21 +44,21 @@ abstract class AppDatabase : RoomDatabase() {
 
         private val MIGRATION_7_8 = object : androidx.room.migration.Migration(7, 8) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                try {
-                    db.execSQL("ALTER TABLE sms_msg ADD COLUMN msg_type INTEGER NOT NULL DEFAULT 0")
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                execSqlSafely(
+                    db = db,
+                    sql = "ALTER TABLE sms_msg ADD COLUMN msg_type INTEGER NOT NULL DEFAULT 0",
+                    migration = "7_8",
+                )
             }
         }
 
         private val MIGRATION_8_9 = object : androidx.room.migration.Migration(8, 9) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                try {
-                    db.execSQL("ALTER TABLE app_info ADD COLUMN forwarding INTEGER NOT NULL DEFAULT 0")
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                execSqlSafely(
+                    db = db,
+                    sql = "ALTER TABLE app_info ADD COLUMN forwarding INTEGER NOT NULL DEFAULT 0",
+                    migration = "8_9",
+                )
             }
         }
 
@@ -64,48 +66,59 @@ abstract class AppDatabase : RoomDatabase() {
         private val MIGRATION_9_10 = object : androidx.room.migration.Migration(9, 10) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
                 // Ensure forwarding column exists in app_info if it wasn't added in 8_9
-                try {
-                    db.execSQL("ALTER TABLE app_info ADD COLUMN forwarding INTEGER NOT NULL DEFAULT 0")
-                } catch (e: Exception) {
-                    // Column might already exist
-                    e.printStackTrace()
-                }
+                execSqlSafely(
+                    db = db,
+                    sql = "ALTER TABLE app_info ADD COLUMN forwarding INTEGER NOT NULL DEFAULT 0",
+                    migration = "9_10",
+                )
             }
         }
 
         private val MIGRATION_10_11 = object : androidx.room.migration.Migration(10, 11) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                try {
-                    db.execSQL("ALTER TABLE app_info ADD COLUMN notify_template TEXT NOT NULL DEFAULT ''")
-                } catch (e: Exception) {
-                    // Column might already exist
-                    e.printStackTrace()
-                }
+                execSqlSafely(
+                    db = db,
+                    sql = "ALTER TABLE app_info ADD COLUMN notify_template TEXT NOT NULL DEFAULT ''",
+                    migration = "10_11",
+                )
             }
         }
 
         private val MIGRATION_11_12 = object : androidx.room.migration.Migration(11, 12) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                try {
-                    db.execSQL("ALTER TABLE Sender ADD COLUMN receive_app_notify INTEGER NOT NULL DEFAULT 1")
-                } catch (e: Exception) {
-                    // Column might already exist
-                    e.printStackTrace()
-                }
+                execSqlSafely(
+                    db = db,
+                    sql = "ALTER TABLE Sender ADD COLUMN receive_app_notify INTEGER NOT NULL DEFAULT 1",
+                    migration = "11_12",
+                )
             }
         }
 
         private val MIGRATION_12_13 = object : androidx.room.migration.Migration(12, 13) {
             override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
-                try {
-                    db.execSQL("DROP INDEX IF EXISTS index_sms_msg_sender_body_date")
-                    db.execSQL(
-                        "CREATE UNIQUE INDEX IF NOT EXISTS index_sms_msg_sender_body_date_msg_type " +
-                            "ON sms_msg(sender, body, date, msg_type)",
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
+                execSqlSafely(
+                    db = db,
+                    sql = "DROP INDEX IF EXISTS index_sms_msg_sender_body_date",
+                    migration = "12_13",
+                )
+                execSqlSafely(
+                    db = db,
+                    sql = "CREATE UNIQUE INDEX IF NOT EXISTS index_sms_msg_sender_body_date_msg_type " +
+                        "ON sms_msg(sender, body, date, msg_type)",
+                    migration = "12_13",
+                )
+            }
+        }
+
+        private fun execSqlSafely(
+            db: androidx.sqlite.db.SupportSQLiteDatabase,
+            sql: String,
+            migration: String,
+        ) {
+            try {
+                db.execSQL(sql)
+            } catch (e: SQLiteException) {
+                XLog.w("Room migration %s skipped SQL: %s (%s)", migration, sql, e.message ?: "unknown")
             }
         }
 

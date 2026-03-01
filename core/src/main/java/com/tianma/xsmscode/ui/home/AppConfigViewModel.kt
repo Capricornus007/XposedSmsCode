@@ -33,6 +33,8 @@ import kotlinx.coroutines.withContext
 import java.util.Comparator
 import java.io.File
 
+private const val APP_NOTIFY_LOG_LIMIT = 20
+
 class AppConfigViewModel(application: Application) : AndroidViewModel(application) {
     private val appDb = AppDatabase.getInstance(application)
 
@@ -265,7 +267,7 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
                     it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY &&
                         it.packageName == packageName
                 }
-                .take(20)
+                .take(APP_NOTIFY_LOG_LIMIT)
                 .toList()
         }
     }

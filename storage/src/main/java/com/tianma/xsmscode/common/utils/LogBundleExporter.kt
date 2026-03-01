@@ -35,6 +35,7 @@ object LogBundleExporter {
      * Build a zip bundle containing app logs + LSPosed logs.
      * Returns [ExportResult.file] as null when build fails.
      */
+    @Suppress("TooGenericExceptionCaught")
     fun buildLogBundle(context: Context): ExportResult {
         synchronized(opLock) {
             val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
@@ -230,8 +231,13 @@ object LogBundleExporter {
         val stderr = process.errorStream.bufferedReader().use { it.readText() }
         val exitCode = process.waitFor()
         ShellResult(exitCode, stdout, stderr)
-    } catch (t: Throwable) {
-        ShellResult(-1, "", t.message ?: t.javaClass.simpleName)
+    } catch (e: java.io.IOException) {
+        ShellResult(-1, "", e.message ?: e.javaClass.simpleName)
+    } catch (e: SecurityException) {
+        ShellResult(-1, "", e.message ?: e.javaClass.simpleName)
+    } catch (e: InterruptedException) {
+        Thread.currentThread().interrupt()
+        ShellResult(-1, "", e.message ?: e.javaClass.simpleName)
     }
 
     private fun copyDirectory(source: File, target: File) {

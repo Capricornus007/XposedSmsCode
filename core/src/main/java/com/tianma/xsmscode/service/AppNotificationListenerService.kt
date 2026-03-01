@@ -4,6 +4,7 @@ import android.app.Notification
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.tianma.xsmscode.common.constant.PrefConst
@@ -68,7 +69,8 @@ class AppNotificationListenerService : NotificationListenerService() {
         val appName = try {
             val info = pm.getApplicationInfo(packageName, 0)
             pm.getApplicationLabel(info).toString()
-        } catch (e: Exception) {
+        } catch (e: PackageManager.NameNotFoundException) {
+            XLog.w("Notification app label not found for pkg=%s err=%s", packageName, e.message ?: "unknown")
             packageName
         }
         forwardIntent.putExtra("company", appName)
