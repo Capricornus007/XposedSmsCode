@@ -74,7 +74,7 @@ object AppPreferencesDataStore {
     suspend fun getBoolean(context: Context, key: String, defaultValue: Boolean): Boolean {
         val prefKey = booleanPreferencesKey(key)
         return getInstance(context).data
-            .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
+            .map { prefs: Preferences -> safeRead(prefs, prefKey, defaultValue) }
             .first()
     }
 
@@ -91,7 +91,7 @@ object AppPreferencesDataStore {
     suspend fun getString(context: Context, key: String, defaultValue: String): String {
         val prefKey = stringPreferencesKey(key)
         return getInstance(context).data
-            .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
+            .map { prefs: Preferences -> safeRead(prefs, prefKey, defaultValue) }
             .first()
     }
 
@@ -108,7 +108,7 @@ object AppPreferencesDataStore {
     suspend fun getInt(context: Context, key: String, defaultValue: Int): Int {
         val prefKey = intPreferencesKey(key)
         return getInstance(context).data
-            .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
+            .map { prefs: Preferences -> safeRead(prefs, prefKey, defaultValue) }
             .first()
     }
 
@@ -125,7 +125,7 @@ object AppPreferencesDataStore {
     suspend fun getFloat(context: Context, key: String, defaultValue: Float): Float {
         val prefKey = floatPreferencesKey(key)
         return getInstance(context).data
-            .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
+            .map { prefs: Preferences -> safeRead(prefs, prefKey, defaultValue) }
             .first()
     }
 
@@ -142,7 +142,16 @@ object AppPreferencesDataStore {
     suspend fun getBooleanCompat(context: Context, key: String, defaultValue: Boolean): Boolean {
         val sharedPrefs = getSharedPrefs(context)
         return if (sharedPrefs.contains(key)) {
-            sharedPrefs.getBoolean(key, defaultValue)
+            runCatching {
+                sharedPrefs.getBoolean(key, defaultValue)
+            }.getOrElse {
+                XLog.w(
+                    "SharedPreferences boolean type mismatch key=%s err=%s",
+                    key,
+                    it.message ?: it.javaClass.simpleName,
+                )
+                getBoolean(context, key, defaultValue)
+            }
         } else {
             getBoolean(context, key, defaultValue)
         }
@@ -160,7 +169,16 @@ object AppPreferencesDataStore {
     suspend fun getIntCompat(context: Context, key: String, defaultValue: Int): Int {
         val sharedPrefs = getSharedPrefs(context)
         return if (sharedPrefs.contains(key)) {
-            sharedPrefs.getInt(key, defaultValue)
+            runCatching {
+                sharedPrefs.getInt(key, defaultValue)
+            }.getOrElse {
+                XLog.w(
+                    "SharedPreferences int type mismatch key=%s err=%s",
+                    key,
+                    it.message ?: it.javaClass.simpleName,
+                )
+                getInt(context, key, defaultValue)
+            }
         } else {
             getInt(context, key, defaultValue)
         }
@@ -297,24 +315,41 @@ object AppPreferencesDataStore {
     fun getBooleanFlow(context: Context, key: String, defaultValue: Boolean): Flow<Boolean> {
         val prefKey = booleanPreferencesKey(key)
         return getInstance(context).data
-            .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
+            .map { prefs: Preferences -> safeRead(prefs, prefKey, defaultValue) }
     }
 
     fun getStringFlow(context: Context, key: String, defaultValue: String): Flow<String> {
         val prefKey = stringPreferencesKey(key)
         return getInstance(context).data
-            .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
+            .map { prefs: Preferences -> safeRead(prefs, prefKey, defaultValue) }
     }
 
     fun getIntFlow(context: Context, key: String, defaultValue: Int): Flow<Int> {
         val prefKey = intPreferencesKey(key)
         return getInstance(context).data
-            .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
+            .map { prefs: Preferences -> safeRead(prefs, prefKey, defaultValue) }
     }
 
     fun getFloatFlow(context: Context, key: String, defaultValue: Float): Flow<Float> {
         val prefKey = floatPreferencesKey(key)
         return getInstance(context).data
-            .map { prefs: Preferences -> prefs[prefKey] ?: defaultValue }
+            .map { prefs: Preferences -> safeRead(prefs, prefKey, defaultValue) }
+    }
+
+    private fun <T> safeRead(
+        prefs: Preferences,
+        key: Preferences.Key<T>,
+        defaultValue: T,
+    ): T {
+        return runCatching {
+            prefs[key] ?: defaultValue
+        }.getOrElse {
+            XLog.w(
+                "DataStore type mismatch key=%s err=%s",
+                key.name,
+                it.message ?: it.javaClass.simpleName,
+            )
+            defaultValue
+        }
     }
 }
