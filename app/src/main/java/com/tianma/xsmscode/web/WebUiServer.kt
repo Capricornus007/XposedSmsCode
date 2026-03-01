@@ -1238,9 +1238,11 @@ class WebUiServer(
                     block.type = "checkbox";
                     block.checked = !!app.blocked;
                     block.onchange = async () => {
+                      const preserveScroll = { x: window.scrollX, y: window.scrollY };
+                      block.blur();
                       try {
                         await updateApp(app.packageName, { blocked: block.checked });
-                        await loadApps();
+                        await loadApps(preserveScroll);
                       } catch (e) {
                         alert("更新失败: " + e.message);
                         block.checked = !block.checked;
@@ -1254,9 +1256,11 @@ class WebUiServer(
                     forward.type = "checkbox";
                     forward.checked = !!app.forwarding;
                     forward.onchange = async () => {
+                      const preserveScroll = { x: window.scrollX, y: window.scrollY };
+                      forward.blur();
                       try {
                         await updateApp(app.packageName, { forwarding: forward.checked });
-                        await loadApps();
+                        await loadApps(preserveScroll);
                       } catch (e) {
                         alert("更新失败: " + e.message);
                         forward.checked = !forward.checked;
@@ -1559,7 +1563,16 @@ class WebUiServer(
                   }
                 }
 
-                async function loadApps() {
+                function restoreWindowScroll(pos) {
+                  if (!pos) return;
+                  requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                      window.scrollTo(pos.x, pos.y);
+                    });
+                  });
+                }
+
+                async function loadApps(preserveScroll) {
                   reloadApps.disabled = true;
                   try {
                     latestApps = await fetchJson("/api/apps");
@@ -1567,6 +1580,7 @@ class WebUiServer(
                     renderOverview();
                   } finally {
                     reloadApps.disabled = false;
+                    restoreWindowScroll(preserveScroll);
                   }
                 }
 
