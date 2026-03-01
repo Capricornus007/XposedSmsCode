@@ -27,6 +27,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.Comparator
 import java.io.File
@@ -43,9 +45,6 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
     private val _hideSystemAppsFlow = MutableStateFlow(true)
     val hideSystemAppsFlow: StateFlow<Boolean> = _hideSystemAppsFlow.asStateFlow()
 
-    private val _hasChangesFlow = MutableStateFlow(false)
-    val hasChangesFlow: StateFlow<Boolean> = _hasChangesFlow.asStateFlow()
-
     private val _sortOptionFlow = MutableStateFlow(SortOption.LABEL)
     val sortOptionFlow: StateFlow<SortOption> = _sortOptionFlow.asStateFlow()
 
@@ -54,19 +53,19 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
 
     private val _events = MutableSharedFlow<AppConfigEvent>()
     val events: SharedFlow<AppConfigEvent> = _events.asSharedFlow()
+    private val _filterFlow = MutableStateFlow("")
+    val filterFlow: StateFlow<String> = _filterFlow.asStateFlow()
 
     @Immutable
     sealed class AppConfigEvent {
         data class Error(val throwable: Throwable) : AppConfigEvent()
-        object SaveSuccess : AppConfigEvent()
-        object SaveFailed : AppConfigEvent()
         object ShowUsageStatsPermission : AppConfigEvent()
     }
 
-    private var originalConfigs: ImmutableList<AppInfo> = persistentListOf()
     private var apps: ImmutableList<AppInfo> = persistentListOf()
     private var isLoadSucceed = false
     private val systemApps = HashSet<String>()
+    private val persistMutex = Mutex()
 
     private var filter = ""
     private var currentSortOption = SortOption.LABEL
@@ -93,6 +92,7 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
                 refreshUsageStats()
 
                 val appList = withContext(Dispatchers.IO) {
+                    val context = getApplication<Application>()
                     val pm = getApplication<Application>().packageManager
                     // Load all app infos from DB (both blocked and forwarding)
                     var configs = DBManager.get(getApplication()).queryAllAppInfosSuspend()
@@ -100,10 +100,15 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
                     if (configs.isEmpty()) {
                         configs = performMigrationIfNeeded()
                     }
-                    originalConfigs = configs.toImmutableList()
+                    EntityStoreManager.storeEntitiesToFile(
+                        context,
+                        EntityType.APP_CONFIG,
+                        configs.filter(::hasEffectiveConfig),
+                        AppInfo::class.java,
+                    )
 
                     val installedApps = pm.getInstalledApplications(PackageManager.MATCH_ALL)
-                    val configMap = originalConfigs.associateBy { it.packageName }
+                    val configMap = configs.associateBy { it.packageName }
 
                     systemApps.clear()
                     installedApps.asSequence()
@@ -131,7 +136,6 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
 
                 apps = appList
                 isLoadSucceed = true
-                updateHasChanges()
                 applyFilterAndSort()
                 _loadingFlow.value = false
             } catch (t: Throwable) {
@@ -162,6 +166,7 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun doFilter(newFilter: String) {
+        _filterFlow.value = newFilter
         filter = newFilter.lowercase()
         applyFilterAndSort()
     }
@@ -269,44 +274,39 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
         apps = apps.map { app ->
             if (app.packageName == packageName) updater(app) else app
         }.toImmutableList()
-        updateHasChanges()
         applyFilterAndSort()
+        persistAppConfig(packageName)
     }
 
-    fun saveData() {
-        val changedConfigs = apps.filter(::hasEffectiveConfig)
-
+    private fun persistAppConfig(packageName: String) {
+        val latestApps = apps
+        val target = latestApps.firstOrNull { it.packageName == packageName }
+        val changedConfigs = latestApps.filter(::hasEffectiveConfig)
         viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    val dbManager = DBManager.get(getApplication())
-                    // Here we handle the unified AppInfo table.
-                    // We can just clear and insert all apps that have any setting enabled.
-                    dbManager.deleteAllSuspend(AppInfo::class.java)
-                    dbManager.insertOrReplaceInTxSuspend(AppInfo::class.java, changedConfigs)
-
-                    // Export to the new unified file
-                    EntityStoreManager.storeEntitiesToFile(
-                        getApplication(),
-                        EntityType.APP_CONFIG,
-                        changedConfigs,
-                        AppInfo::class.java,
-                    )
+                    persistMutex.withLock {
+                        val dbManager = DBManager.get(getApplication())
+                        if (target != null) {
+                            if (hasEffectiveConfig(target)) {
+                                dbManager.upsertAppInfo(target)
+                            } else {
+                                dbManager.removeAppInfosByPackage(listOf(target.packageName))
+                            }
+                        }
+                        EntityStoreManager.storeEntitiesToFile(
+                            getApplication(),
+                            EntityType.APP_CONFIG,
+                            changedConfigs,
+                            AppInfo::class.java,
+                        )
+                    }
                 }
-                originalConfigs = changedConfigs.toImmutableList()
-                updateHasChanges()
-                _events.emit(AppConfigEvent.SaveSuccess)
             } catch (t: Throwable) {
-                XLog.e("Failed to save unified app configs", t)
-                _events.emit(AppConfigEvent.SaveFailed)
+                XLog.e("Failed to persist app config: $packageName", t)
+                _events.emit(AppConfigEvent.Error(t))
             }
         }
-    }
-
-    private fun updateHasChanges() {
-        val current = apps.filter(::hasEffectiveConfig).associateBy { it.packageName }
-        val original = originalConfigs.filter(::hasEffectiveConfig).associateBy { it.packageName }
-        _hasChangesFlow.value = current != original
     }
 
     private fun hasEffectiveConfig(appInfo: AppInfo): Boolean {

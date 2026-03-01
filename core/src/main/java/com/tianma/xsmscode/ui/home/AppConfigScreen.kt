@@ -1,7 +1,6 @@
 package com.tianma.xsmscode.ui.home
 
 import android.os.SystemClock
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,7 +9,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
@@ -21,7 +19,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,7 +50,6 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -93,11 +89,9 @@ fun AppConfigScreen(
     val apps by viewModel.appsFlow.collectAsStateWithLifecycle()
     val isLoading by viewModel.loadingFlow.collectAsStateWithLifecycle()
     val hideSystemApps by viewModel.hideSystemAppsFlow.collectAsStateWithLifecycle()
-    val hasChanges by viewModel.hasChangesFlow.collectAsStateWithLifecycle()
     val currentSortOption by viewModel.sortOptionFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val density = LocalDensity.current
-    val isCompact = LocalConfiguration.current.screenWidthDp < 600
     val shouldShowInitialLoading = remember { SessionLoadingRegistry.shouldShowInitial("app_config") }
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -105,7 +99,7 @@ fun AppConfigScreen(
     var manualRefreshing by remember { mutableStateOf(false) }
     var manualRefreshStartedAt by remember { mutableLongStateOf(0L) }
     var showUsagePermissionDialog by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
+    val searchQuery by viewModel.filterFlow.collectAsStateWithLifecycle()
     var showSettingsMenu by remember { mutableStateOf(false) }
     var fixedTopHeightPx by remember { mutableIntStateOf(0) }
 
@@ -152,15 +146,6 @@ fun AppConfigScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is AppConfigViewModel.AppConfigEvent.SaveSuccess -> {
-                    Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
-                    onBack?.invoke()
-                }
-
-                is AppConfigViewModel.AppConfigEvent.SaveFailed -> {
-                    snackbarHostState.showSnackbar(context.getString(R.string.save_failed))
-                }
-
                 is AppConfigViewModel.AppConfigEvent.Error -> {
                     snackbarHostState.showSnackbar(event.throwable.message ?: context.getString(R.string.save_failed))
                 }
@@ -216,7 +201,7 @@ fun AppConfigScreen(
                     state = listState,
                     contentPadding = PaddingValues(top = fixedTopHeight, bottom = bottomPadding),
                 ) {
-                    items(apps, key = { it.packageName }) { app ->
+                    items(apps) { app ->
                         AppConfigItem(
                             app = app,
                             onClick = { onAppClick?.invoke(app) },
@@ -338,7 +323,6 @@ fun AppConfigScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = {
-                        searchQuery = it
                         viewModel.doFilter(it)
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -349,7 +333,6 @@ fun AppConfigScreen(
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = {
-                                searchQuery = ""
                                 viewModel.doFilter("")
                             }) {
                                 Icon(Icons.Default.Close, contentDescription = null)
@@ -367,21 +350,6 @@ fun AppConfigScreen(
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding(),
         )
-
-        if (hasChanges) {
-            FloatingActionButton(
-                onClick = { viewModel.saveData() },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(
-                        bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
-                            if (isCompact) 80.dp else 16.dp,
-                        end = 16.dp,
-                    ),
-            ) {
-                Icon(Icons.Default.Check, contentDescription = stringResource(R.string.action_accomplish))
-            }
-        }
     }
 
     if (showUsagePermissionDialog) {
