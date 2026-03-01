@@ -19,6 +19,7 @@ import com.github.magisk317.smscode.forwarder.utils.SenderType
 import com.github.magisk317.smscode.forwarder.utils.sender.WebhookUtils
 import com.github.magisk317.smscode.ui.sender.SenderViewModel
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.launch
 import java.util.Date
 
@@ -33,6 +34,7 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
     var secret by remember { mutableStateOf("") }
     var method by remember { mutableStateOf("POST") }
     var webParams by remember { mutableStateOf("") }
+    var headersJson by remember { mutableStateOf("") }
     var receiveNonCode by remember { mutableStateOf(false) }
     var receiveAppNotify by remember { mutableStateOf(true) }
     var isLoaded by remember { mutableStateOf(false) }
@@ -57,10 +59,24 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
                     secret = setting.secret
                     method = setting.method
                     webParams = setting.webParams
+                    headersJson = if (setting.headers.isEmpty()) "" else Gson().toJson(setting.headers)
                 }
             }
         }
         isLoaded = true
+    }
+
+    fun parseHeadersOrThrow(): Map<String, String> {
+        if (headersJson.isBlank()) return emptyMap()
+        return try {
+            val type = object : TypeToken<Map<String, Any?>>() {}.type
+            val raw = Gson().fromJson<Map<String, Any?>>(headersJson, type) ?: emptyMap()
+            raw
+                .filterKeys { it.isNotBlank() }
+                .mapValues { it.value?.toString() ?: "" }
+        } catch (_: Exception) {
+            throw IllegalArgumentException("请求头 JSON 格式错误，例如 {\"Authorization\":\"Bearer xxx\"}")
+        }
     }
 
     fun buildSender(status: Int): Sender {
@@ -69,7 +85,7 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
             webServer = webServer,
             secret = secret,
             webParams = webParams,
-            headers = mutableMapOf()
+            headers = parseHeadersOrThrow()
         )
         val json = Gson().toJson(setting)
         return currentSender?.copy(
@@ -185,6 +201,14 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3
             )
+            OutlinedTextField(
+                value = headersJson,
+                onValueChange = { headersJson = it },
+                label = { Text("自定义 Headers JSON (选填)") },
+                supportingText = { Text("例如: {\"Authorization\":\"Bearer xxx\"}") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2
+            )
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -217,6 +241,7 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
                     webServer = webServer,
                     secret = secret,
                     webParams = webParams,
+                    headers = parseHeadersOrThrow(),
                 )
                 val msg = MsgInfo(
                     type = "sms",

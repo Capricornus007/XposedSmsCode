@@ -37,6 +37,20 @@ internal fun copySenderContextLog(context: Context, channel: String) {
     val now = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
     val channelKeyword = "SenderTest-$channel"
     val channelLogs = RuntimeLogStore.exportText(minutes = 10, keyword = channelKeyword, limit = 500)
+    val extraKeywords = channelExtraLogKeywords(channel)
+    val extraLogSections = extraKeywords.mapNotNull { keyword ->
+        val logs = RuntimeLogStore.exportText(minutes = 10, keyword = keyword, limit = 500)
+        if (logs.isBlank()) null else "[$keyword]\n$logs"
+    }
+    val mergedLogs = buildString {
+        if (channelLogs.isNotBlank()) {
+            append(channelLogs)
+        }
+        if (extraLogSections.isNotEmpty()) {
+            if (isNotEmpty()) append("\n\n")
+            append(extraLogSections.joinToString(separator = "\n\n"))
+        }
+    }
     val payload = buildString {
         append("渠道: ")
         append(channel)
@@ -46,9 +60,16 @@ internal fun copySenderContextLog(context: Context, channel: String) {
         append('\n')
         append("------------------------------")
         append('\n')
-        append(if (channelLogs.isNotBlank()) channelLogs else "暂无发送测试相关日志")
+        append(if (mergedLogs.isNotBlank()) mergedLogs else "暂无发送测试相关日志")
     }
     ClipboardUtils.copyToClipboard(context, payload)
+}
+
+private fun channelExtraLogKeywords(channel: String): List<String> {
+    return when (channel.trim().uppercase(Locale.ROOT)) {
+        "WEBHOOK" -> listOf("WebhookUtils")
+        else -> emptyList()
+    }
 }
 
 private fun Throwable.toReadableError(): String {
