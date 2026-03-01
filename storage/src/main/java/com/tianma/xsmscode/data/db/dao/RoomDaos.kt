@@ -52,8 +52,8 @@ interface SmsMsgDao {
     @Query("SELECT * FROM sms_msg WHERE id = :id LIMIT 1")
     fun getById(id: Long): SmsMsg?
 
-    @Query("SELECT * FROM sms_msg WHERE sender IS :sender AND body IS :body AND date = :date LIMIT 1")
-    fun getByFingerprint(sender: String?, body: String?, date: Long): SmsMsg?
+    @Query("SELECT * FROM sms_msg WHERE sender IS :sender AND body IS :body AND date = :date AND msg_type = :msgType LIMIT 1")
+    fun getByFingerprint(sender: String?, body: String?, date: Long, msgType: Int): SmsMsg?
 
     @Query("SELECT * FROM sms_msg ORDER BY date DESC")
     fun getAllFlow(): Flow<List<SmsMsg>>
@@ -121,4 +121,3 @@ interface AppInfoDao {
     @Query("DELETE FROM app_info")
     fun clearAll()
 }
-

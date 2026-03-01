@@ -16,7 +16,7 @@ import java.text.Normalizer
 @Entity(
     tableName = "sms_msg",
     indices = [
-        androidx.room.Index(value = ["sender", "body", "date"], unique = true),
+        androidx.room.Index(value = ["sender", "body", "date", "msg_type"], unique = true),
     ],
 )
 @Parcelize
