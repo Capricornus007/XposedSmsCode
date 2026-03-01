@@ -87,3 +87,10 @@
 -dontwarn com.sun.mail.**
 # Jakarta Mail / SMTP end
 # ==========================
+
+# ==========================
+# Ktor debug detector (JVM-only management API) start
+-dontwarn java.lang.management.ManagementFactory
+-dontwarn java.lang.management.RuntimeMXBean
+# Ktor debug detector end
+# ==========================
