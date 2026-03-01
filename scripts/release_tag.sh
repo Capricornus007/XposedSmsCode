@@ -17,21 +17,41 @@ if [[ -z "$VERSION_NAME" ]]; then
 fi
 
 TAG_NAME="v$VERSION_NAME"
+REMOTE_NAME="${RELEASE_REMOTE:-origin}"
 
 if ! git -C "$ROOT_DIR" diff --quiet || ! git -C "$ROOT_DIR" diff --cached --quiet; then
   echo "ERROR: working tree is not clean. Commit/stash changes before tagging." >&2
   exit 1
 fi
 
-if git -C "$ROOT_DIR" rev-parse -q --verify "refs/tags/$TAG_NAME" >/dev/null; then
-  echo "ERROR: local tag already exists: $TAG_NAME" >&2
-  exit 1
-fi
+delete_local_tag_if_exists() {
+  if git -C "$ROOT_DIR" rev-parse -q --verify "refs/tags/$TAG_NAME" >/dev/null; then
+    local old_ref
+    old_ref="$(git -C "$ROOT_DIR" rev-list -n 1 "$TAG_NAME" 2>/dev/null || true)"
+    echo "WARN: local tag exists, deleting before retag: $TAG_NAME (${old_ref:-unknown})"
+    git -C "$ROOT_DIR" tag -d "$TAG_NAME" >/dev/null
+  fi
+}
 
-if git -C "$ROOT_DIR" ls-remote --tags origin "refs/tags/$TAG_NAME" | grep -q .; then
-  echo "ERROR: remote tag already exists: $TAG_NAME" >&2
-  exit 1
-fi
+delete_remote_tag_if_exists() {
+  local remote_output
+  local remote_ref
+  if ! remote_output="$(git -C "$ROOT_DIR" ls-remote --tags "$REMOTE_NAME" "refs/tags/$TAG_NAME")"; then
+    echo "ERROR: failed to query remote tags from $REMOTE_NAME" >&2
+    exit 1
+  fi
+  remote_ref="$(printf '%s\n' "$remote_output" | awk '{print $1}' | head -n1)"
+  if [[ -n "$remote_ref" ]]; then
+    echo "WARN: remote tag exists, deleting before retag: $TAG_NAME ($remote_ref)"
+    if ! git -C "$ROOT_DIR" push "$REMOTE_NAME" ":refs/tags/$TAG_NAME"; then
+      echo "ERROR: failed to delete remote tag $TAG_NAME from $REMOTE_NAME" >&2
+      exit 1
+    fi
+  fi
+}
+
+delete_local_tag_if_exists
+delete_remote_tag_if_exists
 
 "$ROOT_DIR/scripts/check_release_guard.sh" "$TAG_NAME"
 
@@ -42,7 +62,7 @@ if [[ -z "$current_branch" ]]; then
 fi
 
 git -C "$ROOT_DIR" tag -a "$TAG_NAME" -m "$TAG_NAME"
-git -C "$ROOT_DIR" push origin "$current_branch"
-git -C "$ROOT_DIR" push origin "$TAG_NAME"
+git -C "$ROOT_DIR" push "$REMOTE_NAME" "$current_branch"
+git -C "$ROOT_DIR" push "$REMOTE_NAME" "$TAG_NAME"
 
-echo "Created and pushed tag: $TAG_NAME (branch: $current_branch)"
+echo "Created and pushed tag: $TAG_NAME (branch: $current_branch, remote: $REMOTE_NAME)"

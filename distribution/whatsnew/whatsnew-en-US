@@ -1,4 +1,4 @@
-- Added built-in WebUI (with LAN toggle) to manage sender channels and inspect forwarding records in browser.
-- Improved forwarding diagnostics: app notifications now carry trace/event_id and delivery acknowledgements; Webhook test logs are more detailed.
-- Upgraded log export/cleanup: one-tap share bundle (app + LSPosed logs) and clear log/crash folders together.
-- Stability fixes: SMTP fallback for email, notification forwarding gate robustness, backup/restore state consistency, and SMS auto-delete reliability.
+- Built-in WebUI with LAN toggle for channel management and forwarding records.
+- Better diagnostics: app notifications include trace/event_id and delivery ack; Webhook test logs are richer.
+- Log tools improved: one-tap share bundle (app + LSPosed) and clear log/crash folders.
+- Stability fixes: email SMTP fallback, stronger notification gate checks, backup/restore consistency, and more reliable SMS auto-delete.
