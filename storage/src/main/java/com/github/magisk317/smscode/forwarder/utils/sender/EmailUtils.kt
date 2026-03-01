@@ -2,10 +2,14 @@ package com.github.magisk317.smscode.forwarder.utils.sender
 
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
 import com.github.magisk317.smscode.forwarder.entity.setting.EmailSetting
+import com.sun.mail.smtp.SMTPTransport
 import jakarta.mail.Message
+import jakarta.mail.MessagingException
+import jakarta.mail.NoSuchProviderException
 import jakarta.mail.PasswordAuthentication
 import jakarta.mail.Session
 import jakarta.mail.Transport
+import jakarta.mail.URLName
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +27,7 @@ object EmailUtils {
             val password = setting.pwd
             val host = setting.host
             val port = setting.port.ifBlank { "465" }
+            val portInt = port.toIntOrNull() ?: 465
             val recipients = buildRecipients(setting)
 
             if (fromEmail.isBlank() || password.isBlank() || host.isBlank() || recipients.isEmpty()) {
@@ -50,11 +55,42 @@ object EmailUtils {
             message.subject = if (setting.title.isBlank()) "SmsCode: ${msgInfo.from}" else setting.title
             message.setText(msgInfo.content)
 
-            Transport.send(message)
+            sendByTransport(session, message, host, portInt, fromEmail, password)
             SLog.i(TAG, "Email send success")
         }.onFailure {
             SLog.e(TAG, "Email send failed", it)
         }.getOrElse { throw it }
+    }
+
+    private fun sendByTransport(
+        session: Session,
+        message: MimeMessage,
+        host: String,
+        port: Int,
+        fromEmail: String,
+        password: String,
+    ) {
+        runCatching {
+            Transport.send(message)
+        }.onFailure { err ->
+            if (!err.isSmtpProviderMissing()) {
+                throw err
+            }
+            // Fallback path for builds where smtp provider metadata is stripped.
+            val transport = SMTPTransport(session, URLName("smtp", host, port, null, fromEmail, password))
+            try {
+                transport.connect(host, port, fromEmail, password)
+                transport.sendMessage(message, message.allRecipients)
+            } finally {
+                runCatching { transport.close() }
+            }
+        }.getOrThrow()
+    }
+
+    private fun Throwable.isSmtpProviderMissing(): Boolean {
+        if (this is NoSuchProviderException) return true
+        if (this is MessagingException && message?.contains("smtp", ignoreCase = true) == true) return true
+        return cause?.isSmtpProviderMissing() == true
     }
 
     private fun buildRecipients(setting: EmailSetting): List<String> {

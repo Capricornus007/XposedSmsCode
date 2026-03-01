@@ -78,3 +78,12 @@
 -keep class com.tianma.xsmscode.xp.hook.** { *; }
 # Xposed end
 # ==========================
+
+# ==========================
+# Jakarta Mail / SMTP start
+-keep class jakarta.mail.** { *; }
+-keep class com.sun.mail.** { *; }
+-dontwarn jakarta.mail.**
+-dontwarn com.sun.mail.**
+# Jakarta Mail / SMTP end
+# ==========================
