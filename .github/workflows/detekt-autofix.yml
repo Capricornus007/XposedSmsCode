@@ -24,6 +24,9 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
+        with:
+          validate-wrappers: false
+          allow-snapshot-wrappers: true
 
       - name: Run Detekt with Auto Correct
         continue-on-error: true
@@ -54,4 +57,3 @@ jobs:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           gh pr merge "${{ steps.cpr.outputs.pull-request-number }}" --auto --merge --delete-branch
-

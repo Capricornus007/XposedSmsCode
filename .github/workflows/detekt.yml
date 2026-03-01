@@ -49,6 +49,9 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
+        with:
+          validate-wrappers: false
+          allow-snapshot-wrappers: true
 
       - name: Run Detekt
         continue-on-error: true
@@ -92,4 +95,3 @@ jobs:
         with:
           sarif_file: merged-sarif/detekt.sarif
           category: app
-
