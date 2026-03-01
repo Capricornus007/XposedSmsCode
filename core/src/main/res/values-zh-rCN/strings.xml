@@ -442,6 +442,7 @@
     <string name="item_config">配置</string>
     <string name="item_rules">规则</string>
     <string name="item_records">记录</string>
+    <string name="item_database_with_note">数据库（较大，包含 db/wal/shm）</string>
     <string name="restore_warning_msg">现有数据将被合并或覆盖。</string>
     <!-- backup and restore end -->
 

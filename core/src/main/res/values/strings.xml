@@ -434,6 +434,7 @@
     <string name="item_config">Configuration</string>
     <string name="item_rules">Rules</string>
     <string name="item_records">Records</string>
+    <string name="item_database_with_note">Database (larger, includes db/wal/shm)</string>
     <string name="restore_warning_msg">Existing data will be merged or overwritten.</string>
     <!-- backup and restore end -->
 

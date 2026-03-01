@@ -1,6 +1,7 @@
 package com.tianma.xsmscode.feature.backup
 
 import com.tianma.xsmscode.common.utils.JsonUtils
+import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.feature.backup.exception.BackupInvalidException
 import com.tianma.xsmscode.feature.backup.exception.VersionInvalidException
 import com.tianma.xsmscode.feature.backup.exception.VersionMissedException
@@ -119,24 +120,51 @@ class RuleImporter(private val mJsonStream: InputStream?) : Closeable {
         null
     }
 
-    private fun readRecords(jsonObject: JsonObject): List<BackupSmsRecord>? = try {
-        val recordArray = jsonObject[BackupConst.KEY_RECORDS]?.jsonArray
-        recordArray?.map { element ->
-            val obj = element.jsonObject
-            val datePrimitive = obj["date"]?.jsonPrimitive
-            BackupSmsRecord(
-                sender = obj["sender"]?.jsonPrimitive?.contentOrNull,
-                body = obj["body"]?.jsonPrimitive?.contentOrNull,
-                date = datePrimitive?.longOrNull
-                    ?: datePrimitive?.contentOrNull?.toLongOrNull()
-                    ?: 0L,
-                company = obj["company"]?.jsonPrimitive?.contentOrNull,
-                smsCode = obj["code"]?.jsonPrimitive?.contentOrNull,
-                packageName = obj["packageName"]?.jsonPrimitive?.contentOrNull,
+    private fun readRecords(jsonObject: JsonObject): List<BackupSmsRecord>? {
+        val recordArray = jsonObject[BackupConst.KEY_RECORDS]?.jsonArray ?: return null
+        val records = ArrayList<BackupSmsRecord>(recordArray.size)
+        var skipped = 0
+        recordArray.forEachIndexed { index, element ->
+            val parsed = runCatching {
+                val obj = element.jsonObject
+                val datePrimitive = obj["date"]?.jsonPrimitive
+                BackupSmsRecord(
+                    sender = obj["sender"]?.jsonPrimitive?.contentOrNull,
+                    body = obj["body"]?.jsonPrimitive?.contentOrNull,
+                    date = datePrimitive?.longOrNull
+                        ?: datePrimitive?.contentOrNull?.toLongOrNull()
+                        ?: 0L,
+                    company = obj["company"]?.jsonPrimitive?.contentOrNull,
+                    smsCode = obj["code"]?.jsonPrimitive?.contentOrNull,
+                    packageName = obj["packageName"]?.jsonPrimitive?.contentOrNull,
+                    msgType = obj["msgType"]?.jsonPrimitive?.intOrNull ?: 0,
+                    forwardStatus = obj["forwardStatus"]?.jsonPrimitive?.intOrNull ?: 0,
+                    forwardTarget = obj["forwardTarget"]?.jsonPrimitive?.contentOrNull,
+                    forwardMessage = obj["forwardMessage"]?.jsonPrimitive?.contentOrNull,
+                    forwardTime = obj["forwardTime"]?.jsonPrimitive?.longOrNull ?: 0L,
+                )
+            }.getOrElse { e ->
+                skipped++
+                XLog.w(
+                    "Skip invalid backup record at index=%d err=%s",
+                    index,
+                    e.message ?: e.javaClass.simpleName,
+                )
+                null
+            }
+            if (parsed != null) {
+                records.add(parsed)
+            }
+        }
+        if (skipped > 0) {
+            XLog.w(
+                "Backup records partially parsed: total=%d kept=%d skipped=%d",
+                recordArray.size,
+                records.size,
+                skipped,
             )
         }
-    } catch (ignored: Exception) {
-        null
+        return records
     }
 
     override fun close() {

@@ -24,7 +24,7 @@ import com.tianma.xsmscode.data.db.entity.SmsMsg
     AppInfo::class,
     Sender::class,
     Rule::class
-], version = 12, exportSchema = false)
+], version = 13, exportSchema = false)
 @TypeConverters(ConvertersDate::class, ConvertersSenderList::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -95,6 +95,20 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_12_13 = object : androidx.room.migration.Migration(12, 13) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                try {
+                    db.execSQL("DROP INDEX IF EXISTS index_sms_msg_sender_body_date")
+                    db.execSQL(
+                        "CREATE UNIQUE INDEX IF NOT EXISTS index_sms_msg_sender_body_date_msg_type " +
+                            "ON sms_msg(sender, body, date, msg_type)",
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase = instance ?: synchronized(this) {
             val dbContext = context.applicationContext ?: context
             instance ?: Room.databaseBuilder(
@@ -102,9 +116,24 @@ abstract class AppDatabase : RoomDatabase() {
                 AppDatabase::class.java,
                 DATABASE_NAME,
             )
-                .addMigrations(MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+                .addMigrations(
+                    MIGRATION_7_8,
+                    MIGRATION_8_9,
+                    MIGRATION_9_10,
+                    MIGRATION_10_11,
+                    MIGRATION_11_12,
+                    MIGRATION_12_13,
+                )
                 .enableMultiInstanceInvalidation()
                 .build().also { instance = it }
+        }
+
+        @JvmStatic
+        fun closeInstance() {
+            synchronized(this) {
+                runCatching { instance?.close() }
+                instance = null
+            }
         }
     }
 }

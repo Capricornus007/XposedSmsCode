@@ -151,23 +151,59 @@ fun ComposeSettingsScreen(
     var showBackupDialog by remember { mutableStateOf(false) }
     var showRestoreDialog by remember { mutableStateOf(false) }
     var restoreUri by remember { mutableStateOf<android.net.Uri?>(null) }
-    var backupFlags by remember { mutableStateOf(Triple(true, true, true)) } // config, rules, records
+    var backupFlags by remember { mutableStateOf(BackupSelectionFlags()) }
 
     val backupLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            result.data?.data?.let { uri ->
-                settingsViewModel.performBackup(uri, backupFlags.first, backupFlags.second, backupFlags.third)
-            }
+        val data = result.data
+        val pickedUri = data?.data ?: data?.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
+        XLog.i(
+            "Backup picker result: code=%d uri=%s clipCount=%d",
+            result.resultCode,
+            pickedUri?.toString() ?: "<null>",
+            data?.clipData?.itemCount ?: 0,
+        )
+        if (result.resultCode == android.app.Activity.RESULT_OK && pickedUri != null) {
+            settingsViewModel.performBackup(
+                pickedUri,
+                backupFlags.includeConfig,
+                backupFlags.includeRules,
+                backupFlags.includeRecords,
+                backupFlags.includeDatabase,
+            )
         }
     }
 
     val restoreLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
     ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            result.data?.data?.let { uri ->
-                settingsViewModel.handleBackupArguments(uri)
+        val data = result.data
+        val pickedUri = data?.data ?: data?.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
+        XLog.i(
+            "Restore picker result: code=%d uri=%s clipCount=%d",
+            result.resultCode,
+            pickedUri?.toString() ?: "<null>",
+            data?.clipData?.itemCount ?: 0,
+        )
+        if (result.resultCode == android.app.Activity.RESULT_OK && pickedUri != null) {
+            runCatching {
+                context.contentResolver.takePersistableUriPermission(
+                    pickedUri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                )
+            }.onFailure {
+                XLog.w(
+                    "takePersistableUriPermission failed: uri=%s err=%s",
+                    pickedUri.toString(),
+                    it.message ?: it.javaClass.simpleName,
+                )
             }
+            // Show restore confirm dialog directly to avoid one-shot event loss
+            // when Activity lifecycle transitions around document picker return.
+            restoreUri = pickedUri
+            showRestoreDialog = true
+            XLog.i("Restore confirm dialog requested directly: uri=%s", pickedUri.toString())
+        } else if (result.resultCode == android.app.Activity.RESULT_OK) {
+            XLog.w("Restore picker returned OK but uri is null")
         }
     }
 
@@ -680,10 +716,11 @@ private fun handleSettingsEvent(
         }
 
         is SettingsEvent.RestoreResultEvent -> {
-            val msg = if (event.result.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
-                R.string.restore_success
-            } else {
-                R.string.restore_failed
+            val msg = when (event.result.result) {
+                com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS -> R.string.restore_success
+                com.tianma.xsmscode.feature.backup.ImportResult.VERSION_TOO_NEW -> R.string.import_failed_version_too_new
+                com.tianma.xsmscode.feature.backup.ImportResult.VERSION_TOO_OLD -> R.string.import_failed_version_too_old
+                else -> R.string.restore_failed
             }
             android.widget.Toast.makeText(context, context.getString(msg), android.widget.Toast.LENGTH_SHORT).show()
 
@@ -747,7 +784,7 @@ private fun SettingsDialogs(
     onShowPrivacyPolicyPageChange: (Boolean) -> Unit,
     onShowBackupDialogChange: (Boolean) -> Unit,
     onShowRestoreDialogChange: (Boolean) -> Unit,
-    onBackupFlagsChange: (Triple<Boolean, Boolean, Boolean>) -> Unit,
+    onBackupFlagsChange: (BackupSelectionFlags) -> Unit,
     onPendingSavedToast: () -> Unit,
     backupLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
     settingsViewModel: SettingsViewModel,
@@ -892,10 +929,13 @@ private fun SettingsDialogs(
     if (showBackupDialog) {
         BackupDialog(
             onDismiss = { onShowBackupDialogChange(false) },
-            onConfirm = { config, rules, records ->
-                onBackupFlagsChange(Triple(config, rules, records))
+            onConfirm = { flags ->
+                onBackupFlagsChange(flags)
                 onShowBackupDialogChange(false)
-                val intent = com.tianma.xsmscode.feature.backup.BackupManager.getExportRuleListSAFIntent(context)
+                val intent = com.tianma.xsmscode.feature.backup.BackupManager.getExportRuleListSAFIntent(
+                    context,
+                    includeDatabase = flags.includeDatabase,
+                )
                 backupLauncher.launch(intent)
             },
         )
@@ -904,8 +944,14 @@ private fun SettingsDialogs(
     if (showRestoreDialog && restoreUri != null) {
         RestoreConfirmDialog(
             onDismiss = { onShowRestoreDialogChange(false) },
-            onConfirm = { config, rules, records ->
-                settingsViewModel.performRestore(restoreUri, config, rules, records)
+            onConfirm = { flags ->
+                settingsViewModel.performRestore(
+                    uri = restoreUri,
+                    restoreConfig = flags.includeConfig,
+                    restoreRules = flags.includeRules,
+                    restoreRecords = flags.includeRecords,
+                    restoreDatabase = flags.includeDatabase,
+                )
                 onShowRestoreDialogChange(false)
             },
         )
@@ -1380,12 +1426,20 @@ fun PrivacyPolicyDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, onCancel: 
     )
 }
 
+private data class BackupSelectionFlags(
+    val includeConfig: Boolean = true,
+    val includeRules: Boolean = true,
+    val includeRecords: Boolean = true,
+    val includeDatabase: Boolean = false,
+)
+
 @Composable
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
-fun BackupDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Boolean) -> Unit) {
+private fun BackupDialog(onDismiss: () -> Unit, onConfirm: (BackupSelectionFlags) -> Unit) {
     var checkConfig by remember { mutableStateOf(true) }
     var checkRules by remember { mutableStateOf(true) }
     var checkRecords by remember { mutableStateOf(true) }
+    var checkDatabase by remember { mutableStateOf(false) }
     val cancelLabel = stringResource(id = R.string.cancel)
     val confirmLabel = stringResource(id = R.string.confirm)
 
@@ -1416,6 +1470,13 @@ fun BackupDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Boolean) -
                     Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
                     Text(stringResource(id = R.string.item_records))
                 }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkDatabase = !checkDatabase },
+                ) {
+                    Checkbox(checked = checkDatabase, onCheckedChange = { checkDatabase = it })
+                    Text(stringResource(id = R.string.item_database_with_note))
+                }
             }
         },
         confirmButton = {
@@ -1432,7 +1493,16 @@ fun BackupDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Boolean) -
                     weight = 1f,
                 )
                 clickableItem(
-                    onClick = { onConfirm(checkConfig, checkRules, checkRecords) },
+                    onClick = {
+                        onConfirm(
+                            BackupSelectionFlags(
+                                includeConfig = checkConfig,
+                                includeRules = checkRules,
+                                includeRecords = checkRecords,
+                                includeDatabase = checkDatabase,
+                            ),
+                        )
+                    },
                     label = confirmLabel,
                     weight = 1f,
                 )
@@ -1444,10 +1514,11 @@ fun BackupDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Boolean) -
 
 @Composable
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
-fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Boolean) -> Unit) {
+private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (BackupSelectionFlags) -> Unit) {
     var checkConfig by remember { mutableStateOf(true) }
     var checkRules by remember { mutableStateOf(true) }
     var checkRecords by remember { mutableStateOf(true) }
+    var checkDatabase by remember { mutableStateOf(false) }
     val cancelLabel = stringResource(id = R.string.cancel)
     val confirmLabel = stringResource(id = R.string.confirm)
 
@@ -1478,6 +1549,13 @@ fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Bo
                     Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
                     Text(stringResource(id = R.string.item_records))
                 }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().clickable { checkDatabase = !checkDatabase },
+                ) {
+                    Checkbox(checked = checkDatabase, onCheckedChange = { checkDatabase = it })
+                    Text(stringResource(id = R.string.item_database_with_note))
+                }
                 Text(
                     text = stringResource(id = R.string.restore_warning_msg),
                     style = MaterialTheme.typography.bodySmall,
@@ -1500,7 +1578,16 @@ fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (Boolean, Boolean, Bo
                     weight = 1f,
                 )
                 clickableItem(
-                    onClick = { onConfirm(checkConfig, checkRules, checkRecords) },
+                    onClick = {
+                        onConfirm(
+                            BackupSelectionFlags(
+                                includeConfig = checkConfig,
+                                includeRules = checkRules,
+                                includeRecords = checkRecords,
+                                includeDatabase = checkDatabase,
+                            ),
+                        )
+                    },
                     label = confirmLabel,
                     weight = 1f,
                 )

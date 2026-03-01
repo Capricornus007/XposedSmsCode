@@ -100,8 +100,12 @@ class DBManager private constructor(context: Context) {
 
     fun querySmsMsgById(id: Long): SmsMsg? = mSmsMsgDao.getById(id)
 
-    fun querySmsMsgByFingerprint(sender: String?, body: String?, date: Long): SmsMsg? =
-        mSmsMsgDao.getByFingerprint(sender, body, date)
+    fun querySmsMsgByFingerprint(
+        sender: String?,
+        body: String?,
+        date: Long,
+        msgType: Int = SmsMsg.MSG_TYPE_SMS,
+    ): SmsMsg? = mSmsMsgDao.getByFingerprint(sender, body, date, msgType)
 
     fun updateSmsMsg(smsMsg: SmsMsg): Int {
         val id = smsMsg.id ?: return 0
@@ -213,6 +217,13 @@ class DBManager private constructor(context: Context) {
         @JvmStatic
         fun get(context: Context): DBManager = sInstance ?: synchronized(DBManager::class.java) {
             sInstance ?: DBManager(context).also { sInstance = it }
+        }
+
+        @JvmStatic
+        fun resetInstance() {
+            synchronized(DBManager::class.java) {
+                sInstance = null
+            }
         }
     }
 }

@@ -75,13 +75,23 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         PrefConst.KEY_VERBOSE_LOG_MODE,
         PrefConst.KEY_AUTO_UPDATE_ON_START,
         PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
+        PrefConst.KEY_ENABLE_AUTO_ENTER_CODE,
+        PrefConst.KEY_FORWARD_COMMON_INCLUDE_TIME,
+        PrefConst.KEY_FORWARD_COMMON_INCLUDE_SENDER,
+        PrefConst.KEY_FORWARD_COMMON_INCLUDE_DEVICE_NAME,
+        PrefConst.KEY_WEBUI_LAN_ACCESS,
         PrefConst.KEY_PRIVACY_POLICY_ACCEPTED,
         PrefConst.KEY_BACKUP_COMPAT_TIP_SHOWN,
     )
 
     private val intPrefKeys = setOf(
         PrefConst.KEY_CHOOSE_THEME,
+        PrefConst.KEY_HAZE_BLUR_RADIUS,
         "local_version_code",
+    )
+
+    private val floatPrefKeys = setOf(
+        PrefConst.KEY_HAZE_TINT_ALPHA,
     )
 
     private val _eventsFlow = MutableSharedFlow<SettingsEvent>(
@@ -211,10 +221,24 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun performBackup(uri: android.net.Uri, includeConfig: Boolean, includeRules: Boolean, includeRecords: Boolean) {
+    fun performBackup(
+        uri: android.net.Uri,
+        includeConfig: Boolean,
+        includeRules: Boolean,
+        includeRecords: Boolean,
+        includeDatabase: Boolean,
+    ) {
         viewModelScope.launch {
             val context = getApplication<Application>()
             try {
+                XLog.i(
+                    "Backup start: uri=%s includeConfig=%s includeRules=%s includeRecords=%s includeDatabase=%s",
+                    uri.toString(),
+                    includeConfig,
+                    includeRules,
+                    includeRecords,
+                    includeDatabase,
+                )
                 val rules = if (includeRules) {
                     withContext(Dispatchers.IO) {
                         DBManager.get(context).queryAllSmsCodeRules()
@@ -235,6 +259,11 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                                     company = it.company,
                                     smsCode = it.smsCode,
                                     packageName = it.packageName,
+                                    msgType = it.msgType,
+                                    forwardStatus = it.forwardStatus,
+                                    forwardTarget = it.forwardTarget,
+                                    forwardMessage = it.forwardMessage,
+                                    forwardTime = it.forwardTime,
                                 )
                             }
                     }
@@ -260,34 +289,87 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     null
                 }
 
+                XLog.i(
+                    "Backup payload prepared: rules=%d records=%d prefs=%d",
+                    rules.size,
+                    records?.size ?: 0,
+                    prefs?.size ?: 0,
+                )
                 val result = withContext(Dispatchers.IO) {
-                    BackupManager.exportBackup(context, uri, rules, prefs, records, BuildConfig.VERSION_NAME)
+                    BackupManager.exportBackup(
+                        context = context,
+                        uri = uri,
+                        ruleList = rules,
+                        preferences = prefs,
+                        records = records,
+                        appVersion = BuildConfig.VERSION_NAME,
+                        includeDatabase = includeDatabase,
+                    )
                 }
+                XLog.i("Backup finished: result=%s", result.name)
                 _eventsFlow.tryEmit(SettingsEvent.BackupResultEvent(result == ExportResult.SUCCESS))
             } catch (e: Exception) {
-                e.printStackTrace()
+                XLog.e("Backup failed", e)
                 _eventsFlow.tryEmit(SettingsEvent.BackupResultEvent(false))
             }
         }
     }
 
-    fun performRestore(uri: android.net.Uri, restoreConfig: Boolean, restoreRules: Boolean, restoreRecords: Boolean) {
+    fun performRestore(
+        uri: android.net.Uri,
+        restoreConfig: Boolean,
+        restoreRules: Boolean,
+        restoreRecords: Boolean,
+        restoreDatabase: Boolean,
+    ) {
         viewModelScope.launch {
             val context = getApplication<Application>()
             try {
+                XLog.i(
+                    "Restore start: uri=%s restoreConfig=%s restoreRules=%s restoreRecords=%s restoreDatabase=%s",
+                    uri.toString(),
+                    restoreConfig,
+                    restoreRules,
+                    restoreRecords,
+                    restoreDatabase,
+                )
                 val importResult = withContext(Dispatchers.IO) {
                     BackupManager.importRuleList(context, uri, BuildConfig.VERSION_NAME)
                 }
+                XLog.i(
+                    "Restore import result=%s rules=%d records=%d prefs=%d warning=%s",
+                    importResult.result.name,
+                    importResult.rules.size,
+                    importResult.records?.size ?: 0,
+                    importResult.preferences?.size ?: 0,
+                    importResult.warning?.name ?: "none",
+                )
 
                 if (importResult.result == com.tianma.xsmscode.feature.backup.ImportResult.SUCCESS) {
                     withContext(Dispatchers.IO) {
-                        if (restoreRules) restoreRules(context, importResult.rules)
-                        if (restoreRecords) restoreRecords(context, importResult.records.orEmpty())
+                        if (restoreDatabase) {
+                            val restored = BackupManager.restoreDatabaseFromBackup(context, uri)
+                            if (!restored) {
+                                throw IllegalStateException("Restore database failed: backup zip has no database files")
+                            }
+                            if (restoreRules || restoreRecords) {
+                                XLog.i(
+                                    "Restore database enabled: skip logical restore rules=%s records=%s",
+                                    restoreRules,
+                                    restoreRecords,
+                                )
+                            }
+                        } else {
+                            if (restoreRules) restoreRules(context, importResult.rules)
+                            if (restoreRecords) restoreRecords(context, importResult.records.orEmpty())
+                        }
                         if (restoreConfig) restorePreferences(context, importResult.preferences.orEmpty())
                     }
+                    XLog.i("Restore apply finished")
                 }
                 _eventsFlow.tryEmit(SettingsEvent.RestoreResultEvent(importResult))
-            } catch (ignored: Exception) {
+            } catch (e: Exception) {
+                XLog.e("Restore failed", e)
                 // Return failed event
                 _eventsFlow.tryEmit(
                     SettingsEvent.RestoreResultEvent(
@@ -308,8 +390,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     private suspend fun restoreRecords(context: Context, records: List<BackupSmsRecord>) {
-        if (records.isEmpty()) return
         val dbManager = DBManager.get(context)
+        if (records.isEmpty()) {
+            XLog.w("Restore records skipped: empty list")
+            return
+        }
+        val beforeCount = dbManager.queryAllSmsMsg().size
         val entities = records.map {
             com.tianma.xsmscode.data.db.entity.SmsMsg(
                 sender = it.sender,
@@ -318,9 +404,22 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 company = it.company,
                 smsCode = it.smsCode,
                 packageName = it.packageName,
+                msgType = it.msgType,
+                forwardStatus = it.forwardStatus,
+                forwardTarget = it.forwardTarget,
+                forwardMessage = it.forwardMessage,
+                forwardTime = it.forwardTime,
             )
         }
         dbManager.addSmsMsgList(entities)
+        val afterCount = dbManager.queryAllSmsMsg().size
+        XLog.i(
+            "Restore records finished: requested=%d before=%d after=%d delta=%d",
+            records.size,
+            beforeCount,
+            afterCount,
+            afterCount - beforeCount,
+        )
     }
 
     private suspend fun restorePreferences(context: Context, prefsMap: Map<String, String?>) {
@@ -345,6 +444,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     val intValue = strV.trim().toIntOrNull()
                     if (intValue != null) {
                         AppPreferencesDataStore.setInt(context, k, intValue)
+                    }
+                }
+
+                floatPrefKeys.contains(k) -> {
+                    val floatValue = strV.trim().toFloatOrNull()
+                    if (floatValue != null) {
+                        AppPreferencesDataStore.setFloat(context, k, floatValue)
                     }
                 }
 
