@@ -10,6 +10,10 @@ import java.io.File
  */
 object StorageUtils {
 
+    private const val LOG_DIR_NAME = "log"
+    private const val CRASH_DIR_NAME = "crash"
+    private const val PRIVATE_LOG_EXPORT_DIR_NAME = "xsms_logs"
+
     @JvmStatic
     fun isSDCardMounted(): Boolean {
         val state = Environment.getExternalStorageState()
@@ -20,21 +24,22 @@ object StorageUtils {
      * 获取日志路径
      */
     @JvmStatic
-    fun getLogDir(context: Context): File? = if (isSDCardMounted()) {
-        context.getExternalFilesDir("log")
-    } else {
-        File(context.filesDir, "log")
-    }
+    fun getLogDir(context: Context): File? = ensurePrivateSubDir(context, LOG_DIR_NAME)
 
     /**
      * 获取Crash日志路径
      */
     @JvmStatic
-    fun getCrashLogDir(context: Context): File? = if (isSDCardMounted()) {
-        context.getExternalFilesDir("crash")
-    } else {
-        File(context.filesDir, "crash")
-    }
+    fun getCrashLogDir(context: Context): File? = ensurePrivateSubDir(context, CRASH_DIR_NAME)
+
+    /**
+     * 获取日志导出目录（应用私有）
+     */
+    @JvmStatic
+    fun getPrivateLogExportDir(context: Context): File = ensurePrivateSubDir(
+        context,
+        PRIVATE_LOG_EXPORT_DIR_NAME,
+    ) ?: File(context.filesDir, PRIVATE_LOG_EXPORT_DIR_NAME)
 
     @JvmStatic
     fun getPublicDocumentsDir(context: Context): File =
@@ -98,5 +103,13 @@ object StorageUtils {
                 break
             }
         }
+    }
+
+    private fun ensurePrivateSubDir(context: Context, name: String): File? {
+        val dir = File(context.filesDir, name)
+        if (!dir.exists() && !dir.mkdirs()) {
+            return null
+        }
+        return dir
     }
 }

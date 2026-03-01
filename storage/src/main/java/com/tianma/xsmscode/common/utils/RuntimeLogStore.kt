@@ -94,7 +94,7 @@ object RuntimeLogStore {
     }
 
     fun exportToFile(context: Context, minutes: Int?, keyword: String?, limit: Int = 1200): File? {
-        val dir = File(StorageUtils.getPublicDocumentsDir(context), "logs")
+        val dir = StorageUtils.getPrivateLogExportDir(context)
         if (!dir.exists() && !dir.mkdirs()) return null
 
         val fileName = "runtime_log_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}.txt"

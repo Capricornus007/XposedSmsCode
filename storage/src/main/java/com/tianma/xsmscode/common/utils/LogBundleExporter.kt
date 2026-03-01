@@ -1,5 +1,6 @@
 package com.tianma.xsmscode.common.utils
 
+import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -18,6 +19,7 @@ object LogBundleExporter {
         "/data/adb/lspd/log",
         "/data/adb/lspd/log.old",
     )
+    private val opLock = Any()
 
     data class ExportResult(
         val file: File?,
@@ -34,67 +36,114 @@ object LogBundleExporter {
      * Returns [ExportResult.file] as null when build fails.
      */
     fun buildLogBundle(context: Context): ExportResult {
-        val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
-        val docsDir = StorageUtils.getPublicDocumentsDir(context)
-        val exportDir = File(docsDir, "logs").apply { mkdirs() }
-        val stagingDir = File(exportDir, ".tmp_logs_$timestamp").apply {
-            if (exists()) deleteRecursively()
-            mkdirs()
-        }
-        val details = mutableListOf<String>()
-
-        try {
-            val appLogSrc = StorageUtils.getLogDir(context)
-            if (appLogSrc != null && appLogSrc.exists()) {
-                copyDirectory(appLogSrc, File(stagingDir, "app/log"))
-                details += "app log: ${appLogSrc.absolutePath}"
-            } else {
-                details += "app log missing"
+        synchronized(opLock) {
+            val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
+            val exportDir = getPrivateExportDir(context)
+            if (!ensureDirectory(exportDir, recreateWhenFile = true)) {
+                val details = "export root unavailable: ${exportDir.absolutePath}"
+                XLog.e("buildLogBundle failed: %s", details)
+                return ExportResult(null, details)
             }
-
-            val crashLogSrc = StorageUtils.getCrashLogDir(context)
-            if (crashLogSrc != null && crashLogSrc.exists()) {
-                copyDirectory(crashLogSrc, File(stagingDir, "app/crash"))
-                details += "crash log: ${crashLogSrc.absolutePath}"
-            } else {
-                details += "crash log missing"
+            val stagingDir = File(exportDir, ".tmp_logs_$timestamp").apply {
+                if (exists()) deleteRecursively()
             }
-
-            val lsposedCopied = copyLsposedLogs(stagingDir, details)
-            if (!lsposedCopied) {
-                details += "lsposed log missing or unreadable"
+            if (!ensureDirectory(stagingDir, recreateWhenFile = true)) {
+                val details = "staging dir unavailable: ${stagingDir.absolutePath}"
+                XLog.e("buildLogBundle failed: %s", details)
+                return ExportResult(null, details)
             }
+            val details = mutableListOf<String>()
 
-            File(stagingDir, "summary.txt").writeText(
-                buildString {
-                    appendLine("Export Time: $timestamp")
-                    appendLine("Package: ${context.packageName}")
-                    details.forEach { appendLine("- $it") }
-                },
-            )
+            try {
+                val appLogSrc = StorageUtils.getLogDir(context)
+                if (appLogSrc != null && appLogSrc.exists()) {
+                    copyDirectory(appLogSrc, File(stagingDir, "app/log"))
+                    details += "app log: ${appLogSrc.absolutePath}"
+                } else {
+                    details += "app log missing"
+                }
 
-            val zipFile = File(exportDir, "logs_$timestamp.zip")
-            zipDirectory(stagingDir, zipFile)
-            StorageUtils.setFileWorldReadable(zipFile, 2)
-            return ExportResult(zipFile, details.joinToString("; "))
-        } catch (t: Throwable) {
-            XLog.e("buildLogBundle failed", t)
-            return ExportResult(null, t.message ?: t.javaClass.simpleName)
-        } finally {
-            runCatching { stagingDir.deleteRecursively() }
+                val crashLogSrc = StorageUtils.getCrashLogDir(context)
+                if (crashLogSrc != null && crashLogSrc.exists()) {
+                    copyDirectory(crashLogSrc, File(stagingDir, "app/crash"))
+                    details += "crash log: ${crashLogSrc.absolutePath}"
+                } else {
+                    details += "crash log missing"
+                }
+
+                val lsposedCopied = copyLsposedLogs(stagingDir, details)
+                if (!lsposedCopied) {
+                    details += "lsposed log missing or unreadable"
+                }
+
+                File(stagingDir, "summary.txt").writeText(
+                    buildString {
+                        appendLine("Export Time: $timestamp")
+                        appendLine("Package: ${context.packageName}")
+                        details.forEach { appendLine("- $it") }
+                    },
+                )
+
+                val zipFile = File(exportDir, "logs_$timestamp.zip")
+                zipDirectory(stagingDir, zipFile)
+                StorageUtils.setFileWorldReadable(zipFile, 1)
+                XLog.i(
+                    "buildLogBundle success: file=%s size=%d details=%s",
+                    zipFile.absolutePath,
+                    zipFile.length(),
+                    details.joinToString("; "),
+                )
+                return ExportResult(zipFile, details.joinToString("; "))
+            } catch (t: Throwable) {
+                XLog.e("buildLogBundle failed", t)
+                return ExportResult(null, t.message ?: t.javaClass.simpleName)
+            } finally {
+                runCatching { stagingDir.deleteRecursively() }
+            }
         }
     }
 
     fun shareLogBundle(context: Context, file: File) {
+        if (!file.exists() || !file.isFile || !file.canRead()) {
+            throw IllegalStateException("share file unavailable: ${file.absolutePath}")
+        }
         val authority = context.packageName + ".files"
         val uri: Uri = FileProvider.getUriForFile(context, authority, file)
         val intent = Intent(Intent.ACTION_SEND).apply {
             type = ZIP_MIME_TYPE
             putExtra(Intent.EXTRA_STREAM, uri)
+            clipData = ClipData.newUri(context.contentResolver, file.name, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_GRANT_PREFIX_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(intent, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        val resolvedTargets = context.packageManager.queryIntentActivities(intent, 0)
+        resolvedTargets.forEach { resolveInfo ->
+            val packageName = resolveInfo.activityInfo?.packageName ?: return@forEach
+            runCatching {
+                context.grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }.onFailure {
+                XLog.w(
+                    "grantUriPermission failed: pkg=%s uri=%s err=%s",
+                    packageName,
+                    uri.toString(),
+                    it.message ?: it.javaClass.simpleName,
+                )
+            }
+        }
+        XLog.i(
+            "shareLogBundle: file=%s size=%d uri=%s targets=%d",
+            file.absolutePath,
+            file.length(),
+            uri.toString(),
+            resolvedTargets.size,
+        )
+        val chooser = Intent.createChooser(intent, null).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_GRANT_PREFIX_URI_PERMISSION)
+            clipData = intent.clipData
+        }
+        context.startActivity(chooser)
     }
 
     /**
@@ -102,33 +151,35 @@ object LogBundleExporter {
      * Keeps directory nodes and removes files/sub-directories inside.
      */
     fun clearLogFolders(context: Context): ClearResult {
-        val details = mutableListOf<String>()
-        var success = true
+        synchronized(opLock) {
+            val details = mutableListOf<String>()
+            var success = true
 
-        RuntimeLogStore.clear()
+            RuntimeLogStore.clear()
 
-        val targets = listOf(
-            "log" to StorageUtils.getLogDir(context),
-            "crash" to StorageUtils.getCrashLogDir(context),
-            "documents/logs" to File(StorageUtils.getPublicDocumentsDir(context), "logs"),
-        )
+            val targets = listOf(
+                "log" to StorageUtils.getLogDir(context),
+                "crash" to StorageUtils.getCrashLogDir(context),
+                "private_export" to getPrivateExportDir(context),
+            )
 
-        targets.forEach { (name, dir) ->
-            if (dir == null) {
-                success = false
-                details += "$name unavailable"
-                return@forEach
+            targets.forEach { (name, dir) ->
+                if (dir == null) {
+                    success = false
+                    details += "$name unavailable"
+                    return@forEach
+                }
+                val ok = clearDirectoryContents(dir)
+                if (ok) {
+                    details += "$name cleared"
+                } else {
+                    success = false
+                    details += "$name clear failed"
+                }
             }
-            val ok = clearDirectoryContents(dir)
-            if (ok) {
-                details += "$name cleared"
-            } else {
-                success = false
-                details += "$name clear failed"
-            }
+
+            return ClearResult(success = success, details = details.joinToString("; "))
         }
-
-        return ClearResult(success = success, details = details.joinToString("; "))
     }
 
     private fun copyLsposedLogs(stagingDir: File, details: MutableList<String>): Boolean {
@@ -150,7 +201,8 @@ object LogBundleExporter {
         val shellCmd = buildString {
             append("mkdir -p '$targetPath'; ")
             LSPOSED_LOG_DIRS.forEach { path ->
-                append("if [ -d '$path' ]; then cp -a '$path' '$targetPath/'; fi; ")
+                val name = File(path).name
+                append("if [ -d '$path' ]; then cp -a '$path' '$targetPath/' && chmod -R a+rX '$targetPath/$name'; fi; ")
             }
         }
         val suResult = runSuCommand(shellCmd)
@@ -187,10 +239,24 @@ object LogBundleExporter {
             val relative = file.relativeTo(source).path
             val dest = if (relative.isEmpty()) target else File(target, relative)
             if (file.isDirectory) {
-                if (!dest.exists()) dest.mkdirs()
+                ensureDirectory(dest, recreateWhenFile = true)
             } else {
-                dest.parentFile?.mkdirs()
-                file.copyTo(dest, overwrite = true)
+                if (!file.exists()) return@forEach
+                val parent = dest.parentFile
+                if (parent == null || !ensureDirectory(parent, recreateWhenFile = true)) {
+                    XLog.w("Skip copy due to invalid parent dir: %s", dest.absolutePath)
+                    return@forEach
+                }
+                runCatching {
+                    file.copyTo(dest, overwrite = true)
+                }.onFailure {
+                    XLog.w(
+                        "Skip copy file failed: src=%s dst=%s err=%s",
+                        file.absolutePath,
+                        dest.absolutePath,
+                        it.message ?: it.javaClass.simpleName,
+                    )
+                }
             }
         }
     }
@@ -201,10 +267,18 @@ object LogBundleExporter {
                 sourceDir.walkTopDown()
                     .filter { it.isFile }
                     .forEach { file ->
-                        val entryName = file.relativeTo(sourceDir).invariantSeparatorsPath
-                        zos.putNextEntry(ZipEntry(entryName))
-                        file.inputStream().use { input -> input.copyTo(zos) }
-                        zos.closeEntry()
+                        runCatching {
+                            val entryName = file.relativeTo(sourceDir).invariantSeparatorsPath
+                            zos.putNextEntry(ZipEntry(entryName))
+                            file.inputStream().use { input -> input.copyTo(zos) }
+                            zos.closeEntry()
+                        }.onFailure {
+                            XLog.w(
+                                "Skip zipping unreadable file: %s err=%s",
+                                file.absolutePath,
+                                it.message ?: it.javaClass.simpleName,
+                            )
+                        }
                     }
             }
         }
@@ -212,18 +286,37 @@ object LogBundleExporter {
 
     private fun clearDirectoryContents(dir: File): Boolean {
         return runCatching {
-            if (!dir.exists()) {
-                dir.mkdirs()
-                return@runCatching true
+            if (!ensureDirectory(dir, recreateWhenFile = true)) {
+                return@runCatching false
             }
-            var ok = true
+            var deletedAll = true
             dir.listFiles().orEmpty().forEach { child ->
                 if (!child.deleteRecursively()) {
-                    ok = false
+                    deletedAll = false
+                    XLog.w("Failed to delete log child: %s", child.absolutePath)
                 }
             }
-            if (!dir.exists() && !dir.mkdirs()) ok = false
-            ok
+            deletedAll && ensureDirectory(dir, recreateWhenFile = true)
         }.getOrDefault(false)
+    }
+
+    private fun ensureDirectory(dir: File, recreateWhenFile: Boolean): Boolean {
+        if (dir.exists()) {
+            if (dir.isDirectory) return true
+            if (!recreateWhenFile) return false
+            if (!dir.delete()) {
+                XLog.w("Failed to delete non-directory path: %s", dir.absolutePath)
+                return false
+            }
+        }
+        if (!dir.mkdirs() && !dir.exists()) {
+            XLog.w("Failed to mkdirs for path: %s", dir.absolutePath)
+            return false
+        }
+        return dir.isDirectory
+    }
+
+    private fun getPrivateExportDir(context: Context): File {
+        return StorageUtils.getPrivateLogExportDir(context)
     }
 }
