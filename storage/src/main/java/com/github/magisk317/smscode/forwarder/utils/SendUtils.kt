@@ -37,6 +37,7 @@ import com.github.magisk317.smscode.forwarder.utils.sender.WeworkAgentUtils
 import com.github.magisk317.smscode.forwarder.utils.sender.WeworkRobotUtils
 import com.google.gson.Gson
 import com.tianma.xsmscode.storage.BuildConfig
+import com.tianma.xsmscode.common.utils.ForwardFlowLog
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.AppDatabase
 import com.tianma.xsmscode.data.db.entity.SmsMsg
@@ -61,8 +62,18 @@ object SendUtils {
      * Entry point called from [ForwardReceiver] after receiving IPC broadcast from Xposed layer.
      * Queries all enabled Senders from Room DB and dispatches the message to each channel.
      */
-    fun sendMsg(context: Context, msgInfo: MsgInfo, isCodeSms: Boolean = true, recordId: Long? = null) {
+    fun sendMsg(
+        context: Context,
+        msgInfo: MsgInfo,
+        isCodeSms: Boolean = true,
+        recordId: Long? = null,
+        traceId: String? = null,
+    ) {
         XLog.i("Dispatching MsgInfo to enabled senders: isCodeSms=%s msg=%s", isCodeSms, msgInfo)
+        ForwardFlowLog.i(
+            traceId,
+            "SendUtils enter type=${msgInfo.type} pkg=${msgInfo.packageName.ifBlank { "<none>" }} isCodeSms=$isCodeSms recordId=${recordId ?: -1}",
+        )
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
@@ -86,8 +97,15 @@ object SendUtils {
                         results = emptyList(),
                         defaultMessage = "未启用任何转发通道",
                     )
+                    ForwardFlowLog.w(traceId, "No eligible senders")
                     return@launch
                 }
+                ForwardFlowLog.i(
+                    traceId,
+                    "Eligible senders=${senders.size}: ${
+                        senders.joinToString(",") { it.name.ifBlank { senderTypeName(it.type) } }
+                    }",
+                )
                 val commonConfig = ForwardCommonConfigStore.load(context)
                 val effectiveConfig = if (msgInfo.type == "app_notify" && msgInfo.packageName.isNotBlank()) {
                     val appConfig = db.appInfoDao().getByPackageName(msgInfo.packageName)
@@ -107,7 +125,7 @@ object SendUtils {
                 val msgForSend = ForwardCommonConfigStore.applyToMessage(context, msgInfo, effectiveConfig)
                 val results = mutableListOf<SenderDispatchResult>()
                 for (sender in senders) {
-                    results += dispatchToSender(context, sender, msgForSend)
+                    results += dispatchToSender(context, sender, msgForSend, traceId)
                 }
                 persistForwardResult(
                     db = db,
@@ -115,10 +133,19 @@ object SendUtils {
                     results = results,
                     defaultMessage = "未启用任何转发通道",
                 )
+                val success = results.count { it.success }
+                val failed = results.size - success
+                ForwardFlowLog.i(
+                    traceId,
+                    "Dispatch done success=$success failed=$failed detail=${
+                        results.joinToString(" | ") { "${it.senderName}:${if (it.success) "OK" else it.message}" }
+                    }",
+                )
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 XLog.e("Dispatch failed", e)
+                ForwardFlowLog.e(traceId, "SendUtils dispatch failed", e)
                 persistForwardResult(
                     db = AppDatabase.getInstance(context),
                     recordId = recordId,
@@ -130,9 +157,15 @@ object SendUtils {
         }
     }
 
-    private suspend fun dispatchToSender(context: Context, sender: Sender, msgInfo: MsgInfo): SenderDispatchResult {
+    private suspend fun dispatchToSender(
+        context: Context,
+        sender: Sender,
+        msgInfo: MsgInfo,
+        traceId: String? = null,
+    ): SenderDispatchResult {
         val senderName = sender.name.ifBlank { senderTypeName(sender.type) }
         XLog.d("Dispatching to sender: id=%d, type=%d, name=%s", sender.id, sender.type, sender.name)
+        ForwardFlowLog.d(traceId, "Dispatch sender start name=$senderName type=${sender.type}")
         try {
             when (sender.type) {
                 SenderType.DINGTALK_GROUP_ROBOT -> {
@@ -141,7 +174,7 @@ object SendUtils {
                 }
                 SenderType.EMAIL -> {
                     val setting = gson.fromJson(sender.jsonSetting, EmailSetting::class.java)
-                    EmailUtils.sendMsg(setting, msgInfo)
+                    EmailUtils.sendMsg(setting, msgInfo, traceId)
                 }
                 SenderType.BARK -> {
                     val setting = gson.fromJson(sender.jsonSetting, BarkSetting::class.java)
@@ -149,7 +182,7 @@ object SendUtils {
                 }
                 SenderType.WEBHOOK -> {
                     val setting = gson.fromJson(sender.jsonSetting, WebhookSetting::class.java)
-                    WebhookUtils.sendMsg(setting, msgInfo)
+                    WebhookUtils.sendMsg(setting, msgInfo, traceId)
                 }
                 SenderType.WEWORK_ROBOT -> {
                     val setting = gson.fromJson(sender.jsonSetting, WeworkRobotSetting::class.java)
@@ -210,9 +243,11 @@ object SendUtils {
                 }
             }
             XLog.i("Dispatched to sender [%s] type=%d", sender.name, sender.type)
+            ForwardFlowLog.i(traceId, "Dispatch sender success name=$senderName")
             return SenderDispatchResult(senderName = senderName, success = true, message = "OK")
         } catch (e: com.google.gson.JsonSyntaxException) {
             XLog.e("Failed to parse sender setting for [%s]", sender.name, e)
+            ForwardFlowLog.e(traceId, "Dispatch sender json parse failed name=$senderName", e)
             return SenderDispatchResult(
                 senderName = senderName,
                 success = false,
@@ -220,6 +255,7 @@ object SendUtils {
             )
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             XLog.e("Failed to dispatch to sender [%s] type=%d", sender.name, sender.type, e)
+            ForwardFlowLog.e(traceId, "Dispatch sender failed name=$senderName", e)
             return SenderDispatchResult(
                 senderName = senderName,
                 success = false,

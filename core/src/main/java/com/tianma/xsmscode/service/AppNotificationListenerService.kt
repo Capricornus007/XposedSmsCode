@@ -1,18 +1,33 @@
 package com.tianma.xsmscode.service
 
 import android.app.Notification
+import android.content.BroadcastReceiver
+import android.content.ComponentName
 import android.content.Intent
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
 import com.tianma.xsmscode.common.utils.XLog
+import com.tianma.xsmscode.core.BuildConfig
 import kotlinx.coroutines.runBlocking
-import com.tianma.xsmscode.data.db.entity.AppInfo
-import com.tianma.xsmscode.feature.store.EntityStoreManager
-import com.tianma.xsmscode.feature.store.EntityType
 
 class AppNotificationListenerService : NotificationListenerService() {
+
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        XLog.i("AppNotificationListenerService connected")
+    }
+
+    override fun onListenerDisconnected() {
+        super.onListenerDisconnected()
+        XLog.w("AppNotificationListenerService disconnected, requestRebind")
+        runCatching {
+            requestRebind(ComponentName(this, AppNotificationListenerService::class.java))
+        }.onFailure {
+            XLog.e("AppNotificationListenerService requestRebind failed", it)
+        }
+    }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         super.onNotificationPosted(sbn)
@@ -20,17 +35,7 @@ class AppNotificationListenerService : NotificationListenerService() {
 
         val packageName = sbn.packageName
         // Do not forward our own notifications or system notifications
-        if (packageName == "com.tianma.xsmscode" || packageName == "android") {
-            return
-        }
-
-        // Check if forwarding is enabled for this app
-        val enabledApps = EntityStoreManager.loadEntitiesFromFile(
-            applicationContext,
-            EntityType.APP_CONFIG,
-            AppInfo::class.java
-        )
-        if (enabledApps.none { it.packageName == packageName && it.forwarding }) {
+        if (packageName == applicationContext.packageName || packageName == "android") {
             return
         }
 
@@ -45,14 +50,18 @@ class AppNotificationListenerService : NotificationListenerService() {
         if (shouldSkipNotification(notification)) return
 
         // TODO: check configuration rules (blacklist/whitelist) for notifications.
-        
+        val eventId = buildEventId(packageName)
         val forwardIntent = Intent(PrefConst.ACTION_FORWARD_SMS)
-        forwardIntent.setPackage(applicationContext.packageName)
+        forwardIntent.setClassName(applicationContext.packageName, FORWARD_RECEIVER_CLASS_NAME)
+        forwardIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+        forwardIntent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         forwardIntent.putExtra("sender", title)
         forwardIntent.putExtra("body", body)
         forwardIntent.putExtra("date", sbn.postTime)
         forwardIntent.putExtra("packageName", packageName)
         forwardIntent.putExtra("msgType", "app_notify")
+        forwardIntent.putExtra("forward_source", "nls")
+        forwardIntent.putExtra("event_id", eventId)
         
         // Resolve App Name
         val pm = applicationContext.packageManager
@@ -69,8 +78,31 @@ class AppNotificationListenerService : NotificationListenerService() {
         }
         forwardIntent.putExtra("ipc_token", token)
 
-        XLog.i("Notification intercepted: pkg=$packageName, title=$title, body=$body")
-        sendBroadcast(forwardIntent)
+        XLog.i("Notification intercepted: pkg=%s event=%s title=%s body=%s", packageName, eventId, title, body)
+        if (BuildConfig.DEBUG) {
+            sendOrderedBroadcast(
+                forwardIntent,
+                null,
+                object : BroadcastReceiver() {
+                    override fun onReceive(context: android.content.Context?, intent: Intent?) {
+                        XLog.i(
+                            "NLS ordered ack pkg=%s event=%s resultCode=%d resultData=%s extras=%s",
+                            packageName,
+                            eventId,
+                            resultCode,
+                            resultData ?: "<null>",
+                            getResultExtras(true)?.toString() ?: "<null>",
+                        )
+                    }
+                },
+                null,
+                0,
+                null,
+                null,
+            )
+        } else {
+            sendBroadcast(forwardIntent)
+        }
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification?) {
@@ -90,5 +122,15 @@ class AppNotificationListenerService : NotificationListenerService() {
         }
         val isGroupSummary = (flags and Notification.FLAG_GROUP_SUMMARY) != 0
         return isGroupSummary
+    }
+
+    private fun buildEventId(packageName: String): String {
+        val now = System.currentTimeMillis().toString(36)
+        val suffix = kotlin.math.abs((packageName + now).hashCode()).toString(36)
+        return "nls_${now}_$suffix"
+    }
+
+    companion object {
+        private const val FORWARD_RECEIVER_CLASS_NAME = "com.github.magisk317.smscode.receiver.ForwardReceiver"
     }
 }

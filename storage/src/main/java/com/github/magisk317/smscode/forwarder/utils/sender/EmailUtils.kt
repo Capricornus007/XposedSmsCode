@@ -19,7 +19,8 @@ import java.util.Properties
 object EmailUtils {
     private const val TAG = "EmailUtils"
 
-    suspend fun sendMsg(setting: EmailSetting, msgInfo: MsgInfo) = withContext(Dispatchers.IO) {
+    suspend fun sendMsg(setting: EmailSetting, msgInfo: MsgInfo, traceId: String? = null) = withContext(Dispatchers.IO) {
+        fun t(message: String): String = if (traceId.isNullOrBlank()) message else "[trace=$traceId] $message"
         runCatching {
             normalizeMailType(setting)
 
@@ -31,7 +32,7 @@ object EmailUtils {
             val recipients = buildRecipients(setting)
 
             if (fromEmail.isBlank() || password.isBlank() || host.isBlank() || recipients.isEmpty()) {
-                SLog.e(TAG, "Email config invalid")
+                SLog.e(TAG, t("Email config invalid"))
                 throw IllegalArgumentException("邮箱配置不完整")
             }
 
@@ -56,9 +57,9 @@ object EmailUtils {
             message.setText(msgInfo.content)
 
             sendByTransport(session, message, host, portInt, fromEmail, password)
-            SLog.i(TAG, "Email send success")
+            SLog.i(TAG, t("Email send success"))
         }.onFailure {
-            SLog.e(TAG, "Email send failed", it)
+            SLog.e(TAG, t("Email send failed"), it)
         }.getOrElse { throw it }
     }
 

@@ -1,15 +1,16 @@
 package com.tianma.xsmscode.xp.hook.notification
 
 import android.app.Notification
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.database.Cursor
 import android.net.Uri
 import android.os.Binder
 import android.os.Build
 import android.os.Process
 import android.os.UserHandle
+import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.xp.hook.BaseHook
@@ -22,11 +23,13 @@ class NotificationManagerHook : BaseHook() {
     private data class ModuleEndpoint(
         val packageName: String,
         val prefAuthority: String,
-        val dbAuthority: String,
     )
 
     @Volatile
     private var cachedEndpoint: ModuleEndpoint? = null
+
+    @Volatile
+    private var cachedIpcToken: String? = null
 
     override fun hookOnLoadPackage(): Boolean = true
 
@@ -126,18 +129,18 @@ class NotificationManagerHook : BaseHook() {
             return
         }
 
-        if (!queryAppForwardingEnabled(systemContext, endpoint, pkg)) {
-            XLog.d("NotificationManagerHook: skip forwarding (disabled/unreadable). pkg=%s", pkg)
-            return
-        }
-
+        val eventId = buildEventId(pkg)
         val forwardIntent = Intent(PrefConst.ACTION_FORWARD_SMS)
-        forwardIntent.setPackage(modulePackage)
+        forwardIntent.setClassName(modulePackage, FORWARD_RECEIVER_CLASS_NAME)
+        forwardIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+        forwardIntent.addFlags(Intent.FLAG_RECEIVER_FOREGROUND)
         forwardIntent.putExtra("sender", title)
         forwardIntent.putExtra("body", body)
         forwardIntent.putExtra("date", System.currentTimeMillis())
         forwardIntent.putExtra("packageName", pkg)
         forwardIntent.putExtra("msgType", "app_notify")
+        forwardIntent.putExtra("forward_source", "nms_hook")
+        forwardIntent.putExtra("event_id", eventId)
 
         val pm = systemContext.packageManager
         val appName = try {
@@ -148,11 +151,9 @@ class NotificationManagerHook : BaseHook() {
         }
         forwardIntent.putExtra("company", appName)
 
-        val token = queryPrefString(
+        val token = resolveIpcToken(
             systemContext = systemContext,
             endpoint = endpoint,
-            key = PrefConst.KEY_IPC_TOKEN,
-            defaultValue = "",
             callerPackageHint = pkg,
         )
         if (token.isBlank()) {
@@ -161,20 +162,8 @@ class NotificationManagerHook : BaseHook() {
         }
         forwardIntent.putExtra("ipc_token", token)
 
-        XLog.i("NotificationManagerHook intercepted: pkg=$pkg, title=$title, body=$body")
-
-        withClearedCallingIdentity("sendBroadcast:$pkg") {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                try {
-                    val allUserHandle = UserHandle::class.java.getField("ALL").get(null) as UserHandle
-                    systemContext.sendBroadcastAsUser(forwardIntent, allUserHandle)
-                } catch (_: Exception) {
-                    systemContext.sendBroadcast(forwardIntent)
-                }
-            } else {
-                systemContext.sendBroadcast(forwardIntent)
-            }
-        }
+        XLog.i("NotificationManagerHook intercepted: pkg=%s event=%s title=%s body=%s", pkg, eventId, title, body)
+        dispatchForwardBroadcast(systemContext, forwardIntent, pkg, eventId)
     }
 
     private fun getSkipReason(notification: Notification): String? {
@@ -211,25 +200,21 @@ class NotificationManagerHook : BaseHook() {
 
         for (packageName in candidates) {
             val prefAuthority = "$packageName.pref.provider"
-            val dbAuthority = "$packageName.db.provider"
             try {
                 val prefProviderPackage = resolveProviderPackage(systemContext, prefAuthority)
-                val dbProviderPackage = resolveProviderPackage(systemContext, dbAuthority)
-                if (prefProviderPackage == packageName && dbProviderPackage == packageName) {
+                if (prefProviderPackage == packageName) {
                     return ModuleEndpoint(
                         packageName = packageName,
                         prefAuthority = prefAuthority,
-                        dbAuthority = dbAuthority,
                     )
                 }
                 if (fallbackCandidate == null && isPackageInstalled(systemContext, packageName)) {
                     fallbackCandidate = packageName
                 }
                 XLog.w(
-                    "NotificationManagerHook: candidate %s rejected. prefProvider=%s dbProvider=%s",
+                    "NotificationManagerHook: candidate %s rejected. prefProvider=%s",
                     packageName,
                     prefProviderPackage ?: "<null>",
-                    dbProviderPackage ?: "<null>",
                 )
             } catch (t: Throwable) {
                 XLog.w(
@@ -247,7 +232,6 @@ class NotificationManagerHook : BaseHook() {
             return ModuleEndpoint(
                 packageName = fallbackCandidate,
                 prefAuthority = "$fallbackCandidate.pref.provider",
-                dbAuthority = "$fallbackCandidate.db.provider",
             )
         }
         return null
@@ -309,6 +293,7 @@ class NotificationManagerHook : BaseHook() {
         callerPackageHint: String? = null,
     ): String = queryPrefStringValue(
         systemContext = systemContext,
+        modulePackageName = endpoint.packageName,
         authority = endpoint.prefAuthority,
         typePath = "string",
         key = key,
@@ -316,8 +301,40 @@ class NotificationManagerHook : BaseHook() {
         callerPackageHint = callerPackageHint,
     )
 
+    private fun resolveIpcToken(
+        systemContext: Context,
+        endpoint: ModuleEndpoint,
+        callerPackageHint: String? = null,
+    ): String {
+        val freshToken = queryPrefString(
+            systemContext = systemContext,
+            endpoint = endpoint,
+            key = PrefConst.KEY_IPC_TOKEN,
+            defaultValue = "",
+            callerPackageHint = callerPackageHint,
+        )
+        if (freshToken.isNotBlank()) {
+            if (cachedIpcToken != freshToken) {
+                XLog.d("NotificationManagerHook: ipc token refreshed from provider")
+            }
+            cachedIpcToken = freshToken
+            return freshToken
+        }
+
+        val cached = cachedIpcToken
+        if (!cached.isNullOrBlank()) {
+            XLog.w(
+                "NotificationManagerHook: ipc token provider unavailable, using cached token. caller=%s",
+                callerPackageHint ?: "<none>",
+            )
+            return cached
+        }
+        return ""
+    }
+
     private fun queryPrefStringValue(
         systemContext: Context,
+        modulePackageName: String,
         authority: String,
         typePath: String,
         key: String,
@@ -334,56 +351,30 @@ class NotificationManagerHook : BaseHook() {
         }
         if (primary != null) return primary
 
-        val fallbackContext = buildCallerPackageContext(
-            systemContext = systemContext,
-            callerPackageHint = callerPackageHint,
-        )
+        val fallbackContext = tryCreatePackageContext(systemContext, modulePackageName)
         if (fallbackContext != null) {
-            val fallback = queryPrefStringInternal(fallbackContext, uri, defaultValue)
+            val fallback = withClearedCallingIdentity("queryPrefFallback:$authority/$key") {
+                queryPrefStringInternal(fallbackContext, uri, defaultValue)
+            }
             if (fallback != null) {
                 XLog.d(
-                    "NotificationManagerHook: query pref fallback succeeded. authority=%s key=%s caller=%s",
+                    "NotificationManagerHook: query pref fallback succeeded. authority=%s key=%s module=%s caller=%s",
                     authority,
                     key,
+                    modulePackageName,
                     callerPackageHint ?: "<none>",
                 )
                 return fallback
             }
         }
         XLog.w(
-            "NotificationManagerHook: query pref unavailable. authority=%s key=%s caller=%s",
+            "NotificationManagerHook: query pref unavailable. authority=%s key=%s module=%s caller=%s",
             authority,
             key,
+            modulePackageName,
             callerPackageHint ?: "<none>",
         )
         return defaultValue
-    }
-
-    private fun queryAppForwardingEnabled(
-        systemContext: Context,
-        endpoint: ModuleEndpoint,
-        packageName: String,
-    ): Boolean {
-        val uri = Uri.withAppendedPath(Uri.parse("content://${endpoint.dbAuthority}/app_info"), packageName)
-        val primary = withClearedCallingIdentity("queryAppForwarding:$packageName") {
-            queryAppForwardingInternal(systemContext, uri, packageName)
-        }
-        if (primary != null) {
-            return primary
-        }
-
-        val fallbackContext = buildCallerPackageContext(
-            systemContext = systemContext,
-            callerPackageHint = packageName,
-        )
-        if (fallbackContext != null) {
-            val fallback = queryAppForwardingInternal(fallbackContext, uri, packageName)
-            if (fallback != null) {
-                XLog.d("NotificationManagerHook: app forwarding fallback hit. pkg=%s enabled=%s", packageName, fallback)
-                return fallback
-            }
-        }
-        return false
     }
 
     private fun queryPrefStringInternal(context: Context, uri: Uri, defaultValue: String): String? {
@@ -408,65 +399,6 @@ class NotificationManagerHook : BaseHook() {
             )
             null
         }
-    }
-
-    private fun queryAppForwardingInternal(context: Context, uri: Uri, packageName: String): Boolean? {
-        return try {
-            context.contentResolver.query(uri, arrayOf("forwarding"), null, null, null)?.use { cursor ->
-                if (!cursor.moveToFirst()) {
-                    XLog.d("NotificationManagerHook: app_info row missing. pkg=%s", packageName)
-                    return false
-                }
-                val enabled = readCursorBoolean(cursor, "forwarding", false)
-                XLog.d("NotificationManagerHook: app forwarding state. pkg=%s enabled=%s", packageName, enabled)
-                enabled
-            } ?: run {
-                XLog.w("NotificationManagerHook: app forwarding query returned null cursor. pkg=%s uri=%s", packageName, uri)
-                null
-            }
-        } catch (t: Throwable) {
-            XLog.w(
-                "NotificationManagerHook: query app forwarding failed. package=%s err=%s callerUid=%d selfUid=%d",
-                packageName,
-                t.message ?: t.javaClass.simpleName,
-                Binder.getCallingUid(),
-                Process.myUid(),
-            )
-            null
-        }
-    }
-
-    private fun buildCallerPackageContext(systemContext: Context, callerPackageHint: String?): Context? {
-        val callerUid = Binder.getCallingUid()
-        if (callerUid == Process.SYSTEM_UID) {
-            return null
-        }
-        val packages = linkedSetOf<String>()
-        callerPackageHint?.takeIf { it.isNotBlank() }?.let { packages.add(it) }
-        try {
-            systemContext.packageManager.getPackagesForUid(callerUid)?.forEach { pkg ->
-                if (pkg.isNotBlank()) packages.add(pkg)
-            }
-        } catch (_: Throwable) {
-            // Ignore and continue with hint only.
-        }
-        for (pkg in packages) {
-            val context = tryCreatePackageContext(systemContext, pkg)
-            if (context != null) {
-                XLog.d(
-                    "NotificationManagerHook: using caller context pkg=%s callerUid=%d",
-                    pkg,
-                    callerUid,
-                )
-                return context
-            }
-        }
-        XLog.w(
-            "NotificationManagerHook: failed to build caller context. callerUid=%d callerPkgHint=%s",
-            callerUid,
-            callerPackageHint ?: "<none>",
-        )
-        return null
     }
 
     private fun tryCreatePackageContext(systemContext: Context, packageName: String): Context? {
@@ -514,16 +446,125 @@ class NotificationManagerHook : BaseHook() {
         }
     }
 
-    private fun readCursorBoolean(cursor: Cursor, columnName: String, defaultValue: Boolean): Boolean {
-        val index = cursor.getColumnIndex(columnName)
-        if (index < 0) return defaultValue
-        return when (cursor.getType(index)) {
-            Cursor.FIELD_TYPE_INTEGER -> cursor.getInt(index) != 0
-            Cursor.FIELD_TYPE_STRING -> {
-                val raw = cursor.getString(index).orEmpty()
-                raw == "1" || raw.equals("true", ignoreCase = true)
+    private fun dispatchForwardBroadcast(
+        systemContext: Context,
+        intent: Intent,
+        sourcePackage: String,
+        eventId: String,
+    ) {
+        withClearedCallingIdentity("sendBroadcast:$sourcePackage#$eventId") {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                systemContext.sendBroadcast(intent)
+                return@withClearedCallingIdentity
             }
-            else -> defaultValue
+
+            val targetUsers = resolveTargetUsers(Binder.getCallingUid())
+            for (userHandle in targetUsers) {
+                try {
+                    sendBroadcastAsUser(systemContext, intent, userHandle, sourcePackage, eventId)
+                    return@withClearedCallingIdentity
+                } catch (t: Throwable) {
+                    XLog.w(
+                        "NotificationManagerHook: sendBroadcastAsUser failed. pkg=%s event=%s user=%s err=%s",
+                        sourcePackage,
+                        eventId,
+                        describeUserHandle(userHandle),
+                        t.message ?: t.javaClass.simpleName,
+                    )
+                }
+            }
+
+            XLog.w(
+                "NotificationManagerHook: fallback sendBroadcast without user. pkg=%s event=%s",
+                sourcePackage,
+                eventId,
+            )
+            systemContext.sendBroadcast(intent)
         }
+    }
+
+    private fun sendBroadcastAsUser(
+        systemContext: Context,
+        intent: Intent,
+        userHandle: UserHandle,
+        sourcePackage: String,
+        eventId: String,
+    ) {
+        val sendIntent = Intent(intent)
+        if (BuildConfig.DEBUG) {
+            val resultReceiver = object : BroadcastReceiver() {
+                override fun onReceive(context: Context?, callbackIntent: Intent?) {
+                    XLog.i(
+                        "NotificationManagerHook: ordered ack pkg=%s event=%s user=%s resultCode=%d resultData=%s extras=%s",
+                        sourcePackage,
+                        eventId,
+                        describeUserHandle(userHandle),
+                        resultCode,
+                        resultData ?: "<null>",
+                        getResultExtras(true)?.toString() ?: "<null>",
+                    )
+                }
+            }
+            systemContext.sendOrderedBroadcastAsUser(
+                sendIntent,
+                userHandle,
+                null,
+                resultReceiver,
+                null,
+                0,
+                null,
+                null,
+            )
+        } else {
+            systemContext.sendBroadcastAsUser(sendIntent, userHandle)
+        }
+        XLog.d(
+            "NotificationManagerHook: broadcast sent. pkg=%s event=%s user=%s ordered=%s",
+            sourcePackage,
+            eventId,
+            describeUserHandle(userHandle),
+            BuildConfig.DEBUG,
+        )
+    }
+
+    private fun resolveTargetUsers(callerUid: Int): List<UserHandle> {
+        val result = ArrayList<UserHandle>(2)
+        runCatching {
+            if (callerUid >= 0) {
+                result.add(UserHandle.getUserHandleForUid(callerUid))
+            }
+        }.onFailure {
+            XLog.w("NotificationManagerHook: resolve caller user failed. callerUid=%d", callerUid)
+        }
+        runCatching {
+            val allUserHandle = UserHandle::class.java.getField("ALL").get(null) as? UserHandle
+            if (allUserHandle != null && result.none { it == allUserHandle }) {
+                result.add(allUserHandle)
+            }
+        }
+        if (result.isEmpty()) {
+            runCatching {
+                val owner = UserHandle::class.java.getField("OWNER").get(null) as? UserHandle
+                if (owner != null) result.add(owner)
+            }
+        }
+        return result
+    }
+
+    private fun describeUserHandle(userHandle: UserHandle): String {
+        return runCatching {
+            val method = UserHandle::class.java.getMethod("getIdentifier")
+            method.invoke(userHandle)?.toString() ?: userHandle.toString()
+        }.getOrDefault(userHandle.toString())
+    }
+
+    private fun buildEventId(packageName: String): String {
+        val now = System.currentTimeMillis().toString(36)
+        val suffix = kotlin.math.abs((packageName + now).hashCode()).toString(36)
+        return "nms_${now}_$suffix"
+    }
+
+    companion object {
+        private const val FORWARD_RECEIVER_CLASS_NAME = "com.github.magisk317.smscode.receiver.ForwardReceiver"
     }
 }

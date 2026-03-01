@@ -3,23 +3,36 @@ package com.github.magisk317.smscode.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.os.Process
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
 import com.github.magisk317.smscode.forwarder.utils.SendUtils
 import com.github.magisk317.smscode.forwarder.utils.SourceMetadataResolver
 import com.tianma.xsmscode.common.constant.PrefConst
+import com.tianma.xsmscode.common.utils.ForwardFlowLog
 import com.tianma.xsmscode.common.utils.XLog
+import com.tianma.xsmscode.data.db.DBManager
 import android.telephony.SubscriptionManager
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
 
 class ForwardReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        val ordered = isOrderedBroadcast
         val pendingResult = goAsync()
+        val eventId = intent.getStringExtra("event_id").orEmpty()
+        val traceId = buildTraceId(intent, eventId)
         Thread {
+            fun markResult(code: Int, reason: String) {
+                setOrderedResult(pendingResult, ordered, code, reason, eventId)
+            }
             try {
+                ForwardFlowLog.i(traceId, "ForwardReceiver onReceive action=${intent.action} event=${eventId.ifBlank { "<none>" }} ordered=$ordered")
                 // 1. Action validation
                 if (intent.action != PrefConst.ACTION_FORWARD_SMS) {
                     XLog.e("Rejecting broadcast with invalid action: %s", intent.action)
+                    ForwardFlowLog.w(traceId, "Reject invalid action=${intent.action}")
+                    markResult(RESULT_REJECT_ACTION, "invalid_action")
                     return@Thread
                 }
 
@@ -31,6 +44,9 @@ class ForwardReceiver : BroadcastReceiver() {
                 val packageName = intent.getStringExtra("packageName")
                 val receivedToken = intent.getStringExtra("ipc_token")
                 val msgTypeStr = intent.getStringExtra("msgType") ?: "sms"
+                val forwardSource = intent.getStringExtra("forward_source") ?: "unknown"
+                val sentFromUid = resolveSentFromUidCompat()
+                val sentFromPkg = resolveSentFromPackageCompat()
                 val subId = readIntExtra(
                     intent,
                     "sub_id",
@@ -58,21 +74,59 @@ class ForwardReceiver : BroadcastReceiver() {
                         "",
                     )
                 }
+                val tokenMatched = expectedToken.isNotEmpty() && receivedToken == expectedToken
+                val allowSystemBypass = shouldAllowSystemTokenBypass(
+                    msgType = msgTypeStr,
+                    forwardSource = forwardSource,
+                    sentFromUid = sentFromUid,
+                )
 
-                if (expectedToken.isEmpty() || receivedToken != expectedToken) {
+                if (!tokenMatched && !allowSystemBypass) {
                     XLog.e("IPC Token mismatch! Security breach attempt or uninitialized token. Rejecting broadcast.")
+                    ForwardFlowLog.w(
+                        traceId,
+                        "Reject token mismatch event=${eventId.ifBlank { "<none>" }} pkg=${packageName.orEmpty()} expectedEmpty=${expectedToken.isEmpty()} receivedEmpty=${receivedToken.isNullOrBlank()} source=$forwardSource sentFromUid=${sentFromUid ?: -1} sentFromPkg=${sentFromPkg ?: "<none>"}",
+                    )
+                    markResult(RESULT_REJECT_TOKEN, "token_mismatch")
+                    return@Thread
+                }
+                if (!tokenMatched && allowSystemBypass) {
+                    XLog.w(
+                        "IPC token unavailable, accepted by system bypass. source=%s msgType=%s sentFromUid=%d sentFromPkg=%s",
+                        forwardSource,
+                        msgTypeStr,
+                        sentFromUid ?: -1,
+                        sentFromPkg ?: "<none>",
+                    )
+                    ForwardFlowLog.w(
+                        traceId,
+                        "Token bypass accepted source=$forwardSource msgType=$msgTypeStr sentFromUid=${sentFromUid ?: -1} sentFromPkg=${sentFromPkg ?: "<none>"}",
+                    )
+                }
+                if (msgTypeStr == "app_notify" && !shouldForwardAppNotify(context, packageName, traceId, forwardSource)) {
+                    markResult(RESULT_REJECT_APP_GATE, "app_gate_drop")
                     return@Thread
                 }
                 if (msgTypeStr == "app_notify" && shouldDropDuplicateAppNotify(packageName, sender, body)) {
                     XLog.i(
-                        "Drop duplicate app_notify: pkg=%s sender=%s",
+                        "Drop duplicate app_notify: pkg=%s sender=%s source=%s",
                         packageName.orEmpty(),
                         sender.orEmpty(),
+                        forwardSource,
                     )
+                    ForwardFlowLog.i(
+                        traceId,
+                        "Drop duplicate app_notify pkg=${packageName.orEmpty()} sender=${sender.orEmpty()} source=$forwardSource",
+                    )
+                    markResult(RESULT_DROP_DUPLICATE, "duplicate_drop")
                     return@Thread
                 }
 
                 XLog.i("IPC verified and received message from: %s", sender ?: "")
+                ForwardFlowLog.i(
+                    traceId,
+                    "IPC verified event=${eventId.ifBlank { "<none>" }} type=$msgTypeStr pkg=${packageName.orEmpty()} sender=${sender.orEmpty()} bodyLen=${body?.length ?: 0} source=$forwardSource sentFromUid=${sentFromUid ?: -1} sentFromPkg=${sentFromPkg ?: "<none>"}",
+                )
                 val normalizedSubId = subId ?: 0
                 val resolvedSimSlot = resolveSimSlot(rawSlot, normalizedSubId)
                 val contactName = SourceMetadataResolver.resolveContactName(context, sender ?: "")
@@ -83,6 +137,10 @@ class ForwardReceiver : BroadcastReceiver() {
                     normalizedSubId,
                     contactName.ifBlank { "<empty>" },
                     phoneArea.ifBlank { "<empty>" },
+                )
+                ForwardFlowLog.d(
+                    traceId,
+                    "Resolved metadata simSlot=$resolvedSimSlot subId=$normalizedSubId contact=${contactName.ifBlank { "<empty>" }} area=${phoneArea.ifBlank { "<empty>" }}",
                 )
 
                 val smsMsgType = if (msgTypeStr == "app_notify") com.tianma.xsmscode.data.db.entity.SmsMsg.MSG_TYPE_APP_NOTIFY else com.tianma.xsmscode.data.db.entity.SmsMsg.MSG_TYPE_SMS
@@ -142,6 +200,7 @@ class ForwardReceiver : BroadcastReceiver() {
                         recordId = resolver.insert(smsMsgUri, values)?.lastPathSegment?.toLongOrNull()
                     } catch (e: Exception) {
                         XLog.e("Failed to record app notification to DB", e)
+                        ForwardFlowLog.e(traceId, "Record app_notify failed", e)
                     }
                 } else {
                     recordId = findRecordIdByFingerprint(
@@ -161,13 +220,28 @@ class ForwardReceiver : BroadcastReceiver() {
                         msgType = smsMsgType,
                     )
                 }
+                ForwardFlowLog.i(
+                    traceId,
+                    "Ready to dispatch event=${eventId.ifBlank { "<none>" }} msgType=$msgTypeStr recordId=${recordId ?: -1} isCodeSms=${!smsCode.isNullOrBlank()} source=$forwardSource final_decision=forward",
+                )
 
                 // Dispatch to the multi-channel forwarding engine.
                 // isCodeSms: true = verification code SMS, false = regular SMS.
                 // SendUtils will use this to filter per-sender receiveNonCode setting.
                 val isCodeSms = !smsCode.isNullOrBlank()
-                SendUtils.sendMsg(context, msgInfo, isCodeSms, recordId)
+                try {
+                    SendUtils.sendMsg(context, msgInfo, isCodeSms, recordId, traceId)
+                    markResult(RESULT_OK, "forward_dispatched")
+                } catch (t: Throwable) {
+                    ForwardFlowLog.e(
+                        traceId,
+                        "Dispatch failed event=${eventId.ifBlank { "<none>" }} source=$forwardSource pkg=${packageName.orEmpty()}",
+                        t,
+                    )
+                    markResult(RESULT_DISPATCH_FAILED, "dispatch_failed")
+                }
             } finally {
+                ForwardFlowLog.d(traceId, "ForwardReceiver finished")
                 pendingResult.finish()
             }
         }.start()
@@ -177,7 +251,43 @@ class ForwardReceiver : BroadcastReceiver() {
         private const val TAG = "ForwardReceiver"
         private const val APP_NOTIFY_DEDUP_WINDOW_MS = 2500L
         private const val APP_NOTIFY_DEDUP_MAX_ENTRIES = 256
+        private const val RESULT_OK = 0
+        private const val RESULT_REJECT_ACTION = -101
+        private const val RESULT_REJECT_TOKEN = -102
+        private const val RESULT_REJECT_APP_GATE = -103
+        private const val RESULT_DROP_DUPLICATE = -104
+        private const val RESULT_DISPATCH_FAILED = -105
         private val recentAppNotify = ConcurrentHashMap<String, Long>()
+    }
+
+    private fun shouldAllowSystemTokenBypass(
+        msgType: String,
+        forwardSource: String,
+        sentFromUid: Int?,
+    ): Boolean {
+        // Keep strict token verification for all regular channels.
+        // Only allow NotificationManagerHook(system_server) app notification as a fallback.
+        return msgType == "app_notify" &&
+            forwardSource == "nms_hook" &&
+            sentFromUid == Process.SYSTEM_UID
+    }
+
+    private fun resolveSentFromUidCompat(): Int? {
+        if (Build.VERSION.SDK_INT < 34) return null
+        return try {
+            getSentFromUid()
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private fun resolveSentFromPackageCompat(): String? {
+        if (Build.VERSION.SDK_INT < 34) return null
+        return try {
+            getSentFromPackage()
+        } catch (_: Throwable) {
+            null
+        }
     }
 
     private fun resolveSimSlot(rawSlot: Int?, subId: Int): Int {
@@ -233,6 +343,53 @@ class ForwardReceiver : BroadcastReceiver() {
         return false
     }
 
+    private fun shouldForwardAppNotify(
+        context: Context,
+        packageName: String?,
+        traceId: String,
+        forwardSource: String,
+    ): Boolean {
+        val pkg = packageName.orEmpty().trim()
+        if (pkg.isEmpty()) {
+            ForwardFlowLog.w(
+                traceId,
+                "App notify gate pkg=<empty> source=$forwardSource final_decision=drop reason=empty_package",
+            )
+            XLog.w("App notify gate: empty package source=%s final_decision=drop", forwardSource)
+            return false
+        }
+        return try {
+            val appInfo = DBManager.get(context).queryAppInfoByPackageName(pkg)
+            val enabled = appInfo?.forwarding == true
+            val state = when {
+                appInfo == null -> "missing"
+                enabled -> "enabled"
+                else -> "disabled"
+            }
+            val finalDecision = if (enabled) "forward" else "drop"
+            ForwardFlowLog.i(
+                traceId,
+                "App notify gate pkg=$pkg source=$forwardSource state=$state final_decision=$finalDecision",
+            )
+            XLog.d(
+                "App notify gate: pkg=%s source=%s state=%s final_decision=%s",
+                pkg,
+                forwardSource,
+                state,
+                finalDecision,
+            )
+            enabled
+        } catch (t: Throwable) {
+            ForwardFlowLog.e(
+                traceId,
+                "App notify gate query failed pkg=$pkg source=$forwardSource final_decision=drop",
+                t,
+            )
+            XLog.e("App notify gate query failed: pkg=$pkg source=$forwardSource", t)
+            false
+        }
+    }
+
     private fun findRecordIdByFingerprint(
         context: Context,
         sender: String,
@@ -265,5 +422,27 @@ class ForwardReceiver : BroadcastReceiver() {
             XLog.w("findRecordIdByFingerprint failed: %s", t.message ?: t.javaClass.simpleName)
             null
         }
+    }
+
+    private fun setOrderedResult(
+        pendingResult: PendingResult,
+        ordered: Boolean,
+        code: Int,
+        reason: String,
+        eventId: String,
+    ) {
+        if (!ordered) return
+        runCatching {
+            pendingResult.setResultCode(code)
+            pendingResult.setResultData("reason=$reason;event_id=${eventId.ifBlank { "<none>" }}")
+        }
+    }
+
+    private fun buildTraceId(intent: Intent, eventId: String): String {
+        if (eventId.isNotBlank()) return eventId
+        val pkg = intent.getStringExtra("packageName") ?: "unknown"
+        val now = System.currentTimeMillis().toString(36)
+        val suffix = kotlin.math.abs((pkg + now).hashCode()).toString(36)
+        return "${now}_$suffix"
     }
 }
