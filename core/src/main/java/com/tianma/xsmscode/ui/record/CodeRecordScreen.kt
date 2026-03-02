@@ -609,7 +609,7 @@ private fun RecordDetailOverlay(
     val forwardStatusAnnotated = resolveForwardStatusAnnotated(sms)
     val forwardTarget = sanitizeForwardTarget(sms.forwardTarget)
     val forwardTime = if (sms.forwardTime > 0L) detailDateFormatter.format(Date(sms.forwardTime)) else "-"
-    val forwardMessage = formatForwardMessage(sms.forwardMessage)
+    val forwardMessageAnnotated = resolveForwardMessageAnnotated(sms.forwardMessage)
     val dismissInteraction = remember { MutableInteractionSource() }
 
     Box(
@@ -765,9 +765,8 @@ private fun RecordDetailOverlay(
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        text = forwardMessage,
+                        text = forwardMessageAnnotated,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
                 HorizontalDivider()
@@ -889,6 +888,31 @@ private fun formatForwardMessage(rawMessage: String?): String {
         .toList()
     if (lines.isEmpty()) return "-"
     return lines.mapIndexed { index, line -> "${index + 1}. $line" }.joinToString("\n")
+}
+
+@Composable
+private fun resolveForwardMessageAnnotated(rawMessage: String?): AnnotatedString {
+    if (rawMessage.isNullOrBlank()) return AnnotatedString("-")
+    val lines = rawMessage
+        .replace(Regex("\\s*\\|\\s*"), "\n")
+        .lineSequence()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .toList()
+    if (lines.isEmpty()) return AnnotatedString("-")
+    return buildAnnotatedString {
+        lines.forEachIndexed { index, line ->
+            if (index > 0) append("\n")
+            val color = when {
+                line.contains("转发成功") -> Color(0xFF2E7D32)
+                line.contains("转发失败") -> Color(0xFFC62828)
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            pushStyle(SpanStyle(color = color))
+            append("${index + 1}. $line")
+            pop()
+        }
+    }
 }
 
 private data class ForwardStatusSnapshot(
@@ -1233,18 +1257,36 @@ fun CodeRecordItem(
 
         // Right Side
         Column(modifier = Modifier.weight(1f)) {
+            val hasCode = !smsMsg.smsCode.isNullOrBlank()
+            val codeOrSender = smsMsg.smsCode?.takeIf { it.isNotBlank() }
+                ?: smsMsg.sender?.takeIf { it.isNotBlank() }
+                ?: fallbackLabel
             // Top Row: Code + Time
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = smsMsg.smsCode ?: "",
+                    text = codeOrSender,
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = if (hasCode) TextOverflow.Ellipsis else TextOverflow.Clip,
+                    modifier = if (hasCode) {
+                        Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    } else {
+                        // Keep a fixed 10-char-like viewport for phone number marquee.
+                        Modifier
+                            .width(120.dp)
+                            .basicMarquee()
+                    },
                 )
+                if (!hasCode) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
                 Text(
                     text = dateFormatter.format(Date(smsMsg.date)),
                     style = MaterialTheme.typography.bodySmall,

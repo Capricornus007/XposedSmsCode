@@ -18,6 +18,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
@@ -32,6 +33,7 @@ import com.github.magisk317.smscode.forwarder.utils.SenderType
 import com.tianma.xsmscode.core.BuildConfig
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 private data class TemplateVariable(
@@ -48,7 +50,6 @@ private val forwardTemplateVariables = listOf(
     TemplateVariable("来源归属", "{{PHONE_AREA}}"),
     TemplateVariable("APP包名", "{{PACKAGE_NAME}}"),
     TemplateVariable("APP应用名", "{{APP_NAME}}"),
-    TemplateVariable("通知标题", "{{TITLE}}"),
     TemplateVariable("通知内容", "{{MSG}}"),
     TemplateVariable("电池电量", "{{BATTERY_PCT}}"),
     TemplateVariable("电池状态", "{{BATTERY_STATUS}}"),
@@ -84,6 +85,35 @@ private val appNotifyTemplateVariables = forwardTemplateVariables.map { variable
     }
 }
 private const val DIALOG_WIDTH_FRACTION = 0.92f
+
+private fun buildSmsPreviewMessage(): com.github.magisk317.smscode.forwarder.entity.MsgInfo {
+    return com.github.magisk317.smscode.forwarder.entity.MsgInfo(
+        type = "sms",
+        from = "10690001234",
+        content = "【测试银行】您的验证码为 123456，请勿泄露。",
+        date = Date(),
+        simInfo = "SIM1",
+        simSlot = 0,
+        subId = 1,
+        contactName = "测试银行",
+        phoneArea = "上海",
+    )
+}
+
+private fun buildAppNotifyPreviewMessage(): com.github.magisk317.smscode.forwarder.entity.MsgInfo {
+    return com.github.magisk317.smscode.forwarder.entity.MsgInfo(
+        type = "app_notify",
+        from = "微信支付",
+        content = "收款到账 52.00 元",
+        date = Date(),
+        simInfo = "微信",
+        packageName = "com.tencent.mm",
+        appName = "微信",
+        title = "微信支付",
+        message = "张三向你转账 52.00 元",
+        contactName = "微信支付",
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -201,6 +231,7 @@ fun SenderListScreen(
     if (showAppNotifyConfigDialog) {
         AppNotifyTemplateDialog(
             currentTemplate = appNotifyTemplate,
+            currentCommonConfig = commonConfig,
             onDismiss = { showAppNotifyConfigDialog = false },
             onSave = {
                 viewModel.saveAppNotifyTemplate(it)
@@ -392,14 +423,30 @@ private fun ForwardCommonConfigDialog(
     onDismiss: () -> Unit,
     onSave: (ForwardCommonConfig) -> Unit,
 ) {
+    val context = LocalContext.current
     var deviceName by remember(currentConfig.deviceName) { mutableStateOf(currentConfig.deviceName) }
     var templateValue by remember(currentConfig.messageTemplate) {
         mutableStateOf(TextFieldValue(currentConfig.messageTemplate))
     }
+    var templateFocused by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     val fillTemplateInteractionSource = remember { MutableInteractionSource() }
     val isFillTemplatePressed by fillTemplateInteractionSource.collectIsPressedAsState()
     var suppressNextClick by remember { mutableStateOf(false) }
+    fun renderPreview(templateText: String): String {
+        val previewConfig = currentConfig.copy(
+            deviceName = deviceName.trim(),
+            messageTemplate = templateText,
+        )
+        return ForwardCommonConfigStore.applyToMessage(
+            context = context,
+            msgInfo = buildSmsPreviewMessage(),
+            config = previewConfig,
+        ).content
+    }
+    var previewText by remember(currentConfig.deviceName, currentConfig.messageTemplate) {
+        mutableStateOf(renderPreview(templateValue.text))
+    }
     fun insertToken(token: String) {
         val start = templateValue.selection.start.coerceIn(0, templateValue.text.length)
         val end = templateValue.selection.end.coerceIn(0, templateValue.text.length)
@@ -410,6 +457,9 @@ private fun ForwardCommonConfigDialog(
         }
         val cursor = start + token.length
         templateValue = templateValue.copy(text = newText, selection = TextRange(cursor))
+        if (!templateFocused) {
+            previewText = renderPreview(templateValue.text)
+        }
     }
 
     fun normalizeTokenDeletion(oldValue: TextFieldValue, newValue: TextFieldValue): TextFieldValue {
@@ -481,13 +531,19 @@ private fun ForwardCommonConfigDialog(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 140.dp),
+                        .heightIn(min = 140.dp)
+                        .onFocusChanged { focusState ->
+                            if (templateFocused && !focusState.isFocused) {
+                                previewText = renderPreview(templateValue.text)
+                            }
+                            templateFocused = focusState.isFocused
+                        },
                     label = { Text("转发信息模板") },
                     placeholder = { Text("留空使用默认模板") },
                     supportingText = { Text("Tip: 按需插入内容标签；可用变量见下方按钮") },
                 )
                 Text(
-                    text = "默认模板示例：\n${ForwardCommonConfigStore.defaultTemplate()}",
+                    text = "效果预览：\n$previewText",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -506,6 +562,7 @@ private fun ForwardCommonConfigDialog(
                                 defaultTemplate,
                                 selection = TextRange(defaultTemplate.length),
                             )
+                            previewText = renderPreview(templateValue.text)
                         },
                         interactionSource = fillTemplateInteractionSource,
                     ) {
@@ -559,14 +616,28 @@ private fun ForwardCommonConfigDialog(
 @Composable
 private fun AppNotifyTemplateDialog(
     currentTemplate: String,
+    currentCommonConfig: ForwardCommonConfig,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
 ) {
+    val context = LocalContext.current
     var templateValue by remember(currentTemplate) { mutableStateOf(TextFieldValue(currentTemplate)) }
+    var templateFocused by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     val fillTemplateInteractionSource = remember { MutableInteractionSource() }
     val isFillTemplatePressed by fillTemplateInteractionSource.collectIsPressedAsState()
     var suppressNextClick by remember { mutableStateOf(false) }
+    fun renderPreview(templateText: String): String {
+        val previewConfig = currentCommonConfig.copy(messageTemplate = templateText)
+        return ForwardCommonConfigStore.applyToMessage(
+            context = context,
+            msgInfo = buildAppNotifyPreviewMessage(),
+            config = previewConfig,
+        ).content
+    }
+    var previewText by remember(currentTemplate, currentCommonConfig.deviceName) {
+        mutableStateOf(renderPreview(templateValue.text))
+    }
 
     fun insertToken(token: String) {
         val start = templateValue.selection.start.coerceIn(0, templateValue.text.length)
@@ -578,6 +649,9 @@ private fun AppNotifyTemplateDialog(
         }
         val cursor = start + token.length
         templateValue = templateValue.copy(text = newText, selection = TextRange(cursor))
+        if (!templateFocused) {
+            previewText = renderPreview(templateValue.text)
+        }
     }
 
     fun normalizeTokenDeletion(oldValue: TextFieldValue, newValue: TextFieldValue): TextFieldValue {
@@ -641,13 +715,19 @@ private fun AppNotifyTemplateDialog(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 140.dp),
+                        .heightIn(min = 140.dp)
+                        .onFocusChanged { focusState ->
+                            if (templateFocused && !focusState.isFocused) {
+                                previewText = renderPreview(templateValue.text)
+                            }
+                            templateFocused = focusState.isFocused
+                        },
                     label = { Text("应用通知转发模板") },
                     placeholder = { Text("留空使用默认模板") },
                     supportingText = { Text("Tip: 按需插入内容标签；可用变量见下方按钮") },
                 )
                 Text(
-                    text = "默认模板示例：\n${appNotifyDefaultTemplate()}",
+                    text = "效果预览：\n$previewText",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -666,6 +746,7 @@ private fun AppNotifyTemplateDialog(
                                 defaultTemplate,
                                 selection = TextRange(defaultTemplate.length),
                             )
+                            previewText = renderPreview(templateValue.text)
                         },
                         interactionSource = fillTemplateInteractionSource,
                     ) {
