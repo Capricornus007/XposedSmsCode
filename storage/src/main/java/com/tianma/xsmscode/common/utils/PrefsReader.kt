@@ -3,6 +3,7 @@ package com.tianma.xsmscode.common.utils
 import android.content.SharedPreferences
 import android.content.Context
 import com.tianma.xsmscode.common.constant.PrefConst
+import com.tianma.xsmscode.data.db.entity.SmsMsg
 
 object PrefsReader {
     private const val PREFS_NAME = "xposed_prefs"
@@ -177,8 +178,25 @@ object PrefsReader {
 
     @JvmStatic
     fun recordSmsCodeEnabled(context: Context): Boolean {
-        val defaultValue = true
-        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS, defaultValue)
+        return recordCodeSmsEnabled(context)
+    }
+
+    @JvmStatic
+    fun recordCodeSmsEnabled(context: Context): Boolean {
+        val legacyDefault = getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true)
+        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS_CODE, legacyDefault)
+    }
+
+    @JvmStatic
+    fun recordPlainSmsEnabled(context: Context): Boolean {
+        val legacyDefault = getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true)
+        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS_PLAIN_SMS, legacyDefault)
+    }
+
+    @JvmStatic
+    fun recordAppNotifyEnabled(context: Context): Boolean {
+        val legacyDefault = getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true)
+        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS_APP_NOTIFY, legacyDefault)
     }
 
     @JvmStatic
@@ -261,10 +279,48 @@ object PrefsReader {
 
     @JvmStatic
     fun getHistoryLimit(context: Context): Int {
+        return getCodeHistoryLimit(context)
+    }
+
+    @JvmStatic
+    fun getCodeHistoryLimit(context: Context): Int {
+        return getHistoryLimitByKey(
+            context = context,
+            key = PrefConst.KEY_HISTORY_LIMIT_CODE,
+        )
+    }
+
+    @JvmStatic
+    fun getPlainSmsHistoryLimit(context: Context): Int {
+        return getHistoryLimitByKey(
+            context = context,
+            key = PrefConst.KEY_HISTORY_LIMIT_PLAIN_SMS,
+        )
+    }
+
+    @JvmStatic
+    fun getAppNotifyHistoryLimit(context: Context): Int {
+        return getHistoryLimitByKey(
+            context = context,
+            key = PrefConst.KEY_HISTORY_LIMIT_APP_NOTIFY,
+        )
+    }
+
+    @JvmStatic
+    fun getHistoryLimit(context: Context, msgType: Int, isCodeSms: Boolean): Int {
+        return when (msgType) {
+            SmsMsg.MSG_TYPE_APP_NOTIFY -> getAppNotifyHistoryLimit(context)
+            SmsMsg.MSG_TYPE_SMS -> if (isCodeSms) getCodeHistoryLimit(context) else getPlainSmsHistoryLimit(context)
+            else -> getCodeHistoryLimit(context)
+        }
+    }
+
+    private fun getHistoryLimitByKey(context: Context, key: String): Int {
+        val legacyValue = getStringViaProvider(context, PrefConst.KEY_HISTORY_LIMIT, "0")
         val value = getStringViaProvider(
             context,
-            PrefConst.KEY_HISTORY_LIMIT,
-            "0",
+            key,
+            legacyValue,
         )
         return try {
             value.toInt()

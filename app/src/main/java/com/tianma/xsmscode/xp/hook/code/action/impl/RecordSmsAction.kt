@@ -19,7 +19,7 @@ class RecordSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
     CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
-        if (PrefsReader.recordSmsCodeEnabled(mPluginContext)) {
+        if (PrefsReader.recordCodeSmsEnabled(mPluginContext)) {
             recordSmsMsg(mSmsMsg)
         }
         return null
@@ -49,22 +49,28 @@ class RecordSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
 
             val projections = arrayOf("_id")
             val order = "date ASC"
-            val cursor: Cursor? = resolver.query(smsMsgUri, projections, null, null, order)
+            val selection = "msg_type = ? AND sms_code IS NOT NULL AND sms_code != ''"
+            val selectionArgs = arrayOf(SmsMsg.MSG_TYPE_SMS.toString())
+            val cursor: Cursor? = resolver.query(smsMsgUri, projections, selection, selectionArgs, order)
             if (cursor == null) {
                 return
             }
 
             val count = cursor.count
-            val limit = PrefsReader.getHistoryLimit(mPluginContext)
+            val limit = PrefsReader.getHistoryLimit(
+                context = mPluginContext,
+                msgType = SmsMsg.MSG_TYPE_SMS,
+                isCodeSms = true,
+            )
             if (limit > 0 && count > limit) {
                 // 删除最早的记录，直至剩余数目为 limit
                 val operations = ArrayList<ContentProviderOperation>()
-                val selection = "_id = ?"
+                val deleteSelection = "_id = ?"
                 for (i in 0 until count - limit) {
                     if (cursor.moveToNext()) {
                         val id = cursor.getLong(cursor.getColumnIndexOrThrow("_id"))
                         val operation = ContentProviderOperation.newDelete(smsMsgUri)
-                            .withSelection(selection, arrayOf(id.toString()))
+                            .withSelection(deleteSelection, arrayOf(id.toString()))
                             .build()
                         operations.add(operation)
                     }

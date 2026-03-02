@@ -212,6 +212,30 @@ object AppPreferencesDataStore {
             PrefConst.KEY_ENABLE_CODE_RECORDS,
             getBoolean(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true),
         )
+        editor.putBoolean(
+            PrefConst.KEY_ENABLE_CODE_RECORDS_CODE,
+            getBoolean(
+                context,
+                PrefConst.KEY_ENABLE_CODE_RECORDS_CODE,
+                getBoolean(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true),
+            ),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_ENABLE_CODE_RECORDS_PLAIN_SMS,
+            getBoolean(
+                context,
+                PrefConst.KEY_ENABLE_CODE_RECORDS_PLAIN_SMS,
+                getBoolean(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true),
+            ),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_ENABLE_CODE_RECORDS_APP_NOTIFY,
+            getBoolean(
+                context,
+                PrefConst.KEY_ENABLE_CODE_RECORDS_APP_NOTIFY,
+                getBoolean(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true),
+            ),
+        )
         editor.putBoolean(PrefConst.KEY_BLOCK_SMS, getBoolean(context, PrefConst.KEY_BLOCK_SMS, false))
         editor.putBoolean(PrefConst.KEY_KILL_ME, getBoolean(context, PrefConst.KEY_KILL_ME, false))
         editor.putBoolean(
@@ -260,6 +284,30 @@ object AppPreferencesDataStore {
             getBoolean(context, PrefConst.KEY_SMS_BLACKLIST_ACTION_BLOCK, false),
         )
         editor.putString(PrefConst.KEY_HISTORY_LIMIT, getString(context, PrefConst.KEY_HISTORY_LIMIT, "0"))
+        editor.putString(
+            PrefConst.KEY_HISTORY_LIMIT_CODE,
+            getString(
+                context,
+                PrefConst.KEY_HISTORY_LIMIT_CODE,
+                getString(context, PrefConst.KEY_HISTORY_LIMIT, "0"),
+            ),
+        )
+        editor.putString(
+            PrefConst.KEY_HISTORY_LIMIT_PLAIN_SMS,
+            getString(
+                context,
+                PrefConst.KEY_HISTORY_LIMIT_PLAIN_SMS,
+                getString(context, PrefConst.KEY_HISTORY_LIMIT, "0"),
+            ),
+        )
+        editor.putString(
+            PrefConst.KEY_HISTORY_LIMIT_APP_NOTIFY,
+            getString(
+                context,
+                PrefConst.KEY_HISTORY_LIMIT_APP_NOTIFY,
+                getString(context, PrefConst.KEY_HISTORY_LIMIT, "0"),
+            ),
+        )
         editor.putBoolean(
             PrefConst.KEY_AUTO_UPDATE_ON_START,
             getBoolean(context, PrefConst.KEY_AUTO_UPDATE_ON_START, true),

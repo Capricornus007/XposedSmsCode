@@ -260,22 +260,32 @@ class ForwardReceiver : BroadcastReceiver() {
                 var recordId: Long? = null
 
                 if (msgTypeStr == "app_notify") {
+                    val canRecordAppNotify = com.tianma.xsmscode.common.utils.PrefsReader.recordAppNotifyEnabled(context)
                     runCatching {
-                        recordId = insertRecord(
-                            context = context,
-                            sender = msgInfo.from,
-                            body = msgInfo.content,
-                            date = msgInfo.date.time,
-                            company = msgInfo.simInfo,
-                            smsCode = smsCode,
-                            packageName = msgInfo.packageName,
-                            msgType = smsMsgType,
-                        )
+                        if (canRecordAppNotify) {
+                            recordId = insertRecord(
+                                context = context,
+                                sender = msgInfo.from,
+                                body = msgInfo.content,
+                                date = msgInfo.date.time,
+                                company = msgInfo.simInfo,
+                                smsCode = smsCode,
+                                packageName = msgInfo.packageName,
+                                msgType = smsMsgType,
+                                isCodeSms = false,
+                            )
+                        }
                     }.onFailure { error ->
                         XLog.e("Failed to record app notification to DB", error)
                         ForwardFlowLog.e(traceId, "Record app_notify failed", error)
                     }
                 } else {
+                    val isCodeSms = !smsCode.isNullOrBlank()
+                    val canRecordSms = if (isCodeSms) {
+                        com.tianma.xsmscode.common.utils.PrefsReader.recordCodeSmsEnabled(context)
+                    } else {
+                        com.tianma.xsmscode.common.utils.PrefsReader.recordPlainSmsEnabled(context)
+                    }
                     recordId = findRecordIdByFingerprint(
                         context = context,
                         sender = msgInfo.from,
@@ -283,7 +293,7 @@ class ForwardReceiver : BroadcastReceiver() {
                         date = msgInfo.date.time,
                         msgType = smsMsgType,
                     )
-                    if (recordId == null) {
+                    if (recordId == null && canRecordSms) {
                         runCatching {
                             recordId = insertRecord(
                                 context = context,
@@ -294,6 +304,7 @@ class ForwardReceiver : BroadcastReceiver() {
                                 smsCode = smsCode,
                                 packageName = msgInfo.packageName,
                                 msgType = smsMsgType,
+                                isCodeSms = isCodeSms,
                             )
                             ForwardFlowLog.i(
                                 traceId,
@@ -593,10 +604,11 @@ class ForwardReceiver : BroadcastReceiver() {
         smsCode: String?,
         packageName: String,
         msgType: Int,
+        isCodeSms: Boolean,
     ): Long? {
         val smsMsgUri = com.tianma.xsmscode.data.db.DBProvider.SMS_MSG_CONTENT_URI
         val resolver = context.contentResolver
-        trimOldRecordsIfNeeded(context, resolver)
+        trimOldRecordsIfNeeded(context, resolver, msgType, isCodeSms)
         val values = android.content.ContentValues().apply {
             put("body", body)
             put("company", company)
@@ -612,17 +624,20 @@ class ForwardReceiver : BroadcastReceiver() {
     private fun trimOldRecordsIfNeeded(
         context: Context,
         resolver: android.content.ContentResolver,
+        msgType: Int,
+        isCodeSms: Boolean,
     ) {
         val smsMsgUri = com.tianma.xsmscode.data.db.DBProvider.SMS_MSG_CONTENT_URI
-        val cursor = resolver.query(smsMsgUri, arrayOf("_id"), null, null, "date ASC") ?: return
+        val (selection, selectionArgs) = recordSelectionForType(msgType, isCodeSms)
+        val cursor = resolver.query(smsMsgUri, arrayOf("_id"), selection, selectionArgs, "date ASC") ?: return
         cursor.use {
             val count = it.count
             val limit = runBlocking {
-                com.tianma.xsmscode.common.utils.AppPreferencesDataStore.getString(
-                    context,
-                    com.tianma.xsmscode.common.constant.PrefConst.KEY_HISTORY_LIMIT,
-                    "0",
-                ).toIntOrNull() ?: 0
+                com.tianma.xsmscode.common.utils.PrefsReader.getHistoryLimit(
+                    context = context,
+                    msgType = msgType,
+                    isCodeSms = isCodeSms,
+                )
             }
             if (limit <= 0 || count < limit) return
             val selection = "_id = ?"
@@ -637,6 +652,28 @@ class ForwardReceiver : BroadcastReceiver() {
             }
             if (operations.isNotEmpty()) {
                 resolver.applyBatch(com.tianma.xsmscode.data.db.DBProvider.AUTHORITY, operations)
+            }
+        }
+    }
+
+    private fun recordSelectionForType(msgType: Int, isCodeSms: Boolean): Pair<String, Array<String>> {
+        return when (msgType) {
+            SmsMsg.MSG_TYPE_APP_NOTIFY -> {
+                "msg_type = ?" to arrayOf(SmsMsg.MSG_TYPE_APP_NOTIFY.toString())
+            }
+
+            SmsMsg.MSG_TYPE_SMS -> {
+                if (isCodeSms) {
+                    "msg_type = ? AND sms_code IS NOT NULL AND sms_code != ''" to
+                        arrayOf(SmsMsg.MSG_TYPE_SMS.toString())
+                } else {
+                    "msg_type = ? AND (sms_code IS NULL OR sms_code = '')" to
+                        arrayOf(SmsMsg.MSG_TYPE_SMS.toString())
+                }
+            }
+
+            else -> {
+                "msg_type = ?" to arrayOf(msgType.toString())
             }
         }
     }

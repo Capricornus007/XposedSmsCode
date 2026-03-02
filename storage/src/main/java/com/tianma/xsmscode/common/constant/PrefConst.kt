@@ -46,6 +46,12 @@ object PrefConst {
     const val MAX_SMS_RECORDS_COUNT_DEFAULT = 20
     const val KEY_ENTRY_CODE_RECORDS = "pref_entry_code_records"
     const val KEY_HISTORY_LIMIT = "pref_history_limit"
+    const val KEY_ENABLE_CODE_RECORDS_CODE = "pref_enable_code_records_code"
+    const val KEY_ENABLE_CODE_RECORDS_PLAIN_SMS = "pref_enable_code_records_plain_sms"
+    const val KEY_ENABLE_CODE_RECORDS_APP_NOTIFY = "pref_enable_code_records_app_notify"
+    const val KEY_HISTORY_LIMIT_CODE = "pref_history_limit_code"
+    const val KEY_HISTORY_LIMIT_PLAIN_SMS = "pref_history_limit_plain_sms"
+    const val KEY_HISTORY_LIMIT_APP_NOTIFY = "pref_history_limit_app_notify"
 
     // Code Rules
     const val KEY_SMSCODE_KEYWORDS = "pref_smscode_keywords"
