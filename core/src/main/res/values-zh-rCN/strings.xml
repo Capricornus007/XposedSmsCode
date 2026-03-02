@@ -97,7 +97,9 @@
     <string name="action_select_all">全选</string>
     <string name="some_items_removed">删除了 %d 条记录</string>
     <string name="message_details">短信详情</string>
+    <string name="message_details_notification">通知详情</string>
     <string name="detail_sender">发件人</string>
+    <string name="detail_app">应用</string>
     <string name="detail_time">时间</string>
     <string name="detail_content">内容</string>
     <string name="detail_click_copy_hint">（点击复制内容）</string>
@@ -127,11 +129,21 @@
     <string name="prompt_field_copied">%1$s已复制</string>
     <string name="copy_smscode">复制验证码</string>
     <string name="copy_sms">复制短信</string>
+    <string name="copy_notification">复制通知</string>
     <string name="delete_sms_action">删除短信</string>
+    <string name="delete_notification_action">删除通知</string>
     <string name="prompt_sms_copied">短信已复制</string>
+    <string name="prompt_notification_copied">通知已复制</string>
     <string name="pref_enable_code_records_title">保留验证码记录</string>
+    <string name="pref_enable_plain_sms_records_title">保留普通短信记录</string>
+    <string name="pref_enable_app_notify_records_title">保留应用通知记录</string>
     <string name="selected_count">已选 %d 项</string>
     <string name="pref_history_limit_title">历史记录限制</string>
+    <string name="pref_history_limit_title_with_target">历史记录限制（%1$s）</string>
+    <string name="record_settings_title_with_target">记录设置（%1$s）</string>
+    <string name="record_settings_target_code">验证码记录</string>
+    <string name="record_settings_target_plain">普通短信记录</string>
+    <string name="record_settings_target_app_notify">应用通知记录</string>
     <string name="pref_history_limit_summary">仅保留最近 %s 条记录</string>
     <string name="history_limit_10_entry">10 条记录</string>
     <string name="history_limit_20_entry">20 条记录</string>
@@ -144,6 +156,9 @@
     <string name="records_column_code_empty">暂无验证码短信</string>
     <string name="records_column_plain_empty">暂无普通短信</string>
     <string name="records_column_app_notify_empty">暂无应用通知</string>
+    <string name="record_export_dialog_title">导出记录</string>
+    <string name="record_export_current_tab_option">导出当前页（%1$s）</string>
+    <string name="record_export_all_tabs_option">导出所有</string>
     <string name="title_notification_rules">通知转发</string>
     <string name="subtitle_notification_rules">管理应用通知的抓取与转发规则</string>
     <!-- preference code records end -->

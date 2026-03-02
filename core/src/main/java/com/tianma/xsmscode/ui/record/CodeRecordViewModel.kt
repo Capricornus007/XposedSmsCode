@@ -11,6 +11,7 @@ import com.tianma.xsmscode.common.utils.JsonUtils
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBManager
 import com.tianma.xsmscode.data.db.entity.SmsMsg
+import kotlinx.serialization.Serializable
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -23,6 +24,13 @@ import java.nio.charset.StandardCharsets
 
 @Immutable
 data class CodeRecordUiState(val smsList: ImmutableList<SmsMsg> = persistentListOf(), val isLoading: Boolean = false)
+
+@Serializable
+private data class RecordExportPayload(
+    val codeRecords: List<SmsMsg>,
+    val plainSmsRecords: List<SmsMsg>,
+    val appNotifyRecords: List<SmsMsg>,
+)
 
 class CodeRecordViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -78,15 +86,41 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun exportRecords(context: Context, uri: Uri) {
+    fun exportRecords(context: Context, uri: Uri, currentTab: Int, exportAllTabs: Boolean) {
         viewModelScope.launch {
             _loading.value = true
             try {
-                val records = uiState.value.smsList
+                val allRecords = uiState.value.smsList.toList()
+                val codeRecords = allRecords.filter {
+                    it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank()
+                }
+                val plainSmsRecords = allRecords.filter {
+                    it.msgType == SmsMsg.MSG_TYPE_SMS && it.smsCode.isNullOrBlank()
+                }
+                val appNotifyRecords = allRecords.filter {
+                    it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY
+                }
                 withContext(Dispatchers.IO) {
                     context.contentResolver.openOutputStream(uri)?.use { os ->
                         OutputStreamWriter(os, StandardCharsets.UTF_8).use { osw ->
-                            JsonUtils.toJson<ImmutableList<SmsMsg>>(records, osw, true)
+                            if (exportAllTabs) {
+                                JsonUtils.toJson(
+                                    RecordExportPayload(
+                                        codeRecords = codeRecords,
+                                        plainSmsRecords = plainSmsRecords,
+                                        appNotifyRecords = appNotifyRecords,
+                                    ),
+                                    osw,
+                                    true,
+                                )
+                            } else {
+                                val currentRecords = when (currentTab) {
+                                    0 -> codeRecords
+                                    1 -> plainSmsRecords
+                                    else -> appNotifyRecords
+                                }
+                                JsonUtils.toJson(currentRecords, osw, true)
+                            }
                         }
                     }
                 }

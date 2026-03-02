@@ -74,6 +74,35 @@ import org.koin.compose.viewmodel.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
+private enum class RecordExportScope {
+    CURRENT_TAB,
+    ALL_TABS,
+}
+
+private fun recordEnableKey(tab: Int): String = when (tab) {
+    0 -> PrefConst.KEY_ENABLE_CODE_RECORDS_CODE
+    1 -> PrefConst.KEY_ENABLE_CODE_RECORDS_PLAIN_SMS
+    else -> PrefConst.KEY_ENABLE_CODE_RECORDS_APP_NOTIFY
+}
+
+private fun recordEnableTitleRes(tab: Int): Int = when (tab) {
+    0 -> R.string.pref_enable_code_records_title
+    1 -> R.string.pref_enable_plain_sms_records_title
+    else -> R.string.pref_enable_app_notify_records_title
+}
+
+private fun recordHistoryLimitKey(tab: Int): String = when (tab) {
+    0 -> PrefConst.KEY_HISTORY_LIMIT_CODE
+    1 -> PrefConst.KEY_HISTORY_LIMIT_PLAIN_SMS
+    else -> PrefConst.KEY_HISTORY_LIMIT_APP_NOTIFY
+}
+
+private fun recordTabNameRes(tab: Int): Int = when (tab) {
+    0 -> R.string.record_settings_target_code
+    1 -> R.string.record_settings_target_plain
+    else -> R.string.record_settings_target_app_notify
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Suppress("CyclomaticComplexMethod")
 @Composable
@@ -149,15 +178,34 @@ fun CodeRecordScreen(
     var isSelectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(setOf<Long>()) }
     var showSettingsSheet by remember { mutableStateOf(false) }
+    var showExportDialog by remember { mutableStateOf(false) }
     var selectedRecordTab by rememberSaveable { mutableIntStateOf(0) } // 0: code, 1: plain, 2: app_notify
     var fixedTopHeightPx by remember { mutableIntStateOf(0) }
+    var exportScope by remember { mutableStateOf(RecordExportScope.CURRENT_TAB) }
+    var pendingExportScope by remember { mutableStateOf(RecordExportScope.CURRENT_TAB) }
+    var pendingExportTab by remember { mutableIntStateOf(0) }
 
-    var historyLimit by remember { mutableStateOf("0") }
+    var historyLimitCode by remember { mutableStateOf("0") }
+    var historyLimitPlain by remember { mutableStateOf("0") }
+    var historyLimitAppNotify by remember { mutableStateOf("0") }
+    var legacyRecordEnabled by remember { mutableStateOf(true) }
     var showHistoryLimitDialog by remember { mutableStateOf(false) }
     var showHistoryLimitInput by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        historyLimit = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT, "0")
+        legacyRecordEnabled = AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true)
+        val legacyLimit = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT, "0")
+        historyLimitCode = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT_CODE, legacyLimit)
+        historyLimitPlain = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_HISTORY_LIMIT_PLAIN_SMS,
+            legacyLimit,
+        )
+        historyLimitAppNotify = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_HISTORY_LIMIT_APP_NOTIFY,
+            legacyLimit,
+        )
     }
 
     // Detail Dialog State
@@ -223,11 +271,22 @@ fun CodeRecordScreen(
     val exportLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
             if (uri != null) {
-                viewModel.exportRecords(context, uri)
+                viewModel.exportRecords(
+                    context = context,
+                    uri = uri,
+                    currentTab = pendingExportTab,
+                    exportAllTabs = pendingExportScope == RecordExportScope.ALL_TABS,
+                )
             }
         }
 
     if (showSettingsSheet) {
+        val currentTabName = stringResource(recordTabNameRes(selectedRecordTab))
+        val currentHistoryLimit = when (selectedRecordTab) {
+            0 -> historyLimitCode
+            1 -> historyLimitPlain
+            else -> historyLimitAppNotify
+        }
         ModalBottomSheet(
             onDismissRequest = { showSettingsSheet = false },
         ) {
@@ -237,21 +296,33 @@ fun CodeRecordScreen(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                SectionHeader(text = stringResource(id = R.string.pref_code_records_title))
+                SectionHeader(
+                    text = stringResource(
+                        id = R.string.record_settings_title_with_target,
+                        currentTabName,
+                    ),
+                )
                 SwitchItem(
-                    title = stringResource(id = R.string.pref_enable_code_records_title),
+                    title = stringResource(id = recordEnableTitleRes(selectedRecordTab)),
                     summary = "",
-                    key = PrefConst.KEY_ENABLE_CODE_RECORDS,
-                    defaultValue = true,
+                    key = recordEnableKey(selectedRecordTab),
+                    defaultValue = legacyRecordEnabled,
                 )
 
                 Item(
-                    title = stringResource(id = R.string.pref_history_limit_title),
+                    title = stringResource(
+                        id = R.string.pref_history_limit_title_with_target,
+                        currentTabName,
+                    ),
                     summary = run {
                         val entries = stringArrayResource(id = R.array.history_limit_entry_list)
                         val values = stringArrayResource(id = R.array.history_limit_value_list)
-                        val index = values.indexOf(historyLimit)
-                        if (index >= 0) entries[index] else "$historyLimit ${stringResource(R.string.smscode_records)}"
+                        val index = values.indexOf(currentHistoryLimit)
+                        if (index >= 0) {
+                            entries[index]
+                        } else {
+                            "$currentHistoryLimit ${stringResource(recordTabNameRes(selectedRecordTab))}"
+                        }
                     },
                 ) { showHistoryLimitDialog = true }
 
@@ -261,8 +332,13 @@ fun CodeRecordScreen(
     }
 
     if (showHistoryLimitDialog) {
+        val currentHistoryLimit = when (selectedRecordTab) {
+            0 -> historyLimitCode
+            1 -> historyLimitPlain
+            else -> historyLimitAppNotify
+        }
         RetentionDialog(
-            selectedValue = historyLimit,
+            selectedValue = currentHistoryLimit,
             onDismiss = { showHistoryLimitDialog = false },
             titleId = R.string.pref_history_limit_title,
             entriesId = R.array.history_limit_entry_list,
@@ -271,9 +347,13 @@ fun CodeRecordScreen(
             if (value == "-1") {
                 showHistoryLimitInput = true
             } else {
-                historyLimit = value
+                when (selectedRecordTab) {
+                    0 -> historyLimitCode = value
+                    1 -> historyLimitPlain = value
+                    else -> historyLimitAppNotify = value
+                }
                 scope.launch {
-                    AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value)
+                    AppPreferencesDataStore.setString(context, recordHistoryLimitKey(selectedRecordTab), value)
                     AppPreferencesDataStore.syncToSharedPrefs(context)
                 }
             }
@@ -282,20 +362,101 @@ fun CodeRecordScreen(
     }
 
     if (showHistoryLimitInput) {
+        val currentHistoryLimit = when (selectedRecordTab) {
+            0 -> historyLimitCode
+            1 -> historyLimitPlain
+            else -> historyLimitAppNotify
+        }
         TextInputDialog(
             title = stringResource(id = R.string.history_limit_custom_entry),
-            initialValue = if (historyLimit == "0" || historyLimit == "-1") "" else historyLimit,
+            initialValue = if (currentHistoryLimit == "0" || currentHistoryLimit == "-1") {
+                ""
+            } else {
+                currentHistoryLimit
+            },
             onDismiss = { showHistoryLimitInput = false },
         ) { value ->
             if (value.all { it.isDigit() } && value.isNotEmpty()) {
-                historyLimit = value
+                when (selectedRecordTab) {
+                    0 -> historyLimitCode = value
+                    1 -> historyLimitPlain = value
+                    else -> historyLimitAppNotify = value
+                }
                 scope.launch {
-                    AppPreferencesDataStore.setString(context, PrefConst.KEY_HISTORY_LIMIT, value)
+                    AppPreferencesDataStore.setString(context, recordHistoryLimitKey(selectedRecordTab), value)
                     AppPreferencesDataStore.syncToSharedPrefs(context)
                 }
             }
             showHistoryLimitInput = false
         }
+    }
+
+    if (showExportDialog) {
+        val currentTabName = stringResource(recordTabNameRes(selectedRecordTab))
+        AlertDialog(
+            onDismissRequest = { showExportDialog = false },
+            title = { Text(stringResource(R.string.record_export_dialog_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { exportScope = RecordExportScope.CURRENT_TAB },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = exportScope == RecordExportScope.CURRENT_TAB,
+                            onClick = { exportScope = RecordExportScope.CURRENT_TAB },
+                        )
+                        Text(
+                            text = stringResource(R.string.record_export_current_tab_option, currentTabName),
+                        )
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { exportScope = RecordExportScope.ALL_TABS },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = exportScope == RecordExportScope.ALL_TABS,
+                            onClick = { exportScope = RecordExportScope.ALL_TABS },
+                        )
+                        Text(text = stringResource(R.string.record_export_all_tabs_option))
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        pendingExportScope = exportScope
+                        pendingExportTab = selectedRecordTab
+                        val suffix = if (exportScope == RecordExportScope.ALL_TABS) {
+                            "all"
+                        } else {
+                            when (selectedRecordTab) {
+                                0 -> "code"
+                                1 -> "plain"
+                                else -> "app_notify"
+                            }
+                        }
+                        val filename = "Records_${suffix}_${SimpleDateFormat(
+                            "yyyyMMdd_HHmm",
+                            Locale.getDefault(),
+                        ).format(Date())}.json"
+                        showExportDialog = false
+                        exportLauncher.launch(filename)
+                    },
+                ) {
+                    Text(stringResource(R.string.confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExportDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
     }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -444,7 +605,7 @@ fun CodeRecordScreen(
                     if (isSelectionMode) {
                         Text(stringResource(R.string.selected_count, selectedIds.size))
                     } else {
-                        Text(stringResource(R.string.smscode_records))
+                        Text(stringResource(R.string.tab_records))
                     }
                 },
                 navigationIcon = {
@@ -496,11 +657,8 @@ fun CodeRecordScreen(
                             )
                         }
                         IconButton(onClick = {
-                            val filename = "SmsCodeRecords_${SimpleDateFormat(
-                                "yyyyMMdd_HHmm",
-                                Locale.getDefault(),
-                            ).format(Date())}.json"
-                            exportLauncher.launch(filename)
+                            exportScope = RecordExportScope.CURRENT_TAB
+                            showExportDialog = true
                         }) {
                             Icon(
                                 painterResource(R.drawable.ic_export),
@@ -602,6 +760,7 @@ private fun RecordDetailOverlay(
     onDelete: () -> Unit,
 ) {
     val context = LocalContext.current
+    val isAppNotification = sms.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY
     val detailDateFormatter = remember { SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()) }
     val sender = sms.sender ?: sms.company ?: context.getString(R.string.unknown)
     val time = detailDateFormatter.format(Date(sms.date))
@@ -611,6 +770,28 @@ private fun RecordDetailOverlay(
     val forwardTime = if (sms.forwardTime > 0L) detailDateFormatter.format(Date(sms.forwardTime)) else "-"
     val forwardMessageAnnotated = resolveForwardMessageAnnotated(sms.forwardMessage)
     val dismissInteraction = remember { MutableInteractionSource() }
+    val detailTitleRes = if (isAppNotification) R.string.message_details_notification else R.string.message_details
+    val copyTextRes = if (isAppNotification) R.string.copy_notification else R.string.copy_sms
+    val copyToastRes = if (isAppNotification) R.string.prompt_notification_copied else R.string.prompt_sms_copied
+    val deleteTextRes =
+        if (isAppNotification) R.string.delete_notification_action else R.string.delete_sms_action
+    val copyLabel = if (isAppNotification) "app_notification_body" else "sms_body"
+    val appDisplayName = remember(sms.packageName) {
+        if (!isAppNotification) {
+            null
+        } else {
+            val pkg = sms.packageName.orEmpty()
+            if (pkg.isBlank()) {
+                null
+            } else {
+                runCatching {
+                    val pm = context.packageManager
+                    val appInfo = pm.getApplicationInfo(pkg, 0)
+                    pm.getApplicationLabel(appInfo).toString().ifBlank { pkg }
+                }.getOrDefault(pkg)
+            }
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -646,7 +827,7 @@ private fun RecordDetailOverlay(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = stringResource(R.string.message_details),
+                        text = stringResource(detailTitleRes),
                         style = MaterialTheme.typography.titleLarge,
                     )
                     Text(
@@ -654,6 +835,29 @@ private fun RecordDetailOverlay(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+                if (isAppNotification && !appDisplayName.isNullOrBlank()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = "${stringResource(R.string.detail_app)}:",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = appDisplayName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.clickable {
+                                val message = context.getString(
+                                    R.string.prompt_field_copied,
+                                    context.getString(R.string.detail_app),
+                                )
+                                onCopy("app_name", appDisplayName, message)
+                            },
+                        )
+                    }
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -783,22 +987,22 @@ private fun RecordDetailOverlay(
                                 modifier = Modifier.weight(1f),
                                 onClick = {
                                     if (content.isNotEmpty()) {
-                                        val message = context.getString(R.string.prompt_sms_copied)
-                                        onCopy("sms_body", content, message)
+                                        val message = context.getString(copyToastRes)
+                                        onCopy(copyLabel, content, message)
                                     }
                                     onDismiss()
                                 },
                             ) {
-                                Text(stringResource(R.string.copy_sms))
+                                Text(stringResource(copyTextRes))
                             }
                         },
                         menuContent = { menuState ->
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.copy_sms)) },
+                                text = { Text(stringResource(copyTextRes)) },
                                 onClick = {
                                     if (content.isNotEmpty()) {
-                                        val message = context.getString(R.string.prompt_sms_copied)
-                                        onCopy("sms_body", content, message)
+                                        val message = context.getString(copyToastRes)
+                                        onCopy(copyLabel, content, message)
                                     }
                                     menuState.dismiss()
                                     onDismiss()
@@ -819,12 +1023,12 @@ private fun RecordDetailOverlay(
                                     contentColor = MaterialTheme.colorScheme.onErrorContainer,
                                 ),
                             ) {
-                                Text(stringResource(R.string.delete_sms_action))
+                                Text(stringResource(deleteTextRes))
                             }
                         },
                         menuContent = { menuState ->
                             DropdownMenuItem(
-                                text = { Text(stringResource(R.string.delete_sms_action)) },
+                                text = { Text(stringResource(deleteTextRes)) },
                                 onClick = {
                                     onDelete()
                                     menuState.dismiss()
