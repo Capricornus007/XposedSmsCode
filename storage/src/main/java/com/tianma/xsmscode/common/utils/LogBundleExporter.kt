@@ -99,7 +99,11 @@ object LogBundleExporter {
                 XLog.e("buildLogBundle failed", t)
                 return ExportResult(null, t.message ?: t.javaClass.simpleName)
             } finally {
-                runCatching { stagingDir.deleteRecursively() }
+                runCatching {
+                    if (!deleteRecursivelyWithSuFallback(stagingDir)) {
+                        XLog.w("Failed to cleanup staging dir: %s", stagingDir.absolutePath)
+                    }
+                }
             }
         }
     }
@@ -199,11 +203,18 @@ object LogBundleExporter {
         if (copied) return true
 
         val targetPath = lsposedTargetRoot.absolutePath
+        val targetUid = runCatching { android.os.Process.myUid() }.getOrDefault(-1)
         val shellCmd = buildString {
-            append("mkdir -p '$targetPath'; ")
+            append("mkdir -p ${shQuote(targetPath)}; ")
             LSPOSED_LOG_DIRS.forEach { path ->
                 val name = File(path).name
-                append("if [ -d '$path' ]; then cp -a '$path' '$targetPath/' && chmod -R a+rX '$targetPath/$name'; fi; ")
+                append("if [ -d ${shQuote(path)} ]; then ")
+                append("cp -R ${shQuote(path)} ${shQuote("$targetPath/")} && ")
+                append("chmod -R a+rX ${shQuote("$targetPath/$name")} ; ")
+                if (targetUid > 0) {
+                    append("chown -R $targetUid:$targetUid ${shQuote("$targetPath/$name")} ; ")
+                }
+                append("fi; ")
             }
         }
         val suResult = runSuCommand(shellCmd)
@@ -297,7 +308,7 @@ object LogBundleExporter {
             }
             var deletedAll = true
             dir.listFiles().orEmpty().forEach { child ->
-                if (!child.deleteRecursively()) {
+                if (!deleteRecursivelyWithSuFallback(child)) {
                     deletedAll = false
                     XLog.w("Failed to delete log child: %s", child.absolutePath)
                 }
@@ -324,5 +335,26 @@ object LogBundleExporter {
 
     private fun getPrivateExportDir(context: Context): File {
         return StorageUtils.getPrivateLogExportDir(context)
+    }
+
+    private fun deleteRecursivelyWithSuFallback(target: File): Boolean {
+        if (!target.exists()) return true
+        if (target.deleteRecursively()) return true
+        val suResult = runSuCommand("rm -rf ${shQuote(target.absolutePath)}")
+        val deleted = !target.exists()
+        if (!deleted) {
+            XLog.w(
+                "su rm fallback failed: path=%s exit=%d stderr=%s stdout=%s",
+                target.absolutePath,
+                suResult.exitCode,
+                suResult.stderr,
+                suResult.stdout,
+            )
+        }
+        return deleted
+    }
+
+    private fun shQuote(value: String): String {
+        return "'" + value.replace("'", "'\"'\"'") + "'"
     }
 }
