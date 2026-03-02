@@ -129,7 +129,7 @@ fun EmailConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMod
                 scope.launch {
                     runCatching { viewModel.saveSenderSync(buildSender(status = 0)) }
                         .onSuccess {
-                            Toast.makeText(context, "草稿已保存", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "信息已保存", Toast.LENGTH_SHORT).show()
                             showExitDialog = false
                             onBack()
                         }
