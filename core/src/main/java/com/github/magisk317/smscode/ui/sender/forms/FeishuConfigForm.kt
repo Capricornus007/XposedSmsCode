@@ -56,7 +56,8 @@ fun FeishuConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMo
     var msgType by remember { mutableStateOf("interactive") }
     var titleTemplate by remember { mutableStateOf("") }
     var messageCard by remember { mutableStateOf("") }
-    var receiveNonCode by remember { mutableStateOf(false) }
+    var receiveCode by remember { mutableStateOf(true) }
+    var receiveNonCode by remember { mutableStateOf(true) }
     var receiveAppNotify by remember { mutableStateOf(true) }
     var currentSender by remember { mutableStateOf<Sender?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -66,6 +67,7 @@ fun FeishuConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMo
             viewModel.getSender(senderId)?.let { sender ->
                 currentSender = sender
                 name = sender.name
+                receiveCode = sender.receiveCode == 1
                 receiveNonCode = sender.receiveNonCode == 1
                 receiveAppNotify = sender.receiveAppNotify == 1
                 runCatching { Gson().fromJson(sender.jsonSetting, FeishuSetting::class.java) }.getOrNull()?.let {
@@ -91,6 +93,7 @@ fun FeishuConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMo
             name = name,
             jsonSetting = Gson().toJson(setting),
             status = status,
+            receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
@@ -100,6 +103,7 @@ fun FeishuConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMo
             name = name,
             jsonSetting = Gson().toJson(setting),
             status = status,
+            receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
@@ -162,6 +166,14 @@ fun FeishuConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMo
             }
             OutlinedTextField(titleTemplate, { titleTemplate = it }, label = { Text("标题模板") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(messageCard, { messageCard = it }, label = { Text("消息卡片JSON(可选)") }, modifier = Modifier.fillMaxWidth(), minLines = 4)
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("转发验证码短信", style = MaterialTheme.typography.bodyMedium)
+                    Text("开启后接收验证码短信转发", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = receiveCode, onCheckedChange = { receiveCode = it })
+            }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text("转发非验证码短信", style = MaterialTheme.typography.bodyMedium)

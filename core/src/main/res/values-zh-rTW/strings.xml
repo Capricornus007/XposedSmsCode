@@ -98,11 +98,15 @@
     <string name="detail_time">時間</string>
     <string name="detail_content">內容</string>
     <string name="detail_click_copy_hint">（點擊複製內容）</string>
-    <string name="detail_forward_status">轉發狀態</string>
+    <string name="detail_forward_status">狀態</string>
     <string name="detail_forward_target">轉發目標</string>
     <string name="detail_forward_time">轉發時間</string>
     <string name="detail_forward_message">轉發結果</string>
     <string name="forward_status_none">未轉發</string>
+    <string name="forward_status_success_count">%1$d通道轉發成功</string>
+    <string name="forward_status_partial">%1$d通道轉發成功%2$d通道轉發失敗</string>
+    <string name="forward_status_failed_count">%1$d通道轉發失敗</string>
+    <string name="forward_status_blocked">簡訊已攔截</string>
     <string name="forward_status_success">成功</string>
     <string name="forward_status_failed">失敗</string>
     <string name="forward_channel_webhook">Webhook</string>

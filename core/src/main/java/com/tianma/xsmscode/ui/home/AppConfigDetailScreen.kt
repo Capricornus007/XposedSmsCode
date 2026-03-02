@@ -145,6 +145,8 @@ private fun AppRecentLogCard(logs: List<SmsMsg>) {
                 val statusText = when (log.forwardStatus) {
                     SmsMsg.FORWARD_STATUS_SUCCESS -> "成功"
                     SmsMsg.FORWARD_STATUS_FAILED -> "失败"
+                    SmsMsg.FORWARD_STATUS_PARTIAL -> "部分成功"
+                    SmsMsg.FORWARD_STATUS_BLOCKED -> "未转发"
                     else -> "未转发"
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {

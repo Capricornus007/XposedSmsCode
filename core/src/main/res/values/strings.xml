@@ -97,11 +97,15 @@
     <string name="detail_time">Time</string>
     <string name="detail_content">Content</string>
     <string name="detail_click_copy_hint">(Tap content to copy)</string>
-    <string name="detail_forward_status">Forward</string>
+    <string name="detail_forward_status">Status</string>
     <string name="detail_forward_target">Target</string>
     <string name="detail_forward_time">Forwarded at</string>
     <string name="detail_forward_message">Result</string>
     <string name="forward_status_none">Not forwarded</string>
+    <string name="forward_status_success_count">%1$d channel(s) forwarded successfully</string>
+    <string name="forward_status_partial">%1$d channel(s) forwarded successfully, %2$d channel(s) failed</string>
+    <string name="forward_status_failed_count">%1$d channel(s) failed to forward</string>
+    <string name="forward_status_blocked">SMS intercepted</string>
     <string name="forward_status_success">Success</string>
     <string name="forward_status_failed">Failed</string>
     <string name="forward_channel_webhook">Webhook</string>

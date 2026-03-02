@@ -98,11 +98,15 @@
     <string name="detail_time">时间</string>
     <string name="detail_content">内容</string>
     <string name="detail_click_copy_hint">（点击复制内容）</string>
-    <string name="detail_forward_status">转发状态</string>
+    <string name="detail_forward_status">状态</string>
     <string name="detail_forward_target">转发目标</string>
     <string name="detail_forward_time">转发时间</string>
     <string name="detail_forward_message">转发结果</string>
     <string name="forward_status_none">未转发</string>
+    <string name="forward_status_success_count">%1$d通道转发成功</string>
+    <string name="forward_status_partial">%1$d通道转发成功%2$d通道转发失败</string>
+    <string name="forward_status_failed_count">%1$d通道转发失败</string>
+    <string name="forward_status_blocked">短信已拦截</string>
     <string name="forward_status_success">成功</string>
     <string name="forward_status_failed">失败</string>
     <string name="forward_channel_webhook">Webhook</string>

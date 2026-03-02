@@ -485,16 +485,9 @@ fun ComposeSettingsScreen(
                         accordionMode = accordionMode.value,
                     ) {
                         SwitchItem(
-                            title = stringResource(id = R.string.pref_mark_as_read_title),
-                            summary = stringResource(id = R.string.pref_mark_as_read_summary),
-                            key = PrefConst.KEY_MARK_AS_READ,
-                            defaultValue = false,
-                            onSaved = markPrefsSaved,
-                        )
-                        SwitchItem(
-                            title = stringResource(id = R.string.pref_delete_sms_title),
-                            summary = stringResource(id = R.string.pref_delete_sms_summary),
-                            key = PrefConst.KEY_DELETE_SMS,
+                            title = stringResource(id = R.string.pref_block_sms_title),
+                            summary = stringResource(id = R.string.pref_block_sms_summary),
+                            key = PrefConst.KEY_BLOCK_SMS,
                             defaultValue = false,
                             onSaved = markPrefsSaved,
                         )
@@ -994,6 +987,7 @@ private fun ExpandableSettingsSection(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 },
                 trailingContent = {

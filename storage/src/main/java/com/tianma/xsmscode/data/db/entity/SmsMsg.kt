@@ -76,6 +76,8 @@ data class SmsMsg(
         const val FORWARD_STATUS_NONE = 0
         const val FORWARD_STATUS_SUCCESS = 1
         const val FORWARD_STATUS_FAILED = 2
+        const val FORWARD_STATUS_PARTIAL = 3
+        const val FORWARD_STATUS_BLOCKED = 4
 
         const val MSG_TYPE_SMS = 0
         const val MSG_TYPE_APP_NOTIFY = 1

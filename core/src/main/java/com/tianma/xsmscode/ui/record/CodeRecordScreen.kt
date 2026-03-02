@@ -603,14 +603,10 @@ private fun RecordDetailOverlay(
     val sender = sms.sender ?: sms.company ?: context.getString(R.string.unknown)
     val time = detailDateFormatter.format(Date(sms.date))
     val content = sms.body.orEmpty()
-    val forwardStatusText = when (sms.forwardStatus) {
-        SmsMsg.FORWARD_STATUS_SUCCESS -> stringResource(R.string.forward_status_success)
-        SmsMsg.FORWARD_STATUS_FAILED -> stringResource(R.string.forward_status_failed)
-        else -> stringResource(R.string.forward_status_none)
-    }
+    val forwardStatusText = resolveForwardStatusText(sms)
     val forwardTarget = sanitizeForwardTarget(sms.forwardTarget)
     val forwardTime = if (sms.forwardTime > 0L) detailDateFormatter.format(Date(sms.forwardTime)) else "-"
-    val forwardMessage = sms.forwardMessage ?: "-"
+    val forwardMessage = formatForwardMessage(sms.forwardMessage)
     val dismissInteraction = remember { MutableInteractionSource() }
 
     Box(
@@ -758,9 +754,9 @@ private fun RecordDetailOverlay(
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Text(
                         text = "${stringResource(R.string.detail_forward_message)}:",
@@ -853,6 +849,70 @@ private fun sanitizeForwardTarget(rawTarget: String?): String {
         }
         .distinct()
     return if (channels.isEmpty()) "-" else channels.joinToString(" | ")
+}
+
+private data class ForwardCounts(val success: Int, val failed: Int)
+
+private fun parseForwardCountsFromMessage(rawMessage: String?): ForwardCounts {
+    if (rawMessage.isNullOrBlank()) return ForwardCounts(success = 0, failed = 0)
+    var success = 0
+    var failed = 0
+    rawMessage.lineSequence()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .forEach { line ->
+            when {
+                line.contains("转发成功") -> success++
+                line.contains("转发失败") -> failed++
+            }
+        }
+    return ForwardCounts(success = success, failed = failed)
+}
+
+private fun countForwardTargets(rawTarget: String?): Int {
+    if (rawTarget.isNullOrBlank()) return 0
+    return rawTarget.split(",", "|")
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .size
+}
+
+private fun formatForwardMessage(rawMessage: String?): String {
+    if (rawMessage.isNullOrBlank()) return "-"
+    return rawMessage.replace(Regex("\\s*\\|\\s*"), "\n")
+}
+
+@Composable
+private fun resolveForwardStatusText(smsMsg: SmsMsg): String {
+    val parsed = parseForwardCountsFromMessage(smsMsg.forwardMessage)
+    val targetCount = countForwardTargets(smsMsg.forwardTarget)
+    val successCount = when {
+        parsed.success > 0 -> parsed.success
+        smsMsg.forwardStatus == SmsMsg.FORWARD_STATUS_SUCCESS -> maxOf(targetCount, 1)
+        else -> 0
+    }
+    val failedCount = when {
+        parsed.failed > 0 -> parsed.failed
+        smsMsg.forwardStatus == SmsMsg.FORWARD_STATUS_FAILED -> maxOf(targetCount, 1)
+        else -> 0
+    }
+    return when (smsMsg.forwardStatus) {
+        SmsMsg.FORWARD_STATUS_BLOCKED -> stringResource(R.string.forward_status_none)
+        SmsMsg.FORWARD_STATUS_PARTIAL -> stringResource(
+            R.string.forward_status_partial,
+            maxOf(successCount, 1),
+            maxOf(failedCount, 1),
+        )
+        SmsMsg.FORWARD_STATUS_SUCCESS -> stringResource(
+            R.string.forward_status_success_count,
+            maxOf(successCount, 1),
+        )
+        SmsMsg.FORWARD_STATUS_FAILED -> stringResource(
+            R.string.forward_status_failed_count,
+            maxOf(failedCount, 1),
+        )
+        else -> stringResource(R.string.forward_status_none)
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
@@ -1128,11 +1188,7 @@ fun CodeRecordItem(
                 )
             }
             Spacer(modifier = Modifier.height(2.dp))
-            val forwardStatus = when (smsMsg.forwardStatus) {
-                SmsMsg.FORWARD_STATUS_SUCCESS -> stringResource(R.string.forward_status_success)
-                SmsMsg.FORWARD_STATUS_FAILED -> stringResource(R.string.forward_status_failed)
-                else -> stringResource(R.string.forward_status_none)
-            }
+            val forwardStatus = resolveForwardStatusText(smsMsg)
             Text(
                 text = "${stringResource(R.string.detail_forward_status)}: $forwardStatus",
                 style = MaterialTheme.typography.labelSmall,
@@ -1243,11 +1299,7 @@ fun AppNotificationItem(
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
-            val forwardStatus = when (smsMsg.forwardStatus) {
-                SmsMsg.FORWARD_STATUS_SUCCESS -> stringResource(R.string.forward_status_success)
-                SmsMsg.FORWARD_STATUS_FAILED -> stringResource(R.string.forward_status_failed)
-                else -> stringResource(R.string.forward_status_none)
-            }
+            val forwardStatus = resolveForwardStatusText(smsMsg)
             Text(
                 text = "${stringResource(R.string.detail_forward_status)}: $forwardStatus",
                 style = MaterialTheme.typography.labelSmall,

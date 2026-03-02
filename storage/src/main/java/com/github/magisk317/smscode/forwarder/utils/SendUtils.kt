@@ -49,7 +49,7 @@ import java.util.Date
 
 object SendUtils {
     private const val TAG = "SendUtils"
-    private const val MAX_FORWARD_MESSAGE_LEN = 300
+    private const val MAX_FORWARD_MESSAGE_LEN = 2000
     private val gson = Gson()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private data class SenderDispatchResult(
@@ -82,7 +82,7 @@ object SendUtils {
                         if (msgInfo.type == "app_notify") {
                             sender.receiveAppNotify == 1
                         } else {
-                            isCodeSms || sender.receiveNonCode == 1
+                            if (isCodeSms) sender.receiveCode == 1 else sender.receiveNonCode == 1
                         }
                 }
                 if (senders.isEmpty()) {
@@ -277,22 +277,27 @@ object SendUtils {
             val existing = msgDao.getById(recordId) ?: return
             val successResults = results.filter { it.success }
             val failedResults = results.filterNot { it.success }
-            val status = when {
+            val computedStatus = when {
                 forceFailed -> SmsMsg.FORWARD_STATUS_FAILED
+                successResults.isNotEmpty() && failedResults.isNotEmpty() -> SmsMsg.FORWARD_STATUS_PARTIAL
                 successResults.isNotEmpty() -> SmsMsg.FORWARD_STATUS_SUCCESS
-                results.isNotEmpty() -> SmsMsg.FORWARD_STATUS_FAILED
                 else -> SmsMsg.FORWARD_STATUS_FAILED
+            }
+            val status = if (existing.forwardStatus == SmsMsg.FORWARD_STATUS_BLOCKED) {
+                SmsMsg.FORWARD_STATUS_BLOCKED
+            } else {
+                computedStatus
             }
             val target = results.joinToString(", ") { it.senderName }.ifBlank { null }
             val message = when {
                 forceFailed -> defaultMessage
-                successResults.isNotEmpty() && failedResults.isNotEmpty() -> {
-                    "成功转发到${successResults.size}个通道，失败${failedResults.size}个通道；失败原因：${
-                        failedResults.joinToString(" | ") { "${it.senderName}:${it.message}" }
-                    }"
+                results.isNotEmpty() -> results.joinToString("\n") { result ->
+                    if (result.success) {
+                        "${result.senderName}通道转发成功"
+                    } else {
+                        "${result.senderName}通道转发失败，原因：${result.message}"
+                    }
                 }
-                successResults.isNotEmpty() -> "成功转发到${successResults.size}个通道"
-                failedResults.isNotEmpty() -> failedResults.joinToString(" | ") { "${it.senderName}:${it.message}" }
                 else -> defaultMessage
             }.take(MAX_FORWARD_MESSAGE_LEN)
 

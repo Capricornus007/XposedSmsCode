@@ -53,7 +53,8 @@ fun SmsConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewModel
     var mobiles by remember { mutableStateOf("") }
     var simSlot by remember { mutableStateOf("0") }
     var onlyNoNetwork by remember { mutableStateOf(false) }
-    var receiveNonCode by remember { mutableStateOf(false) }
+    var receiveCode by remember { mutableStateOf(true) }
+    var receiveNonCode by remember { mutableStateOf(true) }
     var receiveAppNotify by remember { mutableStateOf(true) }
     var currentSender by remember { mutableStateOf<Sender?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -63,6 +64,7 @@ fun SmsConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewModel
             viewModel.getSender(senderId)?.let { sender ->
                 currentSender = sender
                 name = sender.name
+                receiveCode = sender.receiveCode == 1
                 receiveNonCode = sender.receiveNonCode == 1
                 receiveAppNotify = sender.receiveAppNotify == 1
                 runCatching { Gson().fromJson(sender.jsonSetting, SmsSetting::class.java) }.getOrNull()?.let {
@@ -84,6 +86,7 @@ fun SmsConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewModel
             name = name,
             jsonSetting = Gson().toJson(setting),
             status = status,
+            receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
@@ -93,6 +96,7 @@ fun SmsConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewModel
             name = name,
             jsonSetting = Gson().toJson(setting),
             status = status,
+            receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
@@ -152,6 +156,14 @@ fun SmsConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewModel
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("仅无网络时发送")
                 Switch(checked = onlyNoNetwork, onCheckedChange = { onlyNoNetwork = it })
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("转发验证码短信", style = MaterialTheme.typography.bodyMedium)
+                    Text("开启后接收验证码短信转发", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = receiveCode, onCheckedChange = { receiveCode = it })
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {

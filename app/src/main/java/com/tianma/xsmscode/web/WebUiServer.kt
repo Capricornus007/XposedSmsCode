@@ -311,6 +311,7 @@ class WebUiServer(
                         name = name,
                         jsonSetting = payload.jsonSetting,
                         status = if (payload.status) 1 else 0,
+                        receiveCode = if (payload.receiveCode) 1 else 0,
                         receiveNonCode = if (payload.receiveNonCode) 1 else 0,
                         receiveAppNotify = if (payload.receiveAppNotify) 1 else 0,
                     )
@@ -367,6 +368,7 @@ class WebUiServer(
                     payload.type == null &&
                     payload.jsonSetting == null &&
                     payload.status == null &&
+                    payload.receiveCode == null &&
                     payload.receiveNonCode == null &&
                     payload.receiveAppNotify == null
                 ) {
@@ -385,6 +387,7 @@ class WebUiServer(
                     payload.type?.let { current.type = it }
                     payload.jsonSetting?.let { current.jsonSetting = it }
                     current.status = if (payload.status ?: (current.status == 1)) 1 else 0
+                    current.receiveCode = if (payload.receiveCode ?: (current.receiveCode == 1)) 1 else 0
                     current.receiveNonCode = if (payload.receiveNonCode ?: (current.receiveNonCode == 1)) 1 else 0
                     current.receiveAppNotify = if (payload.receiveAppNotify ?: (current.receiveAppNotify == 1)) 1 else 0
                     dao.update(current)
@@ -602,6 +605,7 @@ class WebUiServer(
         typeLabel = senderTypeLabel(type),
         jsonSetting = jsonSetting,
         status = status == 1,
+        receiveCode = receiveCode == 1,
         receiveNonCode = receiveNonCode == 1,
         receiveAppNotify = receiveAppNotify == 1,
     )
@@ -713,6 +717,7 @@ class WebUiServer(
         val typeLabel: String,
         val jsonSetting: String,
         val status: Boolean,
+        val receiveCode: Boolean,
         val receiveNonCode: Boolean,
         val receiveAppNotify: Boolean,
     )
@@ -723,7 +728,8 @@ class WebUiServer(
         val type: Int = SenderType.WEBHOOK,
         val jsonSetting: String = "",
         val status: Boolean = true,
-        val receiveNonCode: Boolean = false,
+        val receiveCode: Boolean = true,
+        val receiveNonCode: Boolean = true,
         val receiveAppNotify: Boolean = true,
     )
 
@@ -733,6 +739,7 @@ class WebUiServer(
         val type: Int? = null,
         val jsonSetting: String? = null,
         val status: Boolean? = null,
+        val receiveCode: Boolean? = null,
         val receiveNonCode: Boolean? = null,
         val receiveAppNotify: Boolean? = null,
     )
@@ -808,6 +815,7 @@ class WebUiServer(
                 .record-card .time { color:#64748b; font-size:12px; }
                 .record-card .body { font-size:13px; white-space:pre-wrap; word-break:break-word; }
                 .record-card .meta { margin-top:8px; color:#64748b; font-size:12px; display:flex; gap:12px; flex-wrap:wrap; }
+                .record-card .meta .forward-detail { white-space:pre-line; flex-basis:100%; }
                 .badge { display:inline-block; background:#e2e8f0; color:#334155; border-radius:999px; padding:2px 8px; font-size:12px; }
                 .switch-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
                 .switch-row { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; }
@@ -989,6 +997,10 @@ class WebUiServer(
                           <input id="senderStatus" type="checkbox" />
                         </div>
                         <div>
+                          <div class="muted">转发验证码短信</div>
+                          <input id="senderReceiveCode" type="checkbox" />
+                        </div>
+                        <div>
                           <div class="muted">转发非验证码短信</div>
                           <input id="senderReceiveNonCode" type="checkbox" />
                         </div>
@@ -1014,11 +1026,12 @@ class WebUiServer(
                       <thead>
                         <tr>
                           <th style="width:24%">名称</th>
-                          <th style="width:18%">类型</th>
-                          <th style="width:13%">启用</th>
+                          <th style="width:16%">类型</th>
+                          <th style="width:10%">启用</th>
+                          <th style="width:13%">转发验证码</th>
                           <th style="width:13%">转发非验证码</th>
                           <th style="width:14%">转发应用通知</th>
-                          <th style="width:18%">操作</th>
+                          <th style="width:10%">操作</th>
                         </tr>
                       </thead>
                       <tbody id="senderBody"></tbody>
@@ -1110,6 +1123,7 @@ class WebUiServer(
                 const senderName = document.getElementById("senderName");
                 const senderType = document.getElementById("senderType");
                 const senderStatus = document.getElementById("senderStatus");
+                const senderReceiveCode = document.getElementById("senderReceiveCode");
                 const senderReceiveNonCode = document.getElementById("senderReceiveNonCode");
                 const senderReceiveAppNotify = document.getElementById("senderReceiveAppNotify");
                 const senderJsonSetting = document.getElementById("senderJsonSetting");
@@ -1305,13 +1319,47 @@ class WebUiServer(
                   return { code: code, plain: plain, app: app };
                 }
 
-                function forwardResultText(item) {
-                  const target = (item.forwardTarget || "").trim();
-                  if (item.forwardStatus === 1) {
-                    return target ? ("成功转发到 " + target) : "成功转发";
+                function normalizeForwardMessage(message) {
+                  return String(message || "").replace(/\s*\|\s*/g, "\n").trim();
+                }
+
+                function parseForwardCounts(message) {
+                  const lines = normalizeForwardMessage(message)
+                    .split(/\n+/)
+                    .map((line) => line.trim())
+                    .filter(Boolean);
+                  let success = 0;
+                  let failed = 0;
+                  for (const line of lines) {
+                    if (line.includes("转发成功")) success += 1;
+                    if (line.includes("转发失败")) failed += 1;
                   }
-                  if (item.forwardStatus === 2) {
-                    return target ? ("转发失败(" + target + ")") : "转发失败";
+                  return { success: success, failed: failed };
+                }
+
+                function countForwardTargets(target) {
+                  return String(target || "")
+                    .split(/[|,]/)
+                    .map((part) => part.trim())
+                    .filter(Boolean)
+                    .length;
+                }
+
+                function forwardResultText(item) {
+                  const status = Number(item.forwardStatus || 0);
+                  if (status === 4) return "未转发";
+                  const counts = parseForwardCounts(item.forwardMessage);
+                  const targetCount = countForwardTargets(item.forwardTarget);
+                  const successCount = counts.success > 0 ? counts.success : (status === 1 ? Math.max(targetCount, 1) : 0);
+                  const failedCount = counts.failed > 0 ? counts.failed : (status === 2 ? Math.max(targetCount, 1) : 0);
+                  if (status === 3) {
+                    return Math.max(successCount, 1) + "通道转发成功" + Math.max(failedCount, 1) + "通道转发失败";
+                  }
+                  if (status === 1) {
+                    return Math.max(successCount, 1) + "通道转发成功";
+                  }
+                  if (status === 2) {
+                    return Math.max(failedCount, 1) + "通道转发失败";
                   }
                   return "未转发";
                 }
@@ -1352,9 +1400,11 @@ class WebUiServer(
                   forward.textContent = forwardResultText(item);
                   meta.appendChild(forward);
 
-                  if (item.forwardMessage) {
+                  const forwardDetail = normalizeForwardMessage(item.forwardMessage);
+                  if (forwardDetail) {
                     const message = document.createElement("span");
-                    message.textContent = "结果: " + item.forwardMessage;
+                    message.className = "forward-detail";
+                    message.textContent = "结果:\n" + forwardDetail;
                     meta.appendChild(message);
                   }
 
@@ -1457,7 +1507,8 @@ class WebUiServer(
                   senderName.value = "";
                   senderType.value = String(senderTypes[0].value);
                   senderStatus.checked = true;
-                  senderReceiveNonCode.checked = false;
+                  senderReceiveCode.checked = true;
+                  senderReceiveNonCode.checked = true;
                   senderReceiveAppNotify.checked = true;
                   senderJsonSetting.value = "";
                   saveSender.textContent = "创建通道";
@@ -1469,6 +1520,7 @@ class WebUiServer(
                   senderName.value = sender.name || "";
                   senderType.value = String(sender.type);
                   senderStatus.checked = !!sender.status;
+                  senderReceiveCode.checked = !!sender.receiveCode;
                   senderReceiveNonCode.checked = !!sender.receiveNonCode;
                   senderReceiveAppNotify.checked = !!sender.receiveAppNotify;
                   senderJsonSetting.value = sender.jsonSetting || "";
@@ -1505,9 +1557,9 @@ class WebUiServer(
                     tr.appendChild(c3);
 
                     const c4 = document.createElement("td");
-                    c4.appendChild(createSenderSwitch(sender.receiveNonCode, async (checked) => {
+                    c4.appendChild(createSenderSwitch(sender.receiveCode, async (checked) => {
                       try {
-                        await updateSender(sender.id, { receiveNonCode: checked });
+                        await updateSender(sender.id, { receiveCode: checked });
                         await loadSenders();
                       } catch (e) {
                         alert("通道配置更新失败: " + e.message);
@@ -1516,10 +1568,10 @@ class WebUiServer(
                     tr.appendChild(c4);
 
                     const c5 = document.createElement("td");
-                    c5.appendChild(createSenderSwitch(sender.receiveAppNotify, async (checked) => {
+                    c5.appendChild(createSenderSwitch(sender.receiveNonCode, async (checked) => {
                       try {
-                        await updateSender(sender.id, { receiveAppNotify: checked });
-                        await Promise.all([loadSenders(), loadAdvanced()]);
+                        await updateSender(sender.id, { receiveNonCode: checked });
+                        await loadSenders();
                       } catch (e) {
                         alert("通道配置更新失败: " + e.message);
                       }
@@ -1527,6 +1579,17 @@ class WebUiServer(
                     tr.appendChild(c5);
 
                     const c6 = document.createElement("td");
+                    c6.appendChild(createSenderSwitch(sender.receiveAppNotify, async (checked) => {
+                      try {
+                        await updateSender(sender.id, { receiveAppNotify: checked });
+                        await Promise.all([loadSenders(), loadAdvanced()]);
+                      } catch (e) {
+                        alert("通道配置更新失败: " + e.message);
+                      }
+                    }));
+                    tr.appendChild(c6);
+
+                    const c7 = document.createElement("td");
                     const actions = document.createElement("div");
                     actions.className = "row-actions";
                     const editBtn = document.createElement("button");
@@ -1548,8 +1611,8 @@ class WebUiServer(
                     };
                     actions.appendChild(editBtn);
                     actions.appendChild(deleteBtn);
-                    c6.appendChild(actions);
-                    tr.appendChild(c6);
+                    c7.appendChild(actions);
+                    tr.appendChild(c7);
 
                     senderBody.appendChild(tr);
                   }
@@ -1762,6 +1825,7 @@ class WebUiServer(
                     type: Number(senderType.value),
                     jsonSetting: senderJsonSetting.value || "",
                     status: senderStatus.checked,
+                    receiveCode: senderReceiveCode.checked,
                     receiveNonCode: senderReceiveNonCode.checked,
                     receiveAppNotify: senderReceiveAppNotify.checked
                   };

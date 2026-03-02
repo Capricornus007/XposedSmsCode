@@ -33,7 +33,7 @@ class CodeWorker(
         val copyToClipboard = PrefsReader.copyToClipboardEnabled(mPluginContext)
         val showToast = PrefsReader.shouldShowToast(mPluginContext)
         val recordSms = PrefsReader.recordSmsCodeEnabled(mPluginContext)
-        val blockSms = false
+        val blockSms = PrefsReader.blockSmsEnabled(mPluginContext)
         val markAsRead = PrefsReader.markAsReadEnabled(mPluginContext)
         val deleteSms = PrefsReader.deleteSmsEnabled(mPluginContext)
         val deduplicateSms = PrefsReader.deduplicateSms(mPluginContext)
@@ -93,7 +93,7 @@ class CodeWorker(
             val duplicated = parseBundle.getBoolean(SmsParseAction.SMS_DUPLICATED, false)
             if (duplicated) {
                 mScheduledExecutor.shutdown()
-                return buildParseResult()
+                return buildParseResult(blockSms)
             }
 
             smsMsg = BundleCompat.getParcelable(parseBundle, SmsParseAction.SMS_MSG, SmsMsg::class.java) ?: return null
@@ -119,8 +119,17 @@ class CodeWorker(
         val notifyAction = NotifyAction(mPluginContext, mPhoneContext, smsMsg)
         val notificationFuture = mScheduledExecutor.schedule(notifyAction, 0, TimeUnit.MILLISECONDS)
 
-        // 记录验证码短信 Action
-        val recordSmsAction = RecordSmsAction(mPluginContext, mPhoneContext, smsMsg)
+        // 记录验证码短信 Action（开启拦截时标记为“短信已拦截”）
+        val recordSmsMsg = if (blockSms) {
+            smsMsg.copy(
+                forwardStatus = SmsMsg.FORWARD_STATUS_BLOCKED,
+                forwardMessage = "短信已拦截",
+                forwardTime = System.currentTimeMillis(),
+            )
+        } else {
+            smsMsg
+        }
+        val recordSmsAction = RecordSmsAction(mPluginContext, mPhoneContext, recordSmsMsg)
         mScheduledExecutor.schedule(recordSmsAction, 0, TimeUnit.MILLISECONDS)
 
         // 转发 Action
@@ -155,7 +164,7 @@ class CodeWorker(
         }
 
         mScheduledExecutor.shutdown()
-        return buildParseResult()
+        return buildParseResult(blockSms)
     }
 
     private fun schedulePlainSmsForwardIfNeeded() {
@@ -188,9 +197,9 @@ class CodeWorker(
         mScheduledExecutor.schedule(forwardAction, 100, TimeUnit.MILLISECONDS)
     }
 
-    private fun buildParseResult(): ParseResult {
+    private fun buildParseResult(blockSms: Boolean): ParseResult {
         val parseResult = ParseResult()
-        parseResult.isBlockSms = false
+        parseResult.isBlockSms = blockSms
         return parseResult
     }
 

@@ -52,7 +52,8 @@ fun BarkConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMode
     var name by remember { mutableStateOf("") }
     var server by remember { mutableStateOf("") }
     var title by remember { mutableStateOf("") }
-    var receiveNonCode by remember { mutableStateOf(false) }
+    var receiveCode by remember { mutableStateOf(true) }
+    var receiveNonCode by remember { mutableStateOf(true) }
     var receiveAppNotify by remember { mutableStateOf(true) }
     var currentSender by remember { mutableStateOf<Sender?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -62,6 +63,7 @@ fun BarkConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMode
             viewModel.getSender(senderId)?.let { sender ->
                 currentSender = sender
                 name = sender.name
+                receiveCode = sender.receiveCode == 1
                 receiveNonCode = sender.receiveNonCode == 1
                 receiveAppNotify = sender.receiveAppNotify == 1
                 runCatching { Gson().fromJson(sender.jsonSetting, BarkSetting::class.java) }.getOrNull()?.let {
@@ -78,6 +80,7 @@ fun BarkConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMode
             name = name,
             jsonSetting = Gson().toJson(setting),
             status = status,
+            receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
@@ -87,6 +90,7 @@ fun BarkConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMode
             name = name,
             jsonSetting = Gson().toJson(setting),
             status = status,
+            receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
@@ -145,6 +149,14 @@ fun BarkConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewMode
             OutlinedTextField(name, { name = it }, label = { Text("通道名称") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(server, { server = it }, label = { Text("Bark 地址") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(title, { title = it }, label = { Text("标题模板") }, modifier = Modifier.fillMaxWidth())
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("转发验证码短信", style = MaterialTheme.typography.bodyMedium)
+                    Text("开启后接收验证码短信转发", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = receiveCode, onCheckedChange = { receiveCode = it })
+            }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text("转发非验证码短信", style = MaterialTheme.typography.bodyMedium)

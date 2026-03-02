@@ -55,7 +55,8 @@ fun WeworkAgentConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderV
     var secret by remember { mutableStateOf("") }
     var toUser by remember { mutableStateOf("@all") }
     var customizeAPI by remember { mutableStateOf("https://qyapi.weixin.qq.com") }
-    var receiveNonCode by remember { mutableStateOf(false) }
+    var receiveCode by remember { mutableStateOf(true) }
+    var receiveNonCode by remember { mutableStateOf(true) }
     var receiveAppNotify by remember { mutableStateOf(true) }
     var currentSender by remember { mutableStateOf<Sender?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
@@ -65,6 +66,7 @@ fun WeworkAgentConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderV
             viewModel.getSender(senderId)?.let { sender ->
                 currentSender = sender
                 name = sender.name
+                receiveCode = sender.receiveCode == 1
                 receiveNonCode = sender.receiveNonCode == 1
                 receiveAppNotify = sender.receiveAppNotify == 1
                 runCatching { Gson().fromJson(sender.jsonSetting, WeworkAgentSetting::class.java) }.getOrNull()?.let {
@@ -90,6 +92,7 @@ fun WeworkAgentConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderV
             name = name,
             jsonSetting = Gson().toJson(setting),
             status = status,
+            receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
@@ -99,6 +102,7 @@ fun WeworkAgentConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderV
             name = name,
             jsonSetting = Gson().toJson(setting),
             status = status,
+            receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date(),
@@ -158,6 +162,14 @@ fun WeworkAgentConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderV
             OutlinedTextField(secret, { secret = it }, label = { Text("Secret") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(toUser, { toUser = it }, label = { Text("ToUser") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(customizeAPI, { customizeAPI = it }, label = { Text("API Base") }, modifier = Modifier.fillMaxWidth())
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Column {
+                    Text("转发验证码短信", style = MaterialTheme.typography.bodyMedium)
+                    Text("开启后接收验证码短信转发", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = receiveCode, onCheckedChange = { receiveCode = it })
+            }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Column {
                     Text("转发非验证码短信", style = MaterialTheme.typography.bodyMedium)

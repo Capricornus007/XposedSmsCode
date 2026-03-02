@@ -37,7 +37,8 @@ fun TelegramConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
     var parseMode by remember { mutableStateOf("HTML") }
     var proxyHost by remember { mutableStateOf("") }
     var proxyPort by remember { mutableStateOf("") }
-    var receiveNonCode by remember { mutableStateOf(false) }
+    var receiveCode by remember { mutableStateOf(true) }
+    var receiveNonCode by remember { mutableStateOf(true) }
     var receiveAppNotify by remember { mutableStateOf(true) }
 
     var isLoaded by remember { mutableStateOf(false) }
@@ -50,6 +51,7 @@ fun TelegramConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
             if (sender != null) {
                 currentSender = sender
                 name = sender.name
+                receiveCode = sender.receiveCode == 1
                 receiveNonCode = sender.receiveNonCode == 1
                 receiveAppNotify = sender.receiveAppNotify == 1
                 val setting = try {
@@ -87,6 +89,7 @@ fun TelegramConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
             name = name,
             jsonSetting = json,
             status = status,
+            receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date()
@@ -96,6 +99,7 @@ fun TelegramConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
             name = name,
             jsonSetting = json,
             status = status,
+            receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
             time = Date()
@@ -194,6 +198,18 @@ fun TelegramConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
             )
 
             Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("转发验证码短信", style = MaterialTheme.typography.bodyMedium)
+                    Text("开启后接收验证码短信转发", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Switch(checked = receiveCode, onCheckedChange = { receiveCode = it })
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
