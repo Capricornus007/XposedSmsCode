@@ -269,7 +269,6 @@ fun MainScreen(
                         com.github.magisk317.smscode.ui.sender.SenderListScreen(
                             onAddClick = { type -> navController.navigate(SenderConfigRoute(id = 0L, type = type)) },
                             onEditClick = { id -> navController.navigate(SenderConfigRoute(id = id, type = 1)) },
-                            onRulesClick = { senderId -> navController.navigate(RulesRoute(senderId = senderId)) },
                             forceShowTypeDialog = reopenTypeDialog,
                             onForceShowHandled = {
                                 backStackEntry.savedStateHandle["reopen_type_dialog"] = false

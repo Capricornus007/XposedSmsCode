@@ -121,7 +121,6 @@ fun SenderListScreen(
     viewModel: SenderViewModel = viewModel(),
     onAddClick: (Int) -> Unit,
     onEditClick: (Long) -> Unit,
-    onRulesClick: (Long) -> Unit,
     forceShowTypeDialog: Boolean = false,
     onForceShowHandled: () -> Unit = {}
 ) {
@@ -302,8 +301,7 @@ fun SenderListScreen(
                                 viewModel.toggleSenderStatus(sender, enabled)
                             }
                         },
-                        onDelete = { viewModel.deleteSender(sender) },
-                        onViewRules = { onRulesClick(sender.id) }
+                        onDelete = { viewModel.deleteSender(sender) }
                     )
                 }
             }
@@ -329,12 +327,14 @@ private fun ForwardCommonConfigCard(
             .clickable(onClick = onEdit),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             Text(
                 text = "短信公共配置",
                 style = MaterialTheme.typography.titleMedium,
             )
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "设备识别号: ${config.deviceName}",
                 style = MaterialTheme.typography.bodyMedium,
@@ -358,7 +358,7 @@ private fun ForwardCommonConfigCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
+                    .padding(top = 2.dp),
                 horizontalArrangement = Arrangement.End,
             ) {
                 TextButton(onClick = onEdit) {
@@ -386,12 +386,14 @@ private fun AppNotifyConfigCard(
             .clickable(onClick = onEdit),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             Text(
                 text = "应用通知配置",
                 style = MaterialTheme.typography.titleMedium,
             )
-            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = if (isDefaultTemplate) "模板: 默认模板（留空自动使用）" else "模板: 自定义模板",
                 style = MaterialTheme.typography.bodySmall,
@@ -407,7 +409,7 @@ private fun AppNotifyConfigCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
+                    .padding(top = 2.dp),
                 horizontalArrangement = Arrangement.End,
             ) {
                 TextButton(onClick = onEdit) {
@@ -794,8 +796,7 @@ fun SenderCard(
     sender: Sender,
     onEdit: () -> Unit,
     onToggle: (Boolean) -> Unit,
-    onDelete: () -> Unit,
-    onViewRules: () -> Unit
+    onDelete: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -803,7 +804,10 @@ fun SenderCard(
             .clickable(onClick = onEdit),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -818,7 +822,6 @@ fun SenderCard(
                     onCheckedChange = { onToggle(it) }
                 )
             }
-            Spacer(modifier = Modifier.height(8.dp))
             val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
             Text(
                 text = "类型: ${getSenderTypeName(sender.type)} | 修改于: ${sdf.format(sender.time)}",
@@ -829,10 +832,6 @@ fun SenderCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = onViewRules) {
-                    Text("规则")
-                }
-                Spacer(modifier = Modifier.width(4.dp))
                 TextButton(onClick = onDelete) {
                     Text("删除", color = MaterialTheme.colorScheme.error)
                 }
