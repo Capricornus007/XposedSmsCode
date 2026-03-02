@@ -173,17 +173,14 @@ fun TelegramConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
                 supportingText = { Text("群组话题 Thread ID") },
                 modifier = Modifier.fillMaxWidth(),
             )
-
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = method == "GET", onClick = { method = "GET" }, label = { Text("GET") })
                 FilterChip(selected = method == "POST", onClick = { method = "POST" }, label = { Text("POST") })
             }
-
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = parseMode == "HTML", onClick = { parseMode = "HTML" }, label = { Text("HTML") })
                 FilterChip(selected = parseMode == "MarkdownV2", onClick = { parseMode = "MarkdownV2" }, label = { Text("MarkdownV2") })
             }
-
             OutlinedTextField(
                 value = proxyHost,
                 onValueChange = { proxyHost = it },
@@ -196,44 +193,14 @@ fun TelegramConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
                 label = { Text("Proxy Port (如 7890)") },
                 modifier = Modifier.fillMaxWidth()
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("转发验证码短信", style = MaterialTheme.typography.bodyMedium)
-                    Text("开启后接收验证码短信转发", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = receiveCode, onCheckedChange = { receiveCode = it })
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("转发非验证码短信", style = MaterialTheme.typography.bodyMedium)
-                    Text("开启后所有短信都会转发", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = receiveNonCode, onCheckedChange = { receiveNonCode = it })
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("转发应用通知", style = MaterialTheme.typography.bodyMedium)
-                    Text("开启后接收应用通知转发", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = receiveAppNotify, onCheckedChange = { receiveAppNotify = it })
-            }
+            ForwardToggleSection(
+                receiveCode = receiveCode,
+                onReceiveCodeChange = { receiveCode = it },
+                receiveNonCode = receiveNonCode,
+                onReceiveNonCodeChange = { receiveNonCode = it },
+                receiveAppNotify = receiveAppNotify,
+                onReceiveAppNotifyChange = { receiveAppNotify = it },
+            )
             Spacer(modifier = Modifier.height(8.dp))
             SenderTestActionRow(channel = "Telegram") {
                 val setting = TelegramSetting(

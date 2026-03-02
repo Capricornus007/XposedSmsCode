@@ -153,37 +153,14 @@ fun SmsConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewModel
             OutlinedTextField(name, { name = it }, label = { Text("通道名称") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(mobiles, { mobiles = it }, label = { Text("目标号码(逗号分隔)") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(simSlot, { simSlot = it }, label = { Text("simSlot(0原进原出,1卡1,2卡2)") }, modifier = Modifier.fillMaxWidth())
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("仅无网络时发送")
-                Switch(checked = onlyNoNetwork, onCheckedChange = { onlyNoNetwork = it })
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text("转发验证码短信", style = MaterialTheme.typography.bodyMedium)
-                    Text("开启后接收验证码短信转发", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = receiveCode, onCheckedChange = { receiveCode = it })
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text("转发非验证码短信", style = MaterialTheme.typography.bodyMedium)
-                    Text("开启后所有短信都会转发", style = MaterialTheme.typography.bodySmall)
-                }
-                Switch(checked = receiveNonCode, onCheckedChange = { receiveNonCode = it })
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("转发应用通知", style = MaterialTheme.typography.bodyMedium)
-                    Text("开启后接收应用通知转发", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = receiveAppNotify, onCheckedChange = { receiveAppNotify = it })
-            }
+            ForwardToggleSection(
+                receiveCode = receiveCode,
+                onReceiveCodeChange = { receiveCode = it },
+                receiveNonCode = receiveNonCode,
+                onReceiveNonCodeChange = { receiveNonCode = it },
+                receiveAppNotify = receiveAppNotify,
+                onReceiveAppNotifyChange = { receiveAppNotify = it },
+            )
             SenderTestActionRow(channel = "SMS") {
                 SmsUtils.sendMsg(
                     context,

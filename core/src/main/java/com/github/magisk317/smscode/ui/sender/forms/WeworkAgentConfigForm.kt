@@ -162,33 +162,14 @@ fun WeworkAgentConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderV
             OutlinedTextField(secret, { secret = it }, label = { Text("Secret") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(toUser, { toUser = it }, label = { Text("ToUser") }, modifier = Modifier.fillMaxWidth())
             OutlinedTextField(customizeAPI, { customizeAPI = it }, label = { Text("API Base") }, modifier = Modifier.fillMaxWidth())
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text("转发验证码短信", style = MaterialTheme.typography.bodyMedium)
-                    Text("开启后接收验证码短信转发", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = receiveCode, onCheckedChange = { receiveCode = it })
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text("转发非验证码短信", style = MaterialTheme.typography.bodyMedium)
-                    Text("开启后所有短信都会转发", style = MaterialTheme.typography.bodySmall)
-                }
-                Switch(checked = receiveNonCode, onCheckedChange = { receiveNonCode = it })
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("转发应用通知", style = MaterialTheme.typography.bodyMedium)
-                    Text("开启后接收应用通知转发", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = receiveAppNotify, onCheckedChange = { receiveAppNotify = it })
-            }
+            ForwardToggleSection(
+                receiveCode = receiveCode,
+                onReceiveCodeChange = { receiveCode = it },
+                receiveNonCode = receiveNonCode,
+                onReceiveNonCodeChange = { receiveNonCode = it },
+                receiveAppNotify = receiveAppNotify,
+                onReceiveAppNotifyChange = { receiveAppNotify = it },
+            )
             SenderTestActionRow(channel = "WeworkAgent") {
                 WeworkAgentUtils.sendMsg(
                     WeworkAgentSetting(

@@ -213,43 +213,14 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 2
             )
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("转发验证码短信", style = MaterialTheme.typography.bodyMedium)
-                    Text("开启后接收验证码短信转发", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = receiveCode, onCheckedChange = { receiveCode = it })
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("转发非验证码短信", style = MaterialTheme.typography.bodyMedium)
-                    Text("开启后所有短信都会转发", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = receiveNonCode, onCheckedChange = { receiveNonCode = it })
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
-            ) {
-                Column {
-                    Text("转发应用通知", style = MaterialTheme.typography.bodyMedium)
-                    Text("开启后接收应用通知转发", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-                Switch(checked = receiveAppNotify, onCheckedChange = { receiveAppNotify = it })
-            }
+            ForwardToggleSection(
+                receiveCode = receiveCode,
+                onReceiveCodeChange = { receiveCode = it },
+                receiveNonCode = receiveNonCode,
+                onReceiveNonCodeChange = { receiveNonCode = it },
+                receiveAppNotify = receiveAppNotify,
+                onReceiveAppNotifyChange = { receiveAppNotify = it },
+            )
             Spacer(modifier = Modifier.height(8.dp))
             SenderTestActionRow(channel = "Webhook") {
                 val setting = WebhookSetting(
