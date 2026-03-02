@@ -253,11 +253,12 @@ fun SenderListScreen(
             }
         }
     ) { paddingValues ->
+        val listBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 120.dp
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = listBottomPadding),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item(key = "forward_common_config") {
