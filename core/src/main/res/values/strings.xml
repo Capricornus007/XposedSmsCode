@@ -21,6 +21,9 @@
     <string name="pref_settings_display_mode_summary">On: collapsible groups; Off: show all settings</string>
     <string name="pref_create_shortcut_title">Create Desktop Shortcut</string>
     <string name="pref_create_shortcut_summary">Pin a shortcut to the launcher for quick access</string>
+    <string name="pref_show_launcher_icon_title">Show launcher icon</string>
+    <string name="pref_show_launcher_icon_summary">Show app icon on the home screen for quick access</string>
+    <string name="pref_show_launcher_icon_failed">Failed to switch launcher icon visibility</string>
     <string name="pref_choose_theme_title">Theme</string>
     <string name="pref_choose_theme_summary">Follow System, Light, Dark or Pure Black</string>
     <string name="theme_follow_system">Automatic (Follow System)</string>

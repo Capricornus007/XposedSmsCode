@@ -6,6 +6,7 @@
     <!-- shared preference key -->
     <string name="pref_enable">pref_enable</string>
     <string name="pref_hide_launcher_icon">pref_hide_launcher_icon</string>
+    <string name="pref_show_launcher_icon">pref_show_launcher_icon</string>
     <string name="pref_choose_theme">pref_choose_theme</string>
     <string name="pref_compose_settings">pref_compose_settings</string>
 

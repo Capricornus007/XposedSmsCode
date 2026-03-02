@@ -57,6 +57,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val booleanPrefKeys = setOf(
         PrefConst.KEY_ENABLE,
+        PrefConst.KEY_SHOW_LAUNCHER_ICON,
         PrefConst.KEY_SETTINGS_ACCORDION_MODE,
         PrefConst.KEY_SHOW_TOAST,
         PrefConst.KEY_COPY_TO_CLIPBOARD,
@@ -174,6 +175,46 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         } else {
             android.widget.Toast.makeText(context, "当前系统不支持创建快捷方式", android.widget.Toast.LENGTH_SHORT).show()
         }
+    }
+
+    fun isLauncherIconVisible(): Boolean {
+        val context = getApplication<Application>()
+        val component = ComponentName(context, LauncherActivity::class.java)
+        val pm = context.packageManager
+        return when (pm.getComponentEnabledSetting(component)) {
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED -> true
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED_USER,
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED_UNTIL_USED,
+            -> false
+
+            PackageManager.COMPONENT_ENABLED_STATE_DEFAULT -> runCatching {
+                pm.getActivityInfo(component, 0).enabled
+            }.getOrDefault(false)
+
+            else -> false
+        }
+    }
+
+    fun setLauncherIconVisible(visible: Boolean): Boolean {
+        val context = getApplication<Application>()
+        val component = ComponentName(context, LauncherActivity::class.java)
+        val pm = context.packageManager
+        val newState = if (visible) {
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+        } else {
+            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+        }
+        return runCatching {
+            pm.setComponentEnabledSetting(
+                component,
+                newState,
+                PackageManager.DONT_KILL_APP,
+            )
+            true
+        }.onFailure {
+            XLog.e("Failed to set launcher icon visible=$visible", it)
+        }.getOrElse { false }
     }
 
     fun performSmsCodeTest(msgBody: String) {
@@ -437,6 +478,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     }
                     if (boolValue != null) {
                         AppPreferencesDataStore.setBoolean(context, k, boolValue)
+                        if (k == PrefConst.KEY_SHOW_LAUNCHER_ICON) {
+                            setLauncherIconVisible(boolValue)
+                        }
                     }
                 }
 

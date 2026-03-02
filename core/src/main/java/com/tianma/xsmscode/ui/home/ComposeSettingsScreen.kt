@@ -117,6 +117,7 @@ fun ComposeSettingsScreen(
     var expandNotification by remember { mutableStateOf(false) }
     var expandExperimental by remember { mutableStateOf(false) }
     var expandOthers by remember { mutableStateOf(false) }
+    val launcherIconVisible = remember { mutableStateOf(settingsViewModel.isLauncherIconVisible()) }
 
     val reloadSettingsData: suspend () -> Unit = {
         autoInputDelay = AppPreferencesDataStore.getString(
@@ -134,6 +135,21 @@ fun ComposeSettingsScreen(
             PrefConst.KEY_SMSCODE_KEYWORDS,
             PrefConst.SMSCODE_KEYWORDS_DEFAULT,
         )
+        val launcherVisible = settingsViewModel.isLauncherIconVisible()
+        launcherIconVisible.value = launcherVisible
+        val storedLauncherVisible = AppPreferencesDataStore.getBoolean(
+            context,
+            PrefConst.KEY_SHOW_LAUNCHER_ICON,
+            true,
+        )
+        if (storedLauncherVisible != launcherVisible) {
+            AppPreferencesDataStore.setBoolean(
+                context,
+                PrefConst.KEY_SHOW_LAUNCHER_ICON,
+                launcherVisible,
+            )
+            AppPreferencesDataStore.syncToSharedPrefs(context)
+        }
         settingsViewModel.setInternalFilesWritable()
         settingsDataLoaded = true
     }
@@ -361,10 +377,33 @@ fun ComposeSettingsScreen(
                         onExpandedChange = { expandGeneral = !expandGeneral },
                         accordionMode = accordionMode.value,
                     ) {
-                        Item(
-                            title = stringResource(id = R.string.pref_create_shortcut_title),
-                            summary = stringResource(id = R.string.pref_create_shortcut_summary),
-                        ) { settingsViewModel.pinShortcutToDesktop() }
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_show_launcher_icon_title),
+                            summary = stringResource(id = R.string.pref_show_launcher_icon_summary),
+                            key = PrefConst.KEY_SHOW_LAUNCHER_ICON,
+                            defaultValue = true,
+                            stateOverride = launcherIconVisible,
+                            onToggle = { visible ->
+                                val success = settingsViewModel.setLauncherIconVisible(visible)
+                                if (!success) {
+                                    launcherIconVisible.value = !visible
+                                    scope.launch {
+                                        AppPreferencesDataStore.setBoolean(
+                                            context,
+                                            PrefConst.KEY_SHOW_LAUNCHER_ICON,
+                                            !visible,
+                                        )
+                                        AppPreferencesDataStore.syncToSharedPrefs(context)
+                                    }
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.pref_show_launcher_icon_failed),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                            },
+                            onSaved = markPrefsSaved,
+                        )
                         Item(
                             title = stringResource(id = R.string.pref_choose_theme_title),
                             summary = stringResource(id = R.string.pref_choose_theme_summary),

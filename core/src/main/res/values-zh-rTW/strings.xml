@@ -21,6 +21,9 @@
     <string name="pref_settings_display_mode_summary">開啟：分組可摺疊；關閉：全部設定直接展開</string>
     <string name="pref_create_shortcut_title">建立桌面捷徑</string>
     <string name="pref_create_shortcut_summary">將捷徑固定在桌面上以便快速存取</string>
+    <string name="pref_show_launcher_icon_title">顯示桌面圖示</string>
+    <string name="pref_show_launcher_icon_summary">在桌面顯示應用圖示，便於快速開啟</string>
+    <string name="pref_show_launcher_icon_failed">切換桌面圖示顯示狀態失敗</string>
     <string name="pref_choose_theme_title">主題</string>
     <string name="pref_choose_theme_summary">隨系統、淺色、深色或純黑</string>
     <string name="theme_follow_system">自動 (隨系統)</string>
