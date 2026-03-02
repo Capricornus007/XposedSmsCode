@@ -184,9 +184,15 @@ class SystemInputInjectorHook : BaseHook() {
                     }
                     val code = intent.getStringExtra("code")
                     val autoEnter = intent.getBooleanExtra("autoEnter", false)
+                    val inputIntervalMs = intent.getLongExtra("inputIntervalMs", 0L).coerceAtLeast(0L)
                     if (!code.isNullOrEmpty()) {
-                        XLog.i("SystemServer received input request: $code, autoEnter: $autoEnter")
-                        injectText(code, autoEnter)
+                        XLog.i(
+                            "SystemServer received input request: %s, autoEnter: %s, inputIntervalMs: %d",
+                            code,
+                            autoEnter,
+                            inputIntervalMs,
+                        )
+                        injectText(code, autoEnter, inputIntervalMs)
                     } else {
                         XLog.w("SystemServer received input request with empty code")
                     }
@@ -290,23 +296,27 @@ class SystemInputInjectorHook : BaseHook() {
         }
     }
 
-    private fun injectText(text: String, autoEnter: Boolean = false) {
+    private fun injectText(text: String, autoEnter: Boolean = false, inputIntervalMs: Long = 0L) {
         getInputHandler().post {
             try {
-                val events = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD)
-                    .getEvents(text.toCharArray())
-                if (events == null) {
-                    XLog.e("Failed to create key events for text")
-                    return@post
-                }
-
                 val managerPair = getInputManagerGlobal() ?: return@post
                 val (manager, method) = managerPair
                 val mode = 0 // InputManager.INJECT_INPUT_EVENT_MODE_ASYNC
                 var injectedCount = 0
-                for (event in events) {
-                    val result = method.invoke(manager, event, mode) as? Boolean ?: false
-                    if (result) injectedCount += 1
+                val keyCharacterMap = KeyCharacterMap.load(KeyCharacterMap.VIRTUAL_KEYBOARD)
+                text.forEachIndexed { index, char ->
+                    val events = keyCharacterMap.getEvents(charArrayOf(char))
+                    if (events == null) {
+                        XLog.w("Failed to create key events for char: %s", char.toString())
+                        return@forEachIndexed
+                    }
+                    for (event in events) {
+                        val result = method.invoke(manager, event, mode) as? Boolean ?: false
+                        if (result) injectedCount += 1
+                    }
+                    if (inputIntervalMs > 0L && index < text.lastIndex) {
+                        Thread.sleep(inputIntervalMs)
+                    }
                 }
                 XLog.w("Injected key characters from System Server, count=%d", injectedCount)
 

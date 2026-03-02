@@ -37,7 +37,8 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
     private fun autoInputCode(code: String?) {
         try {
             val autoEnter = PrefsReader.autoEnterCodeEnabled(mPluginContext)
-            InputHelper.sendText(mPhoneContext, code, autoEnter)
+            val inputIntervalMs = PrefsReader.getAutoInputCodeIntervalMs(mPluginContext)
+            InputHelper.sendText(mPhoneContext, code, autoEnter, inputIntervalMs)
             XLog.d("Auto input code succeed, autoEnter: $autoEnter")
         } catch (throwable: Throwable) {
             XLog.e("Error occurs when auto input code", throwable)

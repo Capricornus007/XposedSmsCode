@@ -200,6 +200,14 @@ object AppPreferencesDataStore {
             PrefConst.KEY_AUTO_INPUT_CODE_DELAY,
             getString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT),
         )
+        editor.putString(
+            PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL,
+            getString(
+                context,
+                PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL,
+                PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL_DEFAULT,
+            ),
+        )
         editor.putBoolean(PrefConst.KEY_SHOW_TOAST, getBoolean(context, PrefConst.KEY_SHOW_TOAST, true))
         editor.putString(
             PrefConst.KEY_SMSCODE_KEYWORDS,

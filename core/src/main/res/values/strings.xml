@@ -67,6 +67,8 @@
     <string name="pref_kill_me_summary">After auto input finishes, kill the app process to reduce background residency</string>
     <string name="pref_auto_input_code_delay_title">Auto input delay</string>
     <string name="pref_auto_input_code_delay_summary">Delay %ss</string>
+    <string name="pref_auto_input_code_interval_title">Auto input interval</string>
+    <string name="pref_auto_input_code_interval_summary">Interval %sms</string>
     <!-- preferences auto-input end -->
 
     <!-- preference code notification -->

@@ -92,9 +92,11 @@ fun ComposeSettingsScreen(
     val themeMode = themeState.mode
 
     var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
+    var autoInputInterval by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL_DEFAULT) }
     var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
     var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
     var showAutoInputDialog by remember { mutableStateOf(false) }
+    var showAutoInputIntervalDialog by remember { mutableStateOf(false) }
     var showRetentionDialog by remember { mutableStateOf(false) }
     var showSmsTestDialog by remember { mutableStateOf(false) }
     var smsTestInput by remember { mutableStateOf("") }
@@ -124,6 +126,11 @@ fun ComposeSettingsScreen(
             context,
             PrefConst.KEY_AUTO_INPUT_CODE_DELAY,
             PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT,
+        )
+        autoInputInterval = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL,
+            PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL_DEFAULT,
         )
         retentionTime = AppPreferencesDataStore.getString(
             context,
@@ -477,6 +484,13 @@ fun ComposeSettingsScreen(
                             title = stringResource(id = R.string.pref_auto_input_code_delay_title),
                             summary = stringResource(id = R.string.pref_auto_input_code_delay_summary, autoInputDelay),
                         ) { showAutoInputDialog = true }
+                        Item(
+                            title = stringResource(id = R.string.pref_auto_input_code_interval_title),
+                            summary = stringResource(
+                                id = R.string.pref_auto_input_code_interval_summary,
+                                autoInputInterval,
+                            ),
+                        ) { showAutoInputIntervalDialog = true }
                     }
 
                     ExpandableSettingsSection(
@@ -619,10 +633,12 @@ fun ComposeSettingsScreen(
         scope = scope,
         themeMode = themeMode,
         autoInputDelay = autoInputDelay,
+        autoInputInterval = autoInputInterval,
         retentionTime = retentionTime,
         smsTestInput = smsTestInput,
         smsCodeKeywords = smsCodeKeywords,
         showAutoInputDialog = showAutoInputDialog,
+        showAutoInputIntervalDialog = showAutoInputIntervalDialog,
         showRetentionDialog = showRetentionDialog,
         showSmsTestDialog = showSmsTestDialog,
         showKeywordsDialog = showKeywordsDialog,
@@ -636,10 +652,12 @@ fun ComposeSettingsScreen(
         showRestoreDialog = showRestoreDialog,
         restoreUri = restoreUri,
         onAutoInputDelayChange = { autoInputDelay = it },
+        onAutoInputIntervalChange = { autoInputInterval = it },
         onRetentionTimeChange = { retentionTime = it },
         onSmsTestInputChange = { smsTestInput = it },
         onSmsKeywordsChange = { smsCodeKeywords = it },
         onShowAutoInputDialogChange = { showAutoInputDialog = it },
+        onShowAutoInputIntervalDialogChange = { showAutoInputIntervalDialog = it },
         onShowRetentionDialogChange = { showRetentionDialog = it },
         onShowSmsTestDialogChange = { showSmsTestDialog = it },
         onShowKeywordsDialogChange = { showKeywordsDialog = it },
@@ -784,10 +802,12 @@ private fun SettingsDialogs(
     scope: kotlinx.coroutines.CoroutineScope,
     themeMode: Int,
     autoInputDelay: String,
+    autoInputInterval: String,
     retentionTime: String,
     smsTestInput: String,
     smsCodeKeywords: String,
     showAutoInputDialog: Boolean,
+    showAutoInputIntervalDialog: Boolean,
     showRetentionDialog: Boolean,
     showSmsTestDialog: Boolean,
     showKeywordsDialog: Boolean,
@@ -801,10 +821,12 @@ private fun SettingsDialogs(
     showRestoreDialog: Boolean,
     restoreUri: android.net.Uri?,
     onAutoInputDelayChange: (String) -> Unit,
+    onAutoInputIntervalChange: (String) -> Unit,
     onRetentionTimeChange: (String) -> Unit,
     onSmsTestInputChange: (String) -> Unit,
     onSmsKeywordsChange: (String) -> Unit,
     onShowAutoInputDialogChange: (Boolean) -> Unit,
+    onShowAutoInputIntervalDialogChange: (Boolean) -> Unit,
     onShowRetentionDialogChange: (Boolean) -> Unit,
     onShowSmsTestDialogChange: (Boolean) -> Unit,
     onShowKeywordsDialogChange: (Boolean) -> Unit,
@@ -836,6 +858,22 @@ private fun SettingsDialogs(
                 onPendingSavedToast()
             }
             onShowAutoInputDialogChange(false)
+        }
+    }
+
+    if (showAutoInputIntervalDialog) {
+        TextInputDialog(
+            title = stringResource(id = R.string.pref_auto_input_code_interval_title),
+            initialValue = autoInputInterval,
+            onDismiss = { onShowAutoInputIntervalDialogChange(false) },
+        ) { value ->
+            onAutoInputIntervalChange(value)
+            scope.launch {
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL, value)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                onPendingSavedToast()
+            }
+            onShowAutoInputIntervalDialogChange(false)
         }
     }
 

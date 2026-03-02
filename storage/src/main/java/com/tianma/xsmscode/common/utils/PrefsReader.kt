@@ -146,6 +146,20 @@ object PrefsReader {
     }
 
     @JvmStatic
+    fun getAutoInputCodeIntervalMs(context: Context): Long {
+        val value = getStringViaProvider(
+            context,
+            PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL,
+            PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL_DEFAULT,
+        )
+        return try {
+            value.toLong().coerceAtLeast(0L)
+        } catch (ignored: Exception) {
+            PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL_DEFAULT.toLong()
+        }
+    }
+
+    @JvmStatic
     fun shouldShowToast(context: Context): Boolean {
         val defaultValue = true
         return getBooleanViaProvider(context, PrefConst.KEY_SHOW_TOAST, defaultValue)

@@ -67,6 +67,8 @@
     <string name="pref_kill_me_summary">自動輸入完成後主動結束應用進程，減少後台駐留</string>
     <string name="pref_auto_input_code_delay_title">自動輸入延遲</string>
     <string name="pref_auto_input_code_delay_summary">延遲 %ss</string>
+    <string name="pref_auto_input_code_interval_title">自動輸入間隔</string>
+    <string name="pref_auto_input_code_interval_summary">間隔 %sms</string>
     <!-- preferences auto-input end -->
 
     <!-- preference code notification -->
