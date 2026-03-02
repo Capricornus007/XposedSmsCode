@@ -16,6 +16,9 @@ import com.tianma.xsmscode.data.db.entity.SmsMsg
 import android.telephony.SubscriptionManager
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 
 class ForwardReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -23,9 +26,11 @@ class ForwardReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         val eventId = intent.getStringExtra("event_id").orEmpty()
         val traceId = buildTraceId(intent, eventId)
-        Thread {
+        val task = Runnable {
             var killAppAfterFinish = false
+            var resultMarked = false
             fun markResult(code: Int, reason: String) {
+                resultMarked = true
                 setOrderedResult(pendingResult, ordered, code, reason, eventId)
             }
             try {
@@ -49,7 +54,7 @@ class ForwardReceiver : BroadcastReceiver() {
                     XLog.e("Rejecting broadcast with invalid action: %s", intent.action)
                     ForwardFlowLog.w(traceId, "Reject invalid action=${intent.action}")
                     markResult(RESULT_REJECT_ACTION, "invalid_action")
-                    return@Thread
+                    return@Runnable
                 }
                 if (intent.action == PrefConst.ACTION_KILL_ME) {
                     val receivedToken = intent.getStringExtra("ipc_token")
@@ -66,12 +71,12 @@ class ForwardReceiver : BroadcastReceiver() {
                             "Reject kill action token mismatch expectedEmpty=${expectedToken.isEmpty()} receivedEmpty=${receivedToken.isNullOrBlank()}",
                         )
                         markResult(RESULT_REJECT_TOKEN, "token_mismatch")
-                        return@Thread
+                        return@Runnable
                     }
                     ForwardFlowLog.w(traceId, "Kill action accepted, app process will terminate")
                     markResult(RESULT_OK, "kill_requested")
                     killAppAfterFinish = true
-                    return@Thread
+                    return@Runnable
                 }
 
                 val sender = intent.getStringExtra("sender")
@@ -142,7 +147,7 @@ class ForwardReceiver : BroadcastReceiver() {
                         rejectTokenMessage,
                     )
                     markResult(RESULT_REJECT_TOKEN, "token_mismatch")
-                    return@Thread
+                    return@Runnable
                 }
                 if (!tokenMatched && allowSystemBypass) {
                     val bypassMessage = buildString {
@@ -163,7 +168,7 @@ class ForwardReceiver : BroadcastReceiver() {
                     !shouldForwardAppNotify(context, packageName, traceId, forwardSource)
                 ) {
                     markResult(RESULT_REJECT_APP_GATE, "app_gate_drop")
-                    return@Thread
+                    return@Runnable
                 }
                 if (msgTypeStr == "app_notify" && shouldDropDuplicateAppNotify(packageName, sender, body)) {
                     XLog.i(
@@ -184,7 +189,7 @@ class ForwardReceiver : BroadcastReceiver() {
                         },
                     )
                     markResult(RESULT_DROP_DUPLICATE, "duplicate_drop")
-                    return@Thread
+                    return@Runnable
                 }
 
                 XLog.i("IPC verified and received message from: %s", sender ?: "")
@@ -256,44 +261,16 @@ class ForwardReceiver : BroadcastReceiver() {
 
                 if (msgTypeStr == "app_notify") {
                     runCatching {
-                        val smsMsgUri = com.tianma.xsmscode.data.db.DBProvider.SMS_MSG_CONTENT_URI
-                        val resolver = context.contentResolver
-                        val values = android.content.ContentValues().apply {
-                            put("body", msgInfo.content)
-                            put("company", msgInfo.simInfo)
-                            put("date", msgInfo.date.time)
-                            put("sender", msgInfo.from)
-                            put("package_name", msgInfo.packageName)
-                            put("msg_type", smsMsgType)
-                        }
-                        // Remove outdated records
-                        val cursor = resolver.query(smsMsgUri, arrayOf("_id"), null, null, "date ASC")
-                        if (cursor != null) {
-                            val count = cursor.count
-                            val limit = runBlocking {
-                                com.tianma.xsmscode.common.utils.AppPreferencesDataStore.getString(
-                                    context,
-                                    com.tianma.xsmscode.common.constant.PrefConst.KEY_HISTORY_LIMIT,
-                                    "0",
-                                ).toIntOrNull() ?: 0
-                            }
-                            if (limit > 0 && count >= limit) {
-                                val selection = "_id = ?"
-                                val operations = ArrayList<android.content.ContentProviderOperation>()
-                                for (i in 0 until (count - limit + 1)) {
-                                    if (cursor.moveToNext()) {
-                                        val id = cursor.getLong(0)
-                                        val operation = android.content.ContentProviderOperation.newDelete(smsMsgUri)
-                                            .withSelection(selection, arrayOf(id.toString()))
-                                            .build()
-                                        operations.add(operation)
-                                    }
-                                }
-                                resolver.applyBatch(com.tianma.xsmscode.data.db.DBProvider.AUTHORITY, operations)
-                            }
-                            cursor.close()
-                        }
-                        recordId = resolver.insert(smsMsgUri, values)?.lastPathSegment?.toLongOrNull()
+                        recordId = insertRecord(
+                            context = context,
+                            sender = msgInfo.from,
+                            body = msgInfo.content,
+                            date = msgInfo.date.time,
+                            company = msgInfo.simInfo,
+                            smsCode = smsCode,
+                            packageName = msgInfo.packageName,
+                            msgType = smsMsgType,
+                        )
                     }.onFailure { error ->
                         XLog.e("Failed to record app notification to DB", error)
                         ForwardFlowLog.e(traceId, "Record app_notify failed", error)
@@ -306,6 +283,27 @@ class ForwardReceiver : BroadcastReceiver() {
                         date = msgInfo.date.time,
                         msgType = smsMsgType,
                     )
+                    if (recordId == null) {
+                        runCatching {
+                            recordId = insertRecord(
+                                context = context,
+                                sender = msgInfo.from,
+                                body = msgInfo.content,
+                                date = msgInfo.date.time,
+                                company = msgInfo.simInfo,
+                                smsCode = smsCode,
+                                packageName = msgInfo.packageName,
+                                msgType = smsMsgType,
+                            )
+                            ForwardFlowLog.i(
+                                traceId,
+                                "Inserted missing sms record for forwarding date=${msgInfo.date.time}",
+                            )
+                        }.onFailure { error ->
+                            XLog.e("Failed to insert missing sms record", error)
+                            ForwardFlowLog.e(traceId, "Insert missing sms record failed", error)
+                        }
+                    }
                 }
                 if (recordId == null) {
                     recordId = findRecordIdByFingerprint(
@@ -357,14 +355,49 @@ class ForwardReceiver : BroadcastReceiver() {
                     )
                     markResult(RESULT_DISPATCH_FAILED, "dispatch_failed")
                 }
+            } catch (error: Throwable) {
+                XLog.e("ForwardReceiver unexpected error", error)
+                ForwardFlowLog.e(
+                    traceId,
+                    buildString {
+                        append("ForwardReceiver unexpected error action=")
+                        append(intent.action)
+                        append(" event=")
+                        append(eventId.ifBlank { "<none>" })
+                    },
+                    error,
+                )
+                if (!resultMarked) {
+                    markResult(RESULT_DISPATCH_FAILED, "receiver_exception")
+                }
             } finally {
+                if (!resultMarked) {
+                    markResult(RESULT_DISPATCH_FAILED, "receiver_no_result")
+                }
                 ForwardFlowLog.d(traceId, "ForwardReceiver finished")
                 pendingResult.finish()
                 if (killAppAfterFinish) {
                     terminateSelfProcess(traceId)
                 }
             }
-        }.start()
+        }
+        runCatching {
+            FORWARD_EXECUTOR.execute(task)
+        }.onFailure { error ->
+            XLog.e("ForwardReceiver failed to schedule task", error)
+            ForwardFlowLog.e(
+                traceId,
+                buildString {
+                    append("ForwardReceiver schedule failed action=")
+                    append(intent.action)
+                    append(" event=")
+                    append(eventId.ifBlank { "<none>" })
+                },
+                error,
+            )
+            setOrderedResult(pendingResult, ordered, RESULT_DISPATCH_FAILED, "executor_rejected", eventId)
+            pendingResult.finish()
+        }
     }
 
     companion object {
@@ -378,6 +411,11 @@ class ForwardReceiver : BroadcastReceiver() {
         private const val RESULT_REJECT_APP_GATE = -103
         private const val RESULT_DROP_DUPLICATE = -104
         private const val RESULT_DISPATCH_FAILED = -105
+        private const val FORWARD_WORKER_COUNT = 2
+        private val workerIndex = AtomicInteger(1)
+        private val FORWARD_EXECUTOR: ExecutorService = Executors.newFixedThreadPool(FORWARD_WORKER_COUNT) { runnable ->
+            Thread(runnable, "ForwardReceiverWorker-${workerIndex.getAndIncrement()}")
+        }
         private val recentAppNotify = ConcurrentHashMap<String, Long>()
     }
 
@@ -387,10 +425,21 @@ class ForwardReceiver : BroadcastReceiver() {
         sentFromUid: Int?,
     ): Boolean {
         // Keep strict token verification for all regular channels.
-        // Only allow NotificationManagerHook(system_server) app notification as a fallback.
-        return msgType == "app_notify" &&
-            forwardSource == "nms_hook" &&
-            sentFromUid == Process.SYSTEM_UID
+        // App notification from NotificationManagerHook may temporarily fail to read token
+        // when provider is unavailable (e.g. app process cleaned). In that case:
+        // - API 34+: require sent-from UID to be system UID.
+        // - API < 34: UID API is unavailable, allow nms_hook fallback.
+        if (msgType != "app_notify" || forwardSource != "nms_hook") {
+            return false
+        }
+        if (sentFromUid == Process.SYSTEM_UID) {
+            return true
+        }
+        if (Build.VERSION.SDK_INT < API_LEVEL_34 && sentFromUid == null) {
+            XLog.w("IPC token bypass accepted for nms_hook without sender uid (API<34)")
+            return true
+        }
+        return false
     }
 
     private fun resolveSentFromUidCompat(): Int? {
@@ -532,6 +581,63 @@ class ForwardReceiver : BroadcastReceiver() {
         }.getOrElse { error ->
             XLog.w("findRecordIdByFingerprint failed: %s", error.message ?: error.javaClass.simpleName)
             null
+        }
+    }
+
+    private fun insertRecord(
+        context: Context,
+        sender: String,
+        body: String,
+        date: Long,
+        company: String,
+        smsCode: String?,
+        packageName: String,
+        msgType: Int,
+    ): Long? {
+        val smsMsgUri = com.tianma.xsmscode.data.db.DBProvider.SMS_MSG_CONTENT_URI
+        val resolver = context.contentResolver
+        trimOldRecordsIfNeeded(context, resolver)
+        val values = android.content.ContentValues().apply {
+            put("body", body)
+            put("company", company)
+            put("date", date)
+            put("sender", sender)
+            put("sms_code", smsCode)
+            put("package_name", packageName)
+            put("msg_type", msgType)
+        }
+        return resolver.insert(smsMsgUri, values)?.lastPathSegment?.toLongOrNull()
+    }
+
+    private fun trimOldRecordsIfNeeded(
+        context: Context,
+        resolver: android.content.ContentResolver,
+    ) {
+        val smsMsgUri = com.tianma.xsmscode.data.db.DBProvider.SMS_MSG_CONTENT_URI
+        val cursor = resolver.query(smsMsgUri, arrayOf("_id"), null, null, "date ASC") ?: return
+        cursor.use {
+            val count = it.count
+            val limit = runBlocking {
+                com.tianma.xsmscode.common.utils.AppPreferencesDataStore.getString(
+                    context,
+                    com.tianma.xsmscode.common.constant.PrefConst.KEY_HISTORY_LIMIT,
+                    "0",
+                ).toIntOrNull() ?: 0
+            }
+            if (limit <= 0 || count < limit) return
+            val selection = "_id = ?"
+            val operations = ArrayList<android.content.ContentProviderOperation>()
+            for (i in 0 until (count - limit + 1)) {
+                if (!it.moveToNext()) break
+                val id = it.getLong(0)
+                val operation = android.content.ContentProviderOperation.newDelete(smsMsgUri)
+                    .withSelection(selection, arrayOf(id.toString()))
+                    .build()
+                operations.add(operation)
+            }
+            if (operations.isNotEmpty()) {
+                resolver.applyBatch(com.tianma.xsmscode.data.db.DBProvider.AUTHORITY, operations)
+            }
         }
     }
 
