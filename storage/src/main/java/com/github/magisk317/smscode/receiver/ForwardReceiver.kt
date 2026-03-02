@@ -24,6 +24,7 @@ class ForwardReceiver : BroadcastReceiver() {
         val eventId = intent.getStringExtra("event_id").orEmpty()
         val traceId = buildTraceId(intent, eventId)
         Thread {
+            var killAppAfterFinish = false
             fun markResult(code: Int, reason: String) {
                 setOrderedResult(pendingResult, ordered, code, reason, eventId)
             }
@@ -41,10 +42,35 @@ class ForwardReceiver : BroadcastReceiver() {
                     receiveStartMessage,
                 )
                 // 1. Action validation
-                if (intent.action != PrefConst.ACTION_FORWARD_SMS) {
+                if (
+                    intent.action != PrefConst.ACTION_FORWARD_SMS &&
+                    intent.action != PrefConst.ACTION_KILL_ME
+                ) {
                     XLog.e("Rejecting broadcast with invalid action: %s", intent.action)
                     ForwardFlowLog.w(traceId, "Reject invalid action=${intent.action}")
                     markResult(RESULT_REJECT_ACTION, "invalid_action")
+                    return@Thread
+                }
+                if (intent.action == PrefConst.ACTION_KILL_ME) {
+                    val receivedToken = intent.getStringExtra("ipc_token")
+                    val expectedToken = runBlocking {
+                        com.tianma.xsmscode.common.utils.AppPreferencesDataStore.getString(
+                            context,
+                            com.tianma.xsmscode.common.constant.PrefConst.KEY_IPC_TOKEN,
+                            "",
+                        )
+                    }
+                    if (expectedToken.isEmpty() || receivedToken != expectedToken) {
+                        ForwardFlowLog.w(
+                            traceId,
+                            "Reject kill action token mismatch expectedEmpty=${expectedToken.isEmpty()} receivedEmpty=${receivedToken.isNullOrBlank()}",
+                        )
+                        markResult(RESULT_REJECT_TOKEN, "token_mismatch")
+                        return@Thread
+                    }
+                    ForwardFlowLog.w(traceId, "Kill action accepted, app process will terminate")
+                    markResult(RESULT_OK, "kill_requested")
+                    killAppAfterFinish = true
                     return@Thread
                 }
 
@@ -310,7 +336,7 @@ class ForwardReceiver : BroadcastReceiver() {
 
                 // Dispatch to the multi-channel forwarding engine.
                 // isCodeSms: true = verification code SMS, false = regular SMS.
-                // SendUtils will use this to filter per-sender receiveNonCode setting.
+                // SendUtils will use this to filter per-sender receiveCode/receiveNonCode setting.
                 val isCodeSms = !smsCode.isNullOrBlank()
                 runCatching {
                     SendUtils.sendMsg(context, msgInfo, isCodeSms, recordId, traceId)
@@ -334,6 +360,9 @@ class ForwardReceiver : BroadcastReceiver() {
             } finally {
                 ForwardFlowLog.d(traceId, "ForwardReceiver finished")
                 pendingResult.finish()
+                if (killAppAfterFinish) {
+                    terminateSelfProcess(traceId)
+                }
             }
         }.start()
     }
@@ -526,5 +555,15 @@ class ForwardReceiver : BroadcastReceiver() {
         val now = System.currentTimeMillis().toString(36)
         val suffix = kotlin.math.abs((pkg + now).hashCode()).toString(36)
         return "${now}_$suffix"
+    }
+
+    private fun terminateSelfProcess(traceId: String) {
+        val pid = Process.myPid()
+        ForwardFlowLog.w(traceId, "Terminating app process pid=$pid by kill action")
+        XLog.w("ForwardReceiver kill action: terminate process pid=%d", pid)
+        runCatching { Process.killProcess(pid) }
+            .onFailure { error ->
+                XLog.e("ForwardReceiver kill action failed", error)
+            }
     }
 }

@@ -126,6 +126,7 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="com.tianma.xsmscode.ACTION_FORWARD_SMS" />
+                <action android:name="com.tianma.xsmscode.ACTION_KILL_ME" />
             </intent-filter>
         </receiver>
 
