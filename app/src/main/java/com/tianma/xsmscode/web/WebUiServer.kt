@@ -1,6 +1,7 @@
 package com.tianma.xsmscode.web
 
 import android.content.Context
+import android.content.pm.PackageManager
 import com.github.magisk317.smscode.forwarder.entity.Sender
 import com.github.magisk317.smscode.forwarder.utils.SenderType
 import com.tianma.xsmscode.common.constant.PrefConst
@@ -79,14 +80,7 @@ class WebUiServer(
             }
 
             get("/api/apps") {
-                val apps = withContext(Dispatchers.IO) {
-                    database.appInfoDao().getAll()
-                        .map { it.toItem() }
-                        .sortedWith(
-                            compareByDescending<AppItem> { it.blocked || it.forwarding || it.notifyTemplate.isNotBlank() }
-                                .thenBy { it.label.lowercase() },
-                        )
-                }
+                val apps = loadMergedAppItems()
                 call.respondText(
                     text = json.encodeToString(apps),
                     contentType = ContentType.Application.Json,
@@ -102,6 +96,39 @@ class WebUiServer(
                 }
                 call.respondText(
                     text = json.encodeToString(records),
+                    contentType = ContentType.Application.Json,
+                )
+            }
+
+            post("/api/records/{recordId}/delete") {
+                val recordId = call.parameters["recordId"]?.toLongOrNull()
+                if (recordId == null) {
+                    call.respondText(
+                        status = HttpStatusCode.BadRequest,
+                        text = json.encodeToString(ErrorResponse(error = "Invalid recordId")),
+                        contentType = ContentType.Application.Json,
+                    )
+                    return@post
+                }
+
+                val deleted = withContext(Dispatchers.IO) {
+                    val dao = database.smsMsgDao()
+                    val existing = dao.getById(recordId) ?: return@withContext false
+                    dao.delete(existing)
+                    true
+                }
+
+                if (!deleted) {
+                    call.respondText(
+                        status = HttpStatusCode.NotFound,
+                        text = json.encodeToString(ErrorResponse(error = "Record not found")),
+                        contentType = ContentType.Application.Json,
+                    )
+                    return@post
+                }
+
+                call.respondText(
+                    text = json.encodeToString(SimpleOkResponse(ok = true)),
                     contentType = ContentType.Application.Json,
                 )
             }
@@ -472,23 +499,18 @@ class WebUiServer(
 
                 val updated = withContext(Dispatchers.IO) {
                     val dao = database.appInfoDao()
-                    val current = dao.getByPackageName(packageName) ?: return@withContext null
-                    val next = current.copy(
-                        blocked = payload.blocked ?: current.blocked,
-                        forwarding = payload.forwarding ?: current.forwarding,
-                        notifyTemplate = payload.notifyTemplate ?: current.notifyTemplate,
+                    val current = dao.getByPackageName(packageName)
+                    val label = current?.label?.takeIf { it.isNotBlank() }
+                        ?: resolveInstalledAppLabel(packageName)
+                        ?: packageName
+                    val next = (current ?: AppInfo(packageName = packageName, label = label)).copy(
+                        label = label,
+                        blocked = payload.blocked ?: current?.blocked ?: false,
+                        forwarding = payload.forwarding ?: current?.forwarding ?: false,
+                        notifyTemplate = payload.notifyTemplate ?: current?.notifyTemplate.orEmpty(),
                     )
                     dao.insert(next)
                     next.toItem()
-                }
-
-                if (updated == null) {
-                    call.respondText(
-                        status = HttpStatusCode.NotFound,
-                        text = json.encodeToString(ErrorResponse(error = "App not found")),
-                        contentType = ContentType.Application.Json,
-                    )
-                    return@post
                 }
 
                 call.respondText(
@@ -497,6 +519,41 @@ class WebUiServer(
                 )
             }
         }
+    }
+
+    private suspend fun loadMergedAppItems(): List<AppItem> = withContext(Dispatchers.IO) {
+        val dao = database.appInfoDao()
+        val configMap = dao.getAll().associateBy { it.packageName }
+        val packageManager = appContext.packageManager
+        packageManager.getInstalledApplications(PackageManager.MATCH_ALL)
+            .asSequence()
+            .map { appInfo ->
+                val packageName = appInfo.packageName
+                val label = runCatching {
+                    packageManager.getApplicationLabel(appInfo).toString()
+                }.getOrDefault(packageName).ifBlank { packageName }
+                val config = configMap[packageName]
+                AppItem(
+                    packageName = packageName,
+                    label = label,
+                    blocked = config?.blocked ?: false,
+                    forwarding = config?.forwarding ?: false,
+                    notifyTemplate = config?.notifyTemplate.orEmpty(),
+                )
+            }
+            .sortedWith(
+                compareByDescending<AppItem> { it.blocked || it.forwarding || it.notifyTemplate.isNotBlank() }
+                    .thenBy { it.label.lowercase() },
+            )
+            .toList()
+    }
+
+    private fun resolveInstalledAppLabel(packageName: String): String? {
+        val packageManager = appContext.packageManager
+        return runCatching {
+            val appInfo = packageManager.getApplicationInfo(packageName, PackageManager.MATCH_ALL)
+            packageManager.getApplicationLabel(appInfo).toString()
+        }.getOrNull()?.takeIf { it.isNotBlank() }
     }
 
     private fun AppInfo.toItem(): AppItem = AppItem(
@@ -811,8 +868,11 @@ class WebUiServer(
                 .record-list { display:flex; flex-direction:column; gap:10px; }
                 .record-card { border:1px solid #e5e7eb; border-radius:10px; background:#f8fafc; padding:10px 12px; }
                 .record-card .top { display:flex; justify-content:space-between; gap:8px; align-items:center; margin-bottom:6px; }
+                .record-card .top-right { display:flex; align-items:center; gap:8px; }
                 .record-card .sender { font-weight:600; font-size:14px; }
                 .record-card .time { color:#64748b; font-size:12px; }
+                .record-delete-btn { opacity:0; pointer-events:none; transition:opacity .15s ease; }
+                .record-card:hover .record-delete-btn { opacity:1; pointer-events:auto; }
                 .record-card .body { font-size:13px; white-space:pre-wrap; word-break:break-word; }
                 .record-card .meta { margin-top:8px; color:#64748b; font-size:12px; display:flex; gap:12px; flex-wrap:wrap; }
                 .record-card .meta .forward-detail { white-space:pre-line; flex-basis:100%; }
@@ -820,6 +880,9 @@ class WebUiServer(
                 .switch-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
                 .switch-row { display: flex; justify-content: space-between; gap: 8px; align-items: center; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; }
                 .switch-row .t { font-size: 14px; }
+                .settings-groups { display:flex; flex-direction:column; gap:10px; }
+                .settings-group { border:1px solid #e5e7eb; border-radius:10px; background:#fff; padding:10px; }
+                .settings-group-title { font-size:14px; font-weight:600; margin:0 0 8px; color:#374151; }
                 .kpi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
                 .kpi .item { background: #f8fafc; border-radius: 10px; padding: 10px 12px; }
                 .kpi .item .n { font-size: 18px; font-weight: 700; }
@@ -837,6 +900,9 @@ class WebUiServer(
                   .switch-grid { grid-template-columns: 1fr; }
                   .kpi { grid-template-columns: 1fr; }
                   .sender-editor .grid { grid-template-columns: 1fr; }
+                }
+                @media (hover: none), (pointer: coarse) {
+                  .record-delete-btn { opacity:1; pointer-events:auto; }
                 }
               </style>
             </head>
@@ -1045,17 +1111,47 @@ class WebUiServer(
                       <h2 style="margin:0">设置</h2>
                       <button id="reloadSettings" class="btn">刷新</button>
                     </div>
-                    <div class="switch-grid">
-                      <label class="switch-row"><span class="t">主开关</span><input id="setEnable" type="checkbox" /></label>
-                      <label class="switch-row"><span class="t">复制到剪贴板</span><input id="setCopyToClipboard" type="checkbox" /></label>
-                      <label class="switch-row"><span class="t">显示 Toast 提示</span><input id="setShowToast" type="checkbox" /></label>
-                      <label class="switch-row"><span class="t">显示状态栏通知</span><input id="setShowCodeNotification" type="checkbox" /></label>
-                      <label class="switch-row"><span class="t">自动输入验证码</span><input id="setEnableAutoInputCode" type="checkbox" /></label>
-                      <label class="switch-row"><span class="t">自动确认/回车</span><input id="setEnableAutoEnterCode" type="checkbox" /></label>
-                      <label class="switch-row"><span class="t">过滤重复短信</span><input id="setDeduplicateSms" type="checkbox" /></label>
-                      <label class="switch-row"><span class="t">拦截验证码短信</span><input id="setBlockSms" type="checkbox" /></label>
-                      <label class="switch-row"><span class="t">保留验证码记录</span><input id="setEnableCodeRecords" type="checkbox" /></label>
-                      <label class="switch-row"><span class="t">详细日志</span><input id="setVerboseLogMode" type="checkbox" /></label>
+                    <div class="settings-groups">
+                      <div class="settings-group">
+                        <h3 class="settings-group-title">通用设置</h3>
+                        <div class="switch-grid">
+                          <label class="switch-row"><span class="t">主开关</span><input id="setEnable" type="checkbox" /></label>
+                        </div>
+                      </div>
+                      <div class="settings-group">
+                        <h3 class="settings-group-title">验证码设置</h3>
+                        <div class="switch-grid">
+                          <label class="switch-row"><span class="t">复制到剪贴板</span><input id="setCopyToClipboard" type="checkbox" /></label>
+                          <label class="switch-row"><span class="t">过滤重复短信</span><input id="setDeduplicateSms" type="checkbox" /></label>
+                          <label class="switch-row"><span class="t">保留验证码记录</span><input id="setEnableCodeRecords" type="checkbox" /></label>
+                        </div>
+                      </div>
+                      <div class="settings-group">
+                        <h3 class="settings-group-title">自动输入</h3>
+                        <div class="switch-grid">
+                          <label class="switch-row"><span class="t">自动输入验证码</span><input id="setEnableAutoInputCode" type="checkbox" /></label>
+                          <label class="switch-row"><span class="t">自动确认/回车</span><input id="setEnableAutoEnterCode" type="checkbox" /></label>
+                        </div>
+                      </div>
+                      <div class="settings-group">
+                        <h3 class="settings-group-title">通知设置</h3>
+                        <div class="switch-grid">
+                          <label class="switch-row"><span class="t">显示 Toast 提示</span><input id="setShowToast" type="checkbox" /></label>
+                          <label class="switch-row"><span class="t">显示状态栏通知</span><input id="setShowCodeNotification" type="checkbox" /></label>
+                        </div>
+                      </div>
+                      <div class="settings-group">
+                        <h3 class="settings-group-title">实验性功能</h3>
+                        <div class="switch-grid">
+                          <label class="switch-row"><span class="t">拦截验证码短信</span><input id="setBlockSms" type="checkbox" /></label>
+                        </div>
+                      </div>
+                      <div class="settings-group">
+                        <h3 class="settings-group-title">其他</h3>
+                        <div class="switch-grid">
+                          <label class="switch-row"><span class="t">详细日志</span><input id="setVerboseLogMode" type="checkbox" /></label>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1232,6 +1328,12 @@ class WebUiServer(
                   });
                 }
 
+                async function deleteRecord(recordId) {
+                  await fetchJson("/api/records/" + recordId + "/delete", {
+                    method: "POST"
+                  });
+                }
+
                 function renderOverview() {
                   statAppCount.textContent = String(latestApps.length);
                   statBlockedCount.textContent = String(latestApps.filter((it) => !!it.blocked).length);
@@ -1373,11 +1475,32 @@ class WebUiServer(
                   const sender = document.createElement("div");
                   sender.className = "sender";
                   sender.textContent = item.sender || item.packageName || "-";
+                  const topRight = document.createElement("div");
+                  topRight.className = "top-right";
                   const time = document.createElement("div");
                   time.className = "time";
                   time.textContent = new Date(item.date).toLocaleString();
+                  topRight.appendChild(time);
+
+                  if (Number(item.id) > 0) {
+                    const deleteBtn = document.createElement("button");
+                    deleteBtn.className = "mini-btn danger record-delete-btn";
+                    deleteBtn.textContent = "删除";
+                    deleteBtn.onclick = async () => {
+                      if (!confirm("确认删除该记录吗？")) return;
+                      deleteBtn.disabled = true;
+                      try {
+                        await deleteRecord(item.id);
+                        await loadLogs();
+                      } catch (e) {
+                        alert("删除记录失败: " + e.message);
+                        deleteBtn.disabled = false;
+                      }
+                    };
+                    topRight.appendChild(deleteBtn);
+                  }
                   top.appendChild(sender);
-                  top.appendChild(time);
+                  top.appendChild(topRight);
 
                   const body = document.createElement("div");
                   body.className = "body";
