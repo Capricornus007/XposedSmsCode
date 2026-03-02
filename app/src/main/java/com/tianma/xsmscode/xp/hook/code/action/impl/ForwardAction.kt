@@ -113,12 +113,7 @@ class ForwardAction(
         val resolver = mPluginContext.contentResolver
         val smsMsgUri = DBProvider.SMS_MSG_CONTENT_URI
         val now = System.currentTimeMillis()
-        val isBlocked = PrefsReader.blockSmsEnabled(mPluginContext)
-        val status = when {
-            isBlocked -> SmsMsg.FORWARD_STATUS_BLOCKED
-            success -> SmsMsg.FORWARD_STATUS_SUCCESS
-            else -> SmsMsg.FORWARD_STATUS_FAILED
-        }
+        val status = if (success) SmsMsg.FORWARD_STATUS_SUCCESS else SmsMsg.FORWARD_STATUS_FAILED
         val trimmedMessage = message.take(MAX_MESSAGE_LEN)
         val values = ContentValues().apply {
             put("forward_status", status)
@@ -129,22 +124,18 @@ class ForwardAction(
 
         try {
             var matchedId: Long? = null
-            val projection = arrayOf("_id", "sender", "body", "date", "forward_status")
+            val projection = arrayOf("_id", "sender", "body", "date")
             resolver.query(smsMsgUri, projection, null, null, "date DESC")?.use { cursor ->
                 val idIdx = cursor.getColumnIndexOrThrow("_id")
                 val senderIdx = cursor.getColumnIndexOrThrow("sender")
                 val bodyIdx = cursor.getColumnIndexOrThrow("body")
                 val dateIdx = cursor.getColumnIndexOrThrow("date")
-                val statusIdx = cursor.getColumnIndexOrThrow("forward_status")
                 while (cursor.moveToNext()) {
                     val sender = cursor.getString(senderIdx)
                     val body = cursor.getString(bodyIdx)
                     val date = cursor.getLong(dateIdx)
                     if (sender == mSmsMsg.sender && body == mSmsMsg.body && date == mSmsMsg.date) {
                         matchedId = cursor.getLong(idIdx)
-                        if (cursor.getInt(statusIdx) == SmsMsg.FORWARD_STATUS_BLOCKED) {
-                            values.put("forward_status", SmsMsg.FORWARD_STATUS_BLOCKED)
-                        }
                         break
                     }
                 }

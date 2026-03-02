@@ -43,6 +43,9 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -603,7 +606,7 @@ private fun RecordDetailOverlay(
     val sender = sms.sender ?: sms.company ?: context.getString(R.string.unknown)
     val time = detailDateFormatter.format(Date(sms.date))
     val content = sms.body.orEmpty()
-    val forwardStatusText = resolveForwardStatusText(sms)
+    val forwardStatusAnnotated = resolveForwardStatusAnnotated(sms)
     val forwardTarget = sanitizeForwardTarget(sms.forwardTarget)
     val forwardTime = if (sms.forwardTime > 0L) detailDateFormatter.format(Date(sms.forwardTime)) else "-"
     val forwardMessage = formatForwardMessage(sms.forwardMessage)
@@ -721,9 +724,8 @@ private fun RecordDetailOverlay(
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        text = forwardStatusText,
+                        text = forwardStatusAnnotated,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
                 Row(
@@ -879,39 +881,112 @@ private fun countForwardTargets(rawTarget: String?): Int {
 
 private fun formatForwardMessage(rawMessage: String?): String {
     if (rawMessage.isNullOrBlank()) return "-"
-    return rawMessage.replace(Regex("\\s*\\|\\s*"), "\n")
+    val lines = rawMessage
+        .replace(Regex("\\s*\\|\\s*"), "\n")
+        .lineSequence()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .toList()
+    if (lines.isEmpty()) return "-"
+    return lines.mapIndexed { index, line -> "${index + 1}. $line" }.joinToString("\n")
 }
 
-@Composable
-private fun resolveForwardStatusText(smsMsg: SmsMsg): String {
+private data class ForwardStatusSnapshot(
+    val status: Int,
+    val successCount: Int,
+    val failedCount: Int,
+)
+
+private fun resolveForwardStatusSnapshot(smsMsg: SmsMsg): ForwardStatusSnapshot {
     val parsed = parseForwardCountsFromMessage(smsMsg.forwardMessage)
     val targetCount = countForwardTargets(smsMsg.forwardTarget)
+    val statusForDisplay = when {
+        parsed.success > 0 && parsed.failed > 0 -> SmsMsg.FORWARD_STATUS_PARTIAL
+        parsed.success > 0 -> SmsMsg.FORWARD_STATUS_SUCCESS
+        parsed.failed > 0 -> SmsMsg.FORWARD_STATUS_FAILED
+        else -> smsMsg.forwardStatus
+    }
     val successCount = when {
         parsed.success > 0 -> parsed.success
-        smsMsg.forwardStatus == SmsMsg.FORWARD_STATUS_SUCCESS -> maxOf(targetCount, 1)
+        statusForDisplay == SmsMsg.FORWARD_STATUS_SUCCESS -> maxOf(targetCount, 1)
         else -> 0
     }
     val failedCount = when {
         parsed.failed > 0 -> parsed.failed
-        smsMsg.forwardStatus == SmsMsg.FORWARD_STATUS_FAILED -> maxOf(targetCount, 1)
+        statusForDisplay == SmsMsg.FORWARD_STATUS_FAILED -> maxOf(targetCount, 1)
         else -> 0
     }
-    return when (smsMsg.forwardStatus) {
+    return ForwardStatusSnapshot(
+        status = statusForDisplay,
+        successCount = successCount,
+        failedCount = failedCount,
+    )
+}
+
+@Composable
+private fun resolveForwardStatusText(smsMsg: SmsMsg): String {
+    val snapshot = resolveForwardStatusSnapshot(smsMsg)
+    return when (snapshot.status) {
         SmsMsg.FORWARD_STATUS_BLOCKED -> stringResource(R.string.forward_status_none)
         SmsMsg.FORWARD_STATUS_PARTIAL -> stringResource(
             R.string.forward_status_partial,
-            maxOf(successCount, 1),
-            maxOf(failedCount, 1),
+            maxOf(snapshot.successCount, 1),
+            maxOf(snapshot.failedCount, 1),
         )
         SmsMsg.FORWARD_STATUS_SUCCESS -> stringResource(
             R.string.forward_status_success_count,
-            maxOf(successCount, 1),
+            maxOf(snapshot.successCount, 1),
         )
         SmsMsg.FORWARD_STATUS_FAILED -> stringResource(
             R.string.forward_status_failed_count,
-            maxOf(failedCount, 1),
+            maxOf(snapshot.failedCount, 1),
         )
         else -> stringResource(R.string.forward_status_none)
+    }
+}
+
+@Composable
+private fun resolveForwardStatusColor(smsMsg: SmsMsg): Color {
+    return when (resolveForwardStatusSnapshot(smsMsg).status) {
+        SmsMsg.FORWARD_STATUS_SUCCESS -> Color(0xFF2E7D32)
+        SmsMsg.FORWARD_STATUS_FAILED -> Color(0xFFC62828)
+        SmsMsg.FORWARD_STATUS_PARTIAL,
+        SmsMsg.FORWARD_STATUS_BLOCKED,
+        SmsMsg.FORWARD_STATUS_NONE,
+        -> Color(0xFFB26A00)
+        else -> Color(0xFFB26A00)
+    }
+}
+
+@Composable
+private fun resolveForwardStatusAnnotated(smsMsg: SmsMsg): AnnotatedString {
+    val snapshot = resolveForwardStatusSnapshot(smsMsg)
+    return if (snapshot.status == SmsMsg.FORWARD_STATUS_PARTIAL) {
+        val successText = stringResource(
+            R.string.forward_status_success_count,
+            maxOf(snapshot.successCount, 1),
+        )
+        val failedText = stringResource(
+            R.string.forward_status_failed_count,
+            maxOf(snapshot.failedCount, 1),
+        )
+        buildAnnotatedString {
+            pushStyle(SpanStyle(color = Color(0xFF2E7D32)))
+            append(successText)
+            pop()
+            append(" ")
+            pushStyle(SpanStyle(color = Color(0xFFC62828)))
+            append(failedText)
+            pop()
+        }
+    } else {
+        val text = resolveForwardStatusText(smsMsg)
+        val color = resolveForwardStatusColor(smsMsg)
+        buildAnnotatedString {
+            pushStyle(SpanStyle(color = color))
+            append(text)
+            pop()
+        }
     }
 }
 
@@ -1188,11 +1263,13 @@ fun CodeRecordItem(
                 )
             }
             Spacer(modifier = Modifier.height(2.dp))
-            val forwardStatus = resolveForwardStatusText(smsMsg)
+            val forwardStatusAnnotated = resolveForwardStatusAnnotated(smsMsg)
             Text(
-                text = "${stringResource(R.string.detail_forward_status)}: $forwardStatus",
+                text = buildAnnotatedString {
+                    append("${stringResource(R.string.detail_forward_status)}: ")
+                    append(forwardStatusAnnotated)
+                },
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -1299,11 +1376,13 @@ fun AppNotificationItem(
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
-            val forwardStatus = resolveForwardStatusText(smsMsg)
+            val forwardStatusAnnotated = resolveForwardStatusAnnotated(smsMsg)
             Text(
-                text = "${stringResource(R.string.detail_forward_status)}: $forwardStatus",
+                text = buildAnnotatedString {
+                    append("${stringResource(R.string.detail_forward_status)}: ")
+                    append(forwardStatusAnnotated)
+                },
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )

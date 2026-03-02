@@ -77,27 +77,30 @@ object SendUtils {
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
-                val senders = db.senderDao().getAll().filter { sender ->
-                    sender.status == 1 &&
-                        if (msgInfo.type == "app_notify") {
-                            sender.receiveAppNotify == 1
-                        } else {
-                            if (isCodeSms) sender.receiveCode == 1 else sender.receiveNonCode == 1
-                        }
+                val allSenders = db.senderDao().getAll()
+                val enabledSenders = allSenders.filter { it.status == 1 }
+                val senders = enabledSenders.filter { sender ->
+                    if (msgInfo.type == "app_notify") {
+                        sender.receiveAppNotify == 1
+                    } else {
+                        if (isCodeSms) sender.receiveCode == 1 else sender.receiveNonCode == 1
+                    }
                 }
                 if (senders.isEmpty()) {
+                    val reason = buildNoEligibleReason(allSenders, enabledSenders, msgInfo.type, isCodeSms)
                     XLog.w(
-                        "No eligible senders found (isCodeSms=%s, type=%s), skipping dispatch.",
+                        "No eligible senders found (isCodeSms=%s, type=%s), skipping dispatch. reason=%s",
                         isCodeSms,
                         msgInfo.type,
+                        reason,
                     )
                     persistForwardResult(
                         db = db,
                         recordId = recordId,
                         results = emptyList(),
-                        defaultMessage = "未启用任何转发通道",
+                        defaultMessage = reason,
                     )
-                    ForwardFlowLog.w(traceId, "No eligible senders")
+                    ForwardFlowLog.w(traceId, "No eligible senders: $reason")
                     return@launch
                 }
                 ForwardFlowLog.i(
@@ -154,6 +157,40 @@ object SendUtils {
                     forceFailed = true,
                 )
             }
+        }
+    }
+
+    private fun buildNoEligibleReason(
+        allSenders: List<Sender>,
+        enabledSenders: List<Sender>,
+        msgType: String,
+        isCodeSms: Boolean,
+    ): String {
+        if (allSenders.isEmpty()) {
+            return "未配置任何转发通道"
+        }
+        if (enabledSenders.isEmpty()) {
+            val allNames = allSenders.joinToString(",") { it.name.ifBlank { senderTypeName(it.type) } }
+            return "所有转发通道均未启用（$allNames）"
+        }
+        return if (msgType == "app_notify") {
+            val allowed = enabledSenders.filter { it.receiveAppNotify == 1 }
+            val blockedNames = enabledSenders
+                .filter { it.receiveAppNotify != 1 }
+                .joinToString(",") { it.name.ifBlank { senderTypeName(it.type) } }
+            "已启用通道均关闭了“转发应用通知”开关（enabled=${enabledSenders.size}, matched=${allowed.size}, blocked=$blockedNames）"
+        } else if (isCodeSms) {
+            val allowed = enabledSenders.filter { it.receiveCode == 1 }
+            val blockedNames = enabledSenders
+                .filter { it.receiveCode != 1 }
+                .joinToString(",") { it.name.ifBlank { senderTypeName(it.type) } }
+            "已启用通道均关闭了“转发验证码短信”开关（enabled=${enabledSenders.size}, matched=${allowed.size}, blocked=$blockedNames）"
+        } else {
+            val allowed = enabledSenders.filter { it.receiveNonCode == 1 }
+            val blockedNames = enabledSenders
+                .filter { it.receiveNonCode != 1 }
+                .joinToString(",") { it.name.ifBlank { senderTypeName(it.type) } }
+            "已启用通道均关闭了“转发非验证码短信”开关（enabled=${enabledSenders.size}, matched=${allowed.size}, blocked=$blockedNames）"
         }
     }
 
@@ -283,11 +320,6 @@ object SendUtils {
                 successResults.isNotEmpty() -> SmsMsg.FORWARD_STATUS_SUCCESS
                 else -> SmsMsg.FORWARD_STATUS_FAILED
             }
-            val status = if (existing.forwardStatus == SmsMsg.FORWARD_STATUS_BLOCKED) {
-                SmsMsg.FORWARD_STATUS_BLOCKED
-            } else {
-                computedStatus
-            }
             val target = results.joinToString(", ") { it.senderName }.ifBlank { null }
             val message = when {
                 forceFailed -> defaultMessage
@@ -303,7 +335,7 @@ object SendUtils {
 
             msgDao.update(
                 existing.copy(
-                    forwardStatus = status,
+                    forwardStatus = computedStatus,
                     forwardTarget = target,
                     forwardMessage = message,
                     forwardTime = Date().time,

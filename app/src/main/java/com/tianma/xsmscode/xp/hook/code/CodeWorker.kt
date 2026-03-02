@@ -119,17 +119,8 @@ class CodeWorker(
         val notifyAction = NotifyAction(mPluginContext, mPhoneContext, smsMsg)
         val notificationFuture = mScheduledExecutor.schedule(notifyAction, 0, TimeUnit.MILLISECONDS)
 
-        // 记录验证码短信 Action（开启拦截时标记为“短信已拦截”）
-        val recordSmsMsg = if (blockSms) {
-            smsMsg.copy(
-                forwardStatus = SmsMsg.FORWARD_STATUS_BLOCKED,
-                forwardMessage = "短信已拦截",
-                forwardTime = System.currentTimeMillis(),
-            )
-        } else {
-            smsMsg
-        }
-        val recordSmsAction = RecordSmsAction(mPluginContext, mPhoneContext, recordSmsMsg)
+        // 记录验证码短信 Action（转发状态与拦截配置解耦）
+        val recordSmsAction = RecordSmsAction(mPluginContext, mPhoneContext, smsMsg)
         mScheduledExecutor.schedule(recordSmsAction, 0, TimeUnit.MILLISECONDS)
 
         // 转发 Action
