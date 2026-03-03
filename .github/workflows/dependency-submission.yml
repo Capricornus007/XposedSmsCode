@@ -4,7 +4,7 @@ name: Dependency Submission
 on:
   push:
     branches:
-      - dev
+      - beta
 
 jobs:
   dependency-submission:
@@ -12,7 +12,7 @@ jobs:
     permissions:
       contents: write
       
-    # Skip if dependabot (redundant if restricted to dev branch, but safe)
+    # Skip if dependabot (redundant if restricted to beta branch, but safe)
     if: github.actor != 'dependabot[bot]'
 
     steps:

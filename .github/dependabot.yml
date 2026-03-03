@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
-    target-branch: "dev"
+    target-branch: "beta"
     groups:
       kotlin:
         patterns:
@@ -34,7 +34,7 @@ updates:
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
-    target-branch: "dev"
+    target-branch: "beta"
     commit-message:
       prefix: "ci(deps)"
     groups:
