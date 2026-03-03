@@ -5,7 +5,7 @@
     ],
     "forkProcessing": "enabled",
     "baseBranchPatterns": [
-        "dev"
+        "beta"
     ],
     "packageRules": [
         {
