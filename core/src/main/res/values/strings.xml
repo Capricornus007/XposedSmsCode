@@ -314,6 +314,7 @@
     <string name="action_import_rules">Import</string>
     <string name="action_export_rules">Export</string>
     <string name="revoke">Revoke</string>
+    <string name="sender_removed_with_undo">Channel removed: %1$s (undo within 5s)</string>
     <string name="removed">Removed</string>
     <string name="remove">Remove</string>
     <string name="edit">Edit</string>

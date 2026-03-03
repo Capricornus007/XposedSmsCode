@@ -1,5 +1,6 @@
 package com.tianma.xsmscode.ui.home
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -44,6 +45,7 @@ fun AdvancedScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val savedToastText = stringResource(id = R.string.pref_sync_toast)
     val webUiLanAccess by AppPreferencesDataStore.getBooleanFlow(
         context = context,
         key = PrefConst.KEY_WEBUI_LAN_ACCESS,
@@ -90,6 +92,7 @@ fun AdvancedScreen(
                                     PrefConst.KEY_WEBUI_LAN_ACCESS,
                                     checked,
                                 )
+                                Toast.makeText(context, savedToastText, Toast.LENGTH_SHORT).show()
                             }
                         },
                     )
@@ -103,6 +106,7 @@ fun AdvancedScreen(
                             PrefConst.KEY_WEBUI_LAN_ACCESS,
                             next,
                         )
+                        Toast.makeText(context, savedToastText, Toast.LENGTH_SHORT).show()
                     }
                 },
             )

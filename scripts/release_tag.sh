@@ -4,6 +4,67 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION_FILE="$ROOT_DIR/gradle/libs.versions.toml"
 
+count_sarif_results() {
+  local sarif_file="$1"
+  if command -v jq >/dev/null 2>&1; then
+    jq '[.runs[]?.results[]?] | length' "$sarif_file"
+  else
+    # Fallback: count ruleId occurrences when jq is unavailable.
+    grep -o '"ruleId"' "$sarif_file" | wc -l | tr -d '[:space:]'
+  fi
+}
+
+run_pre_push_checks() {
+  echo "Running pre-push CI command..."
+  (
+    cd "$ROOT_DIR"
+    chmod +x gradlew
+    ./gradlew --warning-mode all \
+      assembleGithubDebug \
+      testGithubDebugUnitTest \
+      :app:koverVerifyGithubDebug \
+      :app:koverHtmlReportGithubDebug \
+      -PbuildSplits
+  )
+
+  echo "Running pre-push Detekt command..."
+  (
+    cd "$ROOT_DIR"
+    ./gradlew detekt --continue
+  )
+
+  local sarif_files=(
+    "$ROOT_DIR/app/build/reports/detekt/detekt.sarif"
+    "$ROOT_DIR/core/build/reports/detekt/detekt.sarif"
+    "$ROOT_DIR/storage/build/reports/detekt/detekt.sarif"
+  )
+  local found_report=0
+  local total_findings=0
+  local findings=0
+  local sarif_file
+  for sarif_file in "${sarif_files[@]}"; do
+    if [[ -f "$sarif_file" ]]; then
+      found_report=1
+      findings="$(count_sarif_results "$sarif_file")"
+      findings="${findings:-0}"
+      total_findings=$((total_findings + findings))
+      echo "Detekt findings: $findings ($sarif_file)"
+    fi
+  done
+
+  if [[ "$found_report" -eq 0 ]]; then
+    echo "ERROR: no Detekt SARIF reports found after detekt run." >&2
+    exit 1
+  fi
+
+  if [[ "$total_findings" -ne 0 ]]; then
+    echo "ERROR: Detekt findings must be 0 before push. total_findings=$total_findings" >&2
+    exit 1
+  fi
+
+  echo "Pre-push checks passed: CI success and Detekt findings=0"
+}
+
 extract_toml_value() {
   local key="$1"
   local file="$2"
@@ -60,6 +121,8 @@ if [[ -z "$current_branch" ]]; then
   echo "ERROR: detached HEAD is not supported for release_tag.sh" >&2
   exit 1
 fi
+
+run_pre_push_checks
 
 git -C "$ROOT_DIR" tag -a "$TAG_NAME" -m "$TAG_NAME"
 git -C "$ROOT_DIR" push "$REMOTE_NAME" "$current_branch"

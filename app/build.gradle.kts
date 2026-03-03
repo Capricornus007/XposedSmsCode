@@ -1,5 +1,4 @@
 import java.io.FileInputStream
-import java.security.SecureRandom
 import java.util.Properties
 import java.util.TimeZone
 import java.util.Date
@@ -29,9 +28,8 @@ fun releaseTime(): String {
     return SimpleDateFormat("yyMMdd").apply { timeZone = TimeZone.getDefault() }.format(Date())
 }
 
-fun randomHex8(): String {
-    val r = SecureRandom()
-    return String.format("%08x", r.nextInt().toLong() and 0xffffffffL)
+fun buildTimestamp(): String {
+    return SimpleDateFormat("yyyyMMddHHmmss").apply { timeZone = TimeZone.getDefault() }.format(Date())
 }
 
 val versionNameStr = libs.versions.versionName.get()
@@ -203,7 +201,7 @@ tasks.withType<Test>().configureEach {
 androidComponents {
     onVariants(selector().all()) { variant ->
         val isDebug = variant.buildType == "debug"
-        val suffix = if (isDebug) randomHex8() else ""
+        val suffix = if (isDebug) buildTimestamp() else ""
         val vName = if (isDebug) "$versionNameStr-$suffix" else versionNameStr
         
         variant.outputs.forEach { output ->

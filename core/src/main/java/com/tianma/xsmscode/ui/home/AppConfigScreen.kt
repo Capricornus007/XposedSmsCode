@@ -1,6 +1,7 @@
 package com.tianma.xsmscode.ui.home
 
 import android.os.SystemClock
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -43,6 +44,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,11 +73,13 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.viewmodel.koinViewModel
 
 private val BlockedColumnWidth = 84.dp
 private val ForwardingColumnWidth = 108.dp
 private const val MINI_SWITCH_SCALE = 0.75f
+private const val APP_LIST_PREFETCH_DISTANCE = 12
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -89,6 +93,7 @@ fun AppConfigScreen(
 ) {
     val apps by viewModel.appsFlow.collectAsStateWithLifecycle()
     val isLoading by viewModel.loadingFlow.collectAsStateWithLifecycle()
+    val hasMoreApps by viewModel.hasMoreAppsFlow.collectAsStateWithLifecycle()
     val hideSystemApps by viewModel.hideSystemAppsFlow.collectAsStateWithLifecycle()
     val currentSortOption by viewModel.sortOptionFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -165,6 +170,18 @@ fun AppConfigScreen(
     val fixedTopHeight = if (fixedTopHeightPx > 0) with(density) { fixedTopHeightPx.toDp() } else defaultTopPadding
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
 
+    LaunchedEffect(listState, apps.size, hasMoreApps, manualRefreshing, showLoading) {
+        if (manualRefreshing || showLoading) return@LaunchedEffect
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1 }
+            .distinctUntilChanged()
+            .collect { lastVisibleIndex ->
+                if (!hasMoreApps || apps.isEmpty()) return@collect
+                if (lastVisibleIndex >= apps.lastIndex - APP_LIST_PREFETCH_DISTANCE) {
+                    viewModel.loadMoreApps()
+                }
+            }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         PullToRefreshBox(
             state = pullToRefreshState,
@@ -206,8 +223,22 @@ fun AppConfigScreen(
                         AppConfigItem(
                             app = app,
                             onClick = { onAppClick?.invoke(app) },
-                            onBlockedChange = { viewModel.setBlocked(app, it) },
-                            onForwardingChange = { viewModel.setForwarding(app, it) },
+                            onBlockedChange = {
+                                viewModel.setBlocked(app, it)
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.pref_sync_toast),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            },
+                            onForwardingChange = {
+                                viewModel.setForwarding(app, it)
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.pref_sync_toast),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            },
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),

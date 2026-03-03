@@ -78,9 +78,8 @@ object UpgradeDownloader {
             }
             cleanupOldPackages(updatesDir, keep = target.name)
             target
-        } catch (t: Throwable) {
+        } finally {
             if (temp.exists()) temp.delete()
-            throw t
         }
     }
 

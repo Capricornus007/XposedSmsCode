@@ -39,8 +39,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
@@ -115,7 +113,6 @@ fun ComposeSettingsScreen(
     var showKeywordsDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var isActivated by remember { mutableStateOf(ModuleUtils.isModuleEnabled()) }
-    var pendingSavedToast by remember { mutableStateOf(false) }
     var settingsDataLoaded by remember { mutableStateOf(false) }
     var manualRefreshing by remember { mutableStateOf(false) }
     var expandGeneral by remember { mutableStateOf(false) }
@@ -269,19 +266,10 @@ fun ComposeSettingsScreen(
         }
     }
 
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP && pendingSavedToast) {
-                Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
-                pendingSavedToast = false
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-    }
-
     val snackbarHostState = remember { SnackbarHostState() }
-    val markPrefsSaved = { pendingSavedToast = true }
+    val markPrefsSaved = {
+        Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+    }
 
     LaunchedEffect(settingsViewModel, lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
@@ -736,7 +724,7 @@ fun ComposeSettingsScreen(
         onShowBackupDialogChange = { showBackupDialog = it },
         onShowRestoreDialogChange = { showRestoreDialog = it },
         onBackupFlagsChange = { backupFlags = it },
-        onPendingSavedToast = { pendingSavedToast = true },
+        onPendingSavedToast = markPrefsSaved,
         backupLauncher = backupLauncher,
         settingsViewModel = settingsViewModel,
         onExit = onExit,
@@ -1237,6 +1225,7 @@ fun SwitchItem(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val checkedState = stateOverride ?: rememberPrefBoolean(key, defaultValue)
+    val defaultSavedToast = context.getString(R.string.pref_sync_toast)
 
     fun toggle(checked: Boolean) {
         if (!enabled) return
@@ -1244,7 +1233,11 @@ fun SwitchItem(
         scope.launch {
             AppPreferencesDataStore.setBoolean(context, key, checked)
             AppPreferencesDataStore.syncToSharedPrefs(context)
-            onSaved?.invoke()
+            if (onSaved != null) {
+                onSaved()
+            } else {
+                Toast.makeText(context, defaultSavedToast, Toast.LENGTH_SHORT).show()
+            }
         }
         onToggle?.invoke(checked)
     }

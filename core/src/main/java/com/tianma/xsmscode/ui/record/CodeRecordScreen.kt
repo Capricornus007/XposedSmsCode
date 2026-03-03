@@ -1,5 +1,6 @@
 package com.tianma.xsmscode.ui.record
 
+import android.graphics.Color as AndroidColor
 import android.content.ClipData
 import android.os.SystemClock
 import android.widget.Toast
@@ -78,6 +79,10 @@ private enum class RecordExportScope {
     CURRENT_TAB,
     ALL_TABS,
 }
+
+private val FORWARD_SUCCESS_COLOR = Color(AndroidColor.parseColor("#2E7D32"))
+private val FORWARD_FAILED_COLOR = Color(AndroidColor.parseColor("#C62828"))
+private val FORWARD_WARNING_COLOR = Color(AndroidColor.parseColor("#B26A00"))
 
 private fun recordEnableKey(tab: Int): String = when (tab) {
     0 -> PrefConst.KEY_ENABLE_CODE_RECORDS_CODE
@@ -1108,8 +1113,8 @@ private fun resolveForwardMessageAnnotated(rawMessage: String?): AnnotatedString
         lines.forEachIndexed { index, line ->
             if (index > 0) append("\n")
             val color = when {
-                line.contains("转发成功") -> Color(0xFF2E7D32)
-                line.contains("转发失败") -> Color(0xFFC62828)
+                line.contains("转发成功") -> FORWARD_SUCCESS_COLOR
+                line.contains("转发失败") -> FORWARD_FAILED_COLOR
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
             }
             pushStyle(SpanStyle(color = color))
@@ -1176,13 +1181,13 @@ private fun resolveForwardStatusText(smsMsg: SmsMsg): String {
 @Composable
 private fun resolveForwardStatusColor(smsMsg: SmsMsg): Color {
     return when (resolveForwardStatusSnapshot(smsMsg).status) {
-        SmsMsg.FORWARD_STATUS_SUCCESS -> Color(0xFF2E7D32)
-        SmsMsg.FORWARD_STATUS_FAILED -> Color(0xFFC62828)
+        SmsMsg.FORWARD_STATUS_SUCCESS -> FORWARD_SUCCESS_COLOR
+        SmsMsg.FORWARD_STATUS_FAILED -> FORWARD_FAILED_COLOR
         SmsMsg.FORWARD_STATUS_PARTIAL,
         SmsMsg.FORWARD_STATUS_BLOCKED,
         SmsMsg.FORWARD_STATUS_NONE,
-        -> Color(0xFFB26A00)
-        else -> Color(0xFFB26A00)
+        -> FORWARD_WARNING_COLOR
+        else -> FORWARD_WARNING_COLOR
     }
 }
 
@@ -1199,11 +1204,11 @@ private fun resolveForwardStatusAnnotated(smsMsg: SmsMsg): AnnotatedString {
             maxOf(snapshot.failedCount, 1),
         )
         buildAnnotatedString {
-            pushStyle(SpanStyle(color = Color(0xFF2E7D32)))
+            pushStyle(SpanStyle(color = FORWARD_SUCCESS_COLOR))
             append(successText)
             pop()
             append(" ")
-            pushStyle(SpanStyle(color = Color(0xFFC62828)))
+            pushStyle(SpanStyle(color = FORWARD_FAILED_COLOR))
             append(failedText)
             pop()
         }

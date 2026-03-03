@@ -1,5 +1,6 @@
 package com.github.magisk317.smscode.ui.sender
 
+import android.os.SystemClock
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -31,10 +32,15 @@ import com.github.magisk317.smscode.forwarder.entity.Sender
 import com.github.magisk317.smscode.forwarder.utils.ForwardCommonConfigStore
 import com.github.magisk317.smscode.forwarder.utils.SenderType
 import com.tianma.xsmscode.core.BuildConfig
+import com.tianma.xsmscode.core.R
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.ceil
 
 private data class TemplateVariable(
     val label: String,
@@ -125,6 +131,8 @@ fun SenderListScreen(
     onForceShowHandled: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     val senders by viewModel.senderList.collectAsStateWithLifecycle()
     val commonConfig by viewModel.forwardCommonConfig.collectAsStateWithLifecycle()
     val appNotifyTemplate by viewModel.appNotifyTemplate.collectAsStateWithLifecycle()
@@ -253,59 +261,173 @@ fun SenderListScreen(
         }
     ) { paddingValues ->
         val listBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 120.dp
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = listBottomPadding),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            item(key = "forward_common_config") {
-                ForwardCommonConfigCard(
-                    config = commonConfig,
-                    onEdit = { showCommonConfigDialog = true },
-                )
-            }
-            item(key = "app_notify_config") {
-                AppNotifyConfigCard(
-                    template = appNotifyTemplate,
-                    onEdit = { showAppNotifyConfigDialog = true },
-                )
-            }
-
-            if (senders.isEmpty()) {
-                item(key = "no_sender_hint") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 48.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text("暂无发送通道，请点击右下角添加")
-                    }
-                }
-            } else {
-                items(senders, key = { it.id }) { sender ->
-                    SenderCard(
-                        sender = sender,
-                        onEdit = { onEditClick(sender.id) },
-                        onToggle = { enabled ->
-                            if (enabled) {
-                                val result = viewModel.validateSenderForEnable(sender)
-                                if (!result.valid) {
-                                    Toast.makeText(context, "无法开启：${result.message}", Toast.LENGTH_LONG).show()
-                                } else {
-                                    viewModel.toggleSenderStatus(sender, enabled)
-                                }
-                            } else {
-                                viewModel.toggleSenderStatus(sender, enabled)
-                            }
-                        },
-                        onDelete = { viewModel.deleteSender(sender) }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = listBottomPadding),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item(key = "forward_common_config") {
+                    ForwardCommonConfigCard(
+                        config = commonConfig,
+                        onEdit = { showCommonConfigDialog = true },
                     )
                 }
+                item(key = "app_notify_config") {
+                    AppNotifyConfigCard(
+                        template = appNotifyTemplate,
+                        onEdit = { showAppNotifyConfigDialog = true },
+                    )
+                }
+
+                if (senders.isEmpty()) {
+                    item(key = "no_sender_hint") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("暂无发送通道，请点击右下角添加")
+                        }
+                    }
+                } else {
+                    items(senders, key = { it.id }) { sender ->
+                        SenderCard(
+                            sender = sender,
+                            onEdit = { onEditClick(sender.id) },
+                            onToggle = { enabled ->
+                                if (enabled) {
+                                    val result = viewModel.validateSenderForEnable(sender)
+                                    if (!result.valid) {
+                                        Toast.makeText(context, "无法开启：${result.message}", Toast.LENGTH_LONG).show()
+                                    } else {
+                                        viewModel.toggleSenderStatus(sender, enabled)
+                                        Toast.makeText(
+                                            context,
+                                            context.getString(R.string.pref_sync_toast),
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                    }
+                                } else {
+                                    viewModel.toggleSenderStatus(sender, enabled)
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.pref_sync_toast),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                            },
+                            onDelete = {
+                                val removedSender = sender.copy()
+                                viewModel.deleteSender(removedSender)
+                                scope.launch {
+                                    val resultDeferred = async {
+                                        snackbarHostState.showSnackbar(
+                                            message = context.getString(
+                                                R.string.sender_removed_with_undo,
+                                                removedSender.name.ifBlank { getSenderTypeName(removedSender.type) },
+                                            ),
+                                            actionLabel = context.getString(R.string.revoke),
+                                            duration = SnackbarDuration.Indefinite,
+                                        )
+                                    }
+                                    delay(5_000L)
+                                    snackbarHostState.currentSnackbarData?.dismiss()
+                                    val result = runCatching { resultDeferred.await() }.getOrNull()
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        viewModel.restoreSender(removedSender)
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+            ) { data ->
+                UndoCountdownSnackbar(
+                    data = data,
+                    totalDurationMs = 5_000L,
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun UndoCountdownSnackbar(
+    data: SnackbarData,
+    totalDurationMs: Long,
+) {
+    val startTimeMs = remember(data) { SystemClock.elapsedRealtime() }
+    var nowMs by remember(data) { mutableLongStateOf(startTimeMs) }
+
+    LaunchedEffect(data) {
+        while (isActive) {
+            nowMs = SystemClock.elapsedRealtime()
+            delay(50L)
+        }
+    }
+
+    val elapsedMs = (nowMs - startTimeMs).coerceIn(0L, totalDurationMs)
+    val remainingMs = (totalDurationMs - elapsedMs).coerceAtLeast(0L)
+    val progress = if (totalDurationMs <= 0L) {
+        0f
+    } else {
+        (remainingMs.toFloat() / totalDurationMs.toFloat()).coerceIn(0f, 1f)
+    }
+    val remainingSeconds = ceil(remainingMs / 1000f).toInt().coerceAtLeast(0)
+
+    Snackbar(
+        action = {
+            data.visuals.actionLabel?.let { label ->
+                TextButton(onClick = { data.performAction() }) {
+                    Text(label)
+                }
+            }
+        },
+        dismissAction = {
+            CountdownCircle(
+                progress = progress,
+                seconds = remainingSeconds,
+            )
+        },
+    ) {
+        Text(data.visuals.message)
+    }
+}
+
+@Composable
+private fun CountdownCircle(
+    progress: Float,
+    seconds: Int,
+) {
+    Box(
+        modifier = Modifier.size(28.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        CircularProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxSize(),
+            strokeWidth = 2.dp,
+            color = MaterialTheme.colorScheme.primary,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant,
+        )
+        Text(
+            text = seconds.toString(),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
     }
 }
 

@@ -33,7 +33,7 @@ class ForwardReceiver : BroadcastReceiver() {
                 resultMarked = true
                 setOrderedResult(pendingResult, ordered, code, reason, eventId)
             }
-            try {
+            runCatching {
                 val receiveStartMessage = buildString {
                     append("ForwardReceiver onReceive action=")
                     append(intent.action)
@@ -54,7 +54,7 @@ class ForwardReceiver : BroadcastReceiver() {
                     XLog.e("Rejecting broadcast with invalid action: %s", intent.action)
                     ForwardFlowLog.w(traceId, "Reject invalid action=${intent.action}")
                     markResult(RESULT_REJECT_ACTION, "invalid_action")
-                    return@Runnable
+                    return@runCatching
                 }
                 if (intent.action == PrefConst.ACTION_KILL_ME) {
                     val receivedToken = intent.getStringExtra("ipc_token")
@@ -71,12 +71,12 @@ class ForwardReceiver : BroadcastReceiver() {
                             "Reject kill action token mismatch expectedEmpty=${expectedToken.isEmpty()} receivedEmpty=${receivedToken.isNullOrBlank()}",
                         )
                         markResult(RESULT_REJECT_TOKEN, "token_mismatch")
-                        return@Runnable
+                        return@runCatching
                     }
                     ForwardFlowLog.w(traceId, "Kill action accepted, app process will terminate")
                     markResult(RESULT_OK, "kill_requested")
                     killAppAfterFinish = true
-                    return@Runnable
+                    return@runCatching
                 }
 
                 val sender = intent.getStringExtra("sender")
@@ -147,7 +147,7 @@ class ForwardReceiver : BroadcastReceiver() {
                         rejectTokenMessage,
                     )
                     markResult(RESULT_REJECT_TOKEN, "token_mismatch")
-                    return@Runnable
+                    return@runCatching
                 }
                 if (!tokenMatched && allowSystemBypass) {
                     val bypassMessage = buildString {
@@ -168,7 +168,7 @@ class ForwardReceiver : BroadcastReceiver() {
                     !shouldForwardAppNotify(context, packageName, traceId, forwardSource)
                 ) {
                     markResult(RESULT_REJECT_APP_GATE, "app_gate_drop")
-                    return@Runnable
+                    return@runCatching
                 }
                 if (msgTypeStr == "app_notify" && shouldDropDuplicateAppNotify(packageName, sender, body)) {
                     XLog.i(
@@ -189,7 +189,7 @@ class ForwardReceiver : BroadcastReceiver() {
                         },
                     )
                     markResult(RESULT_DROP_DUPLICATE, "duplicate_drop")
-                    return@Runnable
+                    return@runCatching
                 }
 
                 XLog.i("IPC verified and received message from: %s", sender ?: "")
@@ -366,7 +366,7 @@ class ForwardReceiver : BroadcastReceiver() {
                     )
                     markResult(RESULT_DISPATCH_FAILED, "dispatch_failed")
                 }
-            } catch (error: Throwable) {
+            }.onFailure { error ->
                 XLog.e("ForwardReceiver unexpected error", error)
                 ForwardFlowLog.e(
                     traceId,
@@ -381,15 +381,14 @@ class ForwardReceiver : BroadcastReceiver() {
                 if (!resultMarked) {
                     markResult(RESULT_DISPATCH_FAILED, "receiver_exception")
                 }
-            } finally {
-                if (!resultMarked) {
-                    markResult(RESULT_DISPATCH_FAILED, "receiver_no_result")
-                }
-                ForwardFlowLog.d(traceId, "ForwardReceiver finished")
-                pendingResult.finish()
-                if (killAppAfterFinish) {
-                    terminateSelfProcess(traceId)
-                }
+            }
+            if (!resultMarked) {
+                markResult(RESULT_DISPATCH_FAILED, "receiver_no_result")
+            }
+            ForwardFlowLog.d(traceId, "ForwardReceiver finished")
+            pendingResult.finish()
+            if (killAppAfterFinish) {
+                terminateSelfProcess(traceId)
             }
         }
         runCatching {
@@ -435,22 +434,31 @@ class ForwardReceiver : BroadcastReceiver() {
         forwardSource: String,
         sentFromUid: Int?,
     ): Boolean {
-        // Keep strict token verification for all regular channels.
-        // App notification from NotificationManagerHook may temporarily fail to read token
-        // when provider is unavailable (e.g. app process cleaned). In that case:
-        // - API 34+: require sent-from UID to be system UID.
-        // - API < 34: UID API is unavailable, allow nms_hook fallback.
-        if (msgType != "app_notify" || forwardSource != "nms_hook") {
-            return false
+        // Keep strict token verification by default.
+        // Controlled bypass is only for system-origin paths when token lookup is temporarily unavailable.
+        return when {
+            msgType == "app_notify" && forwardSource == "nms_hook" -> {
+                if (sentFromUid == Process.SYSTEM_UID) {
+                    true
+                } else if (Build.VERSION.SDK_INT < API_LEVEL_34 && sentFromUid == null) {
+                    XLog.w("IPC token bypass accepted for nms_hook without sender uid (API<34)")
+                    true
+                } else {
+                    false
+                }
+            }
+            msgType == "sms" && forwardSource == "sms_hook" -> {
+                if (sentFromUid == Process.SYSTEM_UID || sentFromUid == Process.PHONE_UID) {
+                    true
+                } else if (Build.VERSION.SDK_INT < API_LEVEL_34 && sentFromUid == null) {
+                    XLog.w("IPC token bypass accepted for sms_hook without sender uid (API<34)")
+                    true
+                } else {
+                    false
+                }
+            }
+            else -> false
         }
-        if (sentFromUid == Process.SYSTEM_UID) {
-            return true
-        }
-        if (Build.VERSION.SDK_INT < API_LEVEL_34 && sentFromUid == null) {
-            XLog.w("IPC token bypass accepted for nms_hook without sender uid (API<34)")
-            return true
-        }
-        return false
     }
 
     private fun resolveSentFromUidCompat(): Int? {
