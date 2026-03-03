@@ -167,6 +167,12 @@ object PackageUtils {
         return if (!name.isNullOrBlank() && !version.isNullOrBlank()) name to version else null
     }
 
+    @JvmStatic
+    fun hasRootAccess(): Boolean {
+        val uid = runSuCommand("id -u")?.trim()
+        return uid == "0"
+    }
+
     private fun runSuCommand(command: String): String? = try {
         val process = ProcessBuilder("su", "-c", command).start()
         val output = process.inputStream.bufferedReader().use { it.readText() }

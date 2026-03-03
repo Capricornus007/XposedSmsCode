@@ -81,6 +81,13 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
             else -> stringResource(id = R.string.not_installed)
         }
     }
+    val hasRootAccessState by produceState(
+        initialValue = false,
+    ) {
+        value = withContext(Dispatchers.IO) {
+            PackageUtils.hasRootAccess()
+        }
+    }
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -138,13 +145,21 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
                             Icons.Default.Extension,
                             stringResource(id = R.string.framework_type),
                             frameworkType,
-                            onClick = { Toast.makeText(context, rootHint, Toast.LENGTH_SHORT).show() },
+                            onClick = if (hasRootAccessState) {
+                                null
+                            } else {
+                                { Toast.makeText(context, rootHint, Toast.LENGTH_SHORT).show() }
+                            },
                         )
                         InfoItem(
                             Icons.Default.Verified,
                             stringResource(id = R.string.framework_version),
                             frameworkVersion,
-                            onClick = { Toast.makeText(context, rootHint, Toast.LENGTH_SHORT).show() },
+                            onClick = if (hasRootAccessState) {
+                                null
+                            } else {
+                                { Toast.makeText(context, rootHint, Toast.LENGTH_SHORT).show() }
+                            },
                         )
                     }
                 }
