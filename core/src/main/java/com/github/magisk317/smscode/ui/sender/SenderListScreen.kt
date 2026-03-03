@@ -91,6 +91,8 @@ private val appNotifyTemplateVariables = forwardTemplateVariables.map { variable
     }
 }
 private const val DIALOG_WIDTH_FRACTION = 0.92f
+private const val UNDO_SNACKBAR_DURATION_MS = 5_000L
+private const val UNDO_COUNTDOWN_TICK_MS = 50L
 
 private fun buildSmsPreviewMessage(): com.github.magisk317.smscode.forwarder.entity.MsgInfo {
     return com.github.magisk317.smscode.forwarder.entity.MsgInfo(
@@ -336,7 +338,7 @@ fun SenderListScreen(
                                             duration = SnackbarDuration.Indefinite,
                                         )
                                     }
-                                    delay(5_000L)
+                                    delay(UNDO_SNACKBAR_DURATION_MS)
                                     snackbarHostState.currentSnackbarData?.dismiss()
                                     val result = runCatching { resultDeferred.await() }.getOrNull()
                                     if (result == SnackbarResult.ActionPerformed) {
@@ -357,7 +359,7 @@ fun SenderListScreen(
             ) { data ->
                 UndoCountdownSnackbar(
                     data = data,
-                    totalDurationMs = 5_000L,
+                    totalDurationMs = UNDO_SNACKBAR_DURATION_MS,
                 )
             }
         }
@@ -375,7 +377,7 @@ private fun UndoCountdownSnackbar(
     LaunchedEffect(data) {
         while (isActive) {
             nowMs = SystemClock.elapsedRealtime()
-            delay(50L)
+            delay(UNDO_COUNTDOWN_TICK_MS)
         }
     }
 

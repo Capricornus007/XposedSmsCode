@@ -253,7 +253,7 @@ class MainActivity : AppCompatActivity() {
                             animationSpec = tween(durationMillis = 600),
                         )
                     } catch (oom: OutOfMemoryError) {
-                        XLog.w("Theme capture OOM, fallback to direct mode switch")
+                        XLog.w("Theme capture OOM, fallback to direct mode switch", oom)
                         currentThemeMode = themeState.mode
                     } catch (e: RuntimeException) {
                         if (e.message?.contains(LARGE_BITMAP_ERROR_KEYWORD, ignoreCase = true) == true) {

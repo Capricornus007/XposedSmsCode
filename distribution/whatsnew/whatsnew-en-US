@@ -1,4 +1,5 @@
-- Added Background Keep-alive settings: force-stop recovery and one-time foreground relaunch fallback (both off by default).
-- Notification options are now linked: when status-bar notification is off, auto-cancel and retention-time options are hidden.
-- UX/stability updates: configurable auto-input interval, auto-save on channel editor back, record/export refinements, and WebUI setting updates.
-- Details: https://github.com/magisk317/XposedSmsCode/releases/tag/v3.1.6-beta.5
+- Forwarding was rebuilt with channels/templates + non-code SMS control.
+- Added app-notify forwarding, App Control, WebUI, and log bundle export.
+- Added per-type record retention/export, auto-input interval, non-Play in-app upgrade checks, and keep-alive options.
+- Stability: SMS event_id tracing + block reasons, cross-uid fallback cleanup, large-bitmap guards, segmented app list loading.
+- GitHub: https://github.com/magisk317/XposedSmsCode
