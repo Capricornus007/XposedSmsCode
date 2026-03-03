@@ -20,9 +20,9 @@ name: Scan with Detekt
 on:
   # Triggers the workflow on push or pull request events but only for default and protected branches
   push:
-    branches: [ "dev" ]
+    branches: [ "beta" ]
   pull_request:
-    branches: [ "dev" ]
+    branches: [ "beta" ]
   schedule:
      - cron: '0 0 * * *'
 
