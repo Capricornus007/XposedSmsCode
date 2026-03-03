@@ -766,8 +766,8 @@ class MainActivity : AppCompatActivity() {
         val units = arrayOf("B", "KB", "MB", "GB")
         var value = bytes.toDouble()
         var index = 0
-        while (value >= 1024 && index < units.lastIndex) {
-            value /= 1024.0
+        while (value >= BYTES_PER_UNIT && index < units.lastIndex) {
+            value /= BYTES_PER_UNIT
             index++
         }
         return if (index == 0) {
@@ -812,3 +812,5 @@ private sealed class UpdateDownloadState {
     data class Failed(val message: String, val retry: GithubStructuredUpdate?) : UpdateDownloadState()
     data class Downloaded(val file: File, val update: GithubStructuredUpdate) : UpdateDownloadState()
 }
+
+private const val BYTES_PER_UNIT = 1024.0

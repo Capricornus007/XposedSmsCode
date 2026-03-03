@@ -33,7 +33,7 @@ class ForwardReceiver : BroadcastReceiver() {
                 resultMarked = true
                 setOrderedResult(pendingResult, ordered, code, reason, eventId)
             }
-            try {
+            runCatching {
                 val receiveStartMessage = buildString {
                     append("ForwardReceiver onReceive action=")
                     append(intent.action)
@@ -54,7 +54,7 @@ class ForwardReceiver : BroadcastReceiver() {
                     XLog.e("Rejecting broadcast with invalid action: %s", intent.action)
                     ForwardFlowLog.w(traceId, "Reject invalid action=${intent.action}")
                     markResult(RESULT_REJECT_ACTION, "invalid_action")
-                    return@Runnable
+                    return@runCatching
                 }
                 if (intent.action == PrefConst.ACTION_KILL_ME) {
                     val receivedToken = intent.getStringExtra("ipc_token")
@@ -71,12 +71,12 @@ class ForwardReceiver : BroadcastReceiver() {
                             "Reject kill action token mismatch expectedEmpty=${expectedToken.isEmpty()} receivedEmpty=${receivedToken.isNullOrBlank()}",
                         )
                         markResult(RESULT_REJECT_TOKEN, "token_mismatch")
-                        return@Runnable
+                        return@runCatching
                     }
                     ForwardFlowLog.w(traceId, "Kill action accepted, app process will terminate")
                     markResult(RESULT_OK, "kill_requested")
                     killAppAfterFinish = true
-                    return@Runnable
+                    return@runCatching
                 }
 
                 val sender = intent.getStringExtra("sender")
@@ -147,7 +147,7 @@ class ForwardReceiver : BroadcastReceiver() {
                         rejectTokenMessage,
                     )
                     markResult(RESULT_REJECT_TOKEN, "token_mismatch")
-                    return@Runnable
+                    return@runCatching
                 }
                 if (!tokenMatched && allowSystemBypass) {
                     val bypassMessage = buildString {
@@ -168,7 +168,7 @@ class ForwardReceiver : BroadcastReceiver() {
                     !shouldForwardAppNotify(context, packageName, traceId, forwardSource)
                 ) {
                     markResult(RESULT_REJECT_APP_GATE, "app_gate_drop")
-                    return@Runnable
+                    return@runCatching
                 }
                 if (msgTypeStr == "app_notify" && shouldDropDuplicateAppNotify(packageName, sender, body)) {
                     XLog.i(
@@ -189,7 +189,7 @@ class ForwardReceiver : BroadcastReceiver() {
                         },
                     )
                     markResult(RESULT_DROP_DUPLICATE, "duplicate_drop")
-                    return@Runnable
+                    return@runCatching
                 }
 
                 XLog.i("IPC verified and received message from: %s", sender ?: "")
@@ -366,7 +366,7 @@ class ForwardReceiver : BroadcastReceiver() {
                     )
                     markResult(RESULT_DISPATCH_FAILED, "dispatch_failed")
                 }
-            } catch (error: Throwable) {
+            }.onFailure { error ->
                 XLog.e("ForwardReceiver unexpected error", error)
                 ForwardFlowLog.e(
                     traceId,
@@ -381,15 +381,14 @@ class ForwardReceiver : BroadcastReceiver() {
                 if (!resultMarked) {
                     markResult(RESULT_DISPATCH_FAILED, "receiver_exception")
                 }
-            } finally {
-                if (!resultMarked) {
-                    markResult(RESULT_DISPATCH_FAILED, "receiver_no_result")
-                }
-                ForwardFlowLog.d(traceId, "ForwardReceiver finished")
-                pendingResult.finish()
-                if (killAppAfterFinish) {
-                    terminateSelfProcess(traceId)
-                }
+            }
+            if (!resultMarked) {
+                markResult(RESULT_DISPATCH_FAILED, "receiver_no_result")
+            }
+            ForwardFlowLog.d(traceId, "ForwardReceiver finished")
+            pendingResult.finish()
+            if (killAppAfterFinish) {
+                terminateSelfProcess(traceId)
             }
         }
         runCatching {
