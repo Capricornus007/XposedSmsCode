@@ -73,6 +73,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         PrefConst.KEY_MARK_AS_READ,
         PrefConst.KEY_DELETE_SMS,
         PrefConst.KEY_KILL_ME,
+        PrefConst.KEY_FORCE_STOP_RECOVERY,
+        PrefConst.KEY_FORCE_STOP_RECOVERY_RELAUNCH_ONCE,
         PrefConst.KEY_VERBOSE_LOG_MODE,
         PrefConst.KEY_AUTO_UPDATE_ON_START,
         PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,

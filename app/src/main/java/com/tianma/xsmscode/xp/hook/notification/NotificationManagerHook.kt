@@ -4,6 +4,7 @@ import android.app.Notification
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Binder
@@ -13,6 +14,7 @@ import android.os.UserHandle
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.XLog
+import com.tianma.xsmscode.service.ForceStopRecoveryService
 import com.tianma.xsmscode.xp.hook.BaseHook
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
@@ -30,6 +32,24 @@ class NotificationManagerHook : BaseHook() {
 
     @Volatile
     private var cachedIpcToken: String? = null
+
+    @Volatile
+    private var cachedForceStopRecoveryEnabled: Boolean? = null
+
+    @Volatile
+    private var cachedForceStopRecoveryCheckedAt: Long = 0L
+
+    @Volatile
+    private var lastRecoveryAttemptAt: Long = 0L
+
+    @Volatile
+    private var cachedRecoveryRelaunchOnceEnabled: Boolean? = null
+
+    @Volatile
+    private var cachedRecoveryRelaunchOnceCheckedAt: Long = 0L
+
+    @Volatile
+    private var lastForegroundRelaunchAttemptAt: Long = 0L
 
     override fun hookOnLoadPackage(): Boolean = true
 
@@ -114,10 +134,17 @@ class NotificationManagerHook : BaseHook() {
 
         val body = if (text.isNotEmpty()) text else tickerText
         if (title.isBlank() && body.isBlank()) {
+            if (isWechatPackage(pkg)) {
+                XLog.w(
+                    "NotificationManagerHook: wechat blank content dropped. flags=0x%s category=%s",
+                    Integer.toHexString(notification.flags),
+                    notification.category ?: "<null>",
+                )
+            }
             XLog.d("NotificationManagerHook: skip blank content. pkg=%s", pkg)
             return
         }
-        val skipReason = getSkipReason(notification)
+        val skipReason = getSkipReason(pkg, notification)
         if (skipReason != null) {
             XLog.d(
                 "NotificationManagerHook: skip by policy. pkg=%s reason=%s flags=0x%s category=%s",
@@ -157,16 +184,19 @@ class NotificationManagerHook : BaseHook() {
             callerPackageHint = pkg,
         )
         if (token.isBlank()) {
-            XLog.w("NotificationManagerHook: ipc token empty, skip forwarding for pkg=%s", pkg)
-            return
+            XLog.w(
+                "NotificationManagerHook: ipc token empty, continue forwarding with receiver-side bypass. pkg=%s",
+                pkg,
+            )
+        } else {
+            forwardIntent.putExtra("ipc_token", token)
         }
-        forwardIntent.putExtra("ipc_token", token)
 
         XLog.i("NotificationManagerHook intercepted: pkg=%s event=%s title=%s body=%s", pkg, eventId, title, body)
-        dispatchForwardBroadcast(systemContext, forwardIntent, pkg, eventId)
+        dispatchForwardBroadcast(systemContext, forwardIntent, pkg, eventId, endpoint)
     }
 
-    private fun getSkipReason(notification: Notification): String? {
+    private fun getSkipReason(packageName: String, notification: Notification): String? {
         val flags = notification.flags
         if ((flags and Notification.FLAG_FOREGROUND_SERVICE) != 0) {
             return "foreground_service"
@@ -178,8 +208,21 @@ class NotificationManagerHook : BaseHook() {
             return "category_service"
         }
         val isGroupSummary = (flags and Notification.FLAG_GROUP_SUMMARY) != 0
-        return if (isGroupSummary) "group_summary" else null
+        if (isGroupSummary) {
+            if (ENABLE_WECHAT_GROUP_SUMMARY_BYPASS && isWechatPackage(packageName)) {
+                XLog.w(
+                    "NotificationManagerHook: bypass group_summary policy for wechat. flags=0x%s category=%s",
+                    Integer.toHexString(flags),
+                    notification.category ?: "<null>",
+                )
+                return null
+            }
+            return "group_summary"
+        }
+        return null
     }
+
+    private fun isWechatPackage(packageName: String): Boolean = packageName == WECHAT_PACKAGE
 
     private fun getModuleEndpoint(systemContext: Context): ModuleEndpoint? {
         cachedEndpoint?.let { return it }
@@ -301,6 +344,22 @@ class NotificationManagerHook : BaseHook() {
         callerPackageHint = callerPackageHint,
     )
 
+    private fun queryPrefBoolean(
+        systemContext: Context,
+        endpoint: ModuleEndpoint,
+        key: String,
+        defaultValue: Boolean,
+        callerPackageHint: String? = null,
+    ): Boolean = queryPrefBooleanValue(
+        systemContext = systemContext,
+        modulePackageName = endpoint.packageName,
+        authority = endpoint.prefAuthority,
+        typePath = "bool",
+        key = key,
+        defaultValue = defaultValue,
+        callerPackageHint = callerPackageHint,
+    )
+
     private fun resolveIpcToken(
         systemContext: Context,
         endpoint: ModuleEndpoint,
@@ -330,6 +389,28 @@ class NotificationManagerHook : BaseHook() {
             return cached
         }
         return ""
+    }
+
+    private fun queryPrefBooleanValue(
+        systemContext: Context,
+        modulePackageName: String,
+        authority: String,
+        typePath: String,
+        key: String,
+        defaultValue: Boolean,
+        callerPackageHint: String? = null,
+    ): Boolean {
+        val defaultString = if (defaultValue) "1" else "0"
+        val value = queryPrefStringValue(
+            systemContext = systemContext,
+            modulePackageName = modulePackageName,
+            authority = authority,
+            typePath = typePath,
+            key = key,
+            defaultValue = defaultString,
+            callerPackageHint = callerPackageHint,
+        )
+        return value == "1" || value.equals("true", ignoreCase = true)
     }
 
     private fun queryPrefStringValue(
@@ -451,6 +532,7 @@ class NotificationManagerHook : BaseHook() {
         intent: Intent,
         sourcePackage: String,
         eventId: String,
+        endpoint: ModuleEndpoint,
     ) {
         withClearedCallingIdentity("sendBroadcast:$sourcePackage#$eventId") {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -458,10 +540,29 @@ class NotificationManagerHook : BaseHook() {
                 return@withClearedCallingIdentity
             }
 
+            val recoveryEnabled = isForceStopRecoveryEnabled(systemContext, endpoint, sourcePackage)
             val targetUsers = resolveTargetUsers(Binder.getCallingUid())
+            if (recoveryEnabled) {
+                attemptForceStopRecoveryIfNeeded(
+                    systemContext = systemContext,
+                    modulePackage = endpoint.packageName,
+                    targetUsers = targetUsers,
+                    sourcePackage = sourcePackage,
+                    eventId = eventId,
+                    reason = "pre_dispatch",
+                )
+            }
             for (userHandle in targetUsers) {
                 try {
-                    sendBroadcastAsUser(systemContext, intent, userHandle, sourcePackage, eventId)
+                    sendBroadcastAsUser(
+                        systemContext = systemContext,
+                        intent = intent,
+                        userHandle = userHandle,
+                        sourcePackage = sourcePackage,
+                        eventId = eventId,
+                        endpoint = endpoint,
+                        recoveryEnabled = recoveryEnabled,
+                    )
                     return@withClearedCallingIdentity
                 } catch (t: Throwable) {
                     XLog.w(
@@ -489,20 +590,73 @@ class NotificationManagerHook : BaseHook() {
         userHandle: UserHandle,
         sourcePackage: String,
         eventId: String,
+        endpoint: ModuleEndpoint,
+        recoveryEnabled: Boolean,
     ) {
         val sendIntent = Intent(intent)
         if (BuildConfig.DEBUG) {
             val resultReceiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context?, callbackIntent: Intent?) {
+                    val ackData = resultData ?: "<null>"
                     XLog.i(
                         "NotificationManagerHook: ordered ack pkg=%s event=%s user=%s resultCode=%d resultData=%s extras=%s",
                         sourcePackage,
                         eventId,
                         describeUserHandle(userHandle),
                         resultCode,
-                        resultData ?: "<null>",
+                        ackData,
                         getResultExtras(true)?.toString() ?: "<null>",
                     )
+
+                    if (!recoveryEnabled || ackData != "<null>") {
+                        return
+                    }
+
+                    val relaunchOnceEnabled = isForceStopRecoveryRelaunchOnceEnabled(
+                        systemContext = systemContext,
+                        endpoint = endpoint,
+                        callerPackageHint = sourcePackage,
+                    )
+                    val recovered = attemptForceStopRecoveryIfNeeded(
+                        systemContext = systemContext,
+                        modulePackage = endpoint.packageName,
+                        targetUsers = listOf(userHandle),
+                        sourcePackage = sourcePackage,
+                        eventId = eventId,
+                        reason = "ordered_ack_empty",
+                        alwaysWake = true,
+                    )
+                    val relaunched = if (relaunchOnceEnabled) {
+                        attemptForegroundRelaunchOnce(
+                            systemContext = systemContext,
+                            modulePackage = endpoint.packageName,
+                            userHandle = userHandle,
+                            sourcePackage = sourcePackage,
+                            eventId = eventId,
+                        )
+                    } else {
+                        false
+                    }
+                    if (!recovered && !relaunched) return
+
+                    runCatching {
+                        // Best effort retry after process wake-up; avoid ordered callback recursion.
+                        systemContext.sendBroadcastAsUser(Intent(sendIntent), userHandle)
+                        XLog.w(
+                            "NotificationManagerHook: retry broadcast after recovery. pkg=%s event=%s user=%s",
+                            sourcePackage,
+                            eventId,
+                            describeUserHandle(userHandle),
+                        )
+                    }.onFailure { error ->
+                        XLog.w(
+                            "NotificationManagerHook: retry after recovery failed. pkg=%s event=%s user=%s err=%s",
+                            sourcePackage,
+                            eventId,
+                            describeUserHandle(userHandle),
+                            error.message ?: error.javaClass.simpleName,
+                        )
+                    }
                 }
             }
             systemContext.sendOrderedBroadcastAsUser(
@@ -525,6 +679,255 @@ class NotificationManagerHook : BaseHook() {
             describeUserHandle(userHandle),
             BuildConfig.DEBUG,
         )
+    }
+
+    private fun isForceStopRecoveryEnabled(
+        systemContext: Context,
+        endpoint: ModuleEndpoint,
+        callerPackageHint: String,
+    ): Boolean {
+        val now = System.currentTimeMillis()
+        val cached = cachedForceStopRecoveryEnabled
+        if (cached != null && now - cachedForceStopRecoveryCheckedAt <= RECOVERY_PREF_CACHE_MS) {
+            return cached
+        }
+        val enabled = queryPrefBoolean(
+            systemContext = systemContext,
+            endpoint = endpoint,
+            key = PrefConst.KEY_FORCE_STOP_RECOVERY,
+            defaultValue = false,
+            callerPackageHint = callerPackageHint,
+        )
+        cachedForceStopRecoveryEnabled = enabled
+        cachedForceStopRecoveryCheckedAt = now
+        return enabled
+    }
+
+    private fun isForceStopRecoveryRelaunchOnceEnabled(
+        systemContext: Context,
+        endpoint: ModuleEndpoint,
+        callerPackageHint: String,
+    ): Boolean {
+        val now = System.currentTimeMillis()
+        val cached = cachedRecoveryRelaunchOnceEnabled
+        if (cached != null && now - cachedRecoveryRelaunchOnceCheckedAt <= RECOVERY_PREF_CACHE_MS) {
+            return cached
+        }
+        val enabled = queryPrefBoolean(
+            systemContext = systemContext,
+            endpoint = endpoint,
+            key = PrefConst.KEY_FORCE_STOP_RECOVERY_RELAUNCH_ONCE,
+            defaultValue = false,
+            callerPackageHint = callerPackageHint,
+        )
+        cachedRecoveryRelaunchOnceEnabled = enabled
+        cachedRecoveryRelaunchOnceCheckedAt = now
+        return enabled
+    }
+
+    private fun attemptForceStopRecoveryIfNeeded(
+        systemContext: Context,
+        modulePackage: String,
+        targetUsers: List<UserHandle>,
+        sourcePackage: String,
+        eventId: String,
+        reason: String,
+        alwaysWake: Boolean = false,
+    ): Boolean {
+        if (!shouldAttemptRecoveryNow()) return false
+        var recovered = false
+        for (userHandle in targetUsers) {
+            val userId = resolveUserId(userHandle)
+            val stopped = isPackageStopped(systemContext, modulePackage, userId)
+            if (!stopped && !alwaysWake) continue
+            val unstopped = if (stopped) {
+                clearPackageStoppedState(systemContext, modulePackage, userId)
+            } else {
+                false
+            }
+            val warmedUp = wakeRecoveryService(systemContext, modulePackage, userHandle, reason, eventId)
+            recovered = recovered || unstopped || warmedUp
+            XLog.w(
+                "NotificationManagerHook: recovery attempted. module=%s source=%s event=%s user=%s stopped=%s unstopped=%s warmed=%s reason=%s",
+                modulePackage,
+                sourcePackage,
+                eventId,
+                describeUserHandle(userHandle),
+                stopped,
+                unstopped,
+                warmedUp,
+                reason,
+            )
+        }
+        return recovered
+    }
+
+    private fun shouldAttemptRecoveryNow(): Boolean {
+        val now = System.currentTimeMillis()
+        synchronized(this) {
+            if (now - lastRecoveryAttemptAt < RECOVERY_COOLDOWN_MS) {
+                return false
+            }
+            lastRecoveryAttemptAt = now
+        }
+        return true
+    }
+
+    private fun attemptForegroundRelaunchOnce(
+        systemContext: Context,
+        modulePackage: String,
+        userHandle: UserHandle,
+        sourcePackage: String,
+        eventId: String,
+    ): Boolean {
+        if (!shouldAttemptForegroundRelaunchNow()) return false
+        val launchIntent = Intent(Intent.ACTION_MAIN).apply {
+            setClassName(modulePackage, MAIN_ACTIVITY_CLASS_NAME)
+            addCategory(Intent.CATEGORY_DEFAULT)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            putExtra("recovery_from_pkg", sourcePackage)
+            putExtra("recovery_event_id", eventId)
+        }
+
+        val launched = runCatching {
+            XposedHelpers.callMethod(systemContext, "startActivityAsUser", launchIntent, userHandle)
+            true
+        }.getOrElse {
+            runCatching {
+                systemContext.startActivity(launchIntent)
+                true
+            }.getOrDefault(false)
+        }
+
+        if (launched) {
+            XLog.w(
+                "NotificationManagerHook: foreground relaunch triggered. module=%s source=%s event=%s user=%s",
+                modulePackage,
+                sourcePackage,
+                eventId,
+                describeUserHandle(userHandle),
+            )
+        } else {
+            XLog.w(
+                "NotificationManagerHook: foreground relaunch failed. module=%s source=%s event=%s user=%s",
+                modulePackage,
+                sourcePackage,
+                eventId,
+                describeUserHandle(userHandle),
+            )
+        }
+        return launched
+    }
+
+    private fun shouldAttemptForegroundRelaunchNow(): Boolean {
+        val now = System.currentTimeMillis()
+        synchronized(this) {
+            if (now - lastForegroundRelaunchAttemptAt < FOREGROUND_RELAUNCH_COOLDOWN_MS) {
+                return false
+            }
+            lastForegroundRelaunchAttemptAt = now
+        }
+        return true
+    }
+
+    private fun resolveUserId(userHandle: UserHandle): Int {
+        return runCatching {
+            val method = UserHandle::class.java.getMethod("getIdentifier")
+            (method.invoke(userHandle) as? Int) ?: 0
+        }.getOrDefault(0)
+    }
+
+    private fun isPackageStopped(systemContext: Context, packageName: String, userId: Int): Boolean {
+        return try {
+            val appInfo = getApplicationInfoForUser(systemContext, packageName, userId) ?: return false
+            (appInfo.flags and ApplicationInfo.FLAG_STOPPED) != 0
+        } catch (t: Throwable) {
+            XLog.w(
+                "NotificationManagerHook: isPackageStopped failed. pkg=%s user=%d err=%s",
+                packageName,
+                userId,
+                t.message ?: t.javaClass.simpleName,
+            )
+            false
+        }
+    }
+
+    private fun getApplicationInfoForUser(systemContext: Context, packageName: String, userId: Int): ApplicationInfo? {
+        val pm = systemContext.packageManager
+        val asUser = runCatching {
+            val method = pm.javaClass.methods.firstOrNull {
+                it.name == "getApplicationInfoAsUser" && it.parameterTypes.size == 3
+            } ?: return@runCatching null
+            @Suppress("DEPRECATION")
+            method.invoke(pm, packageName, PackageManager.MATCH_ALL, userId) as? ApplicationInfo
+        }.getOrNull()
+        if (asUser != null) return asUser
+        return runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                pm.getApplicationInfo(
+                    packageName,
+                    PackageManager.ApplicationInfoFlags.of(PackageManager.MATCH_ALL.toLong()),
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getApplicationInfo(packageName, PackageManager.MATCH_ALL)
+            }
+        }.getOrNull()
+    }
+
+    private fun clearPackageStoppedState(systemContext: Context, packageName: String, userId: Int): Boolean {
+        val pm = systemContext.packageManager
+        val reflected = runCatching {
+            val method = pm.javaClass.methods.firstOrNull {
+                it.name == "setPackageStoppedState" && it.parameterTypes.size == 3
+            } ?: return@runCatching false
+            method.invoke(pm, packageName, false, userId)
+            true
+        }.getOrDefault(false)
+        if (reflected) return true
+
+        val cmd = "cmd package set-stopped-state --user $userId $packageName false"
+        return runShellCommand(cmd)
+    }
+
+    private fun runShellCommand(command: String): Boolean {
+        return runCatching {
+            val process = Runtime.getRuntime().exec(arrayOf("sh", "-c", command))
+            val exitCode = process.waitFor()
+            if (exitCode != 0) {
+                XLog.w("NotificationManagerHook: shell command failed(%d): %s", exitCode, command)
+            }
+            exitCode == 0
+        }.getOrElse {
+            XLog.w(
+                "NotificationManagerHook: shell command exception: %s err=%s",
+                command,
+                it.message ?: it.javaClass.simpleName,
+            )
+            false
+        }
+    }
+
+    private fun wakeRecoveryService(
+        systemContext: Context,
+        modulePackage: String,
+        userHandle: UserHandle,
+        reason: String,
+        eventId: String,
+    ): Boolean {
+        val wakeIntent = Intent(ForceStopRecoveryService.ACTION_RECOVERY_WAKEUP).apply {
+            setClassName(modulePackage, FORCE_STOP_RECOVERY_SERVICE_CLASS_NAME)
+            addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+            putExtra(ForceStopRecoveryService.EXTRA_REASON, reason)
+            putExtra(ForceStopRecoveryService.EXTRA_EVENT_ID, eventId)
+        }
+        val startedAsUser = runCatching {
+            XposedHelpers.callMethod(systemContext, "startServiceAsUser", wakeIntent, userHandle)
+            true
+        }.getOrElse { false }
+        if (startedAsUser) return true
+        return runCatching { systemContext.startService(wakeIntent) != null }.getOrDefault(false)
     }
 
     private fun resolveTargetUsers(callerUid: Int): List<UserHandle> {
@@ -566,5 +969,13 @@ class NotificationManagerHook : BaseHook() {
 
     companion object {
         private const val FORWARD_RECEIVER_CLASS_NAME = "com.github.magisk317.smscode.receiver.ForwardReceiver"
+        private const val FORCE_STOP_RECOVERY_SERVICE_CLASS_NAME =
+            "com.tianma.xsmscode.service.ForceStopRecoveryService"
+        private const val MAIN_ACTIVITY_CLASS_NAME = "com.tianma.xsmscode.ui.home.MainActivity"
+        private const val WECHAT_PACKAGE = "com.tencent.mm"
+        private const val ENABLE_WECHAT_GROUP_SUMMARY_BYPASS = true
+        private const val RECOVERY_COOLDOWN_MS = 3000L
+        private const val FOREGROUND_RELAUNCH_COOLDOWN_MS = 60_000L
+        private const val RECOVERY_PREF_CACHE_MS = 30_000L
     }
 }

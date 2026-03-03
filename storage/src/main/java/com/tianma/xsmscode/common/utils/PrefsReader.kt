@@ -226,6 +226,12 @@ object PrefsReader {
     }
 
     @JvmStatic
+    fun forceStopRecoveryEnabled(context: Context): Boolean {
+        val defaultValue = false
+        return getBooleanViaProvider(context, PrefConst.KEY_FORCE_STOP_RECOVERY, defaultValue)
+    }
+
+    @JvmStatic
     fun showCodeNotification(context: Context): Boolean {
         val defaultValue = true
         return getBooleanViaProvider(context, PrefConst.KEY_SHOW_CODE_NOTIFICATION, defaultValue)
@@ -346,4 +352,14 @@ object PrefsReader {
     @JvmStatic
     fun getIpcToken(context: Context): String =
         getStringViaProvider(context, PrefConst.KEY_IPC_TOKEN, "")
+
+    @JvmStatic
+    fun getSimSlotRemark(context: Context, simSlot: Int): String {
+        val key = when (simSlot) {
+            0 -> PrefConst.KEY_SIM_SLOT1_REMARK
+            1 -> PrefConst.KEY_SIM_SLOT2_REMARK
+            else -> return ""
+        }
+        return getStringViaProvider(context, key, "").trim()
+    }
 }

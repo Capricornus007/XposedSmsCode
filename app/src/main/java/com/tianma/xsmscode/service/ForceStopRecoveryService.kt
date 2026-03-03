@@ -1,0 +1,42 @@
+package com.tianma.xsmscode.service
+
+import android.app.Service
+import android.content.Intent
+import android.os.IBinder
+import com.tianma.xsmscode.common.utils.RuntimeLogStore
+import com.tianma.xsmscode.common.utils.XLog
+
+/**
+ * Lightweight wake-up service used by system-side Xposed hook to revive app process
+ * after force-stop recovery. No foreground UI is started here.
+ */
+class ForceStopRecoveryService : Service() {
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val reason = intent?.getStringExtra(EXTRA_REASON).orEmpty()
+        val eventId = intent?.getStringExtra(EXTRA_EVENT_ID).orEmpty()
+        XLog.w(
+            "ForceStopRecoveryService started. reason=%s event=%s",
+            reason.ifBlank { "<none>" },
+            eventId.ifBlank { "<none>" },
+        )
+        RuntimeLogStore.append(
+            android.util.Log.WARN,
+            TAG,
+            "force-stop recovery wakeup reason=${reason.ifBlank { "<none>" }} event=${eventId.ifBlank { "<none>" }}",
+            force = true,
+        )
+        stopSelfResult(startId)
+        return START_NOT_STICKY
+    }
+
+    companion object {
+        private const val TAG = "ForceStopRecovery"
+        const val ACTION_RECOVERY_WAKEUP = "com.tianma.xsmscode.action.FORCE_STOP_RECOVERY_WAKEUP"
+        const val EXTRA_REASON = "reason"
+        const val EXTRA_EVENT_ID = "event_id"
+    }
+}
+

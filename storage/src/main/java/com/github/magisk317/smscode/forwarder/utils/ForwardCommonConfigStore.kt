@@ -11,6 +11,7 @@ import com.github.magisk317.smscode.forwarder.entity.ForwardCommonConfig
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
 import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
+import com.tianma.xsmscode.common.utils.PrefsReader
 import com.tianma.xsmscode.common.utils.XLog
 import java.net.NetworkInterface
 import java.text.SimpleDateFormat
@@ -164,7 +165,7 @@ IP地址列表：{{IP_LIST}}
         val appName = if (msgInfo.appName.isNotBlank()) msgInfo.appName else resolveAppName(context, packageName)
         val receiveTime = SimpleDateFormat(TIME_PATTERN, Locale.getDefault()).format(msgInfo.date)
         val currentTime = SimpleDateFormat(TIME_PATTERN, Locale.getDefault()).format(Date())
-        val cardSlot = resolveCardSlot(msgInfo)
+        val cardSlot = resolveCardSlot(context, msgInfo)
         val variables = mapOf(
             "FROM" to msgInfo.from,
             "SMS" to msgInfo.content,
@@ -206,9 +207,13 @@ IP地址列表：{{IP_LIST}}
         return msgInfo.copy(content = cleaned)
     }
 
-    private fun resolveCardSlot(msgInfo: MsgInfo): String {
-        if (msgInfo.simSlot >= 0) return "SIM${msgInfo.simSlot + 1}"
-        if (msgInfo.simInfo.isNotBlank()) return msgInfo.simInfo
+    private fun resolveCardSlot(context: Context, msgInfo: MsgInfo): String {
+        if (msgInfo.simSlot >= 0) {
+            val remark = PrefsReader.getSimSlotRemark(context, msgInfo.simSlot)
+            if (remark.isNotBlank()) return remark
+            return "SIM${msgInfo.simSlot + 1}"
+        }
+        if (msgInfo.type == "app_notify" && msgInfo.simInfo.isNotBlank()) return msgInfo.simInfo
         return ""
     }
 

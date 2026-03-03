@@ -83,4 +83,59 @@ class GithubUpdateCheckerTest {
         assertNotNull(release)
         assertEquals("9.9.9", release?.versionName)
     }
+
+    @Test
+    fun parseStructuredUpgradeJson_parsesNewFormat() {
+        val json = """
+            {
+              "versionCode": 31800,
+              "versionName": "3.1.8",
+              "htmlUrl": "https://github.com/magisk317/XposedSmsCode/releases/tag/v3.1.8",
+              "changelog": "fixes",
+              "versionLogs": [{"name":"3.1.8","code":31800,"desc":"line1"}],
+              "apks": [
+                {"abi":"arm64-v8a","downloadUrl":"https://example.com/app-arm64.apk","fileSize":100,"sha256":"abcd"},
+                {"abi":"universal","downloadUrl":"https://example.com/app-universal.apk","fileSize":200,"sha256":"efgh"}
+              ],
+              "signingCertSha256": "AA:BB"
+            }
+        """.trimIndent()
+
+        val info = GithubUpdateChecker.parseStructuredUpgradeJson(json)
+
+        assertNotNull(info)
+        assertEquals(31800L, info?.versionCode)
+        assertEquals("3.1.8", info?.versionName)
+        assertEquals(2, info?.apks?.size)
+        assertEquals("AA:BB", info?.signingCertSha256)
+    }
+
+    @Test
+    fun parseUpgradeCheckResult_fallsBackToLegacy() {
+        val json = """{"tag_name":"v3.1.9","html_url":"https://example.com/release"}"""
+        val result = GithubUpdateChecker.parseUpgradeCheckResult(json)
+        val legacy = result as? UpgradeCheckResult.LegacyLink
+        assertNotNull(legacy)
+        assertEquals("3.1.9", legacy?.release?.versionName)
+    }
+
+    @Test
+    fun selectBestApkForDevice_prefersExactAbiThenUniversal() {
+        val apks = listOf(
+            UpgradeApkAsset(abi = "arm64-v8a", downloadUrl = "a"),
+            UpgradeApkAsset(abi = "universal", downloadUrl = "u"),
+        )
+
+        val arm64 = GithubUpdateChecker.selectBestApkForDevice(
+            apks = apks,
+            supportedAbis = listOf("arm64-v8a"),
+        )
+        assertEquals("a", arm64?.downloadUrl)
+
+        val x86 = GithubUpdateChecker.selectBestApkForDevice(
+            apks = apks,
+            supportedAbis = listOf("x86_64"),
+        )
+        assertEquals("u", x86?.downloadUrl)
+    }
 }

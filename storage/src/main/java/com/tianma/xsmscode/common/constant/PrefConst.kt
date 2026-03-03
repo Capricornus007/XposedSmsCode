@@ -65,6 +65,8 @@ object PrefConst {
     const val KEY_MARK_AS_READ = "pref_mark_as_read"
     const val KEY_DELETE_SMS = "pref_delete_sms"
     const val KEY_KILL_ME = "pref_kill_me"
+    const val KEY_FORCE_STOP_RECOVERY = "pref_force_stop_recovery"
+    const val KEY_FORCE_STOP_RECOVERY_RELAUNCH_ONCE = "pref_force_stop_recovery_relaunch_once"
 
     // Others
     const val KEY_VERBOSE_LOG_MODE = "pref_verbose_log_mode"
@@ -91,6 +93,8 @@ object PrefConst {
     const val KEY_FORWARD_COMMON_INCLUDE_TIME = "pref_forward_common_include_time"
     const val KEY_FORWARD_COMMON_INCLUDE_SENDER = "pref_forward_common_include_sender"
     const val KEY_FORWARD_COMMON_INCLUDE_DEVICE_NAME = "pref_forward_common_include_device_name"
+    const val KEY_SIM_SLOT1_REMARK = "pref_sim_slot1_remark"
+    const val KEY_SIM_SLOT2_REMARK = "pref_sim_slot2_remark"
     const val KEY_WEBUI_LAN_ACCESS = "pref_webui_lan_access"
     const val ACTION_FORWARD_SMS = "com.tianma.xsmscode.ACTION_FORWARD_SMS"
     const val ACTION_KILL_ME = "com.tianma.xsmscode.ACTION_KILL_ME"

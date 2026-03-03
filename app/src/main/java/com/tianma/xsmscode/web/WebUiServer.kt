@@ -201,7 +201,8 @@ class WebUiServer(
                     payload.verboseLogMode == null &&
                     payload.deduplicateSms == null &&
                     payload.blockSms == null &&
-                    payload.enableCodeRecords == null
+                    payload.enableCodeRecords == null &&
+                    payload.forceStopRecovery == null
                 ) {
                     call.respondText(
                         status = HttpStatusCode.BadRequest,
@@ -236,6 +237,9 @@ class WebUiServer(
                     }
                     payload.enableCodeRecords?.let {
                         AppPreferencesDataStore.setBoolean(appContext, PrefConst.KEY_ENABLE_CODE_RECORDS, it)
+                    }
+                    payload.forceStopRecovery?.let {
+                        AppPreferencesDataStore.setBoolean(appContext, PrefConst.KEY_FORCE_STOP_RECOVERY, it)
                     }
                 }
                 call.respondText(
@@ -624,6 +628,11 @@ class WebUiServer(
                 PrefConst.KEY_ENABLE_CODE_RECORDS,
                 true,
             ),
+            forceStopRecovery = AppPreferencesDataStore.getBoolean(
+                appContext,
+                PrefConst.KEY_FORCE_STOP_RECOVERY,
+                false,
+            ),
         )
     }
 
@@ -730,6 +739,7 @@ class WebUiServer(
         val deduplicateSms: Boolean,
         val blockSms: Boolean,
         val enableCodeRecords: Boolean,
+        val forceStopRecovery: Boolean,
     )
 
     @Serializable
@@ -744,6 +754,7 @@ class WebUiServer(
         val deduplicateSms: Boolean? = null,
         val blockSms: Boolean? = null,
         val enableCodeRecords: Boolean? = null,
+        val forceStopRecovery: Boolean? = null,
     )
 
     @Serializable
@@ -1144,6 +1155,7 @@ class WebUiServer(
                         <h3 class="settings-group-title">实验性功能</h3>
                         <div class="switch-grid">
                           <label class="switch-row"><span class="t">拦截验证码短信</span><input id="setBlockSms" type="checkbox" /></label>
+                          <label class="switch-row"><span class="t">强停后自恢复</span><input id="setForceStopRecovery" type="checkbox" /></label>
                         </div>
                       </div>
                       <div class="settings-group">
@@ -1211,6 +1223,7 @@ class WebUiServer(
                 const setEnableAutoEnterCode = document.getElementById("setEnableAutoEnterCode");
                 const setDeduplicateSms = document.getElementById("setDeduplicateSms");
                 const setBlockSms = document.getElementById("setBlockSms");
+                const setForceStopRecovery = document.getElementById("setForceStopRecovery");
                 const setEnableCodeRecords = document.getElementById("setEnableCodeRecords");
                 const setVerboseLogMode = document.getElementById("setVerboseLogMode");
                 const newSender = document.getElementById("newSender");
@@ -1593,6 +1606,7 @@ class WebUiServer(
                   setEnableAutoEnterCode.checked = !!state.enableAutoEnterCode;
                   setDeduplicateSms.checked = !!state.deduplicateSms;
                   setBlockSms.checked = !!state.blockSms;
+                  setForceStopRecovery.checked = !!state.forceStopRecovery;
                   setEnableCodeRecords.checked = !!state.enableCodeRecords;
                   setVerboseLogMode.checked = !!state.verboseLogMode;
                 }
@@ -1886,6 +1900,10 @@ class WebUiServer(
                 });
                 bindToggle(setBlockSms, async (v) => {
                   await updateSettings({ blockSms: v });
+                  await loadSettings();
+                });
+                bindToggle(setForceStopRecovery, async (v) => {
+                  await updateSettings({ forceStopRecovery: v });
                   await loadSettings();
                 });
                 bindToggle(setEnableCodeRecords, async (v) => {
