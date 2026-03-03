@@ -1,4 +1,4 @@
-- Built-in WebUI with LAN toggle for channel management and forwarding records.
-- Better diagnostics: app notifications include trace/event_id and delivery ack; Webhook test logs are richer.
-- Log tools improved: one-tap share bundle (app + LSPosed) and clear log/crash folders.
-- Stability fixes: email SMTP fallback, stronger notification gate checks, backup/restore consistency, and more reliable SMS auto-delete.
+- Added Background Keep-alive settings: force-stop recovery and one-time foreground relaunch fallback (both off by default).
+- Notification options are now linked: when status-bar notification is off, auto-cancel and retention-time options are hidden.
+- UX/stability updates: configurable auto-input interval, auto-save on channel editor back, record/export refinements, and WebUI setting updates.
+- Details: https://github.com/magisk317/XposedSmsCode/releases/tag/v3.1.6-beta.5

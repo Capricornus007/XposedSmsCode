@@ -4,6 +4,55 @@
 
 ---
 
+## [v3.1.6-beta.5] - 2026-03-03
+### 功能与体验 (Features & UX)
+- 新增更新安全校验：安装前执行 APK `SHA256` 校验与签名一致性校验，不满足条件自动回退外链下载。
+- 新增“后台保活”分组：支持“强停后自恢复”与“恢复失败时前台拉起一次”两项能力（默认关闭）。
+- 新增 SIM 卡槽备注：可自定义模板变量 `{{CARD_SLOT}}` 文案，便于多卡场景区分。
+- 新增自动输入“字符间隔(ms)”配置，优化部分机型输入稳定性。
+
+### 记录与转发 (Records & Forwarding)
+- 记录页能力增强：支持按验证码/普通短信/应用通知分别设置开关、条数上限与导出范围。
+- 记录详情与列表展示优化：转发结果更易读，普通短信无验证码时补充发件人/号码展示。
+- 转发链路健壮性增强：补充异常兜底与执行调度保护，修复普通短信记录与状态异常场景。
+
+### 设置与 WebUI (Settings & WebUI)
+- 通道配置页优化：返回即自动保存，移除退出弹窗；模板与状态相关体验持续收敛。
+- WebUI 设置增强：补齐实验项控制与更多配置项映射。
+- 通知设置联动：关闭“显示状态栏通知”时，自动隐藏“自动取消通知/通知保留时间”选项。
+
+### 修复与工程 (Fixed & Engineering)
+- 修复日志目录清理失败场景，增加 `su` 回退路径。
+- 修复多处记录状态判定与展示问题，降低“已转发却显示未转发”概率。
+- 持续升级构建工具链并清理静态检查告警（Gradle nightly / Detekt）。
+- 升级到 `versionCode 96` / `versionName 3.1.6-beta.5`。
+
+### 提交明细 (Commit Details)
+- `6fc5455` fix(ci): allow nightly gradle wrapper in detekt workflows
+- `4953208` build(wrapper): update gradle wrapper to nightly 20260302000223
+- `7f9290f` fix(detekt): clean warnings and harden exception handling
+- `6eca9fa` fix: decouple interception from forwarding and refine status/settings
+- `0fbdf5d` fix: implement a complete KillMeAction self-termination flow
+- `0b9a461` feat(settings): add launcher icon visibility toggle
+- `062ffef` feat(sender): auto-save on back and remove exit dialog
+- `e2e484b` fix(log): cleanup temp log directories with su fallback
+- `d42f083` fix(record): decouple forwarding status from interception and refine status rendering
+- `1f9905c` fix(forward): restore plain SMS record insertion for status tracking
+- `bb001a8` feat(ui): improve template preview and forwarding-result readability
+- `43b491f` fix(sender-list): prevent FAB from overlapping bottom action buttons
+- `383d4c2` feat(webui): align settings groups and improve app/record operations
+- `0860439` feat(record): split tab settings and support scoped export
+- `7692d17` fix(record): apply per-type switches and retention limits
+- `aba41d7` refactor(sender-form): group forwarding toggles in shared section
+- `f26f017` feat(sender-list): compact cards and hide rules entry
+- `81cf556` feat(auto-input): add configurable character input interval
+- `d0d384f` feat(update): add non-Play in-app upgrade flow and recovery settings
+- `be52786` fix(settings): link notification options visibility to status bar toggle
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.1.6-beta.4...v3.1.6-beta.5
+
+---
+
 ## [v3.1.6-beta.4] - 2026-03-01
 ### 功能与体验 (Features & UX)
 - 新增内置 WebUI：支持发送通道增删改查与记录查看，并在高级设置增加 WebUI 局域网访问开关。

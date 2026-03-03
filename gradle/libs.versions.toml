@@ -10,8 +10,8 @@ ndk = "28.2.13676358"
 javaBytecode = "25"
 
 # App version
-versionCode = "95"
-versionName = "3.1.6-beta.4"
+versionCode = "96"
+versionName = "3.1.6-beta.5"
 
 activity-compose = "1.12.4"
 adaptive = "1.2.0"
