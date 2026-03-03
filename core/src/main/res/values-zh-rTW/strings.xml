@@ -310,6 +310,7 @@
     <string name="action_import_rules">導入</string>
     <string name="action_export_rules">導出</string>
     <string name="revoke">撤回</string>
+    <string name="sender_removed_with_undo">已刪除通道：%1$s（5秒內可撤回）</string>
     <string name="removed">已刪除</string>
     <string name="remove">刪除</string>
     <string name="edit">編輯</string>

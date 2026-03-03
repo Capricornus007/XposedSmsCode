@@ -110,6 +110,17 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun restoreSender(sender: Sender) {
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                senderDao.insert(sender)
+            }.onFailure {
+                senderDao.update(sender)
+            }
+            walCheckpoint()
+        }
+    }
+
     fun toggleSenderStatus(sender: Sender, enabled: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             val newStatus = if (enabled) 1 else 0

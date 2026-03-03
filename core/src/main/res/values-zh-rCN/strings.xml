@@ -311,6 +311,7 @@
     <string name="action_import_rules">导入</string>
     <string name="action_export_rules">导出</string>
     <string name="revoke">撤销</string>
+    <string name="sender_removed_with_undo">已删除通道：%1$s（5秒内可撤销）</string>
     <string name="removed">已移除</string>
     <string name="remove">移除</string>
     <string name="edit">编辑</string>
