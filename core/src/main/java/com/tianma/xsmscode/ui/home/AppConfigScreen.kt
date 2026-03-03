@@ -1,6 +1,7 @@
 package com.tianma.xsmscode.ui.home
 
 import android.os.SystemClock
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -206,8 +207,22 @@ fun AppConfigScreen(
                         AppConfigItem(
                             app = app,
                             onClick = { onAppClick?.invoke(app) },
-                            onBlockedChange = { viewModel.setBlocked(app, it) },
-                            onForwardingChange = { viewModel.setForwarding(app, it) },
+                            onBlockedChange = {
+                                viewModel.setBlocked(app, it)
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.pref_sync_toast),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            },
+                            onForwardingChange = {
+                                viewModel.setForwarding(app, it)
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.pref_sync_toast),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            },
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),

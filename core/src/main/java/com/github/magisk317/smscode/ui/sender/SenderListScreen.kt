@@ -31,6 +31,7 @@ import com.github.magisk317.smscode.forwarder.entity.Sender
 import com.github.magisk317.smscode.forwarder.utils.ForwardCommonConfigStore
 import com.github.magisk317.smscode.forwarder.utils.SenderType
 import com.tianma.xsmscode.core.BuildConfig
+import com.tianma.xsmscode.core.R
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -296,9 +297,19 @@ fun SenderListScreen(
                                     Toast.makeText(context, "无法开启：${result.message}", Toast.LENGTH_LONG).show()
                                 } else {
                                     viewModel.toggleSenderStatus(sender, enabled)
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.pref_sync_toast),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
                                 }
                             } else {
                                 viewModel.toggleSenderStatus(sender, enabled)
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.pref_sync_toast),
+                                    Toast.LENGTH_SHORT,
+                                ).show()
                             }
                         },
                         onDelete = { viewModel.deleteSender(sender) }

@@ -1,5 +1,6 @@
 package com.github.magisk317.smscode.ui.rule
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,11 +11,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.magisk317.smscode.forwarder.entity.Rule
 import com.github.magisk317.smscode.ui.sender.getSenderTypeName
+import com.tianma.xsmscode.core.R
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -26,6 +29,7 @@ fun RuleListScreen(
     onAddClick: () -> Unit,
     onEditClick: (Long) -> Unit
 ) {
+    val context = LocalContext.current
     val rules by viewModel.ruleList.collectAsStateWithLifecycle()
     val senders by viewModel.senderList.collectAsStateWithLifecycle()
     val senderName = if (senderId != 0L) senders.find { it.id == senderId }?.name else null
@@ -76,7 +80,14 @@ fun RuleListScreen(
                         rule = rule,
                         senderName = senderName,
                         onEdit = { onEditClick(rule.id) },
-                        onToggle = { viewModel.toggleRuleStatus(rule, it) },
+                        onToggle = {
+                            viewModel.toggleRuleStatus(rule, it)
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.pref_sync_toast),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        },
                         onDelete = { viewModel.deleteRule(rule) }
                     )
                 }

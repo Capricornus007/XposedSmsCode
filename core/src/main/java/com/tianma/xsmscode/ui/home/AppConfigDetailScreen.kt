@@ -1,5 +1,6 @@
 package com.tianma.xsmscode.ui.home
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -43,6 +44,7 @@ fun AppConfigDetailScreen(
     val app = apps.firstOrNull { it.packageName == packageName } ?: viewModel.getAppByPackageName(packageName)
     val appLogs by remember(packageName) { viewModel.appNotifyLogsFlow(packageName) }
         .collectAsStateWithLifecycle(initialValue = emptyList())
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Scaffold(
         topBar = {
@@ -97,13 +99,27 @@ fun AppConfigDetailScreen(
                     ConfigToggleRow(
                         title = stringResource(R.string.label_blocked),
                         checked = app.blocked,
-                        onCheckedChange = { viewModel.setBlocked(app.packageName, it) },
+                        onCheckedChange = {
+                            viewModel.setBlocked(app.packageName, it)
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.pref_sync_toast),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        },
                     )
                     HorizontalDivider()
                     ConfigToggleRow(
                         title = stringResource(R.string.label_forwarding),
                         checked = app.forwarding,
-                        onCheckedChange = { viewModel.setForwarding(app.packageName, it) },
+                        onCheckedChange = {
+                            viewModel.setForwarding(app.packageName, it)
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.pref_sync_toast),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        },
                     )
                 }
             }
