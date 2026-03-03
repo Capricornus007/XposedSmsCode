@@ -94,6 +94,7 @@ fun ComposeSettingsScreen(
     var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
     var autoInputInterval by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL_DEFAULT) }
     var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
+    val showCodeNotificationEnabled = remember { mutableStateOf(true) }
     var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
     var simSlot1Remark by remember { mutableStateOf("") }
     var simSlot2Remark by remember { mutableStateOf("") }
@@ -141,6 +142,11 @@ fun ComposeSettingsScreen(
             context,
             PrefConst.KEY_NOTIFICATION_RETENTION_TIME,
             PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT,
+        )
+        showCodeNotificationEnabled.value = AppPreferencesDataStore.getBoolean(
+            context,
+            PrefConst.KEY_SHOW_CODE_NOTIFICATION,
+            true,
         )
         smsCodeKeywords = AppPreferencesDataStore.getString(
             context,
@@ -538,24 +544,27 @@ fun ComposeSettingsScreen(
                             summary = stringResource(id = R.string.pref_show_code_notification_summary),
                             key = PrefConst.KEY_SHOW_CODE_NOTIFICATION,
                             defaultValue = true,
+                            stateOverride = showCodeNotificationEnabled,
                             onSaved = markPrefsSaved,
                         )
-                        SwitchItem(
-                            title = stringResource(id = R.string.pref_auto_cancel_notification_title),
-                            summary = stringResource(id = R.string.pref_auto_cancel_notification_summary),
-                            key = PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
-                            defaultValue = false,
-                            onSaved = markPrefsSaved,
-                        )
-                        Item(
-                            title = stringResource(id = R.string.pref_notification_retention_time_title),
-                            summary = run {
-                                val entries = stringArrayResource(id = R.array.notification_retention_time_entry_list)
-                                val values = stringArrayResource(id = R.array.notification_retention_time_list)
-                                val index = values.indexOf(retentionTime)
-                                if (index >= 0) entries[index] else retentionTime
-                            },
-                        ) { showRetentionDialog = true }
+                        if (showCodeNotificationEnabled.value) {
+                            SwitchItem(
+                                title = stringResource(id = R.string.pref_auto_cancel_notification_title),
+                                summary = stringResource(id = R.string.pref_auto_cancel_notification_summary),
+                                key = PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
+                                defaultValue = false,
+                                onSaved = markPrefsSaved,
+                            )
+                            Item(
+                                title = stringResource(id = R.string.pref_notification_retention_time_title),
+                                summary = run {
+                                    val entries = stringArrayResource(id = R.array.notification_retention_time_entry_list)
+                                    val values = stringArrayResource(id = R.array.notification_retention_time_list)
+                                    val index = values.indexOf(retentionTime)
+                                    if (index >= 0) entries[index] else retentionTime
+                                },
+                            ) { showRetentionDialog = true }
+                        }
                     }
 
                     ExpandableSettingsSection(
