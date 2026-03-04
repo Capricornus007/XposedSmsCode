@@ -11,6 +11,8 @@ import androidx.lifecycle.viewModelScope
 import com.tianma.xsmscode.core.BuildConfig
 import com.tianma.xsmscode.common.constant.Const
 import com.tianma.xsmscode.common.constant.PrefConst
+import com.tianma.xsmscode.common.constant.PrefRestoreTypeRegistry
+import com.tianma.xsmscode.common.constant.PrefValueType
 import com.tianma.xsmscode.common.utils.*
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
@@ -36,6 +38,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.util.Locale
 
 sealed class SettingsEvent {
     data object ShowPrivacyPolicy : SettingsEvent()
@@ -54,48 +57,21 @@ fun resolvePreferredUpdateEvent(installedFromPlay: Boolean): SettingsEvent =
     if (installedFromPlay) SettingsEvent.StartPlayUpdate else SettingsEvent.StartGithubUpdateCheck
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val booleanPrefKeys = setOf(
-        PrefConst.KEY_ENABLE,
-        PrefConst.KEY_SHOW_LAUNCHER_ICON,
-        PrefConst.KEY_SETTINGS_ACCORDION_MODE,
-        PrefConst.KEY_SHOW_TOAST,
-        PrefConst.KEY_COPY_TO_CLIPBOARD,
-        PrefConst.KEY_ENABLE_AUTO_INPUT_CODE,
-        PrefConst.KEY_BLOCK_SMS,
-        PrefConst.KEY_DEDUPLICATE_SMS,
-        PrefConst.KEY_ENABLE_SMS_BLACKLIST,
-        PrefConst.KEY_SMS_BLACKLIST_ACTION_DELETE,
-        PrefConst.KEY_SMS_BLACKLIST_ACTION_BLOCK,
-        PrefConst.KEY_SHOW_CODE_NOTIFICATION,
-        PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
-        PrefConst.KEY_ENABLE_CODE_RECORDS,
-        PrefConst.KEY_MARK_AS_READ,
-        PrefConst.KEY_DELETE_SMS,
-        PrefConst.KEY_KILL_ME,
-        PrefConst.KEY_FORCE_STOP_RECOVERY,
-        PrefConst.KEY_FORCE_STOP_RECOVERY_RELAUNCH_ONCE,
-        PrefConst.KEY_VERBOSE_LOG_MODE,
-        PrefConst.KEY_AUTO_UPDATE_ON_START,
-        PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
-        PrefConst.KEY_ENABLE_AUTO_ENTER_CODE,
-        PrefConst.KEY_FORWARD_COMMON_INCLUDE_TIME,
-        PrefConst.KEY_FORWARD_COMMON_INCLUDE_SENDER,
-        PrefConst.KEY_FORWARD_COMMON_INCLUDE_DEVICE_NAME,
-        PrefConst.KEY_WEBUI_LAN_ACCESS,
-        PrefConst.KEY_PRIVACY_POLICY_ACCEPTED,
-        PrefConst.KEY_BACKUP_COMPAT_TIP_SHOWN,
-    )
-
-    private val intPrefKeys = setOf(
-        PrefConst.KEY_CHOOSE_THEME,
-        PrefConst.KEY_HAZE_BLUR_RADIUS,
-        "local_version_code",
-    )
-
-    private val floatPrefKeys = setOf(
-        PrefConst.KEY_HAZE_TINT_ALPHA,
-    )
+    data class CoercedRestoreValue(
+        val type: PrefValueType,
+        val booleanValue: Boolean? = null,
+        val intValue: Int? = null,
+        val floatValue: Float? = null,
+        val stringValue: String? = null,
+    ) {
+        val shouldWrite: Boolean
+            get() = when (type) {
+                PrefValueType.BOOLEAN -> booleanValue != null
+                PrefValueType.INT -> intValue != null
+                PrefValueType.FLOAT -> floatValue != null
+                PrefValueType.STRING -> true
+            }
+    }
 
     private val _eventsFlow = MutableSharedFlow<SettingsEvent>(
         extraBufferCapacity = 10,
@@ -470,38 +446,37 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         for ((k, v) in prefsMap) {
             if (v == null) continue
             val strV = v
-            when {
-                booleanPrefKeys.contains(k) -> {
-                    val normalized = strV.trim().lowercase()
-                    val boolValue = when (normalized) {
-                        "true", "1" -> true
-                        "false", "0" -> false
-                        else -> null
-                    }
-                    if (boolValue != null) {
-                        AppPreferencesDataStore.setBoolean(context, k, boolValue)
-                        if (k == PrefConst.KEY_SHOW_LAUNCHER_ICON) {
-                            setLauncherIconVisible(boolValue)
-                        }
-                    }
-                }
-
-                intPrefKeys.contains(k) -> {
-                    val intValue = strV.trim().toIntOrNull()
-                    if (intValue != null) {
-                        AppPreferencesDataStore.setInt(context, k, intValue)
+            val coerced = coerceRestoreValue(k, strV)
+            if (!coerced.shouldWrite) {
+                XLog.w(
+                    "Restore preference skipped: key=%s raw=%s expectedType=%s",
+                    k,
+                    strV,
+                    coerced.type.name,
+                )
+                continue
+            }
+            when (coerced.type) {
+                PrefValueType.BOOLEAN -> {
+                    val boolValue = coerced.booleanValue ?: continue
+                    AppPreferencesDataStore.setBoolean(context, k, boolValue)
+                    if (k == PrefConst.KEY_SHOW_LAUNCHER_ICON) {
+                        setLauncherIconVisible(boolValue)
                     }
                 }
 
-                floatPrefKeys.contains(k) -> {
-                    val floatValue = strV.trim().toFloatOrNull()
-                    if (floatValue != null) {
-                        AppPreferencesDataStore.setFloat(context, k, floatValue)
-                    }
+                PrefValueType.INT -> {
+                    val intValue = coerced.intValue ?: continue
+                    AppPreferencesDataStore.setInt(context, k, intValue)
                 }
 
-                else -> {
-                    AppPreferencesDataStore.setString(context, k, strV)
+                PrefValueType.FLOAT -> {
+                    val floatValue = coerced.floatValue ?: continue
+                    AppPreferencesDataStore.setFloat(context, k, floatValue)
+                }
+
+                PrefValueType.STRING -> {
+                    AppPreferencesDataStore.setString(context, k, coerced.stringValue ?: strV)
                 }
             }
         }
@@ -509,5 +484,41 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private suspend fun ensureDataStoreLoaded(_context: android.content.Context) {
         // Trigger read to ensure in-memory cache if needed; keep no-op for now.
+    }
+
+    companion object {
+        @JvmStatic
+        fun coerceRestoreValue(key: String, rawValue: String): CoercedRestoreValue {
+            return when (PrefRestoreTypeRegistry.typeOf(key)) {
+                PrefValueType.BOOLEAN -> CoercedRestoreValue(
+                    type = PrefValueType.BOOLEAN,
+                    booleanValue = parseBooleanValue(rawValue),
+                )
+
+                PrefValueType.INT -> CoercedRestoreValue(
+                    type = PrefValueType.INT,
+                    intValue = rawValue.trim().toIntOrNull(),
+                )
+
+                PrefValueType.FLOAT -> CoercedRestoreValue(
+                    type = PrefValueType.FLOAT,
+                    floatValue = rawValue.trim().toFloatOrNull(),
+                )
+
+                PrefValueType.STRING -> CoercedRestoreValue(
+                    type = PrefValueType.STRING,
+                    stringValue = rawValue,
+                )
+            }
+        }
+
+        @JvmStatic
+        fun parseBooleanValue(rawValue: String): Boolean? {
+            return when (rawValue.trim().lowercase(Locale.ROOT)) {
+                "1", "true", "yes", "y", "on" -> true
+                "0", "false", "no", "n", "off" -> false
+                else -> null
+            }
+        }
     }
 }
