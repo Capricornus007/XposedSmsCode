@@ -30,6 +30,13 @@ android {
         buildConfig = true
     }
 
+    packaging {
+        resources {
+            excludes += "META-INF/NOTICE.md"
+            excludes += "META-INF/LICENSE.md"
+        }
+    }
+
     defaultConfig {
         minSdk = libs.versions.minSdk.get().toInt()
         buildConfigField("String", "LOG_TAG", "\"XSmsCode\"")
@@ -100,4 +107,8 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.mockk)
+
+    androidTestImplementation(libs.androidx.test.core.ktx)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }
