@@ -77,7 +77,9 @@ object SendUtils {
         scope.launch {
             try {
                 val db = AppDatabase.getInstance(context)
-                val allSenders = db.senderDao().getAll()
+                val allSenders = db.senderDao().getAll().map { sender ->
+                    SenderSettingSanitizer.sanitizeSenderLenient(sender)
+                }
                 val enabledSenders = allSenders.filter { it.status == 1 }
                 val senders = enabledSenders.filter { sender ->
                     if (msgInfo.type == "app_notify") {

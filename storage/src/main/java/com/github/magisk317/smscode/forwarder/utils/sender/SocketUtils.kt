@@ -3,6 +3,7 @@ package com.github.magisk317.smscode.forwarder.utils.sender
 import android.text.TextUtils
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
 import com.github.magisk317.smscode.forwarder.entity.setting.SocketSetting
+import com.github.magisk317.smscode.forwarder.utils.SenderSettingSanitizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.eclipse.paho.client.mqttv3.MqttClient
@@ -17,16 +18,18 @@ import java.net.InetAddress
 import java.net.Socket
 import java.nio.charset.Charset
 import java.util.UUID
+import java.util.Locale
 
 object SocketUtils {
     private const val TAG = "SocketUtils"
 
     suspend fun sendMsg(setting: SocketSetting, msgInfo: MsgInfo) {
-        val message = buildMessage(setting, msgInfo)
-        when (setting.method.uppercase()) {
-            "TCP" -> sendTcp(setting, message)
-            "UDP" -> sendUdp(setting, message)
-            else -> sendMqtt(setting, message)
+        val safeSetting = SenderSettingSanitizer.sanitizeSocketSetting(setting)
+        val message = buildMessage(safeSetting, msgInfo)
+        when (safeSetting.method.uppercase(Locale.ROOT)) {
+            "TCP" -> sendTcp(safeSetting, message)
+            "UDP" -> sendUdp(safeSetting, message)
+            else -> sendMqtt(safeSetting, message)
         }
     }
 

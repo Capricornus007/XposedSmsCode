@@ -4,6 +4,7 @@ import android.text.TextUtils
 import android.util.Base64
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
 import com.github.magisk317.smscode.forwarder.entity.setting.WebhookSetting
+import com.github.magisk317.smscode.forwarder.utils.SenderSettingSanitizer
 import okhttp3.Credentials
 import okhttp3.FormBody
 import okhttp3.Headers
@@ -27,20 +28,21 @@ object WebhookUtils {
     private val receiveTimeTag = Regex("\\[receive_time(:(.*?))?]")
 
     suspend fun sendMsg(setting: WebhookSetting, msgInfo: MsgInfo, traceId: String? = null) = withContext(Dispatchers.IO) {
-        var requestUrl: String = setting.webServer
+        val safeSetting = SenderSettingSanitizer.sanitizeWebhookSetting(setting)
+        var requestUrl: String = safeSetting.webServer
         val from: String = msgInfo.from
         val content: String = msgInfo.content
         val orgContent: String = msgInfo.content
         val simInfo: String = msgInfo.simInfo
         val timestamp = System.currentTimeMillis()
-        val method = setting.method.uppercase()
+        val method = safeSetting.method.ifBlank { "POST" }.uppercase(Locale.ROOT)
         fun t(message: String): String = if (traceId.isNullOrBlank()) message else "[trace=$traceId] $message"
 
         var sign = ""
-        if (!TextUtils.isEmpty(setting.secret)) {
-            val stringToSign = "$timestamp\n" + setting.secret
+        if (!TextUtils.isEmpty(safeSetting.secret)) {
+            val stringToSign = "$timestamp\n" + safeSetting.secret
             val mac = Mac.getInstance("HmacSHA256")
-            mac.init(SecretKeySpec(setting.secret.toByteArray(StandardCharsets.UTF_8), "HmacSHA256"))
+            mac.init(SecretKeySpec(safeSetting.secret.toByteArray(StandardCharsets.UTF_8), "HmacSHA256"))
             val signData = mac.doFinal(stringToSign.toByteArray(StandardCharsets.UTF_8))
             sign = URLEncoder.encode(String(Base64.encode(signData, Base64.NO_WRAP)), "UTF-8")
         }
@@ -97,7 +99,7 @@ object WebhookUtils {
             return if (urlEncode) replaced.replace("\n", "%0A") else replaced
         }
 
-        val headersMap = setting.headers
+        val headersMap = safeSetting.headers
         val contentType = headersMap.entries
             .firstOrNull { it.key.equals("Content-Type", ignoreCase = true) }
             ?.value
@@ -119,7 +121,7 @@ object WebhookUtils {
         }
 
         if (method == "GET") {
-            val webParams = setting.webParams.trim()
+            val webParams = safeSetting.webParams.trim()
             requestUrl = if (webParams.isBlank()) {
                 val withDefaults = if (requestUrl.contains("?")) {
                     "$requestUrl&from=${URLEncoder.encode(from, "UTF-8")}&content=${URLEncoder.encode(content, "UTF-8")}"
@@ -165,7 +167,7 @@ object WebhookUtils {
                 throw IllegalStateException("Webhook 不支持的请求方法: $method")
             }
 
-            val webParams = setting.webParams.trim()
+            val webParams = safeSetting.webParams.trim()
             val useRawBody = webParams.isNotBlank() && (hasJsonContentType || isTextContentType || webParams.startsWith("{"))
             val requestBuilder = Request.Builder()
                 .url(requestUrl)

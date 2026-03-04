@@ -2,6 +2,7 @@ package com.github.magisk317.smscode.forwarder.utils.sender
 
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
 import com.github.magisk317.smscode.forwarder.entity.setting.EmailSetting
+import com.github.magisk317.smscode.forwarder.utils.SenderSettingSanitizer
 import com.sun.mail.smtp.SMTPTransport
 import jakarta.mail.Message
 import jakarta.mail.MessagingException
@@ -22,14 +23,15 @@ object EmailUtils {
     suspend fun sendMsg(setting: EmailSetting, msgInfo: MsgInfo, traceId: String? = null) = withContext(Dispatchers.IO) {
         fun t(message: String): String = if (traceId.isNullOrBlank()) message else "[trace=$traceId] $message"
         runCatching {
-            normalizeMailType(setting)
+            val safeSetting = SenderSettingSanitizer.sanitizeEmailSetting(setting)
+            normalizeMailType(safeSetting)
 
-            val fromEmail = setting.fromEmail
-            val password = setting.pwd
-            val host = setting.host
-            val port = setting.port.ifBlank { "465" }
+            val fromEmail = safeSetting.fromEmail
+            val password = safeSetting.pwd
+            val host = safeSetting.host
+            val port = safeSetting.port.ifBlank { "465" }
             val portInt = port.toIntOrNull() ?: 465
-            val recipients = buildRecipients(setting)
+            val recipients = buildRecipients(safeSetting)
 
             if (fromEmail.isBlank() || password.isBlank() || host.isBlank() || recipients.isEmpty()) {
                 SLog.e(TAG, t("Email config invalid"))
@@ -40,8 +42,8 @@ object EmailUtils {
                 put("mail.smtp.host", host)
                 put("mail.smtp.port", port)
                 put("mail.smtp.auth", "true")
-                put("mail.smtp.ssl.enable", setting.ssl.toString())
-                put("mail.smtp.starttls.enable", setting.startTls.toString())
+                put("mail.smtp.ssl.enable", safeSetting.ssl.toString())
+                put("mail.smtp.starttls.enable", safeSetting.startTls.toString())
             }
 
             val session = Session.getInstance(props, object : jakarta.mail.Authenticator() {
@@ -51,9 +53,9 @@ object EmailUtils {
             })
 
             val message = MimeMessage(session)
-            message.setFrom(InternetAddress(fromEmail, setting.fromEmailAlias.ifBlank { fromEmail }))
+            message.setFrom(InternetAddress(fromEmail, safeSetting.fromEmailAlias.ifBlank { fromEmail }))
             message.setRecipients(Message.RecipientType.TO, recipients.map { InternetAddress(it) }.toTypedArray())
-            message.subject = if (setting.title.isBlank()) "SmsCode: ${msgInfo.from}" else setting.title
+            message.subject = if (safeSetting.title.isBlank()) "SmsCode: ${msgInfo.from}" else safeSetting.title
             message.setText(msgInfo.content)
 
             sendByTransport(session, message, host, portInt, fromEmail, password)

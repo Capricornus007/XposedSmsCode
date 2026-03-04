@@ -8,6 +8,7 @@ import com.github.magisk317.smscode.forwarder.entity.ForwardCommonConfig
 import com.github.magisk317.smscode.forwarder.entity.Sender
 import com.github.magisk317.smscode.forwarder.utils.DeviceIdentityUtils
 import com.github.magisk317.smscode.forwarder.utils.ForwardCommonConfigStore
+import com.github.magisk317.smscode.forwarder.utils.SenderSettingSanitizer
 import com.github.magisk317.smscode.forwarder.utils.SenderType
 import com.github.magisk317.smscode.forwarder.utils.SenderValidationResult
 import com.github.magisk317.smscode.forwarder.utils.SenderValidator
@@ -35,10 +36,13 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
 
     val senderList: StateFlow<List<Sender>> = senderDao.getAllFlow()
         .map { list ->
+            val sanitizedList = list.map { sender ->
+                SenderSettingSanitizer.sanitizeSenderLenient(sender)
+            }
             if (BuildConfig.ENABLE_SMS_CHANNEL) {
-                list
+                sanitizedList
             } else {
-                list.filterNot { it.type == SenderType.SMS }
+                sanitizedList.filterNot { it.type == SenderType.SMS }
             }
         }
         .stateIn(
@@ -112,10 +116,11 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
 
     fun restoreSender(sender: Sender) {
         viewModelScope.launch(Dispatchers.IO) {
+            val safeSender = SenderSettingSanitizer.sanitizeSenderLenient(sender)
             runCatching {
-                senderDao.insert(sender)
+                senderDao.insert(safeSender)
             }.onFailure {
-                senderDao.update(sender)
+                senderDao.update(safeSender)
             }
             walCheckpoint()
         }
@@ -135,21 +140,24 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
 
     suspend fun getSender(id: Long): Sender? {
         return withContext(Dispatchers.IO) {
-            senderDao.getOne(id)
+            senderDao.getOne(id)?.let { sender ->
+                SenderSettingSanitizer.sanitizeSenderLenient(sender)
+            }
         }
     }
 
     suspend fun saveSenderSync(sender: Sender) {
         withContext(Dispatchers.IO) {
-            if (!BuildConfig.ENABLE_SMS_CHANNEL && sender.type == SenderType.SMS) {
+            val safeSender = SenderSettingSanitizer.sanitizeSenderLenient(sender)
+            if (!BuildConfig.ENABLE_SMS_CHANNEL && safeSender.type == SenderType.SMS) {
                 return@withContext
             }
-            if (sender.id == 0L) {
-                senderDao.insert(sender)
+            if (safeSender.id == 0L) {
+                senderDao.insert(safeSender)
             } else {
-                senderDao.update(sender)
+                senderDao.update(safeSender)
             }
-            _lastSavedStatus.value = sender.status
+            _lastSavedStatus.value = safeSender.status
             walCheckpoint()
         }
     }
