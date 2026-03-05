@@ -2,10 +2,13 @@ package com.tianma.xsmscode.web
 
 import android.content.Context
 import android.content.pm.PackageManager
+import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.forwarder.entity.Sender
 import com.github.magisk317.smscode.forwarder.utils.SenderType
 import com.tianma.xsmscode.common.constant.PrefConst
 import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
+import com.tianma.xsmscode.data.update.GithubUpdateChecker
+import com.tianma.xsmscode.data.update.UpgradeCheckResult
 import com.tianma.xsmscode.data.db.AppDatabase
 import com.tianma.xsmscode.data.db.entity.AppInfo
 import com.tianma.xsmscode.data.db.entity.SmsMsg
@@ -230,6 +233,13 @@ internal class WebUiServer(
                 )
             }
 
+            get("/api/version") {
+                call.respondText(
+                    text = json.encodeToString(buildVersionState()),
+                    contentType = ContentType.Application.Json,
+                )
+            }
+
             post("/api/settings") {
                 val payload = runCatching {
                     json.decodeFromString<SettingsUpdatePayload>(call.receiveText())
@@ -249,9 +259,7 @@ internal class WebUiServer(
                     payload.enableAutoInputCode == null &&
                     payload.enableAutoEnterCode == null &&
                     payload.verboseLogMode == null &&
-                    payload.deduplicateSms == null &&
                     payload.blockSms == null &&
-                    payload.enableCodeRecords == null &&
                     payload.forceStopRecovery == null
                 ) {
                     call.respondText(
@@ -279,14 +287,8 @@ internal class WebUiServer(
                     payload.verboseLogMode?.let {
                         AppPreferencesDataStore.setBoolean(appContext, PrefConst.KEY_VERBOSE_LOG_MODE, it)
                     }
-                    payload.deduplicateSms?.let {
-                        AppPreferencesDataStore.setBoolean(appContext, PrefConst.KEY_DEDUPLICATE_SMS, it)
-                    }
                     payload.blockSms?.let {
                         AppPreferencesDataStore.setBoolean(appContext, PrefConst.KEY_BLOCK_SMS, it)
-                    }
-                    payload.enableCodeRecords?.let {
-                        AppPreferencesDataStore.setBoolean(appContext, PrefConst.KEY_ENABLE_CODE_RECORDS, it)
                     }
                     payload.forceStopRecovery?.let {
                         AppPreferencesDataStore.setBoolean(appContext, PrefConst.KEY_FORCE_STOP_RECOVERY, it)
@@ -676,19 +678,68 @@ internal class WebUiServer(
                 false,
             ),
             verboseLogMode = AppPreferencesDataStore.getBoolean(appContext, PrefConst.KEY_VERBOSE_LOG_MODE, false),
-            deduplicateSms = AppPreferencesDataStore.getBoolean(appContext, PrefConst.KEY_DEDUPLICATE_SMS, true),
             blockSms = AppPreferencesDataStore.getBoolean(appContext, PrefConst.KEY_BLOCK_SMS, false),
-            enableCodeRecords = AppPreferencesDataStore.getBoolean(
-                appContext,
-                PrefConst.KEY_ENABLE_CODE_RECORDS,
-                true,
-            ),
             forceStopRecovery = AppPreferencesDataStore.getBoolean(
                 appContext,
                 PrefConst.KEY_FORCE_STOP_RECOVERY,
                 false,
             ),
         )
+    }
+
+    private suspend fun buildVersionState(): VersionState = withContext(Dispatchers.IO) {
+        val localVersionName = BuildConfig.VERSION_NAME
+        val localVersionCode = BuildConfig.VERSION_CODE
+        val checkedAt = System.currentTimeMillis()
+        when (val result = GithubUpdateChecker.fetchUpgradeInfo()) {
+            is UpgradeCheckResult.CheckFailed -> VersionState(
+                localVersionName = localVersionName,
+                localVersionCode = localVersionCode,
+                status = "failed",
+                message = result.message ?: "check_failed",
+                checkedAt = checkedAt,
+            )
+
+            UpgradeCheckResult.NoUpdate -> VersionState(
+                localVersionName = localVersionName,
+                localVersionCode = localVersionCode,
+                status = "no_update",
+                updateAvailable = false,
+                checkedAt = checkedAt,
+            )
+
+            is UpgradeCheckResult.LegacyLink -> {
+                val newer = GithubUpdateChecker.isNewer(localVersionName, result.release.versionName)
+                VersionState(
+                    localVersionName = localVersionName,
+                    localVersionCode = localVersionCode,
+                    latestVersionName = result.release.versionName,
+                    releaseUrl = result.release.htmlUrl,
+                    updateAvailable = newer,
+                    status = if (newer) "ok" else "no_update",
+                    checkedAt = checkedAt,
+                )
+            }
+
+            is UpgradeCheckResult.Structured -> {
+                val info = result.info
+                val newer = if (info.versionCode > 0L) {
+                    GithubUpdateChecker.isNewer(localVersionCode.toLong(), info.versionCode)
+                } else {
+                    GithubUpdateChecker.isNewer(localVersionName, info.versionName)
+                }
+                VersionState(
+                    localVersionName = localVersionName,
+                    localVersionCode = localVersionCode,
+                    latestVersionName = info.versionName.ifBlank { null },
+                    latestVersionCode = info.versionCode.takeIf { it > 0L },
+                    releaseUrl = info.htmlUrl.ifBlank { null },
+                    updateAvailable = newer,
+                    status = if (newer) "ok" else "no_update",
+                    checkedAt = checkedAt,
+                )
+            }
+        }
     }
 
     private suspend fun buildInterceptState(): InterceptState = withContext(Dispatchers.IO) {
@@ -792,9 +843,7 @@ internal class WebUiServer(
         val enableAutoInputCode: Boolean,
         val enableAutoEnterCode: Boolean,
         val verboseLogMode: Boolean,
-        val deduplicateSms: Boolean,
         val blockSms: Boolean,
-        val enableCodeRecords: Boolean,
         val forceStopRecovery: Boolean,
     )
 
@@ -807,10 +856,21 @@ internal class WebUiServer(
         val enableAutoInputCode: Boolean? = null,
         val enableAutoEnterCode: Boolean? = null,
         val verboseLogMode: Boolean? = null,
-        val deduplicateSms: Boolean? = null,
         val blockSms: Boolean? = null,
-        val enableCodeRecords: Boolean? = null,
         val forceStopRecovery: Boolean? = null,
+    )
+
+    @Serializable
+    data class VersionState(
+        val localVersionName: String,
+        val localVersionCode: Int,
+        val latestVersionName: String? = null,
+        val latestVersionCode: Long? = null,
+        val releaseUrl: String? = null,
+        val updateAvailable: Boolean? = null,
+        val status: String,
+        val message: String? = null,
+        val checkedAt: Long,
     )
 
     @Serializable
@@ -1003,6 +1063,13 @@ internal class WebUiServer(
                       <div class="stat"><div id="statForwardingCount" class="n">0</div><div class="l">应用通知转发开启</div></div>
                       <div class="stat"><div id="statRecordCount" class="n">0</div><div class="l">近期记录条数</div></div>
                     </div>
+                    <div style="height:10px"></div>
+                    <div class="kpi">
+                      <div class="item"><div id="ovLocalVersion" class="n">-</div><div class="l">本地版本</div></div>
+                      <div class="item"><div id="ovLatestVersion" class="n">-</div><div class="l">GitHub 最新</div></div>
+                      <div class="item"><div id="ovVersionStatus" class="n">-</div><div class="l">更新状态</div></div>
+                    </div>
+                    <div id="ovVersionExtra" class="muted" style="margin-top:8px">最近检查：-</div>
                   </div>
                 </div>
 
@@ -1199,8 +1266,6 @@ internal class WebUiServer(
                         <h3 class="settings-group-title">验证码设置</h3>
                         <div class="switch-grid">
                           <label class="switch-row"><span class="t">复制到剪贴板</span><input id="setCopyToClipboard" type="checkbox" /></label>
-                          <label class="switch-row"><span class="t">过滤重复短信</span><input id="setDeduplicateSms" type="checkbox" /></label>
-                          <label class="switch-row"><span class="t">保留验证码记录</span><input id="setEnableCodeRecords" type="checkbox" /></label>
                         </div>
                       </div>
                       <div class="settings-group">
@@ -1248,6 +1313,10 @@ internal class WebUiServer(
                 const statBlockedCount = document.getElementById("statBlockedCount");
                 const statForwardingCount = document.getElementById("statForwardingCount");
                 const statRecordCount = document.getElementById("statRecordCount");
+                const ovLocalVersion = document.getElementById("ovLocalVersion");
+                const ovLatestVersion = document.getElementById("ovLatestVersion");
+                const ovVersionStatus = document.getElementById("ovVersionStatus");
+                const ovVersionExtra = document.getElementById("ovVersionExtra");
 
                 const reloadOverview = document.getElementById("reloadOverview");
                 const reloadApps = document.getElementById("reloadApps");
@@ -1290,10 +1359,8 @@ internal class WebUiServer(
                 const setShowCodeNotification = document.getElementById("setShowCodeNotification");
                 const setEnableAutoInputCode = document.getElementById("setEnableAutoInputCode");
                 const setEnableAutoEnterCode = document.getElementById("setEnableAutoEnterCode");
-                const setDeduplicateSms = document.getElementById("setDeduplicateSms");
                 const setBlockSms = document.getElementById("setBlockSms");
                 const setForceStopRecovery = document.getElementById("setForceStopRecovery");
-                const setEnableCodeRecords = document.getElementById("setEnableCodeRecords");
                 const setVerboseLogMode = document.getElementById("setVerboseLogMode");
                 const newSender = document.getElementById("newSender");
                 const senderEditor = document.getElementById("senderEditor");
@@ -1333,6 +1400,7 @@ internal class WebUiServer(
                 let latestSettings = null;
                 let latestIntercept = null;
                 let latestSenders = [];
+                let latestVersion = null;
                 let activeRecordTab = "code";
 
                 function setActiveTab(tabName) {
@@ -1707,11 +1775,46 @@ internal class WebUiServer(
                   setShowCodeNotification.checked = !!state.showCodeNotification;
                   setEnableAutoInputCode.checked = !!state.enableAutoInputCode;
                   setEnableAutoEnterCode.checked = !!state.enableAutoEnterCode;
-                  setDeduplicateSms.checked = !!state.deduplicateSms;
                   setBlockSms.checked = !!state.blockSms;
                   setForceStopRecovery.checked = !!state.forceStopRecovery;
-                  setEnableCodeRecords.checked = !!state.enableCodeRecords;
                   setVerboseLogMode.checked = !!state.verboseLogMode;
+                }
+
+                function renderVersion(state) {
+                  if (!state) {
+                    ovLocalVersion.textContent = "-";
+                    ovLatestVersion.textContent = "未知";
+                    ovVersionStatus.textContent = "检查中";
+                    ovVersionExtra.textContent = "最近检查：-";
+                    return;
+                  }
+                  const local = "v" + (state.localVersionName || "-") + " (" + (state.localVersionCode || "-") + ")";
+                  ovLocalVersion.textContent = local;
+                  let latest = "未知";
+                  if (state.latestVersionName) {
+                    latest = "v" + state.latestVersionName;
+                    if (state.latestVersionCode) {
+                      latest += " (" + state.latestVersionCode + ")";
+                    }
+                  }
+                  ovLatestVersion.textContent = latest;
+                  let status = "未知";
+                  if (state.status === "ok") {
+                    status = state.updateAvailable ? "有更新" : "已最新";
+                  } else if (state.status === "no_update") {
+                    status = "已最新";
+                  } else if (state.status === "failed") {
+                    status = "检查失败";
+                  }
+                  ovVersionStatus.textContent = status;
+                  const checkedAt = state.checkedAt ? new Date(state.checkedAt).toLocaleString() : "-";
+                  let extra = "最近检查：" + checkedAt;
+                  if (state.releaseUrl) {
+                    extra += " ｜ <a href=\"" + state.releaseUrl + "\" target=\"_blank\" rel=\"noopener noreferrer\">发布页</a>";
+                  } else if (state.message) {
+                    extra += " ｜ " + state.message;
+                  }
+                  ovVersionExtra.innerHTML = extra;
                 }
 
                 function renderIntercept(state) {
@@ -1952,6 +2055,21 @@ internal class WebUiServer(
                   }
                 }
 
+                async function loadVersion() {
+                  try {
+                    latestVersion = await fetchJson("/api/version");
+                  } catch (e) {
+                    latestVersion = {
+                      localVersionName: "-",
+                      localVersionCode: 0,
+                      status: "failed",
+                      message: e && e.message ? e.message : "check_failed",
+                      checkedAt: Date.now()
+                    };
+                  }
+                  renderVersion(latestVersion);
+                }
+
                 async function bindToggle(inputEl, updater) {
                   inputEl.addEventListener("change", async () => {
                     const expected = inputEl.checked;
@@ -1974,7 +2092,8 @@ internal class WebUiServer(
                     loadAdvanced(),
                     loadSettings(),
                     loadIntercept(),
-                    loadSenders()
+                    loadSenders(),
+                    loadVersion()
                   ]);
                 }
 
@@ -2010,20 +2129,12 @@ internal class WebUiServer(
                   await updateSettings({ enableAutoEnterCode: v });
                   await loadSettings();
                 });
-                bindToggle(setDeduplicateSms, async (v) => {
-                  await updateSettings({ deduplicateSms: v });
-                  await loadSettings();
-                });
                 bindToggle(setBlockSms, async (v) => {
                   await updateSettings({ blockSms: v });
                   await loadSettings();
                 });
                 bindToggle(setForceStopRecovery, async (v) => {
                   await updateSettings({ forceStopRecovery: v });
-                  await loadSettings();
-                });
-                bindToggle(setEnableCodeRecords, async (v) => {
-                  await updateSettings({ enableCodeRecords: v });
                   await loadSettings();
                 });
                 bindToggle(setVerboseLogMode, async (v) => {
