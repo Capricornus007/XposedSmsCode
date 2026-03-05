@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.tianma.xsmscode.core.BuildConfig
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
 import com.github.magisk317.smscode.forwarder.entity.Sender
 import com.github.magisk317.smscode.forwarder.entity.setting.WebhookSetting
@@ -42,6 +43,11 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
     var isLoaded by remember { mutableStateOf(false) }
     var currentSender by remember { mutableStateOf<Sender?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
+    val webhookAddressHint = if (BuildConfig.ALLOW_HTTP_WEBHOOK) {
+        "支持 http:// 或 https://"
+    } else {
+        "当前构建仅支持 https://"
+    }
 
     LaunchedEffect(senderId) {
         if (senderId > 0) {
@@ -115,6 +121,15 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
         )
     }
 
+    fun isWebhookUrlPolicyValid(url: String): Boolean {
+        val trimmed = url.trim()
+        if (!BuildConfig.ALLOW_HTTP_WEBHOOK && trimmed.startsWith("http://", ignoreCase = true)) {
+            Toast.makeText(context, "当前构建版本仅支持 HTTPS Webhook 地址", Toast.LENGTH_LONG).show()
+            return false
+        }
+        return true
+    }
+
     BackHandler {
         showExitDialog = true
     }
@@ -153,6 +168,7 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
                 },
                 actions = {
                     TextButton(onClick = {
+                        if (!isWebhookUrlPolicyValid(webServer)) return@TextButton
                         coroutineScope.launch {
                             runCatching { viewModel.saveSenderSync(buildSender(status = 1)) }
                                 .onSuccess {
@@ -190,6 +206,7 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
                 value = webServer,
                 onValueChange = { webServer = it },
                 label = { Text("Webhook 完整地址 (必填)") },
+                supportingText = { Text(webhookAddressHint) },
                 modifier = Modifier.fillMaxWidth()
             )
             OutlinedTextField(
@@ -229,6 +246,7 @@ fun WebhookConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderViewM
             )
             Spacer(modifier = Modifier.height(8.dp))
             SenderTestActionRow(channel = "Webhook") {
+                if (!isWebhookUrlPolicyValid(webServer)) return@SenderTestActionRow
                 val setting = WebhookSetting(
                     method = method,
                     webServer = webServer,

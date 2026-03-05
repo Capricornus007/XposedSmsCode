@@ -52,7 +52,12 @@ object SenderValidator {
 
                 SenderType.WEBHOOK -> {
                     val setting = gson.fromJson(safeSender.jsonSetting, WebhookSetting::class.java)
-                    if (setting.webServer.isBlank()) invalid("Webhook 地址不能为空") else ok()
+                    when {
+                        setting.webServer.isBlank() -> invalid("Webhook 地址不能为空")
+                        !BuildConfig.ALLOW_HTTP_WEBHOOK && isHttpWebhookUrl(setting.webServer) ->
+                            invalid("当前构建版本仅支持 HTTPS Webhook 地址")
+                        else -> ok()
+                    }
                 }
 
                 SenderType.WEWORK_ROBOT -> {
@@ -138,4 +143,8 @@ object SenderValidator {
 
     private fun ok(): SenderValidationResult = SenderValidationResult(valid = true)
     private fun invalid(msg: String): SenderValidationResult = SenderValidationResult(valid = false, message = msg)
+
+    private fun isHttpWebhookUrl(url: String): Boolean {
+        return url.trim().startsWith(prefix = "http://", ignoreCase = true)
+    }
 }

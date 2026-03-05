@@ -16,14 +16,17 @@ android {
         create("play") {
             dimension = "distribution"
             buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "false")
+            buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "true")
         }
         create("github") {
             dimension = "distribution"
             buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
+            buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "true")
         }
         create("fdroid") {
             dimension = "distribution"
             buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
+            buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "false")
         }
     }
 

@@ -5,6 +5,7 @@ import android.util.Base64
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
 import com.github.magisk317.smscode.forwarder.entity.setting.WebhookSetting
 import com.github.magisk317.smscode.forwarder.utils.SenderSettingSanitizer
+import com.tianma.xsmscode.storage.BuildConfig
 import okhttp3.Credentials
 import okhttp3.FormBody
 import okhttp3.Headers
@@ -37,6 +38,11 @@ object WebhookUtils {
         val timestamp = System.currentTimeMillis()
         val method = safeSetting.method.ifBlank { "POST" }.uppercase(Locale.ROOT)
         fun t(message: String): String = if (traceId.isNullOrBlank()) message else "[trace=$traceId] $message"
+
+        if (!BuildConfig.ALLOW_HTTP_WEBHOOK && requestUrl.trim().startsWith("http://", ignoreCase = true)) {
+            SLog.w(TAG, t("Webhook blocked: cleartext http is disabled in this flavor"))
+            throw IllegalStateException("当前构建版本仅支持 HTTPS Webhook 地址")
+        }
 
         var sign = ""
         if (!TextUtils.isEmpty(safeSetting.secret)) {
