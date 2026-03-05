@@ -4,7 +4,7 @@ plugins {
     id(libs.plugins.kotlin.parcelize.get().pluginId)
     alias(libs.plugins.ksp)
 }
-val aReleaseMode = (findProperty("a.release.mode")?.toString() ?: "transition").lowercase()
+val aReleaseMode = (findProperty("a.release.mode")?.toString() ?: "lite").lowercase()
 val isTransitionBuildMode = aReleaseMode == "transition"
 val isLiteBuildMode = aReleaseMode == "lite"
 check(isTransitionBuildMode || isLiteBuildMode) {

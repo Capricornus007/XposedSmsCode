@@ -41,7 +41,7 @@ val minSdkStr = libs.versions.minSdk.get()
 val targetSdkStr = libs.versions.targetSdk.get()
 val sdkExtensionInt = libs.versions.compileSdkExtension.get().toInt()
 val ndkVersionStr = libs.versions.ndk.get()
-val aReleaseMode = (findProperty("a.release.mode")?.toString() ?: "transition").lowercase()
+val aReleaseMode = (findProperty("a.release.mode")?.toString() ?: "lite").lowercase()
 val isTransitionBuildMode = aReleaseMode == "transition"
 val isLiteBuildMode = aReleaseMode == "lite"
 check(isTransitionBuildMode || isLiteBuildMode) {

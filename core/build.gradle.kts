@@ -6,7 +6,7 @@ plugins {
 
 val compileSdkInt = libs.versions.compileSdk.get().toInt()
 val minSdkInt = libs.versions.minSdk.get().toInt()
-val aReleaseMode = (findProperty("a.release.mode")?.toString() ?: "transition").lowercase()
+val aReleaseMode = (findProperty("a.release.mode")?.toString() ?: "lite").lowercase()
 val isTransitionBuildMode = aReleaseMode == "transition"
 val isLiteBuildMode = aReleaseMode == "lite"
 check(isTransitionBuildMode || isLiteBuildMode) {
