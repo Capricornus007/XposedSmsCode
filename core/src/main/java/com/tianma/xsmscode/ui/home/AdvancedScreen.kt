@@ -1,6 +1,5 @@
 package com.tianma.xsmscode.ui.home
 
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,39 +18,22 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.tianma.xsmscode.core.R
-import com.tianma.xsmscode.common.constant.PrefConst
-import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdvancedScreen(
     onInterceptClick: () -> Unit,
     onForwardClick: () -> Unit,
-    onNotificationRulesClick: () -> Unit,
+    onWebUiConfigClick: () -> Unit,
 ) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val savedToastText = stringResource(id = R.string.pref_sync_toast)
-    val webUiLanAccess by AppPreferencesDataStore.getBooleanFlow(
-        context = context,
-        key = PrefConst.KEY_WEBUI_LAN_ACCESS,
-        defaultValue = false,
-    ).collectAsState(initial = false)
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -79,36 +61,10 @@ fun AdvancedScreen(
                 onClick = onForwardClick,
             )
             AdvancedEntryCard(
-                title = stringResource(id = R.string.pref_webui_lan_access_title),
-                subtitle = stringResource(id = R.string.pref_webui_lan_access_summary),
+                title = stringResource(id = R.string.pref_webui_config_title),
+                subtitle = stringResource(id = R.string.pref_webui_config_summary_short),
                 icon = { Icon(Icons.Default.Wifi, contentDescription = null) },
-                trailingContent = {
-                    Switch(
-                        checked = webUiLanAccess,
-                        onCheckedChange = { checked ->
-                            scope.launch {
-                                AppPreferencesDataStore.setBoolean(
-                                    context,
-                                    PrefConst.KEY_WEBUI_LAN_ACCESS,
-                                    checked,
-                                )
-                                Toast.makeText(context, savedToastText, Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                    )
-                },
-                showChevron = false,
-                onClick = {
-                    val next = !webUiLanAccess
-                    scope.launch {
-                        AppPreferencesDataStore.setBoolean(
-                            context,
-                            PrefConst.KEY_WEBUI_LAN_ACCESS,
-                            next,
-                        )
-                        Toast.makeText(context, savedToastText, Toast.LENGTH_SHORT).show()
-                    }
-                },
+                onClick = onWebUiConfigClick,
             )
         }
     }

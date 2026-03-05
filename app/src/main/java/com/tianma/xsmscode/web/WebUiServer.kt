@@ -13,9 +13,16 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.Application
 import io.ktor.server.application.call
-import io.ktor.server.cio.CIO
+import io.ktor.server.application.install
+import io.ktor.server.auth.Authentication
+import io.ktor.server.auth.UserIdPrincipal
+import io.ktor.server.auth.authenticate
+import io.ktor.server.auth.basic
 import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.applicationEnvironment
 import io.ktor.server.engine.embeddedServer
+import io.ktor.server.engine.sslConnector
+import io.ktor.server.netty.Netty
 import io.ktor.server.request.receiveText
 import io.ktor.server.response.respondText
 import io.ktor.server.routing.get
@@ -28,14 +35,22 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import timber.log.Timber
 
-class WebUiServer(
+internal data class WebUiRuntimeConfig(
+    val host: String,
+    val port: Int,
+    val username: String,
+    val password: String,
+    val allowLanAccess: Boolean,
+    val tlsMaterial: WebUiTlsMaterial,
+)
+
+internal class WebUiServer(
     context: Context,
-    private val allowLanAccess: Boolean,
+    private val runtimeConfig: WebUiRuntimeConfig,
 ) {
 
     private val appContext = context.applicationContext ?: context
     private val database by lazy { AppDatabase.getInstance(appContext) }
-    private val host = if (allowLanAccess) HOST_LAN else HOST_LOCAL
 
     private var engine: EmbeddedServer<*, *>? = null
 
@@ -46,14 +61,29 @@ class WebUiServer(
 
     fun start() {
         if (engine != null) return
+        val environment = applicationEnvironment {}
         engine = embeddedServer(
-            factory = CIO,
-            host = host,
-            port = PORT,
-        ) {
-            configureRoutes()
-        }.start(wait = false)
-        Timber.i("WebUI server started at http://%s:%d (lan=%s)", host, PORT, allowLanAccess)
+            factory = Netty,
+            environment = environment,
+            configure = {
+                sslConnector(
+                    keyStore = runtimeConfig.tlsMaterial.keyStore,
+                    keyAlias = runtimeConfig.tlsMaterial.keyAlias,
+                    keyStorePassword = { runtimeConfig.tlsMaterial.storePassword.toCharArray() },
+                    privateKeyPassword = { runtimeConfig.tlsMaterial.keyPassword.toCharArray() },
+                ) {
+                    host = runtimeConfig.host
+                    port = runtimeConfig.port
+                }
+            },
+            module = { configureRoutes() },
+        ).start(wait = false)
+        Timber.i(
+            "WebUI server started at https://%s:%d (lan=%s)",
+            runtimeConfig.host,
+            runtimeConfig.port,
+            runtimeConfig.allowLanAccess,
+        )
     }
 
     fun stop() {
@@ -64,8 +94,28 @@ class WebUiServer(
 
     @Suppress("CyclomaticComplexMethod")
     private fun Application.configureRoutes() {
+        install(Authentication) {
+            basic(name = "webui-basic") {
+                realm = "XSmsCode WebUI"
+                validate { credential ->
+                    val expectedUsername = runtimeConfig.username.trim()
+                    val expectedPassword = runtimeConfig.password
+                    if (
+                        expectedUsername.isNotBlank() &&
+                        expectedPassword.isNotBlank() &&
+                        credential.name == expectedUsername &&
+                        credential.password == expectedPassword
+                    ) {
+                        UserIdPrincipal(credential.name)
+                    } else {
+                        null
+                    }
+                }
+            }
+        }
         routing {
-            get("/") {
+            authenticate("webui-basic") {
+                get("/") {
                 call.respondText(
                     contentType = ContentType.Text.Html,
                     text = WEB_INDEX,
@@ -525,6 +575,7 @@ class WebUiServer(
                     contentType = ContentType.Application.Json,
                 )
             }
+            }
         }
     }
 
@@ -845,10 +896,6 @@ class WebUiServer(
     )
 
     companion object {
-        private const val HOST_LOCAL = "127.0.0.1"
-        private const val HOST_LAN = "0.0.0.0"
-        private const val PORT = 8787
-
         private val WEB_INDEX = """
             <!doctype html>
             <html lang="zh-CN">

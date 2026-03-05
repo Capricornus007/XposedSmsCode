@@ -385,8 +385,36 @@ object AppPreferencesDataStore {
             getBoolean(context, PrefConst.KEY_FORWARD_COMMON_INCLUDE_DEVICE_NAME, true),
         )
         editor.putBoolean(
+            PrefConst.KEY_WEBUI_ENABLE,
+            getBoolean(context, PrefConst.KEY_WEBUI_ENABLE, true),
+        )
+        editor.putBoolean(
             PrefConst.KEY_WEBUI_LAN_ACCESS,
             getBoolean(context, PrefConst.KEY_WEBUI_LAN_ACCESS, false),
+        )
+        editor.putString(
+            PrefConst.KEY_WEBUI_PORT,
+            getString(context, PrefConst.KEY_WEBUI_PORT, PrefConst.KEY_WEBUI_PORT_DEFAULT),
+        )
+        editor.putString(
+            PrefConst.KEY_WEBUI_USERNAME,
+            getString(context, PrefConst.KEY_WEBUI_USERNAME, PrefConst.KEY_WEBUI_USERNAME_DEFAULT),
+        )
+        editor.putString(
+            PrefConst.KEY_WEBUI_PASSWORD,
+            getString(context, PrefConst.KEY_WEBUI_PASSWORD, ""),
+        )
+        editor.putString(
+            PrefConst.KEY_INTERNAL_WEBUI_TLS_KEYSTORE_VERSION,
+            getString(
+                context,
+                PrefConst.KEY_INTERNAL_WEBUI_TLS_KEYSTORE_VERSION,
+                PrefConst.KEY_INTERNAL_WEBUI_TLS_KEYSTORE_VERSION_DEFAULT,
+            ),
+        )
+        editor.putString(
+            PrefConst.KEY_INTERNAL_WEBUI_TLS_KEYSTORE_PASS,
+            getString(context, PrefConst.KEY_INTERNAL_WEBUI_TLS_KEYSTORE_PASS, ""),
         )
         editor.putBoolean(
             PrefConst.KEY_ROOT_DB_CATCHUP_ENABLE,

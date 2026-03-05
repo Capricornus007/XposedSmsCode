@@ -301,6 +301,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         val allPrefs = sharedPrefs.all
                         val map = HashMap<String, String?>()
                         for ((k, v) in allPrefs) {
+                            if (k.startsWith("internal_")) continue
                             map[k] = v?.toString()
                         }
                         map

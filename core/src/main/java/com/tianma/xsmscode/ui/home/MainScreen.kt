@@ -73,6 +73,7 @@ fun MainScreen(
             hierarchy.any { it.hasRoute(AppBlockRoute::class) } -> 1
             hierarchy.any { it.hasRoute(RecordsRoute::class) } -> 2
             hierarchy.any { it.hasRoute(AdvancedRoute::class) } ||
+                hierarchy.any { it.hasRoute(WebUiConfigRoute::class) } ||
                 hierarchy.any { it.hasRoute(InterceptRoute::class) } ||
                 hierarchy.any { it.hasRoute(SendersRoute::class) } ||
                 hierarchy.any { it.hasRoute(SenderConfigRoute::class) } ||
@@ -272,8 +273,11 @@ fun MainScreen(
                         AdvancedScreen(
                             onInterceptClick = { navController.navigate(InterceptRoute) },
                             onForwardClick = { navController.navigate(SendersRoute) },
-                            onNotificationRulesClick = { navController.navigate(NotificationRulesRoute) },
+                            onWebUiConfigClick = { navController.navigate(WebUiConfigRoute) },
                         )
+                    }
+                    composable<WebUiConfigRoute> {
+                        WebUiConfigScreen(onBack = { navController.popBackStack() })
                     }
                     composable<SendersRoute> { backStackEntry ->
                         val reopenTypeDialog by backStackEntry.savedStateHandle

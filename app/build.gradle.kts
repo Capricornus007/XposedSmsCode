@@ -65,14 +65,17 @@ android {
         create("play") {
             dimension = "distribution"
             buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "false")
+            buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "true")
         }
         create("github") {
             dimension = "distribution"
             buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
+            buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "true")
         }
         create("fdroid") {
             dimension = "distribution"
             buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
+            buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "false")
         }
     }
 
@@ -124,6 +127,8 @@ android {
             excludes += "**/*.kotlin_*"
             excludes += "META-INF/NOTICE.md"
             excludes += "META-INF/LICENSE.md"
+            excludes += "META-INF/INDEX.LIST"
+            excludes += "META-INF/io.netty.versions.properties"
         }
     }
 
@@ -266,10 +271,12 @@ dependencies {
 
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.ktor.server.core)
-    implementation(libs.ktor.server.cio)
+    implementation(libs.ktor.server.auth)
+    implementation(libs.ktor.server.netty)
     implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.okhttp.tls)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)

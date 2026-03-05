@@ -43,6 +43,7 @@ object PrefRestoreTypeRegistry {
         PrefConst.KEY_FORWARD_COMMON_INCLUDE_TIME,
         PrefConst.KEY_FORWARD_COMMON_INCLUDE_SENDER,
         PrefConst.KEY_FORWARD_COMMON_INCLUDE_DEVICE_NAME,
+        PrefConst.KEY_WEBUI_ENABLE,
         PrefConst.KEY_WEBUI_LAN_ACCESS,
         PrefConst.KEY_PRIVACY_POLICY_ACCEPTED,
         PrefConst.KEY_BACKUP_COMPAT_TIP_SHOWN,

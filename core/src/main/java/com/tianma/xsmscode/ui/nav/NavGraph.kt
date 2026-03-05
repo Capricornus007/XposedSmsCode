@@ -38,6 +38,9 @@ object SendersRoute
 object AdvancedRoute
 
 @Serializable
+object WebUiConfigRoute
+
+@Serializable
 data class SenderConfigRoute(val id: Long, val type: Int)
 
 @Serializable
