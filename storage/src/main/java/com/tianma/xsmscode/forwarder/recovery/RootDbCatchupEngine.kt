@@ -30,6 +30,10 @@ internal object RootDbCatchupEngine {
     )
 
     private const val QUERY_LIMIT = 200
+    private const val SQLITE_DB_NOT_FOUND_EXIT_CODE = 3
+    private const val SQL_LOG_SNIPPET_LENGTH = 120
+    private const val CALL_TYPE_MISSED = 3
+    private const val CALL_TYPE_ANSWERED_EXTERNALLY = 7
     private val running = AtomicBoolean(false)
 
     private data class SmsRow(
@@ -53,13 +57,14 @@ internal object RootDbCatchupEngine {
             return
         }
         try {
-            runCatchup(appContext, reason)
-        } catch (t: Throwable) {
-            XLog.w(
-                "Root DB catchup failed: reason=%s err=%s",
-                reason,
-                t.message ?: t.javaClass.simpleName,
-            )
+            runCatching { runCatchup(appContext, reason) }
+                .onFailure { throwable ->
+                    XLog.w(
+                        "Root DB catchup failed: reason=%s err=%s",
+                        reason,
+                        throwable.message ?: throwable.javaClass.simpleName,
+                    )
+                }
         } finally {
             running.set(false)
         }
@@ -284,7 +289,7 @@ internal object RootDbCatchupEngine {
             traceId = "root_call_${row.id}",
         )
 
-        if (writeback && row.callType == 3) {
+        if (writeback && row.callType == CALL_TYPE_MISSED) {
             writeBackCallNewFlag(row.id)
         }
     }
@@ -372,11 +377,11 @@ internal object RootDbCatchupEngine {
         val command = buildSqliteCommand(dbCandidates, sql, readonly = true)
         val result = RootShellExecutor.run(command)
         if (!result.success) {
-            if (result.exitCode != 3) {
+            if (result.exitCode != SQLITE_DB_NOT_FOUND_EXIT_CODE) {
                 XLog.w(
                     "Root DB catchup sqlite query failed exit=%d sql=%s",
                     result.exitCode,
-                    sql.take(120),
+                    sql.take(SQL_LOG_SNIPPET_LENGTH),
                 )
             }
             return emptyList()
@@ -401,11 +406,11 @@ internal object RootDbCatchupEngine {
     private fun executeWriteSql(dbCandidates: List<String>, sql: String) {
         val command = buildSqliteCommand(dbCandidates, sql, readonly = false)
         val result = RootShellExecutor.run(command)
-        if (!result.success && result.exitCode != 3) {
+        if (!result.success && result.exitCode != SQLITE_DB_NOT_FOUND_EXIT_CODE) {
             XLog.w(
                 "Root DB catchup sqlite write failed exit=%d sql=%s",
                 result.exitCode,
-                sql.take(120),
+                sql.take(SQL_LOG_SNIPPET_LENGTH),
             )
         }
     }
@@ -462,7 +467,7 @@ internal object RootDbCatchupEngine {
         4 -> "语音信箱"
         5 -> "拒接"
         6 -> "拦截"
-        7 -> "异地接听"
+        CALL_TYPE_ANSWERED_EXTERNALLY -> "异地接听"
         else -> "未知类型($type)"
     }
 }

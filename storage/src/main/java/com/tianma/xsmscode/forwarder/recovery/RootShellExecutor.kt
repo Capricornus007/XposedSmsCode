@@ -1,6 +1,7 @@
 package com.tianma.xsmscode.forwarder.recovery
 
 import com.tianma.xsmscode.common.utils.XLog
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 internal object RootShellExecutor {
@@ -46,10 +47,29 @@ internal object RootShellExecutor {
                 exitCode = process.exitValue(),
                 output = output,
             )
-        } catch (t: Throwable) {
+        } catch (e: IOException) {
             XLog.w(
                 "RootShellExecutor run failed: %s",
-                t.message ?: t.javaClass.simpleName,
+                e.message ?: e.javaClass.simpleName,
+            )
+            ShellResult(
+                exitCode = -1,
+                output = "",
+            )
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            XLog.w(
+                "RootShellExecutor run interrupted: %s",
+                e.message ?: e.javaClass.simpleName,
+            )
+            ShellResult(
+                exitCode = -1,
+                output = "",
+            )
+        } catch (e: SecurityException) {
+            XLog.w(
+                "RootShellExecutor run denied: %s",
+                e.message ?: e.javaClass.simpleName,
             )
             ShellResult(
                 exitCode = -1,

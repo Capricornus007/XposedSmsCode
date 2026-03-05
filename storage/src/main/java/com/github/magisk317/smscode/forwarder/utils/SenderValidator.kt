@@ -28,6 +28,7 @@ data class SenderValidationResult(
 object SenderValidator {
     private val gson = Gson()
 
+    @Suppress("CyclomaticComplexMethod")
     fun validateForEnable(sender: Sender): SenderValidationResult {
         val safeSender = SenderSettingSanitizer.sanitizeSenderLenient(sender)
         return try {

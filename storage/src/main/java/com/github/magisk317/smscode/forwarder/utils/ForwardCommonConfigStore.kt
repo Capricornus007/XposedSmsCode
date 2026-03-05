@@ -19,6 +19,7 @@ import java.util.Date
 import java.util.Locale
 
 object ForwardCommonConfigStore {
+    private const val CALL_TYPE_ANSWERED_EXTERNALLY = 7
     private const val TIME_PATTERN = "yyyy.MM.dd HH:mm:ss"
     private val EMPTY_VALUE_LINE_REGEX = Regex("^[^:：\\n]+[:：]\\s*$")
     private const val DEFAULT_TEMPLATE = """
@@ -245,7 +246,7 @@ IP地址列表：{{IP_LIST}}
             4 -> "语音信箱"
             5 -> "拒接"
             6 -> "拦截"
-            7 -> "异地接听"
+            CALL_TYPE_ANSWERED_EXTERNALLY -> "异地接听"
             else -> ""
         }
     }

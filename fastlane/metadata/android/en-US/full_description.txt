@@ -17,3 +17,6 @@ Stability and compatibility:
 - Android 7.0+ (API 24+).
 - Designed for AOSP-like ROMs; compatibility may vary on heavily customized systems.
 - Requires root with Xposed/LSPosed module activation and reboot.
+
+F-Droid build note:
+- F-Droid flavor enforces stricter network policy (HTTPS-only webhook, cleartext disabled).
