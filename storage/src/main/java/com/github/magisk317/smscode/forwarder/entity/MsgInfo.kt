@@ -15,6 +15,7 @@ data class MsgInfo(
     var callType: Int = 0, //通话类型：1.来电挂机 2.去电挂机 3.未接来电 4.来电提醒 5.来电接通 6.去电拨出
     var uid: Int = 0, //APP通知的UID
     var packageName: String = "",
+    var notifyChannelId: String = "",
     var appName: String = "",
     var title: String = "",
     var message: String = "",
@@ -26,6 +27,6 @@ data class MsgInfo(
     // They will be re-implemented if necessary when building the full notification engine in SmsCode.
 
     override fun toString(): String {
-        return "MsgInfo(from='$from', content='$content', date=$date, simInfo='$simInfo', uid=$uid, type='$type', packageName='$packageName')"
+        return "MsgInfo(from='$from', content='$content', date=$date, simInfo='$simInfo', uid=$uid, type='$type', packageName='$packageName', notifyChannelId='$notifyChannelId')"
     }
 }

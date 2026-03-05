@@ -25,7 +25,14 @@ data class SenderNotifyScopeEntry(
     val onClick: (Long) -> Unit,
 )
 
+data class SenderForwardFilterEntry(
+    val senderId: Long,
+    val summary: String,
+    val onClick: (Long) -> Unit,
+)
+
 val LocalSenderNotifyScopeEntry = staticCompositionLocalOf<SenderNotifyScopeEntry?> { null }
+val LocalSenderForwardFilterEntry = staticCompositionLocalOf<SenderForwardFilterEntry?> { null }
 
 @Composable
 fun ForwardToggleSection(
@@ -39,6 +46,7 @@ fun ForwardToggleSection(
     onReceiveCallNotifyChange: (Boolean) -> Unit,
 ) {
     val notifyScopeEntry = LocalSenderNotifyScopeEntry.current
+    val forwardFilterEntry = LocalSenderForwardFilterEntry.current
     OutlinedCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -74,6 +82,13 @@ fun ForwardToggleSection(
                     title = "通知应用范围",
                     summary = notifyScopeEntry.summary,
                     onClick = { notifyScopeEntry.onClick(notifyScopeEntry.senderId) },
+                )
+            }
+            if (forwardFilterEntry != null && forwardFilterEntry.senderId > 0L) {
+                ForwardConfigActionItem(
+                    title = "通道关键词过滤",
+                    summary = forwardFilterEntry.summary,
+                    onClick = { forwardFilterEntry.onClick(forwardFilterEntry.senderId) },
                 )
             }
         }

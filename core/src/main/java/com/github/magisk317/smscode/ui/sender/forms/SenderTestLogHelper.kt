@@ -15,8 +15,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.tianma.xsmscode.common.utils.ClipboardUtils
-import com.tianma.xsmscode.common.utils.RuntimeLogStore
+import com.github.magisk317.smscode.common.utils.ClipboardUtils
+import com.github.magisk317.smscode.common.utils.RuntimeLogStore
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

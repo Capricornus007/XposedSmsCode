@@ -32,10 +32,10 @@ import com.github.magisk317.smscode.forwarder.entity.ForwardCommonConfig
 import com.github.magisk317.smscode.forwarder.entity.Sender
 import com.github.magisk317.smscode.forwarder.utils.ForwardCommonConfigStore
 import com.github.magisk317.smscode.forwarder.utils.SenderType
-import com.tianma.xsmscode.common.constant.PrefConst
-import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
-import com.tianma.xsmscode.core.BuildConfig
-import com.tianma.xsmscode.core.R
+import com.github.magisk317.smscode.common.constant.PrefConst
+import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
+import com.github.magisk317.smscode.core.BuildConfig
+import com.github.magisk317.smscode.core.R
 import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive

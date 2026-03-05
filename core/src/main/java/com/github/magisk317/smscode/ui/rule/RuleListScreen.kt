@@ -17,7 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.magisk317.smscode.forwarder.entity.Rule
 import com.github.magisk317.smscode.ui.sender.getSenderTypeName
-import com.tianma.xsmscode.core.R
+import com.github.magisk317.smscode.core.R
 import java.text.SimpleDateFormat
 import java.util.Locale
 

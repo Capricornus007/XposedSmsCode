@@ -6,7 +6,7 @@
     public void initZygote(...);
 }
 
--keep class com.tianma.xsmscode.common.utils.ModuleUtils {
+-keep class com.github.magisk317.smscode.common.utils.ModuleUtils {
     int getModuleVersion();
 }
 
@@ -66,7 +66,7 @@
 -keep class * extends androidx.room.RoomDatabase
 -keep @androidx.room.Entity class * { *; }
 -keep @androidx.room.Dao interface * { *; }
--keep class com.tianma.xsmscode.data.db.AppDatabase_Impl {
+-keep class com.github.magisk317.smscode.data.db.AppDatabase_Impl {
     public <init>();
 }
 # Room end
@@ -74,8 +74,8 @@
 
 # ==========================
 # Xposed start
--keep class com.tianma.xsmscode.xp.HookEntry { *; }
--keep class com.tianma.xsmscode.xp.hook.** { *; }
+-keep class com.github.magisk317.smscode.xp.HookEntry { *; }
+-keep class com.github.magisk317.smscode.xp.hook.** { *; }
 # Xposed end
 # ==========================
 

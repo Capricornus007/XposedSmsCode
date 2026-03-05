@@ -9,10 +9,10 @@ import android.os.BatteryManager
 import android.os.Build
 import com.github.magisk317.smscode.forwarder.entity.ForwardCommonConfig
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
-import com.tianma.xsmscode.common.constant.PrefConst
-import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
-import com.tianma.xsmscode.common.utils.PrefsReader
-import com.tianma.xsmscode.common.utils.XLog
+import com.github.magisk317.smscode.common.constant.PrefConst
+import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
+import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.common.utils.XLog
 import java.net.NetworkInterface
 import java.text.SimpleDateFormat
 import java.util.Date

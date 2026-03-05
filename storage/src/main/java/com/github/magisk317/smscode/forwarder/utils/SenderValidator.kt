@@ -18,7 +18,7 @@ import com.github.magisk317.smscode.forwarder.entity.setting.WebhookSetting
 import com.github.magisk317.smscode.forwarder.entity.setting.WeworkAgentSetting
 import com.github.magisk317.smscode.forwarder.entity.setting.WeworkRobotSetting
 import com.google.gson.Gson
-import com.tianma.xsmscode.storage.BuildConfig
+import com.github.magisk317.smscode.storage.BuildConfig
 
 data class SenderValidationResult(
     val valid: Boolean,

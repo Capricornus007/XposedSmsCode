@@ -42,8 +42,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.tianma.xsmscode.core.R
-import com.tianma.xsmscode.ui.common.AppIconImage
+import com.github.magisk317.smscode.core.R
+import com.github.magisk317.smscode.ui.common.AppIconImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

@@ -5,7 +5,7 @@ import android.util.Base64
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
 import com.github.magisk317.smscode.forwarder.entity.setting.WebhookSetting
 import com.github.magisk317.smscode.forwarder.utils.SenderSettingSanitizer
-import com.tianma.xsmscode.storage.BuildConfig
+import com.github.magisk317.smscode.storage.BuildConfig
 import okhttp3.Credentials
 import okhttp3.FormBody
 import okhttp3.Headers

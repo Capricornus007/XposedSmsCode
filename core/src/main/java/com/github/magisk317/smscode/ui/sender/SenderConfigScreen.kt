@@ -21,7 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.magisk317.smscode.forwarder.utils.SenderType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.magisk317.smscode.ui.sender.forms.*
-import com.tianma.xsmscode.core.BuildConfig
+import com.github.magisk317.smscode.core.BuildConfig
 import kotlinx.coroutines.flow.flowOf
 
 @Composable
@@ -30,6 +30,7 @@ fun SenderConfigScreen(
     senderTypeArg: Int,
     onBack: (Boolean) -> Unit,
     onOpenSenderNotifyScope: (Long) -> Unit = {},
+    onOpenSenderForwardFilter: (Long) -> Unit = {},
     viewModel: SenderViewModel = viewModel()
 ) {
     var type by remember { mutableStateOf(senderTypeArg) }
@@ -56,12 +57,31 @@ fun SenderConfigScreen(
         }
     }
     val notifyScopeSummary by notifyScopeSummaryFlow.collectAsStateWithLifecycle(initialValue = "")
+    val forwardFilterSummaryFlow = remember(senderId) {
+        if (senderId > 0L) {
+            viewModel.senderForwardFilterSummaryFlow(senderId)
+        } else {
+            flowOf("")
+        }
+    }
+    val forwardFilterSummary by forwardFilterSummaryFlow.collectAsStateWithLifecycle(initialValue = "")
     val notifyScopeEntry = remember(senderId, notifyScopeSummary, onOpenSenderNotifyScope) {
         if (senderId > 0L) {
             SenderNotifyScopeEntry(
                 senderId = senderId,
                 summary = notifyScopeSummary.ifBlank { "白名单0 / 黑名单0" },
                 onClick = onOpenSenderNotifyScope,
+            )
+        } else {
+            null
+        }
+    }
+    val forwardFilterEntry = remember(senderId, forwardFilterSummary, onOpenSenderForwardFilter) {
+        if (senderId > 0L) {
+            SenderForwardFilterEntry(
+                senderId = senderId,
+                summary = forwardFilterSummary.ifBlank { "短信 白0/黑0 · 通知 白0/黑0" },
+                onClick = onOpenSenderForwardFilter,
             )
         } else {
             null
@@ -83,7 +103,10 @@ fun SenderConfigScreen(
         return
     }
 
-    CompositionLocalProvider(LocalSenderNotifyScopeEntry provides notifyScopeEntry) {
+    CompositionLocalProvider(
+        LocalSenderNotifyScopeEntry provides notifyScopeEntry,
+        LocalSenderForwardFilterEntry provides forwardFilterEntry,
+    ) {
         when (type) {
             SenderType.DINGTALK_GROUP_ROBOT -> DingtalkConfigForm(senderId, handleBack, viewModel)
             SenderType.EMAIL -> EmailConfigForm(senderId, handleBack, viewModel)

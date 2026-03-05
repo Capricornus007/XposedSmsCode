@@ -3,18 +3,20 @@ package com.github.magisk317.smscode.ui.sender
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.tianma.xsmscode.data.db.AppDatabase
+import com.github.magisk317.smscode.data.db.AppDatabase
+import com.github.magisk317.smscode.forwarder.entity.ForwardFilterRule
 import com.github.magisk317.smscode.forwarder.entity.ForwardCommonConfig
 import com.github.magisk317.smscode.forwarder.entity.Sender
-import com.tianma.xsmscode.data.db.entity.NotifyRouteRule
+import com.github.magisk317.smscode.data.db.entity.NotifyRouteRule
 import com.github.magisk317.smscode.forwarder.utils.DeviceIdentityUtils
 import com.github.magisk317.smscode.forwarder.utils.ForwardCommonConfigStore
+import com.github.magisk317.smscode.forwarder.filter.ForwardFilterConst
 import com.github.magisk317.smscode.forwarder.utils.SenderSettingSanitizer
 import com.github.magisk317.smscode.forwarder.utils.SenderType
 import com.github.magisk317.smscode.forwarder.utils.SenderValidationResult
 import com.github.magisk317.smscode.forwarder.utils.SenderValidator
-import com.tianma.xsmscode.forwarder.routing.NotifyRouteScope
-import com.tianma.xsmscode.core.BuildConfig
+import com.github.magisk317.smscode.forwarder.routing.NotifyRouteScope
+import com.github.magisk317.smscode.core.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -31,6 +33,7 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
     private val db = AppDatabase.getInstance(application)
     private val senderDao = db.senderDao()
     private val notifyRouteDao = db.notifyRouteRuleDao()
+    private val forwardFilterDao = db.forwardFilterRuleDao()
 
     private val _forwardCommonConfig = MutableStateFlow(
         ForwardCommonConfig(deviceName = DeviceIdentityUtils.resolveDefaultDeviceName()),
@@ -215,6 +218,78 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
             senderDenyPackagesFlow(senderId),
         ) { allowPkgs, denyPkgs ->
             "白名单${allowPkgs.size} / 黑名单${denyPkgs.size}"
+        }
+    }
+
+    fun senderForwardRulesFlow(senderId: Long, msgType: String): Flow<List<ForwardFilterRule>> {
+        return forwardFilterDao.observeByScope(
+            msgType = msgType,
+            scopeType = ForwardFilterConst.SCOPE_SENDER,
+            senderId = senderId,
+        )
+    }
+
+    fun senderForwardFilterSummaryFlow(senderId: Long): Flow<String> {
+        return combine(
+            senderForwardRulesFlow(senderId, ForwardFilterConst.MSG_TYPE_SMS),
+            senderForwardRulesFlow(senderId, ForwardFilterConst.MSG_TYPE_APP_NOTIFY),
+        ) { smsRules, appRules ->
+            val smsAllow = smsRules.count { it.policy == ForwardFilterConst.POLICY_ALLOW }
+            val smsDeny = smsRules.count { it.policy == ForwardFilterConst.POLICY_DENY }
+            val appAllow = appRules.count { it.policy == ForwardFilterConst.POLICY_ALLOW }
+            val appDeny = appRules.count { it.policy == ForwardFilterConst.POLICY_DENY }
+            "短信 白$smsAllow/黑$smsDeny · 通知 白$appAllow/黑$appDeny"
+        }
+    }
+
+    fun saveSenderForwardFilterRule(
+        senderId: Long,
+        msgType: String,
+        ruleId: Long,
+        policy: String,
+        matchMode: String,
+        pattern: String,
+        enabled: Boolean,
+    ) {
+        val normalizedPattern = pattern.trim()
+        if (senderId <= 0L || normalizedPattern.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val now = System.currentTimeMillis()
+            val rule = ForwardFilterRule(
+                id = if (ruleId > 0L) ruleId else 0L,
+                msgType = msgType,
+                scopeType = ForwardFilterConst.SCOPE_SENDER,
+                scopeKey = "",
+                senderId = senderId,
+                policy = policy,
+                matchMode = matchMode,
+                pattern = normalizedPattern,
+                enabled = if (enabled) 1 else 0,
+                updateTime = now,
+            )
+            if (rule.id <= 0L) {
+                forwardFilterDao.insert(rule)
+            } else {
+                forwardFilterDao.update(rule)
+            }
+        }
+    }
+
+    fun deleteForwardFilterRule(id: Long) {
+        if (id <= 0L) return
+        viewModelScope.launch(Dispatchers.IO) {
+            forwardFilterDao.deleteById(id)
+        }
+    }
+
+    fun setForwardFilterRuleEnabled(id: Long, enabled: Boolean) {
+        if (id <= 0L) return
+        viewModelScope.launch(Dispatchers.IO) {
+            forwardFilterDao.updateEnabledById(
+                id = id,
+                enabled = if (enabled) 1 else 0,
+                updateTime = System.currentTimeMillis(),
+            )
         }
     }
 

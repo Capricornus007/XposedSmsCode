@@ -6,9 +6,9 @@ import androidx.lifecycle.viewModelScope
 import com.github.magisk317.smscode.forwarder.entity.Rule
 import com.github.magisk317.smscode.forwarder.entity.Sender
 import com.github.magisk317.smscode.forwarder.utils.SenderType
-import com.tianma.xsmscode.common.constant.Const
-import com.tianma.xsmscode.core.BuildConfig
-import com.tianma.xsmscode.data.db.AppDatabase
+import com.github.magisk317.smscode.common.constant.Const
+import com.github.magisk317.smscode.core.BuildConfig
+import com.github.magisk317.smscode.data.db.AppDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.SharingStarted

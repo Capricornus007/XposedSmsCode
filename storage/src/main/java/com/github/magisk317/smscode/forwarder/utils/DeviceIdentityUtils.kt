@@ -1,7 +1,7 @@
 package com.github.magisk317.smscode.forwarder.utils
 
 import android.os.Build
-import com.tianma.xsmscode.common.utils.XLog
+import com.github.magisk317.smscode.common.utils.XLog
 
 object DeviceIdentityUtils {
     private val propertyKeys = listOf(

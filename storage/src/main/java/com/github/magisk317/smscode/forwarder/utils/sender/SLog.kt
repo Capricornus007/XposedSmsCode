@@ -1,7 +1,7 @@
 package com.github.magisk317.smscode.forwarder.utils.sender
 
 import android.util.Log
-import com.tianma.xsmscode.common.utils.RuntimeLogStore
+import com.github.magisk317.smscode.common.utils.RuntimeLogStore
 
 internal object SLog {
     fun d(tag: String, message: String) {
