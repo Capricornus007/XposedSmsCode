@@ -995,6 +995,7 @@ private fun SettingsDialogs(
             onDismiss = { onShowKeywordsDialogChange(false) },
             singleLine = false,
             maxLines = 10,
+            resetValue = PrefConst.SMSCODE_KEYWORDS_DEFAULT,
         ) { value ->
             val updated = if (value.isBlank()) PrefConst.SMSCODE_KEYWORDS_DEFAULT else value
             onSmsKeywordsChange(updated)
@@ -1276,6 +1277,7 @@ fun TextInputDialog(
     singleLine: Boolean = true,
     maxLines: Int = if (singleLine) 1 else 6,
     supportingText: String? = null,
+    resetValue: String? = null,
     validator: ((String) -> String?)? = null,
     onFocusLost: ((String) -> Unit)? = null,
     onDismissWithValue: ((String) -> Unit)? = null,
@@ -1292,7 +1294,28 @@ fun TextInputDialog(
             onDismiss()
         },
         modifier = modifier,
-        title = { Text(text = title) },
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title,
+                    modifier = Modifier.weight(1f),
+                )
+                if (resetValue != null) {
+                    TextButton(
+                        onClick = {
+                            text = resetValue
+                            errorMessage = validator?.invoke(resetValue)
+                        },
+                    ) {
+                        Text(text = stringResource(id = R.string.reset))
+                    }
+                }
+            }
+        },
         text = {
                 OutlinedTextField(
                     value = text,

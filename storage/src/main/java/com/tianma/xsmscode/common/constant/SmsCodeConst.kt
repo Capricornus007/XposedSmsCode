@@ -57,12 +57,11 @@ object SmsCodeConst {
             /**/
             "|登入碼|認證碼|識別碼" +
             /*English*/
-            "|Code|code|CODE" +
             "|(?i)\\b(otp|verification|verify|pin|passcode|password|code|secure\\s*code)\\b" +
             /*Russian*/
             "|Код|код|КОД|Пароль|пароль|ПАРОЛЬ|Kod|kod|KOD" +
             /*Vietnamese*/
-            "|Ma|Mã|OTP"
+            "|(?i:\\b(ma|mã|otp)\\b)"
 
     @JvmField
     val VERIFICATION_KEY_WORDS_EN = arrayOf(

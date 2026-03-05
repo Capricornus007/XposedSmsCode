@@ -6,6 +6,7 @@ import com.tianma.xsmscode.data.db.DBProvider
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.feature.store.EntityStoreManager
 import com.tianma.xsmscode.feature.store.EntityType
+import java.util.Locale
 import java.util.regex.Pattern
 
 /**
@@ -22,6 +23,7 @@ object SmsCodeUtils {
     private const val LEVEL_TEXT = 1
     private const val LEVEL_CHARACTER = 0
     private const val LEVEL_NONE = -1
+    private val URL_SCHEME_TOKENS = setOf("http", "https", "www")
 
     /**
      * 是否包含中文
@@ -112,7 +114,9 @@ object SmsCodeUtils {
         val m = p.matcher(content)
         val possibleCodes = mutableListOf<String>()
         while (m.find()) {
-            possibleCodes.add(m.group())
+            val candidate = m.group()
+            if (candidate.lowercase(Locale.ROOT) in URL_SCHEME_TOKENS) continue
+            possibleCodes.add(candidate)
         }
         if (possibleCodes.isEmpty()) return ""
 
