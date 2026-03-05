@@ -4,9 +4,19 @@ plugins {
     id(libs.plugins.kotlin.parcelize.get().pluginId)
     alias(libs.plugins.ksp)
 }
+val aReleaseMode = (findProperty("a.release.mode")?.toString() ?: "transition").lowercase()
+val isTransitionBuildMode = aReleaseMode == "transition"
+val isLiteBuildMode = aReleaseMode == "lite"
+check(isTransitionBuildMode || isLiteBuildMode) {
+    "Invalid a.release.mode=$aReleaseMode, expected transition|lite"
+}
+val transitionBuildTimeUtcMs = System.currentTimeMillis()
+val transitionExpiryDays = 30
+val relayDownloadUrl = "https://github.com/magisk317/xinyi-relay"
+val liteDownloadUrl = "https://github.com/magisk317/XposedSmsCode/releases/latest"
 
 android {
-    namespace = "com.tianma.xsmscode.storage"
+    namespace = "com.github.magisk317.smscode.storage"
     compileSdk = libs.versions.compileSdk.get().toInt()
     compileSdkExtension = libs.versions.compileSdkExtension.get().toInt()
 
@@ -44,6 +54,12 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
         buildConfigField("String", "LOG_TAG", "\"XSmsCode\"")
         buildConfigField("String", "APPLICATION_ID", "\"com.github.tianma8023.xposed.smscode\"")
+        buildConfigField("boolean", "IS_TRANSITION_BUILD", isTransitionBuildMode.toString())
+        buildConfigField("boolean", "IS_LITE_BUILD", isLiteBuildMode.toString())
+        buildConfigField("long", "TRANSITION_BUILD_TIME_UTC_MS", "${transitionBuildTimeUtcMs}L")
+        buildConfigField("int", "TRANSITION_EXPIRY_DAYS", transitionExpiryDays.toString())
+        buildConfigField("String", "B_DOWNLOAD_URL", "\"$relayDownloadUrl\"")
+        buildConfigField("String", "A_LITE_DOWNLOAD_URL", "\"$liteDownloadUrl\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }

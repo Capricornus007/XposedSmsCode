@@ -3,6 +3,8 @@ package com.github.magisk317.smscode.forwarder.utils
 import android.content.Context
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
 import com.github.magisk317.smscode.forwarder.entity.Sender
+import com.github.magisk317.smscode.forwarder.filter.ForwardFilterConst
+import com.github.magisk317.smscode.forwarder.filter.ForwardFilterEngine
 import com.github.magisk317.smscode.forwarder.entity.setting.BarkSetting
 import com.github.magisk317.smscode.forwarder.entity.setting.DingtalkGroupRobotSetting
 import com.github.magisk317.smscode.forwarder.entity.setting.DingtalkInnerRobotSetting
@@ -19,8 +21,8 @@ import com.github.magisk317.smscode.forwarder.entity.setting.UrlSchemeSetting
 import com.github.magisk317.smscode.forwarder.entity.setting.WebhookSetting
 import com.github.magisk317.smscode.forwarder.entity.setting.WeworkAgentSetting
 import com.github.magisk317.smscode.forwarder.entity.setting.WeworkRobotSetting
-import com.tianma.xsmscode.forwarder.routing.NotifyRoutingResolver
-import com.tianma.xsmscode.forwarder.routing.NotifyRoutingResult
+import com.github.magisk317.smscode.forwarder.routing.NotifyRoutingResolver
+import com.github.magisk317.smscode.forwarder.routing.NotifyRoutingResult
 import com.github.magisk317.smscode.forwarder.utils.sender.BarkUtils
 import com.github.magisk317.smscode.forwarder.utils.sender.DingtalkGroupRobotUtils
 import com.github.magisk317.smscode.forwarder.utils.sender.DingtalkInnerRobotUtils
@@ -38,11 +40,12 @@ import com.github.magisk317.smscode.forwarder.utils.sender.WebhookUtils
 import com.github.magisk317.smscode.forwarder.utils.sender.WeworkAgentUtils
 import com.github.magisk317.smscode.forwarder.utils.sender.WeworkRobotUtils
 import com.google.gson.Gson
-import com.tianma.xsmscode.storage.BuildConfig
-import com.tianma.xsmscode.common.utils.ForwardFlowLog
-import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.data.db.AppDatabase
-import com.tianma.xsmscode.data.db.entity.SmsMsg
+import com.github.magisk317.smscode.storage.BuildConfig
+import com.github.magisk317.smscode.common.constant.TransitionConst
+import com.github.magisk317.smscode.common.utils.ForwardFlowLog
+import com.github.magisk317.smscode.common.utils.XLog
+import com.github.magisk317.smscode.data.db.AppDatabase
+import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -71,6 +74,20 @@ object SendUtils {
         recordId: Long? = null,
         traceId: String? = null,
     ) {
+        if (BuildConfig.IS_TRANSITION_BUILD || BuildConfig.IS_LITE_BUILD) {
+            val db = AppDatabase.getInstance(context)
+            val tip = "转发已迁移至信驿 Relay：${TransitionConst.TARGET_RELAY_URL} [${TransitionConst.MIGRATED_REASON_CODE}]"
+            persistForwardResult(
+                db = db,
+                recordId = recordId,
+                results = emptyList(),
+                defaultMessage = tip,
+                forcedStatus = SmsMsg.FORWARD_STATUS_BLOCKED,
+            )
+            ForwardFlowLog.w(traceId, tip)
+            XLog.w(tip)
+            return
+        }
         XLog.i("Dispatching MsgInfo to enabled senders: isCodeSms=%s msg=%s", isCodeSms, msgInfo)
         ForwardFlowLog.i(
             traceId,
@@ -92,8 +109,37 @@ object SendUtils {
                         if (isCodeSms) sender.receiveCode == 1 else sender.receiveNonCode == 1
                     }
                 }
+                val forwardFilterRules = if (
+                    msgInfo.type == ForwardFilterConst.MSG_TYPE_SMS ||
+                    msgInfo.type == ForwardFilterConst.MSG_TYPE_APP_NOTIFY
+                ) {
+                    db.forwardFilterRuleDao().getEnabledByMsgType(msgInfo.type)
+                } else {
+                    emptyList()
+                }
+                if (forwardFilterRules.isNotEmpty()) {
+                    val preRouteDecision = ForwardFilterEngine.evaluatePreRoute(
+                        rules = forwardFilterRules,
+                        msgInfo = msgInfo,
+                    )
+                    if (preRouteDecision.blocked) {
+                        val reason = "消息命中过滤规则，已拦截（${preRouteDecision.reason ?: "unknown"}）"
+                        ForwardFlowLog.w(
+                            traceId,
+                            "Forward filter pre-route blocked type=${msgInfo.type} pkg=${msgInfo.packageName} reason=${preRouteDecision.reason}",
+                        )
+                        persistForwardResult(
+                            db = db,
+                            recordId = recordId,
+                            results = emptyList(),
+                            defaultMessage = reason,
+                            forcedStatus = SmsMsg.FORWARD_STATUS_BLOCKED,
+                        )
+                        return@launch
+                    }
+                }
                 var routingResult: NotifyRoutingResult? = null
-                val senders = if (msgInfo.type == "app_notify" && msgInfo.packageName.isNotBlank()) {
+                val routedSenders = if (msgInfo.type == "app_notify" && msgInfo.packageName.isNotBlank()) {
                     runCatching {
                         NotifyRoutingResolver.resolveAppNotifySenders(
                             candidates = baseSenders,
@@ -117,9 +163,32 @@ object SendUtils {
                 } else {
                     baseSenders
                 }
+                val senderFilteredReasonParts = mutableListOf<String>()
+                val senders = if (forwardFilterRules.isEmpty()) {
+                    routedSenders
+                } else {
+                    routedSenders.filter { sender ->
+                        val decision = ForwardFilterEngine.evaluateSenderScope(
+                            rules = forwardFilterRules,
+                            msgInfo = msgInfo,
+                            senderId = sender.id,
+                        )
+                        if (decision.blocked) {
+                            senderFilteredReasonParts += "${sender.name.ifBlank { senderTypeName(sender.type) }}:${decision.reason ?: "blocked"}"
+                            false
+                        } else {
+                            true
+                        }
+                    }
+                }
                 if (senders.isEmpty()) {
-                    val reason = routingResult?.noEligibleReason
-                        ?: buildNoEligibleReason(allSenders, enabledSenders, msgInfo.type, isCodeSms)
+                    val filteredByRule = senderFilteredReasonParts.isNotEmpty()
+                    val reason = if (filteredByRule) {
+                        "可用通道命中过滤规则，已拦截（${senderFilteredReasonParts.joinToString(" | ")}）"
+                    } else {
+                        routingResult?.noEligibleReason
+                            ?: buildNoEligibleReason(allSenders, enabledSenders, msgInfo.type, isCodeSms)
+                    }
                     XLog.w(
                         "No eligible senders found (isCodeSms=%s, type=%s), skipping dispatch. reason=%s",
                         isCodeSms,
@@ -131,6 +200,7 @@ object SendUtils {
                         recordId = recordId,
                         results = emptyList(),
                         defaultMessage = reason,
+                        forcedStatus = if (filteredByRule) SmsMsg.FORWARD_STATUS_BLOCKED else null,
                     )
                     ForwardFlowLog.w(traceId, "No eligible senders: $reason")
                     return@launch
@@ -356,6 +426,7 @@ object SendUtils {
         results: List<SenderDispatchResult>,
         defaultMessage: String,
         forceFailed: Boolean = false,
+        forcedStatus: Int? = null,
     ) {
         if (recordId == null) return
         runCatching {
@@ -364,6 +435,7 @@ object SendUtils {
             val successResults = results.filter { it.success }
             val failedResults = results.filterNot { it.success }
             val computedStatus = when {
+                forcedStatus != null -> forcedStatus
                 forceFailed -> SmsMsg.FORWARD_STATUS_FAILED
                 successResults.isNotEmpty() && failedResults.isNotEmpty() -> SmsMsg.FORWARD_STATUS_PARTIAL
                 successResults.isNotEmpty() -> SmsMsg.FORWARD_STATUS_SUCCESS

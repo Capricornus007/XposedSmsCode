@@ -1,0 +1,135 @@
+package com.github.magisk317.smscode.ui.home
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.github.magisk317.smscode.common.constant.PrefConst
+import com.github.magisk317.smscode.common.constant.TransitionConst
+import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
+import com.github.magisk317.smscode.common.utils.Utils
+import kotlinx.coroutines.launch
+
+@Composable
+fun LiteSettingsScreen() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    val showToast by AppPreferencesDataStore.getBooleanFlow(
+        context,
+        PrefConst.KEY_SHOW_TOAST,
+        true,
+    ).collectAsState(initial = true)
+    val copyToClipboard by AppPreferencesDataStore.getBooleanFlow(
+        context,
+        PrefConst.KEY_COPY_TO_CLIPBOARD,
+        true,
+    ).collectAsState(initial = true)
+    val autoInput by AppPreferencesDataStore.getBooleanFlow(
+        context,
+        PrefConst.KEY_ENABLE_AUTO_INPUT_CODE,
+        true,
+    ).collectAsState(initial = true)
+    val autoEnter by AppPreferencesDataStore.getBooleanFlow(
+        context,
+        PrefConst.KEY_ENABLE_AUTO_ENTER_CODE,
+        false,
+    ).collectAsState(initial = false)
+    val inputDelay by AppPreferencesDataStore.getStringFlow(
+        context,
+        PrefConst.KEY_AUTO_INPUT_CODE_DELAY,
+        PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT,
+    ).collectAsState(initial = PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT)
+    val inputInterval by AppPreferencesDataStore.getStringFlow(
+        context,
+        PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL,
+        PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL_DEFAULT,
+    ).collectAsState(initial = PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL_DEFAULT)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Text(
+            text = "验证码精简版设置",
+            style = MaterialTheme.typography.titleLarge,
+        )
+        Text(
+            text = "仅保留验证码解析与自动填充相关能力。",
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        LiteSwitchItem("显示验证码提示", showToast) {
+            scope.launch { AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_SHOW_TOAST, it) }
+        }
+        LiteSwitchItem("复制验证码到剪贴板", copyToClipboard) {
+            scope.launch { AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_COPY_TO_CLIPBOARD, it) }
+        }
+        LiteSwitchItem("自动输入验证码", autoInput) {
+            scope.launch { AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, it) }
+        }
+        LiteSwitchItem("自动提交验证码", autoEnter) {
+            scope.launch { AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_ENABLE_AUTO_ENTER_CODE, it) }
+        }
+        OutlinedTextField(
+            value = inputDelay,
+            onValueChange = { value ->
+                if (value.all { it.isDigit() }) {
+                    scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, value) }
+                }
+            },
+            label = { Text("自动输入延迟(毫秒)") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        OutlinedTextField(
+            value = inputInterval,
+            onValueChange = { value ->
+                if (value.all { it.isDigit() }) {
+                    scope.launch { AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL, value) }
+                }
+            },
+            label = { Text("自动输入间隔(毫秒)") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+        )
+        Button(
+            onClick = { Utils.showWebPage(context, TransitionConst.TARGET_RELAY_URL) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("前往信驿 Relay（通知/转发）")
+        }
+    }
+}
+
+@Composable
+private fun LiteSwitchItem(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    androidx.compose.foundation.layout.Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(text = title, style = MaterialTheme.typography.bodyLarge)
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
+    }
+}

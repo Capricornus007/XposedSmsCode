@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <permission
+        android:name="${applicationId}.permission.MIGRATION_EXPORT"
+        android:protectionLevel="signature" />
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -10,6 +14,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
  
     <queries>
         <intent>
@@ -18,7 +23,7 @@
     </queries>
 
     <application
-        android:name="com.tianma.xsmscode.ui.app.SmsCodeApplication"
+        android:name="com.github.magisk317.smscode.ui.app.SmsCodeApplication"
         android:allowBackup="true"
         android:fullBackupContent="true"
         android:icon="@mipmap/ic_launcher"
@@ -47,7 +52,7 @@
             android:value="true" />
 
         <receiver
-            android:name="com.tianma.xsmscode.receiver.SecretCodeReceiver"
+            android:name="com.github.magisk317.smscode.receiver.SecretCodeReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.provider.Telephony.SECRET_CODE" />
@@ -57,10 +62,21 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name="com.github.magisk317.smscode.transition.TransitionExpiryReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="com.github.tianma8023.xposed.smscode.ACTION_DAILY_EXPIRY_CHECK" />
+            </intent-filter>
+        </receiver>
+
 
 
         <activity
-            android:name="com.tianma.xsmscode.ui.home.LauncherActivity"
+            android:name="com.github.magisk317.smscode.ui.home.LauncherActivity"
             android:enabled="true"
             android:exported="true"
             android:theme="@android:style/Theme.NoDisplay">
@@ -71,7 +87,7 @@
         </activity>
 
         <activity
-            android:name="com.tianma.xsmscode.ui.home.MainActivity"
+            android:name="com.github.magisk317.smscode.ui.home.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:windowSoftInputMode="adjustResize">
@@ -104,14 +120,20 @@
 
 
         <provider
-            android:name="com.tianma.xsmscode.data.db.DBProvider"
+            android:name="com.github.magisk317.smscode.data.db.DBProvider"
             android:authorities="${applicationId}.db.provider"
             android:exported="true" />
 
         <provider
-            android:name="com.tianma.xsmscode.data.prefs.PrefsProvider"
+            android:name="com.github.magisk317.smscode.data.prefs.PrefsProvider"
             android:authorities="${applicationId}.pref.provider"
             android:exported="true" />
+
+        <provider
+            android:name="com.github.magisk317.smscode.migration.MigrationProvider"
+            android:authorities="${applicationId}.migration.provider"
+            android:exported="true"
+            android:readPermission="${applicationId}.permission.MIGRATION_EXPORT" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -124,7 +146,7 @@
         </provider>
 
         <receiver
-            android:name="com.tianma.xsmscode.xp.hook.code.AutoCancelReceiver"
+            android:name="com.github.magisk317.smscode.xp.hook.code.AutoCancelReceiver"
             android:exported="false" />
 
         <!-- IPC: receives forwarded SMS payload from the Xposed hook layer.
@@ -135,16 +157,15 @@
             android:name="com.github.magisk317.smscode.receiver.ForwardReceiver"
             android:exported="true">
             <intent-filter>
-                <action android:name="com.tianma.xsmscode.ACTION_FORWARD_SMS" />
-                <action android:name="com.tianma.xsmscode.ACTION_KILL_ME" />
+                <action android:name="com.github.magisk317.smscode.ACTION_FORWARD_SMS" />
             </intent-filter>
         </receiver>
 
         <service
-            android:name="com.tianma.xsmscode.service.ForceStopRecoveryService"
+            android:name="com.github.magisk317.smscode.service.ForceStopRecoveryService"
             android:exported="true" />
 
-        <service android:name="com.tianma.xsmscode.service.AppNotificationListenerService"
+        <service android:name="com.github.magisk317.smscode.service.AppNotificationListenerService"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE"
             android:exported="true">

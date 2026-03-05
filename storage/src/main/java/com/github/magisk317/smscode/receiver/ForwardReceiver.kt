@@ -4,15 +4,16 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.os.Process
+import com.github.magisk317.smscode.storage.BuildConfig
+import com.github.magisk317.smscode.common.constant.TransitionConst
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
 import com.github.magisk317.smscode.forwarder.utils.SendUtils
 import com.github.magisk317.smscode.forwarder.utils.SourceMetadataResolver
-import com.tianma.xsmscode.common.constant.PrefConst
-import com.tianma.xsmscode.common.utils.ForwardFlowLog
-import com.tianma.xsmscode.common.utils.XLog
-import com.tianma.xsmscode.data.db.DBManager
-import com.tianma.xsmscode.data.db.entity.SmsMsg
+import com.github.magisk317.smscode.common.constant.PrefConst
+import com.github.magisk317.smscode.common.utils.ForwardFlowLog
+import com.github.magisk317.smscode.common.utils.XLog
+import com.github.magisk317.smscode.data.db.DBManager
+import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import android.telephony.SubscriptionManager
 import kotlinx.coroutines.runBlocking
 import java.util.concurrent.ConcurrentHashMap
@@ -27,7 +28,6 @@ class ForwardReceiver : BroadcastReceiver() {
         val eventId = intent.getStringExtra("event_id").orEmpty()
         val traceId = buildTraceId(intent, eventId)
         val task = Runnable {
-            var killAppAfterFinish = false
             var resultMarked = false
             fun markResult(code: Int, reason: String) {
                 resultMarked = true
@@ -47,35 +47,19 @@ class ForwardReceiver : BroadcastReceiver() {
                     receiveStartMessage,
                 )
                 // 1. Action validation
-                if (
-                    intent.action != PrefConst.ACTION_FORWARD_SMS &&
-                    intent.action != PrefConst.ACTION_KILL_ME
-                ) {
+                if (intent.action != PrefConst.ACTION_FORWARD_SMS) {
                     XLog.e("Rejecting broadcast with invalid action: %s", intent.action)
                     ForwardFlowLog.w(traceId, "Reject invalid action=${intent.action}")
                     markResult(RESULT_REJECT_ACTION, "invalid_action")
                     return@runCatching
                 }
-                if (intent.action == PrefConst.ACTION_KILL_ME) {
-                    val receivedToken = intent.getStringExtra("ipc_token")
-                    val expectedToken = runBlocking {
-                        com.tianma.xsmscode.common.utils.AppPreferencesDataStore.getString(
-                            context,
-                            com.tianma.xsmscode.common.constant.PrefConst.KEY_IPC_TOKEN,
-                            "",
-                        )
-                    }
-                    if (expectedToken.isEmpty() || receivedToken != expectedToken) {
-                        ForwardFlowLog.w(
-                            traceId,
-                            "Reject kill action token mismatch expectedEmpty=${expectedToken.isEmpty()} receivedEmpty=${receivedToken.isNullOrBlank()}",
-                        )
-                        markResult(RESULT_REJECT_TOKEN, "token_mismatch")
-                        return@runCatching
-                    }
-                    ForwardFlowLog.w(traceId, "Kill action accepted, app process will terminate")
-                    markResult(RESULT_OK, "kill_requested")
-                    killAppAfterFinish = true
+                if (BuildConfig.IS_TRANSITION_BUILD || BuildConfig.IS_LITE_BUILD) {
+                    XLog.w("ForwardReceiver disabled in transition build")
+                    ForwardFlowLog.w(
+                        traceId,
+                        "ForwardReceiver disabled reason=${TransitionConst.MIGRATED_REASON_CODE}",
+                    )
+                    markResult(RESULT_TRANSITION_DISABLED, TransitionConst.MIGRATED_REASON_CODE)
                     return@runCatching
                 }
 
@@ -85,6 +69,7 @@ class ForwardReceiver : BroadcastReceiver() {
                 val company = intent.getStringExtra("company")
                 val smsCode = intent.getStringExtra("smsCode")
                 val packageName = intent.getStringExtra("packageName")
+                val notifyChannelId = intent.getStringExtra("notify_channel_id").orEmpty()
                 val receivedToken = intent.getStringExtra("ipc_token")
                 val msgTypeStr = intent.getStringExtra("msgType") ?: "sms"
                 val forwardSource = intent.getStringExtra("forward_source") ?: "unknown"
@@ -111,9 +96,9 @@ class ForwardReceiver : BroadcastReceiver() {
                 // 2. Verifying IPC Token: prevent third-party apps from spoofing broadcasts.
                 // We retrieve local token from DataStore (which is synced to xposed_prefs).
                 val expectedToken = runBlocking {
-                    com.tianma.xsmscode.common.utils.AppPreferencesDataStore.getString(
+                    com.github.magisk317.smscode.common.utils.AppPreferencesDataStore.getString(
                         context,
-                        com.tianma.xsmscode.common.constant.PrefConst.KEY_IPC_TOKEN,
+                        com.github.magisk317.smscode.common.constant.PrefConst.KEY_IPC_TOKEN,
                         "",
                     )
                 }
@@ -164,7 +149,7 @@ class ForwardReceiver : BroadcastReceiver() {
                     ForwardFlowLog.w(traceId, bypassMessage)
                     if (receivedToken.isNullOrBlank()) {
                         runCatching {
-                            com.tianma.xsmscode.forwarder.recovery.RootDbCatchupScheduler
+                            com.github.magisk317.smscode.forwarder.recovery.RootDbCatchupScheduler
                                 .triggerImmediate(context, reason = "token_blank_bypass")
                         }.onFailure { error ->
                             XLog.w(
@@ -213,6 +198,10 @@ class ForwardReceiver : BroadcastReceiver() {
                     append(packageName.orEmpty())
                     append(" sender=")
                     append(sender.orEmpty())
+                    if (notifyChannelId.isNotBlank()) {
+                        append(" channelId=")
+                        append(notifyChannelId)
+                    }
                     append(" bodyLen=")
                     append(body?.length ?: 0)
                     append(" source=")
@@ -265,13 +254,17 @@ class ForwardReceiver : BroadcastReceiver() {
                     simSlot = resolvedSimSlot,
                     subId = normalizedSubId,
                     packageName = packageName ?: "",
+                    notifyChannelId = notifyChannelId,
+                    appName = if (msgTypeStr == "app_notify") company.orEmpty() else "",
+                    title = if (msgTypeStr == "app_notify") sender.orEmpty() else "",
+                    message = if (msgTypeStr == "app_notify") body.orEmpty() else "",
                     contactName = contactName,
                     phoneArea = phoneArea,
                 )
                 var recordId: Long? = null
 
                 if (msgTypeStr == "app_notify") {
-                    val canRecordAppNotify = com.tianma.xsmscode.common.utils.PrefsReader.recordAppNotifyEnabled(context)
+                    val canRecordAppNotify = com.github.magisk317.smscode.common.utils.PrefsReader.recordAppNotifyEnabled(context)
                     runCatching {
                         if (canRecordAppNotify) {
                             recordId = insertRecord(
@@ -282,6 +275,7 @@ class ForwardReceiver : BroadcastReceiver() {
                                 company = msgInfo.simInfo,
                                 smsCode = smsCode,
                                 packageName = msgInfo.packageName,
+                                notifyChannelId = msgInfo.notifyChannelId,
                                 msgType = smsMsgType,
                                 isCodeSms = false,
                             )
@@ -293,9 +287,9 @@ class ForwardReceiver : BroadcastReceiver() {
                 } else {
                     val isCodeSms = !smsCode.isNullOrBlank()
                     val canRecordSms = if (isCodeSms) {
-                        com.tianma.xsmscode.common.utils.PrefsReader.recordCodeSmsEnabled(context)
+                        com.github.magisk317.smscode.common.utils.PrefsReader.recordCodeSmsEnabled(context)
                     } else {
-                        com.tianma.xsmscode.common.utils.PrefsReader.recordPlainSmsEnabled(context)
+                        com.github.magisk317.smscode.common.utils.PrefsReader.recordPlainSmsEnabled(context)
                     }
                     recordId = findRecordIdByFingerprint(
                         context = context,
@@ -314,6 +308,7 @@ class ForwardReceiver : BroadcastReceiver() {
                                 company = msgInfo.simInfo,
                                 smsCode = smsCode,
                                 packageName = msgInfo.packageName,
+                                notifyChannelId = "",
                                 msgType = smsMsgType,
                                 isCodeSms = isCodeSms,
                             )
@@ -398,9 +393,6 @@ class ForwardReceiver : BroadcastReceiver() {
             }
             ForwardFlowLog.d(traceId, "ForwardReceiver finished")
             pendingResult.finish()
-            if (killAppAfterFinish) {
-                terminateSelfProcess(traceId)
-            }
         }
         runCatching {
             FORWARD_EXECUTOR.execute(task)
@@ -432,7 +424,10 @@ class ForwardReceiver : BroadcastReceiver() {
         private const val RESULT_REJECT_APP_GATE = -103
         private const val RESULT_DROP_DUPLICATE = -104
         private const val RESULT_DISPATCH_FAILED = -105
+        private const val RESULT_TRANSITION_DISABLED = -106
         private const val FORWARD_WORKER_COUNT = 2
+        private const val SYSTEM_UID = 1000
+        private const val PHONE_UID = 1001
         private val workerIndex = AtomicInteger(1)
         private val FORWARD_EXECUTOR: ExecutorService = Executors.newFixedThreadPool(FORWARD_WORKER_COUNT) { runnable ->
             Thread(runnable, "ForwardReceiverWorker-${workerIndex.getAndIncrement()}")
@@ -449,7 +444,7 @@ class ForwardReceiver : BroadcastReceiver() {
         // Controlled bypass is only for system-origin paths when token lookup is temporarily unavailable.
         return when {
             msgType == "app_notify" && forwardSource == "nms_hook" -> {
-                if (sentFromUid == Process.SYSTEM_UID) {
+                if (sentFromUid == SYSTEM_UID) {
                     true
                 } else if (Build.VERSION.SDK_INT < API_LEVEL_34 && sentFromUid == null) {
                     XLog.w("IPC token bypass accepted for nms_hook without sender uid (API<34)")
@@ -459,7 +454,7 @@ class ForwardReceiver : BroadcastReceiver() {
                 }
             }
             msgType == "sms" && forwardSource == "sms_hook" -> {
-                if (sentFromUid == Process.SYSTEM_UID || sentFromUid == Process.PHONE_UID) {
+                if (sentFromUid == SYSTEM_UID || sentFromUid == PHONE_UID) {
                     true
                 } else if (Build.VERSION.SDK_INT < API_LEVEL_34 && sentFromUid == null) {
                     XLog.w("IPC token bypass accepted for sms_hook without sender uid (API<34)")
@@ -588,7 +583,7 @@ class ForwardReceiver : BroadcastReceiver() {
         msgType: Int,
     ): Long? {
         val resolver = context.contentResolver
-        val smsMsgUri = com.tianma.xsmscode.data.db.DBProvider.SMS_MSG_CONTENT_URI
+        val smsMsgUri = com.github.magisk317.smscode.data.db.DBProvider.SMS_MSG_CONTENT_URI
         val projection = arrayOf("_id", "sender", "body", "date", "msg_type")
         return runCatching {
             resolver.query(smsMsgUri, projection, null, null, "date DESC")?.use { cursor ->
@@ -622,10 +617,11 @@ class ForwardReceiver : BroadcastReceiver() {
         company: String,
         smsCode: String?,
         packageName: String,
+        notifyChannelId: String,
         msgType: Int,
         isCodeSms: Boolean,
     ): Long? {
-        val smsMsgUri = com.tianma.xsmscode.data.db.DBProvider.SMS_MSG_CONTENT_URI
+        val smsMsgUri = com.github.magisk317.smscode.data.db.DBProvider.SMS_MSG_CONTENT_URI
         val resolver = context.contentResolver
         trimOldRecordsIfNeeded(context, resolver, msgType, isCodeSms)
         val values = android.content.ContentValues().apply {
@@ -635,6 +631,7 @@ class ForwardReceiver : BroadcastReceiver() {
             put("sender", sender)
             put("sms_code", smsCode)
             put("package_name", packageName)
+            put("notify_channel_id", notifyChannelId)
             put("msg_type", msgType)
         }
         return resolver.insert(smsMsgUri, values)?.lastPathSegment?.toLongOrNull()
@@ -646,13 +643,13 @@ class ForwardReceiver : BroadcastReceiver() {
         msgType: Int,
         isCodeSms: Boolean,
     ) {
-        val smsMsgUri = com.tianma.xsmscode.data.db.DBProvider.SMS_MSG_CONTENT_URI
+        val smsMsgUri = com.github.magisk317.smscode.data.db.DBProvider.SMS_MSG_CONTENT_URI
         val (selection, selectionArgs) = recordSelectionForType(msgType, isCodeSms)
         val cursor = resolver.query(smsMsgUri, arrayOf("_id"), selection, selectionArgs, "date ASC") ?: return
         cursor.use {
             val count = it.count
             val limit = runBlocking {
-                com.tianma.xsmscode.common.utils.PrefsReader.getHistoryLimit(
+                com.github.magisk317.smscode.common.utils.PrefsReader.getHistoryLimit(
                     context = context,
                     msgType = msgType,
                     isCodeSms = isCodeSms,
@@ -670,7 +667,7 @@ class ForwardReceiver : BroadcastReceiver() {
                 operations.add(operation)
             }
             if (operations.isNotEmpty()) {
-                resolver.applyBatch(com.tianma.xsmscode.data.db.DBProvider.AUTHORITY, operations)
+                resolver.applyBatch(com.github.magisk317.smscode.data.db.DBProvider.AUTHORITY, operations)
             }
         }
     }
@@ -719,13 +716,4 @@ class ForwardReceiver : BroadcastReceiver() {
         return "${now}_$suffix"
     }
 
-    private fun terminateSelfProcess(traceId: String) {
-        val pid = Process.myPid()
-        ForwardFlowLog.w(traceId, "Terminating app process pid=$pid by kill action")
-        XLog.w("ForwardReceiver kill action: terminate process pid=%d", pid)
-        runCatching { Process.killProcess(pid) }
-            .onFailure { error ->
-                XLog.e("ForwardReceiver kill action failed", error)
-            }
-    }
 }
