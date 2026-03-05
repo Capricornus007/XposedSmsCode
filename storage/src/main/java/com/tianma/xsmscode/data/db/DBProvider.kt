@@ -37,6 +37,7 @@ class DBProvider : ContentProvider() {
                     smsCode = values?.getAsString("sms_code"),
                     packageName = values?.getAsString("package_name"),
                     msgType = values?.getAsInteger("msg_type") ?: SmsMsg.MSG_TYPE_SMS,
+                    callType = values?.getAsInteger("call_type") ?: 0,
                     forwardStatus = values?.getAsInteger("forward_status") ?: SmsMsg.FORWARD_STATUS_NONE,
                     forwardTarget = values?.getAsString("forward_target"),
                     forwardMessage = values?.getAsString("forward_message"),
@@ -124,6 +125,7 @@ class DBProvider : ContentProvider() {
             "sms_code",
             "package_name",
             "msg_type",
+            "call_type",
             "forward_status",
             "forward_target",
             "forward_message",
@@ -147,6 +149,7 @@ class DBProvider : ContentProvider() {
             "sms_code",
             "package_name",
             "msg_type",
+            "call_type",
             "forward_status",
             "forward_target",
             "forward_message",
@@ -231,6 +234,7 @@ class DBProvider : ContentProvider() {
             "sms_code" -> msg.smsCode
             "package_name" -> msg.packageName
             "msg_type" -> msg.msgType
+            "call_type" -> msg.callType
             "forward_status" -> msg.forwardStatus
             "forward_target" -> msg.forwardTarget
             "forward_message" -> msg.forwardMessage
@@ -290,6 +294,7 @@ class DBProvider : ContentProvider() {
             smsCode = values?.getAsString("sms_code") ?: existing.smsCode,
             packageName = values?.getAsString("package_name") ?: existing.packageName,
             msgType = values?.getAsInteger("msg_type") ?: existing.msgType,
+            callType = values?.getAsInteger("call_type") ?: existing.callType,
             forwardStatus = values?.getAsInteger("forward_status") ?: existing.forwardStatus,
             forwardTarget = values?.getAsString("forward_target") ?: existing.forwardTarget,
             forwardMessage = values?.getAsString("forward_message") ?: existing.forwardMessage,

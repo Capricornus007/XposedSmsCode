@@ -29,7 +29,7 @@ class AppDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate_3_to_14_success() {
+    fun migrate_3_to_16_success() {
         createVersion3Database()
 
         val db = openMigratedDatabase()
@@ -37,7 +37,7 @@ class AppDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate_1_to_14_success() {
+    fun migrate_1_to_16_success() {
         createVersion1Database()
 
         val db = openMigratedDatabase()
@@ -45,8 +45,16 @@ class AppDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate_6_to_14_success() {
+    fun migrate_6_to_16_success() {
         createVersion6Database()
+
+        val db = openMigratedDatabase()
+        assertFinalSchema(db)
+    }
+
+    @Test
+    fun migrate_15_to_16_success() {
+        createVersion15Database()
 
         val db = openMigratedDatabase()
         assertFinalSchema(db)
@@ -55,7 +63,7 @@ class AppDatabaseMigrationTest {
     @Test
     fun database_instance_builds_without_migration_conflict() {
         val db = openMigratedDatabase()
-        assertEquals(14, queryUserVersion(db))
+        assertEquals(16, queryUserVersion(db))
     }
 
     private fun openMigratedDatabase(): SupportSQLiteDatabase {
@@ -64,18 +72,27 @@ class AppDatabaseMigrationTest {
     }
 
     private fun assertFinalSchema(db: SupportSQLiteDatabase) {
-        assertEquals(14, queryUserVersion(db))
+        assertEquals(16, queryUserVersion(db))
 
         assertColumnExists(db, table = "sms_msg", column = "msg_type")
+        assertColumnExists(db, table = "sms_msg", column = "call_type")
 
         assertColumnExists(db, table = "Sender", column = "receive_non_code")
         assertColumnExists(db, table = "Sender", column = "receive_app_notify")
         assertColumnExists(db, table = "Sender", column = "receive_code")
+        assertColumnExists(db, table = "Sender", column = "receive_call_notify")
 
         assertColumnExists(db, table = "app_info", column = "forwarding")
         assertColumnExists(db, table = "app_info", column = "notify_template")
+        assertColumnExists(db, table = "notify_route_rule", column = "scope")
+        assertColumnExists(db, table = "notify_route_rule", column = "package_name")
+        assertColumnExists(db, table = "notify_route_rule", column = "sender_id")
+        assertColumnExists(db, table = "notify_route_rule", column = "update_time")
 
         assertIndexExists(db, table = "sms_msg", index = "index_sms_msg_sender_body_date_msg_type")
+        assertIndexExists(db, table = "notify_route_rule", index = "index_notify_route_rule_scope_package_sender")
+        assertIndexExists(db, table = "notify_route_rule", index = "index_notify_route_rule_package_scope")
+        assertIndexExists(db, table = "notify_route_rule", index = "index_notify_route_rule_sender_scope")
     }
 
     private fun queryUserVersion(db: SupportSQLiteDatabase): Int {
@@ -245,6 +262,102 @@ class AppDatabaseMigrationTest {
             }
 
             db.version = version
+        }
+    }
+
+    private fun createVersion15Database() {
+        val dbPath = context.getDatabasePath(DATABASE_NAME)
+        dbPath.parentFile?.mkdirs()
+
+        SQLiteDatabase.openOrCreateDatabase(dbPath, null).use { db ->
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS sms_code_rule (" +
+                    "company TEXT, " +
+                    "code_keyword TEXT NOT NULL, " +
+                    "code_regex TEXT NOT NULL, " +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT" +
+                    ")",
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS index_sms_code_rule_company_code_keyword_code_regex " +
+                    "ON sms_code_rule(company, code_keyword, code_regex)",
+            )
+
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS app_info (" +
+                    "package_name TEXT NOT NULL, " +
+                    "label TEXT, " +
+                    "blocked INTEGER NOT NULL DEFAULT 0, " +
+                    "forwarding INTEGER NOT NULL DEFAULT 0, " +
+                    "notify_template TEXT NOT NULL DEFAULT '', " +
+                    "PRIMARY KEY(package_name)" +
+                    ")",
+            )
+
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS sms_msg (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "sender TEXT, " +
+                    "body TEXT, " +
+                    "date INTEGER NOT NULL DEFAULT 0, " +
+                    "company TEXT, " +
+                    "sms_code TEXT, " +
+                    "package_name TEXT, " +
+                    "msg_type INTEGER NOT NULL DEFAULT 0, " +
+                    "call_type INTEGER NOT NULL DEFAULT 0, " +
+                    "forward_status INTEGER NOT NULL DEFAULT 0, " +
+                    "forward_target TEXT, " +
+                    "forward_message TEXT, " +
+                    "forward_time INTEGER NOT NULL DEFAULT 0" +
+                    ")",
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS index_sms_msg_sender_body_date_msg_type " +
+                    "ON sms_msg(sender, body, date, msg_type)",
+            )
+
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS Sender (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "type INTEGER NOT NULL DEFAULT 1, " +
+                    "name TEXT NOT NULL DEFAULT '', " +
+                    "json_setting TEXT NOT NULL DEFAULT '', " +
+                    "status INTEGER NOT NULL DEFAULT 1, " +
+                    "time INTEGER NOT NULL, " +
+                    "receive_non_code INTEGER NOT NULL DEFAULT 0, " +
+                    "receive_app_notify INTEGER NOT NULL DEFAULT 1, " +
+                    "receive_code INTEGER NOT NULL DEFAULT 1, " +
+                    "receive_call_notify INTEGER NOT NULL DEFAULT 0" +
+                    ")",
+            )
+
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS Rule (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "type TEXT NOT NULL DEFAULT 'sms', " +
+                    "filed TEXT NOT NULL DEFAULT 'transpond_all', " +
+                    "check TEXT NOT NULL DEFAULT 'is', " +
+                    "value TEXT NOT NULL DEFAULT '', " +
+                    "sender_id INTEGER NOT NULL DEFAULT 0, " +
+                    "sms_template TEXT NOT NULL DEFAULT '', " +
+                    "regex_replace TEXT NOT NULL DEFAULT '', " +
+                    "sim_slot TEXT NOT NULL DEFAULT 'ALL', " +
+                    "status INTEGER NOT NULL DEFAULT 1, " +
+                    "time INTEGER NOT NULL, " +
+                    "sender_list TEXT NOT NULL DEFAULT '', " +
+                    "sender_logic TEXT NOT NULL DEFAULT 'ALL', " +
+                    "silent_period_start INTEGER NOT NULL DEFAULT 0, " +
+                    "silent_period_end INTEGER NOT NULL DEFAULT 0, " +
+                    "silent_day_of_week TEXT NOT NULL DEFAULT '', " +
+                    "title TEXT NOT NULL DEFAULT '', " +
+                    "FOREIGN KEY(sender_id) REFERENCES Sender(id) ON UPDATE CASCADE ON DELETE CASCADE" +
+                    ")",
+            )
+            db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS index_Rule_id ON Rule(id)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_Rule_sender_id ON Rule(sender_id)")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_Rule_sender_list ON Rule(sender_list)")
+
+            db.version = 15
         }
     }
 

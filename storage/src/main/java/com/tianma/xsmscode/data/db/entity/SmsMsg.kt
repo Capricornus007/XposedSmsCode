@@ -70,6 +70,10 @@ data class SmsMsg(
     @SerialName("msgType")
     val msgType: Int = MSG_TYPE_SMS,
 
+    @ColumnInfo(name = "call_type", defaultValue = "0")
+    @SerialName("callType")
+    val callType: Int = 0,
+
 ) : Parcelable {
 
     companion object {
@@ -81,6 +85,7 @@ data class SmsMsg(
 
         const val MSG_TYPE_SMS = 0
         const val MSG_TYPE_APP_NOTIFY = 1
+        const val MSG_TYPE_CALL_NOTIFY = 2
 
         @JvmStatic
         fun fromIntent(intent: Intent): SmsMsg {

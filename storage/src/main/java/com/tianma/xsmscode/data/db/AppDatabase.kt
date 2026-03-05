@@ -13,9 +13,11 @@ import com.github.magisk317.smscode.forwarder.database.ext.ConvertersSenderList
 import com.github.magisk317.smscode.forwarder.entity.Rule
 import com.github.magisk317.smscode.forwarder.entity.Sender
 import com.tianma.xsmscode.data.db.dao.AppInfoDao
+import com.tianma.xsmscode.data.db.dao.NotifyRouteRuleDao
 import com.tianma.xsmscode.data.db.dao.SmsCodeRuleDao
 import com.tianma.xsmscode.data.db.dao.SmsMsgDao
 import com.tianma.xsmscode.data.db.entity.AppInfo
+import com.tianma.xsmscode.data.db.entity.NotifyRouteRule
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import com.tianma.xsmscode.common.utils.XLog
@@ -24,15 +26,17 @@ import com.tianma.xsmscode.common.utils.XLog
     SmsCodeRule::class,
     SmsMsg::class,
     AppInfo::class,
+    NotifyRouteRule::class,
     Sender::class,
     Rule::class
-], version = 14, exportSchema = false)
+], version = 16, exportSchema = false)
 @TypeConverters(ConvertersDate::class, ConvertersSenderList::class)
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun smsCodeRuleDao(): SmsCodeRuleDao
     abstract fun smsMsgDao(): SmsMsgDao
     abstract fun appInfoDao(): AppInfoDao
+    abstract fun notifyRouteRuleDao(): NotifyRouteRuleDao
     abstract fun ruleDao(): RuleDao
     abstract fun senderDao(): SenderDao
 
@@ -244,6 +248,55 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_14_15 = object : androidx.room.migration.Migration(14, 15) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                execSqlSafely(
+                    db = db,
+                    sql = "ALTER TABLE Sender ADD COLUMN receive_call_notify INTEGER NOT NULL DEFAULT 0",
+                    migration = "14_15",
+                )
+                execSqlSafely(
+                    db = db,
+                    sql = "ALTER TABLE sms_msg ADD COLUMN call_type INTEGER NOT NULL DEFAULT 0",
+                    migration = "14_15",
+                )
+            }
+        }
+
+        private val MIGRATION_15_16 = object : androidx.room.migration.Migration(15, 16) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                execSqlSafely(
+                    db = db,
+                    sql = "CREATE TABLE IF NOT EXISTS notify_route_rule (" +
+                        "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                        "scope INTEGER NOT NULL, " +
+                        "package_name TEXT NOT NULL, " +
+                        "sender_id INTEGER NOT NULL, " +
+                        "update_time INTEGER NOT NULL DEFAULT 0" +
+                        ")",
+                    migration = "15_16",
+                )
+                execSqlSafely(
+                    db = db,
+                    sql = "CREATE UNIQUE INDEX IF NOT EXISTS index_notify_route_rule_scope_package_sender " +
+                        "ON notify_route_rule(scope, package_name, sender_id)",
+                    migration = "15_16",
+                )
+                execSqlSafely(
+                    db = db,
+                    sql = "CREATE INDEX IF NOT EXISTS index_notify_route_rule_package_scope " +
+                        "ON notify_route_rule(package_name, scope)",
+                    migration = "15_16",
+                )
+                execSqlSafely(
+                    db = db,
+                    sql = "CREATE INDEX IF NOT EXISTS index_notify_route_rule_sender_scope " +
+                        "ON notify_route_rule(sender_id, scope)",
+                    migration = "15_16",
+                )
+            }
+        }
+
         private fun execSqlSafely(
             db: androidx.sqlite.db.SupportSQLiteDatabase,
             sql: String,
@@ -277,6 +330,8 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_11_12,
                     MIGRATION_12_13,
                     MIGRATION_13_14,
+                    MIGRATION_14_15,
+                    MIGRATION_15_16,
                 )
                 .enableMultiInstanceInvalidation()
                 .build().also { instance = it }

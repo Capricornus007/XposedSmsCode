@@ -27,4 +27,6 @@ data class Sender(
     @ColumnInfo(name = "receive_non_code", defaultValue = "0") var receiveNonCode: Int = 0,
     /** 0 = 不转发应用通知，1 = 转发应用通知 */
     @ColumnInfo(name = "receive_app_notify", defaultValue = "1") var receiveAppNotify: Int = 1,
+    /** 0 = 不转发通话通知，1 = 转发通话通知 */
+    @ColumnInfo(name = "receive_call_notify", defaultValue = "0") var receiveCallNotify: Int = 0,
 ) : Parcelable

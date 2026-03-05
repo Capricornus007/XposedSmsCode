@@ -2,6 +2,7 @@ package com.tianma.xsmscode.data.db.dao
 
 import androidx.room.*
 import com.tianma.xsmscode.data.db.entity.AppInfo
+import com.tianma.xsmscode.data.db.entity.NotifyRouteRule
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import kotlinx.coroutines.flow.Flow
@@ -120,4 +121,46 @@ interface AppInfoDao {
 
     @Query("DELETE FROM app_info")
     fun clearAll()
+}
+
+@Dao
+interface NotifyRouteRuleDao {
+    @Query("SELECT * FROM notify_route_rule")
+    fun getAll(): List<NotifyRouteRule>
+
+    @Query("SELECT * FROM notify_route_rule")
+    fun getAllFlow(): Flow<List<NotifyRouteRule>>
+
+    @Query("SELECT sender_id FROM notify_route_rule WHERE scope = :scope AND package_name = :packageName")
+    fun getSenderIdsByScopeAndPackage(scope: Int, packageName: String): List<Long>
+
+    @Query("SELECT sender_id FROM notify_route_rule WHERE scope = :scope AND package_name = :packageName")
+    fun observeSenderIdsByScopeAndPackage(scope: Int, packageName: String): Flow<List<Long>>
+
+    @Query("SELECT package_name FROM notify_route_rule WHERE scope = :scope AND sender_id = :senderId")
+    fun getPackageNamesByScopeAndSender(scope: Int, senderId: Long): List<String>
+
+    @Query("SELECT package_name FROM notify_route_rule WHERE scope = :scope AND sender_id = :senderId")
+    fun observePackageNamesByScopeAndSender(scope: Int, senderId: Long): Flow<List<String>>
+
+    @Query("SELECT DISTINCT sender_id FROM notify_route_rule WHERE scope = :scope AND sender_id IN (:senderIds)")
+    fun getDistinctSenderIdsByScopeIn(scope: Int, senderIds: List<Long>): List<Long>
+
+    @Query("DELETE FROM notify_route_rule WHERE scope = :scope AND package_name = :packageName")
+    fun deleteByScopeAndPackage(scope: Int, packageName: String): Int
+
+    @Query("DELETE FROM notify_route_rule WHERE scope = :scope AND sender_id = :senderId")
+    fun deleteByScopeAndSender(scope: Int, senderId: Long): Int
+
+    @Query("DELETE FROM notify_route_rule WHERE scope IN (:scopes) AND sender_id = :senderId")
+    fun deleteByScopesAndSender(scopes: List<Int>, senderId: Long): Int
+
+    @Query("DELETE FROM notify_route_rule")
+    fun clearAll()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insert(rule: NotifyRouteRule): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    fun insertAll(rules: List<NotifyRouteRule>)
 }
