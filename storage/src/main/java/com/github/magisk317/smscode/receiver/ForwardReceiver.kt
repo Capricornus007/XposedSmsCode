@@ -162,6 +162,17 @@ class ForwardReceiver : BroadcastReceiver() {
                     }
                     XLog.w("IPC token bypass accepted. %s", bypassMessage)
                     ForwardFlowLog.w(traceId, bypassMessage)
+                    if (receivedToken.isNullOrBlank()) {
+                        runCatching {
+                            com.tianma.xsmscode.forwarder.recovery.RootDbCatchupScheduler
+                                .triggerImmediate(context, reason = "token_blank_bypass")
+                        }.onFailure { error ->
+                            XLog.w(
+                                "Trigger root DB catchup failed: %s",
+                                error.message ?: error.javaClass.simpleName,
+                            )
+                        }
+                    }
                 }
                 if (
                     msgTypeStr == "app_notify" &&

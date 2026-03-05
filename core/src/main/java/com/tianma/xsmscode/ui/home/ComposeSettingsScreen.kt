@@ -96,9 +96,11 @@ fun ComposeSettingsScreen(
     var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
     var simSlot1Remark by remember { mutableStateOf("") }
     var simSlot2Remark by remember { mutableStateOf("") }
+    var rootDbCatchupIntervalMin by remember { mutableStateOf("5") }
     var showAutoInputDialog by remember { mutableStateOf(false) }
     var showAutoInputIntervalDialog by remember { mutableStateOf(false) }
     var showRetentionDialog by remember { mutableStateOf(false) }
+    var showRootDbCatchupIntervalDialog by remember { mutableStateOf(false) }
     var showSmsTestDialog by remember { mutableStateOf(false) }
     var showSimSlot1RemarkDialog by remember { mutableStateOf(false) }
     var showSimSlot2RemarkDialog by remember { mutableStateOf(false) }
@@ -159,6 +161,11 @@ fun ComposeSettingsScreen(
             context,
             PrefConst.KEY_SIM_SLOT2_REMARK,
             "",
+        )
+        rootDbCatchupIntervalMin = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_ROOT_DB_CATCHUP_INTERVAL_MIN,
+            "5",
         )
         val launcherVisible = settingsViewModel.isLauncherIconVisible()
         launcherIconVisible.value = launcherVisible
@@ -309,6 +316,7 @@ fun ComposeSettingsScreen(
     val autoUpdateEnabled = rememberPrefBoolean(PrefConst.KEY_AUTO_UPDATE_ON_START, true)
     val moduleEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE, true)
     val accordionMode = rememberPrefBoolean(PrefConst.KEY_SETTINGS_ACCORDION_MODE, true)
+    val rootDbCatchupEnabled = rememberPrefBoolean(PrefConst.KEY_ROOT_DB_CATCHUP_ENABLE, true)
 
     LaunchedEffect(settingsDataLoaded, showLoading, shouldShowInitialLoading) {
         if (shouldShowInitialLoading && settingsDataLoaded && !showLoading) {
@@ -562,6 +570,28 @@ fun ComposeSettingsScreen(
                         accordionMode = accordionMode.value,
                     ) {
                         SwitchItem(
+                            title = stringResource(id = R.string.pref_root_db_catchup_enable_title),
+                            summary = stringResource(id = R.string.pref_root_db_catchup_enable_summary),
+                            key = PrefConst.KEY_ROOT_DB_CATCHUP_ENABLE,
+                            defaultValue = true,
+                            stateOverride = rootDbCatchupEnabled,
+                            onSaved = markPrefsSaved,
+                        )
+                        Item(
+                            title = stringResource(id = R.string.pref_root_db_catchup_interval_title),
+                            summary = stringResource(
+                                id = R.string.pref_root_db_catchup_interval_summary,
+                                rootDbCatchupIntervalMin,
+                            ),
+                        ) { showRootDbCatchupIntervalDialog = true }
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_root_db_catchup_writeback_title),
+                            summary = stringResource(id = R.string.pref_root_db_catchup_writeback_summary),
+                            key = PrefConst.KEY_ROOT_DB_CATCHUP_WRITEBACK,
+                            defaultValue = false,
+                            onSaved = markPrefsSaved,
+                        )
+                        SwitchItem(
                             title = stringResource(id = R.string.pref_force_stop_recovery_title),
                             summary = stringResource(id = R.string.pref_force_stop_recovery_summary),
                             key = PrefConst.KEY_FORCE_STOP_RECOVERY,
@@ -788,6 +818,38 @@ fun ComposeSettingsScreen(
                     markPrefsSaved()
                 }
                 showTintAlphaDialog = false
+            },
+        )
+    }
+
+    if (showRootDbCatchupIntervalDialog) {
+        val rootDbCatchupIntervalErrorText = stringResource(id = R.string.pref_root_db_catchup_interval_error)
+        TextInputDialog(
+            title = stringResource(id = R.string.pref_root_db_catchup_interval_title),
+            initialValue = rootDbCatchupIntervalMin,
+            supportingText = stringResource(id = R.string.pref_root_db_catchup_interval_hint),
+            validator = { input ->
+                val parsed = input.trim().toIntOrNull()
+                if (parsed == null || parsed !in 1..120) {
+                    rootDbCatchupIntervalErrorText
+                } else {
+                    null
+                }
+            },
+            onDismiss = { showRootDbCatchupIntervalDialog = false },
+            onConfirm = { value ->
+                val normalized = value.trim().toIntOrNull()?.coerceIn(1, 120)?.toString() ?: "5"
+                rootDbCatchupIntervalMin = normalized
+                scope.launch {
+                    AppPreferencesDataStore.setString(
+                        context,
+                        PrefConst.KEY_ROOT_DB_CATCHUP_INTERVAL_MIN,
+                        normalized,
+                    )
+                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                    markPrefsSaved()
+                }
+                showRootDbCatchupIntervalDialog = false
             },
         )
     }

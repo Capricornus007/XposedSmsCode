@@ -142,6 +142,22 @@ IP地址列表：{{IP_LIST}}
         )
     }
 
+    suspend fun loadCallNotifyTemplate(context: Context): String {
+        return AppPreferencesDataStore.getStringCompat(
+            context = context,
+            key = PrefConst.KEY_FORWARD_CALL_NOTIFY_TEMPLATE,
+            defaultValue = "",
+        )
+    }
+
+    suspend fun saveCallNotifyTemplate(context: Context, template: String) {
+        AppPreferencesDataStore.setString(
+            context = context,
+            key = PrefConst.KEY_FORWARD_CALL_NOTIFY_TEMPLATE,
+            value = template,
+        )
+    }
+
     fun defaultTemplate(): String = DEFAULT_TEMPLATE.trimIndent()
     fun fullInfoTemplate(): String = FULL_INFO_TEMPLATE.trimIndent()
 
@@ -171,7 +187,7 @@ IP地址列表：{{IP_LIST}}
             "SMS" to msgInfo.content,
             "CARD_SLOT" to cardSlot,
             "CARD_SUBID" to if (msgInfo.subId > 0) msgInfo.subId.toString() else "",
-            "CALL_TYPE" to "",
+            "CALL_TYPE" to resolveCallTypeLabel(msgInfo.callType),
             "CONTACT_NAME" to msgInfo.contactName,
             "PHONE_AREA" to msgInfo.phoneArea,
             "UID" to "",
@@ -202,6 +218,10 @@ IP地址列表：{{IP_LIST}}
             rendered = rendered
                 .replace(Regex("(?m)^(\\s*)卡槽([:：])"), "$1应用$2")
                 .replace("【卡槽与来源】", "【应用与来源】")
+        } else if (msgInfo.type == "call_notify") {
+            rendered = rendered
+                .replace(Regex("(?m)^(\\s*)卡槽([:：])"), "$1通话$2")
+                .replace("【卡槽与来源】", "【通话与来源】")
         }
         val cleaned = removeEmptyValueLines(rendered)
         return msgInfo.copy(content = cleaned)
@@ -215,6 +235,19 @@ IP地址列表：{{IP_LIST}}
         }
         if (msgInfo.type == "app_notify" && msgInfo.simInfo.isNotBlank()) return msgInfo.simInfo
         return ""
+    }
+
+    private fun resolveCallTypeLabel(callType: Int): String {
+        return when (callType) {
+            1 -> "来电"
+            2 -> "去电"
+            3 -> "未接"
+            4 -> "语音信箱"
+            5 -> "拒接"
+            6 -> "拦截"
+            7 -> "异地接听"
+            else -> ""
+        }
     }
 
     private fun removeEmptyValueLines(text: String): String {

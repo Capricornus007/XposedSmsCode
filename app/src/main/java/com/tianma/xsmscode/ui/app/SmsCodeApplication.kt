@@ -14,6 +14,7 @@ import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
 import com.tianma.xsmscode.common.utils.RuntimeLogStore
 import com.tianma.xsmscode.di.appModule
 import com.tianma.xsmscode.feature.migrate.TransitionTask
+import com.tianma.xsmscode.forwarder.recovery.RootDbCatchupScheduler
 import com.tianma.xsmscode.web.WebUiServer
 import java.io.File
 import java.util.UUID
@@ -35,6 +36,7 @@ class SmsCodeApplication : Application() {
     private var webUiServer: WebUiServer? = null
     private var webUiServerConfigJob: Job? = null
     private var webUiLanAccessApplied: Boolean? = null
+    private var startedActivityCount: Int = 0
 
     override fun onCreate() {
         super.onCreate()
@@ -54,6 +56,7 @@ class SmsCodeApplication : Application() {
         handlePhoneProcessRestartIfNeeded()
         registerLicenseActivityKiller()
         startWebUiServer()
+        RootDbCatchupScheduler.startPeriodic(this, reason = "app_create")
     }
 
     override fun onTerminate() {
@@ -61,6 +64,7 @@ class SmsCodeApplication : Application() {
         webUiServerConfigJob = null
         webUiServer?.stop()
         webUiServer = null
+        RootDbCatchupScheduler.stopPeriodic(reason = "app_terminate")
         super.onTerminate()
     }
 
@@ -86,7 +90,12 @@ class SmsCodeApplication : Application() {
     private fun registerLicenseActivityKiller() {
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
-            override fun onActivityStarted(activity: Activity) {}
+            override fun onActivityStarted(activity: Activity) {
+                startedActivityCount += 1
+                if (startedActivityCount == 1) {
+                    RootDbCatchupScheduler.stopPeriodic(reason = "app_foreground")
+                }
+            }
             override fun onActivityResumed(activity: Activity) {
                 if (activity.javaClass.name == "com.pairip.licensecheck.LicenseActivity") {
                     runCatching {
@@ -97,7 +106,15 @@ class SmsCodeApplication : Application() {
                 }
             }
             override fun onActivityPaused(activity: Activity) {}
-            override fun onActivityStopped(activity: Activity) {}
+            override fun onActivityStopped(activity: Activity) {
+                startedActivityCount = (startedActivityCount - 1).coerceAtLeast(0)
+                if (startedActivityCount == 0) {
+                    RootDbCatchupScheduler.startPeriodic(
+                        this@SmsCodeApplication,
+                        reason = "app_background",
+                    )
+                }
+            }
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
             override fun onActivityDestroyed(activity: Activity) {}
         })

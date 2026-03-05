@@ -19,6 +19,8 @@ import com.github.magisk317.smscode.forwarder.entity.setting.UrlSchemeSetting
 import com.github.magisk317.smscode.forwarder.entity.setting.WebhookSetting
 import com.github.magisk317.smscode.forwarder.entity.setting.WeworkAgentSetting
 import com.github.magisk317.smscode.forwarder.entity.setting.WeworkRobotSetting
+import com.tianma.xsmscode.forwarder.routing.NotifyRoutingResolver
+import com.tianma.xsmscode.forwarder.routing.NotifyRoutingResult
 import com.github.magisk317.smscode.forwarder.utils.sender.BarkUtils
 import com.github.magisk317.smscode.forwarder.utils.sender.DingtalkGroupRobotUtils
 import com.github.magisk317.smscode.forwarder.utils.sender.DingtalkInnerRobotUtils
@@ -81,15 +83,43 @@ object SendUtils {
                     SenderSettingSanitizer.sanitizeSenderLenient(sender)
                 }
                 val enabledSenders = allSenders.filter { it.status == 1 }
-                val senders = enabledSenders.filter { sender ->
+                val baseSenders = enabledSenders.filter { sender ->
                     if (msgInfo.type == "app_notify") {
                         sender.receiveAppNotify == 1
+                    } else if (msgInfo.type == "call_notify") {
+                        sender.receiveCallNotify == 1
                     } else {
                         if (isCodeSms) sender.receiveCode == 1 else sender.receiveNonCode == 1
                     }
                 }
+                var routingResult: NotifyRoutingResult? = null
+                val senders = if (msgInfo.type == "app_notify" && msgInfo.packageName.isNotBlank()) {
+                    runCatching {
+                        NotifyRoutingResolver.resolveAppNotifySenders(
+                            candidates = baseSenders,
+                            packageName = msgInfo.packageName,
+                            dao = db.notifyRouteRuleDao(),
+                            traceId = traceId,
+                        )
+                    }.onFailure { error ->
+                        XLog.e("Notify routing resolve failed, fallback to legacy sender set", error)
+                        ForwardFlowLog.e(traceId, "Notify routing resolve failed, fallback to legacy sender set", error)
+                    }.getOrNull()?.also { result ->
+                        routingResult = result
+                        ForwardFlowLog.i(
+                            traceId,
+                            "Notify routing pkg=${msgInfo.packageName} base=${baseSenders.size} result=${result.senders.size} " +
+                                "appBound=${result.appBoundSenderCount} senderAllowConfigured=${result.senderAllowConfiguredCount} " +
+                                "senderAllowMatched=${result.senderAllowMatchedCount} senderDenyMatched=${result.senderDenyMatchedCount} " +
+                                "conflict=${result.conflictSenderIds.size}",
+                        )
+                    }?.senders ?: baseSenders
+                } else {
+                    baseSenders
+                }
                 if (senders.isEmpty()) {
-                    val reason = buildNoEligibleReason(allSenders, enabledSenders, msgInfo.type, isCodeSms)
+                    val reason = routingResult?.noEligibleReason
+                        ?: buildNoEligibleReason(allSenders, enabledSenders, msgInfo.type, isCodeSms)
                     XLog.w(
                         "No eligible senders found (isCodeSms=%s, type=%s), skipping dispatch. reason=%s",
                         isCodeSms,
@@ -112,20 +142,31 @@ object SendUtils {
                     }",
                 )
                 val commonConfig = ForwardCommonConfigStore.load(context)
-                val effectiveConfig = if (msgInfo.type == "app_notify" && msgInfo.packageName.isNotBlank()) {
-                    val appConfig = db.appInfoDao().getByPackageName(msgInfo.packageName)
-                    if (appConfig?.notifyTemplate?.isNotBlank() == true) {
-                        commonConfig.copy(messageTemplate = appConfig.notifyTemplate)
-                    } else {
-                        val appNotifyTemplate = ForwardCommonConfigStore.loadAppNotifyTemplate(context)
-                        if (appNotifyTemplate.isNotBlank()) {
-                            commonConfig.copy(messageTemplate = appNotifyTemplate)
+                val effectiveConfig = when {
+                    msgInfo.type == "app_notify" && msgInfo.packageName.isNotBlank() -> {
+                        val appConfig = db.appInfoDao().getByPackageName(msgInfo.packageName)
+                        if (appConfig?.notifyTemplate?.isNotBlank() == true) {
+                            commonConfig.copy(messageTemplate = appConfig.notifyTemplate)
+                        } else {
+                            val appNotifyTemplate = ForwardCommonConfigStore.loadAppNotifyTemplate(context)
+                            if (appNotifyTemplate.isNotBlank()) {
+                                commonConfig.copy(messageTemplate = appNotifyTemplate)
+                            } else {
+                                commonConfig
+                            }
+                        }
+                    }
+
+                    msgInfo.type == "call_notify" -> {
+                        val callNotifyTemplate = ForwardCommonConfigStore.loadCallNotifyTemplate(context)
+                        if (callNotifyTemplate.isNotBlank()) {
+                            commonConfig.copy(messageTemplate = callNotifyTemplate)
                         } else {
                             commonConfig
                         }
                     }
-                } else {
-                    commonConfig
+
+                    else -> commonConfig
                 }
                 val msgForSend = ForwardCommonConfigStore.applyToMessage(context, msgInfo, effectiveConfig)
                 val results = mutableListOf<SenderDispatchResult>()
@@ -181,6 +222,12 @@ object SendUtils {
                 .filter { it.receiveAppNotify != 1 }
                 .joinToString(",") { it.name.ifBlank { senderTypeName(it.type) } }
             "已启用通道均关闭了“转发应用通知”开关（enabled=${enabledSenders.size}, matched=${allowed.size}, blocked=$blockedNames）"
+        } else if (msgType == "call_notify") {
+            val allowed = enabledSenders.filter { it.receiveCallNotify == 1 }
+            val blockedNames = enabledSenders
+                .filter { it.receiveCallNotify != 1 }
+                .joinToString(",") { it.name.ifBlank { senderTypeName(it.type) } }
+            "已启用通道均关闭了“转发通话通知”开关（enabled=${enabledSenders.size}, matched=${allowed.size}, blocked=$blockedNames）"
         } else if (isCodeSms) {
             val allowed = enabledSenders.filter { it.receiveCode == 1 }
             val blockedNames = enabledSenders

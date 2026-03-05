@@ -244,6 +244,14 @@ object AppPreferencesDataStore {
                 getBoolean(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true),
             ),
         )
+        editor.putBoolean(
+            PrefConst.KEY_ENABLE_CODE_RECORDS_CALL_NOTIFY,
+            getBoolean(
+                context,
+                PrefConst.KEY_ENABLE_CODE_RECORDS_CALL_NOTIFY,
+                getBoolean(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true),
+            ),
+        )
         editor.putBoolean(PrefConst.KEY_BLOCK_SMS, getBoolean(context, PrefConst.KEY_BLOCK_SMS, false))
         editor.putBoolean(PrefConst.KEY_KILL_ME, getBoolean(context, PrefConst.KEY_KILL_ME, false))
         editor.putBoolean(
@@ -324,6 +332,14 @@ object AppPreferencesDataStore {
                 getString(context, PrefConst.KEY_HISTORY_LIMIT, "0"),
             ),
         )
+        editor.putString(
+            PrefConst.KEY_HISTORY_LIMIT_CALL_NOTIFY,
+            getString(
+                context,
+                PrefConst.KEY_HISTORY_LIMIT_CALL_NOTIFY,
+                "20",
+            ),
+        )
         editor.putBoolean(
             PrefConst.KEY_AUTO_UPDATE_ON_START,
             getBoolean(context, PrefConst.KEY_AUTO_UPDATE_ON_START, true),
@@ -371,6 +387,30 @@ object AppPreferencesDataStore {
         editor.putBoolean(
             PrefConst.KEY_WEBUI_LAN_ACCESS,
             getBoolean(context, PrefConst.KEY_WEBUI_LAN_ACCESS, false),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_ROOT_DB_CATCHUP_ENABLE,
+            getBoolean(context, PrefConst.KEY_ROOT_DB_CATCHUP_ENABLE, true),
+        )
+        editor.putString(
+            PrefConst.KEY_ROOT_DB_CATCHUP_INTERVAL_MIN,
+            getString(context, PrefConst.KEY_ROOT_DB_CATCHUP_INTERVAL_MIN, "5"),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_ROOT_DB_CATCHUP_WRITEBACK,
+            getBoolean(context, PrefConst.KEY_ROOT_DB_CATCHUP_WRITEBACK, false),
+        )
+        editor.putBoolean(
+            PrefConst.KEY_INTERNAL_ROOT_DB_BASELINE_INITED,
+            getBoolean(context, PrefConst.KEY_INTERNAL_ROOT_DB_BASELINE_INITED, false),
+        )
+        editor.putString(
+            PrefConst.KEY_INTERNAL_ROOT_DB_LAST_SMS_ID,
+            getString(context, PrefConst.KEY_INTERNAL_ROOT_DB_LAST_SMS_ID, "0"),
+        )
+        editor.putString(
+            PrefConst.KEY_INTERNAL_ROOT_DB_LAST_CALL_ID,
+            getString(context, PrefConst.KEY_INTERNAL_ROOT_DB_LAST_CALL_ID, "0"),
         )
         editor.apply()
         ensureSharedPrefsReadable(context)

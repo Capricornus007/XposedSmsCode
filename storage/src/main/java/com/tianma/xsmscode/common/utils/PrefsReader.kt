@@ -302,6 +302,12 @@ object PrefsReader {
     }
 
     @JvmStatic
+    fun recordCallNotifyEnabled(context: Context): Boolean {
+        val legacyDefault = getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true)
+        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS_CALL_NOTIFY, legacyDefault)
+    }
+
+    @JvmStatic
     fun blockSmsEnabled(context: Context): Boolean {
         val defaultValue = false
         return getBooleanViaProvider(context, PrefConst.KEY_BLOCK_SMS, defaultValue)
@@ -317,6 +323,22 @@ object PrefsReader {
     fun forceStopRecoveryEnabled(context: Context): Boolean {
         val defaultValue = false
         return getBooleanViaProvider(context, PrefConst.KEY_FORCE_STOP_RECOVERY, defaultValue)
+    }
+
+    @JvmStatic
+    fun rootDbCatchupEnabled(context: Context): Boolean {
+        return getBooleanViaProvider(context, PrefConst.KEY_ROOT_DB_CATCHUP_ENABLE, true)
+    }
+
+    @JvmStatic
+    fun rootDbCatchupIntervalMin(context: Context): Long {
+        val value = getStringViaProvider(context, PrefConst.KEY_ROOT_DB_CATCHUP_INTERVAL_MIN, "5")
+        return value.toLongOrNull()?.coerceAtLeast(1L) ?: 5L
+    }
+
+    @JvmStatic
+    fun rootDbCatchupWriteback(context: Context): Boolean {
+        return getBooleanViaProvider(context, PrefConst.KEY_ROOT_DB_CATCHUP_WRITEBACK, false)
     }
 
     @JvmStatic
@@ -415,9 +437,18 @@ object PrefsReader {
     }
 
     @JvmStatic
+    fun getCallNotifyHistoryLimit(context: Context): Int {
+        return getHistoryLimitByKey(
+            context = context,
+            key = PrefConst.KEY_HISTORY_LIMIT_CALL_NOTIFY,
+        )
+    }
+
+    @JvmStatic
     fun getHistoryLimit(context: Context, msgType: Int, isCodeSms: Boolean): Int {
         return when (msgType) {
             SmsMsg.MSG_TYPE_APP_NOTIFY -> getAppNotifyHistoryLimit(context)
+            SmsMsg.MSG_TYPE_CALL_NOTIFY -> getCallNotifyHistoryLimit(context)
             SmsMsg.MSG_TYPE_SMS -> if (isCodeSms) getCodeHistoryLimit(context) else getPlainSmsHistoryLimit(context)
             else -> getCodeHistoryLimit(context)
         }

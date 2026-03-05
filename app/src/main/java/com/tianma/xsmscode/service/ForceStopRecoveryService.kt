@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.IBinder
 import com.tianma.xsmscode.common.utils.RuntimeLogStore
 import com.tianma.xsmscode.common.utils.XLog
+import com.tianma.xsmscode.forwarder.recovery.RootDbCatchupScheduler
 
 /**
  * Lightweight wake-up service used by system-side Xposed hook to revive app process
@@ -28,6 +29,10 @@ class ForceStopRecoveryService : Service() {
             "force-stop recovery wakeup reason=${reason.ifBlank { "<none>" }} event=${eventId.ifBlank { "<none>" }}",
             force = true,
         )
+        RootDbCatchupScheduler.triggerImmediate(
+            context = this,
+            reason = "force_stop_recovery",
+        )
         stopSelfResult(startId)
         return START_NOT_STICKY
     }
@@ -39,4 +44,3 @@ class ForceStopRecoveryService : Service() {
         const val EXTRA_EVENT_ID = "event_id"
     }
 }
-
