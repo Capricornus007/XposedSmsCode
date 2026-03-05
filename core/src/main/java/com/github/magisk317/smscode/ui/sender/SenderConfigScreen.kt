@@ -7,7 +7,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -16,12 +22,14 @@ import com.github.magisk317.smscode.forwarder.utils.SenderType
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.magisk317.smscode.ui.sender.forms.*
 import com.tianma.xsmscode.core.BuildConfig
+import kotlinx.coroutines.flow.flowOf
 
 @Composable
 fun SenderConfigScreen(
     senderId: Long,
     senderTypeArg: Int,
     onBack: (Boolean) -> Unit,
+    onOpenSenderNotifyScope: (Long) -> Unit = {},
     viewModel: SenderViewModel = viewModel()
 ) {
     var type by remember { mutableStateOf(senderTypeArg) }
@@ -40,6 +48,25 @@ fun SenderConfigScreen(
     }
 
     val lastSavedStatus by viewModel.lastSavedStatus.collectAsStateWithLifecycle()
+    val notifyScopeSummaryFlow = remember(senderId) {
+        if (senderId > 0L) {
+            viewModel.senderNotifyScopeSummaryFlow(senderId)
+        } else {
+            flowOf("")
+        }
+    }
+    val notifyScopeSummary by notifyScopeSummaryFlow.collectAsStateWithLifecycle(initialValue = "")
+    val notifyScopeEntry = remember(senderId, notifyScopeSummary, onOpenSenderNotifyScope) {
+        if (senderId > 0L) {
+            SenderNotifyScopeEntry(
+                senderId = senderId,
+                summary = notifyScopeSummary.ifBlank { "白名单0 / 黑名单0" },
+                onClick = onOpenSenderNotifyScope,
+            )
+        } else {
+            null
+        }
+    }
 
     val handleBack: () -> Unit = {
         // Only reopen type chooser when creating a brand new sender and nothing was saved.
@@ -56,30 +83,32 @@ fun SenderConfigScreen(
         return
     }
 
-    when (type) {
-        SenderType.DINGTALK_GROUP_ROBOT -> DingtalkConfigForm(senderId, handleBack, viewModel)
-        SenderType.EMAIL -> EmailConfigForm(senderId, handleBack, viewModel)
-        SenderType.BARK -> BarkConfigForm(senderId, handleBack, viewModel)
-        SenderType.WEBHOOK -> WebhookConfigForm(senderId, handleBack, viewModel)
-        SenderType.WEWORK_ROBOT -> WeworkRobotConfigForm(senderId, handleBack, viewModel)
-        SenderType.WEWORK_AGENT -> WeworkAgentConfigForm(senderId, handleBack, viewModel)
-        SenderType.SERVERCHAN -> ServerchanConfigForm(senderId, handleBack, viewModel)
-        SenderType.PUSHPLUS -> PushplusConfigForm(senderId, handleBack, viewModel)
-        SenderType.TELEGRAM -> TelegramConfigForm(senderId, handleBack, viewModel)
-        SenderType.SMS -> {
-            if (BuildConfig.ENABLE_SMS_CHANNEL) {
-                SmsConfigForm(senderId, handleBack, viewModel)
-            } else {
-                SmsChannelDisabledScreen(onBack = handleBack)
+    CompositionLocalProvider(LocalSenderNotifyScopeEntry provides notifyScopeEntry) {
+        when (type) {
+            SenderType.DINGTALK_GROUP_ROBOT -> DingtalkConfigForm(senderId, handleBack, viewModel)
+            SenderType.EMAIL -> EmailConfigForm(senderId, handleBack, viewModel)
+            SenderType.BARK -> BarkConfigForm(senderId, handleBack, viewModel)
+            SenderType.WEBHOOK -> WebhookConfigForm(senderId, handleBack, viewModel)
+            SenderType.WEWORK_ROBOT -> WeworkRobotConfigForm(senderId, handleBack, viewModel)
+            SenderType.WEWORK_AGENT -> WeworkAgentConfigForm(senderId, handleBack, viewModel)
+            SenderType.SERVERCHAN -> ServerchanConfigForm(senderId, handleBack, viewModel)
+            SenderType.PUSHPLUS -> PushplusConfigForm(senderId, handleBack, viewModel)
+            SenderType.TELEGRAM -> TelegramConfigForm(senderId, handleBack, viewModel)
+            SenderType.SMS -> {
+                if (BuildConfig.ENABLE_SMS_CHANNEL) {
+                    SmsConfigForm(senderId, handleBack, viewModel)
+                } else {
+                    SmsChannelDisabledScreen(onBack = handleBack)
+                }
             }
+            SenderType.FEISHU -> FeishuConfigForm(senderId, handleBack, viewModel)
+            SenderType.GOTIFY -> GotifyConfigForm(senderId, handleBack, viewModel)
+            SenderType.DINGTALK_INNER_ROBOT -> DingtalkInnerConfigForm(senderId, handleBack, viewModel)
+            SenderType.FEISHU_APP -> FeishuAppConfigForm(senderId, handleBack, viewModel)
+            SenderType.URL_SCHEME -> UrlSchemeConfigForm(senderId, handleBack, viewModel)
+            SenderType.SOCKET -> SocketConfigForm(senderId, handleBack, viewModel)
+            else -> DingtalkConfigForm(senderId, handleBack, viewModel)
         }
-        SenderType.FEISHU -> FeishuConfigForm(senderId, handleBack, viewModel)
-        SenderType.GOTIFY -> GotifyConfigForm(senderId, handleBack, viewModel)
-        SenderType.DINGTALK_INNER_ROBOT -> DingtalkInnerConfigForm(senderId, handleBack, viewModel)
-        SenderType.FEISHU_APP -> FeishuAppConfigForm(senderId, handleBack, viewModel)
-        SenderType.URL_SCHEME -> UrlSchemeConfigForm(senderId, handleBack, viewModel)
-        SenderType.SOCKET -> SocketConfigForm(senderId, handleBack, viewModel)
-        else -> DingtalkConfigForm(senderId, handleBack, viewModel)
     }
 }
 

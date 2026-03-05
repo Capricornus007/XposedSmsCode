@@ -38,6 +38,7 @@ fun PushplusConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
     var receiveCode by remember { mutableStateOf(true) }
     var receiveNonCode by remember { mutableStateOf(true) }
     var receiveAppNotify by remember { mutableStateOf(true) }
+    var receiveCallNotify by remember { mutableStateOf(false) }
 
     var isLoaded by remember { mutableStateOf(false) }
     var currentSender by remember { mutableStateOf<Sender?>(null) }
@@ -52,6 +53,7 @@ fun PushplusConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
                 receiveCode = sender.receiveCode == 1
                 receiveNonCode = sender.receiveNonCode == 1
                 receiveAppNotify = sender.receiveAppNotify == 1
+                receiveCallNotify = sender.receiveCallNotify == 1
                 val setting = try {
                     Gson().fromJson(sender.jsonSetting, PushplusSetting::class.java)
                 } catch (@Suppress("SwallowedException") e: com.google.gson.JsonSyntaxException) {
@@ -87,6 +89,7 @@ fun PushplusConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
             receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
+            receiveCallNotify = if (receiveCallNotify) 1 else 0,
             time = Date()
         ) ?: Sender(
             id = 0,
@@ -97,6 +100,7 @@ fun PushplusConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
             receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
+            receiveCallNotify = if (receiveCallNotify) 1 else 0,
             time = Date()
         )
     }
@@ -174,6 +178,8 @@ fun PushplusConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderView
                 onReceiveNonCodeChange = { receiveNonCode = it },
                 receiveAppNotify = receiveAppNotify,
                 onReceiveAppNotifyChange = { receiveAppNotify = it },
+                receiveCallNotify = receiveCallNotify,
+                onReceiveCallNotifyChange = { receiveCallNotify = it },
             )
             Spacer(modifier = Modifier.height(8.dp))
             SenderTestActionRow(channel = "Pushplus") {

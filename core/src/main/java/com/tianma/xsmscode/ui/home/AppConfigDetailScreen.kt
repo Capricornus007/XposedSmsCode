@@ -14,6 +14,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -38,6 +39,7 @@ import java.util.Locale
 fun AppConfigDetailScreen(
     packageName: String,
     onBack: () -> Unit,
+    onConfigureNotifyChannels: () -> Unit,
     viewModel: AppConfigViewModel = koinViewModel(),
 ) {
     val apps by viewModel.appsFlow.collectAsStateWithLifecycle()
@@ -119,6 +121,27 @@ fun AppConfigDetailScreen(
                                 context.getString(R.string.pref_sync_toast),
                                 Toast.LENGTH_SHORT,
                             ).show()
+                        },
+                    )
+                    HorizontalDivider()
+                    androidx.compose.material3.ListItem(
+                        headlineContent = {
+                            Text(text = stringResource(R.string.app_notify_channel_config_title))
+                        },
+                        supportingContent = {
+                            val count = viewModel.getAppNotifyBindingCount(app.packageName)
+                            Text(
+                                text = if (count <= 0) {
+                                    stringResource(R.string.app_notify_channel_global_summary)
+                                } else {
+                                    stringResource(R.string.app_notify_channel_bound_count, count)
+                                },
+                            )
+                        },
+                        trailingContent = {
+                            TextButton(onClick = onConfigureNotifyChannels) {
+                                Text(text = stringResource(R.string.item_config))
+                            }
                         },
                     )
                 }

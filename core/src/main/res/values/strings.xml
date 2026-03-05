@@ -142,6 +142,7 @@
     <string name="pref_enable_code_records_title">Reserve SMS code records</string>
     <string name="pref_enable_plain_sms_records_title">Reserve plain SMS records</string>
     <string name="pref_enable_app_notify_records_title">Reserve app notification records</string>
+    <string name="pref_enable_call_notify_records_title">Reserve call notification records</string>
     <string name="selected_count">%d selected</string>
     <string name="pref_history_limit_title">History record limit</string>
     <string name="pref_history_limit_title_with_target">History record limit (%1$s)</string>
@@ -149,6 +150,7 @@
     <string name="record_settings_target_code">Code records</string>
     <string name="record_settings_target_plain">Plain SMS records</string>
     <string name="record_settings_target_app_notify">App notification records</string>
+    <string name="record_settings_target_call_notify">Call notification records</string>
     <string name="pref_history_limit_summary">Keep only %s recent records</string>
     <string name="history_limit_10_entry">10 records</string>
     <string name="history_limit_20_entry">20 records</string>
@@ -158,9 +160,15 @@
     <string name="records_column_code_title">Code SMS</string>
     <string name="records_column_plain_title">Plain SMS</string>
     <string name="records_column_app_notify_title">App Notifications</string>
+    <string name="records_column_call_notify_title">Call Notifications</string>
+    <string name="records_column_code_short_title">Code</string>
+    <string name="records_column_plain_short_title">SMS</string>
+    <string name="records_column_app_notify_short_title">App</string>
+    <string name="records_column_call_notify_short_title">Call</string>
     <string name="records_column_code_empty">No code SMS yet</string>
     <string name="records_column_plain_empty">No plain SMS yet</string>
     <string name="records_column_app_notify_empty">No app notifications yet</string>
+    <string name="records_column_call_notify_empty">No call notifications yet</string>
     <string name="record_export_dialog_title">Export records</string>
     <string name="record_export_current_tab_option">Export current tab (%1$s)</string>
     <string name="record_export_all_tabs_option">Export all</string>
@@ -215,6 +223,14 @@
     <string name="pref_force_stop_recovery_summary">When forwarding detects app force-stopped, try to unstop and wake required background service only.</string>
     <string name="pref_force_stop_recovery_relaunch_once_title">Relaunch once on recovery failure</string>
     <string name="pref_force_stop_recovery_relaunch_once_summary">When ordered delivery ack is empty, relaunch module UI once to help recover the forwarding path.</string>
+    <string name="pref_root_db_catchup_enable_title">Root DB catchup</string>
+    <string name="pref_root_db_catchup_enable_summary">When app receives no tokenized broadcast, query system SMS/call DB in background as fallback.</string>
+    <string name="pref_root_db_catchup_interval_title">Catchup interval</string>
+    <string name="pref_root_db_catchup_interval_summary">Run every %1$s minutes in background</string>
+    <string name="pref_root_db_catchup_interval_hint">Value range: 1-120 minutes</string>
+    <string name="pref_root_db_catchup_interval_error">Please enter an integer between 1 and 120.</string>
+    <string name="pref_root_db_catchup_writeback_title">Write back read state</string>
+    <string name="pref_root_db_catchup_writeback_summary">After catchup dispatch, set SMS read=1 and clear missed-call new flag (type=3 only).</string>
     <!-- preference experimental end -->
 
 
@@ -288,9 +304,31 @@
     <string name="action_sort_by_pkg">Package name</string>
     <string name="action_sort_by_usage">Usage frequency</string>
     <string name="action_sort_by_selection">Selection priority</string>
-    <string name="app_config_settings">App Control</string>
+    <string name="app_config_settings">App</string>
     <string name="label_blocked">Auto-Input Intercept</string>
     <string name="label_forwarding">App Notification Forwarding</string>
+    <string name="app_input_status_on">On</string>
+    <string name="app_input_status_off">Off</string>
+    <string name="app_notify_status_on">On</string>
+    <string name="app_notify_status_off">Off</string>
+    <string name="app_notify_summary_line">Input: %1$s | Notify: %2$s | Channel: %3$s</string>
+    <string name="app_notify_channel_config_title">Notification Channel Config</string>
+    <string name="app_notify_channel_global_summary">Using global channels</string>
+    <string name="app_notify_channel_global_summary_short">Global</string>
+    <string name="app_notify_channel_bound_count">Bound %1$d channel(s)</string>
+    <string name="app_notify_channel_bound_count_short">%1$d bound</string>
+    <string name="app_notify_channel_tip">Empty selection means this app follows global channel filtering.</string>
+    <string name="app_notify_channel_deny_hint">This sender blacklist contains current app and may block forwarding.</string>
+    <string name="sender_notify_scope_title">Notification App Scope</string>
+    <string name="sender_notify_scope_title_named">%1$s: Notification App Scope</string>
+    <string name="sender_notify_scope_summary">Whitelist %1$d / Blacklist %2$d</string>
+    <string name="sender_notify_scope_whitelist">Whitelist</string>
+    <string name="sender_notify_scope_blacklist">Blacklist</string>
+    <string name="sender_notify_scope_clear_whitelist">Clear</string>
+    <string name="sender_notify_scope_clear_blacklist">Clear</string>
+    <string name="sender_notify_scope_conflict_single">Conflict: this app is in both whitelist and blacklist.</string>
+    <string name="sender_notify_scope_conflict_count">Conflict items: %1$d</string>
+    <string name="sender_notify_scope_sender_id">Sender ID: %1$d</string>
     <string name="action_search">Search</string>
     <string name="action_accomplish">Accomplish</string>
     <string name="usage_permission_prompt">Sorting by usage frequency requires Usage Access permission. Please grant it in Settings.</string>

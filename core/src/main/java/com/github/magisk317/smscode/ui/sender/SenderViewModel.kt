@@ -6,14 +6,18 @@ import androidx.lifecycle.viewModelScope
 import com.tianma.xsmscode.data.db.AppDatabase
 import com.github.magisk317.smscode.forwarder.entity.ForwardCommonConfig
 import com.github.magisk317.smscode.forwarder.entity.Sender
+import com.tianma.xsmscode.data.db.entity.NotifyRouteRule
 import com.github.magisk317.smscode.forwarder.utils.DeviceIdentityUtils
 import com.github.magisk317.smscode.forwarder.utils.ForwardCommonConfigStore
 import com.github.magisk317.smscode.forwarder.utils.SenderSettingSanitizer
 import com.github.magisk317.smscode.forwarder.utils.SenderType
 import com.github.magisk317.smscode.forwarder.utils.SenderValidationResult
 import com.github.magisk317.smscode.forwarder.utils.SenderValidator
+import com.tianma.xsmscode.forwarder.routing.NotifyRouteScope
 import com.tianma.xsmscode.core.BuildConfig
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +30,7 @@ import kotlinx.coroutines.withContext
 class SenderViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getInstance(application)
     private val senderDao = db.senderDao()
+    private val notifyRouteDao = db.notifyRouteRuleDao()
 
     private val _forwardCommonConfig = MutableStateFlow(
         ForwardCommonConfig(deviceName = DeviceIdentityUtils.resolveDefaultDeviceName()),
@@ -33,6 +38,8 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
     val forwardCommonConfig: StateFlow<ForwardCommonConfig> = _forwardCommonConfig.asStateFlow()
     private val _appNotifyTemplate = MutableStateFlow("")
     val appNotifyTemplate: StateFlow<String> = _appNotifyTemplate.asStateFlow()
+    private val _callNotifyTemplate = MutableStateFlow("")
+    val callNotifyTemplate: StateFlow<String> = _callNotifyTemplate.asStateFlow()
 
     val senderList: StateFlow<List<Sender>> = senderDao.getAllFlow()
         .map { list ->
@@ -56,6 +63,7 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
     init {
         refreshForwardCommonConfig()
         refreshAppNotifyTemplate()
+        refreshCallNotifyTemplate()
     }
 
     fun loadSenders() {
@@ -85,10 +93,25 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun saveCallNotifyTemplate(template: String) {
+        val context = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            ForwardCommonConfigStore.saveCallNotifyTemplate(context, template)
+            _callNotifyTemplate.value = ForwardCommonConfigStore.loadCallNotifyTemplate(context)
+        }
+    }
+
     private fun refreshAppNotifyTemplate() {
         val context = getApplication<Application>()
         viewModelScope.launch(Dispatchers.IO) {
             _appNotifyTemplate.value = ForwardCommonConfigStore.loadAppNotifyTemplate(context)
+        }
+    }
+
+    private fun refreshCallNotifyTemplate() {
+        val context = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            _callNotifyTemplate.value = ForwardCommonConfigStore.loadCallNotifyTemplate(context)
         }
     }
 
@@ -170,5 +193,78 @@ class SenderViewModel(application: Application) : AndroidViewModel(application) 
 
     fun clearLastSavedStatus() {
         _lastSavedStatus.value = null
+    }
+
+    fun senderAllowPackagesFlow(senderId: Long): Flow<Set<String>> {
+        return notifyRouteDao.observePackageNamesByScopeAndSender(
+            scope = NotifyRouteScope.SENDER_ALLOW_APP,
+            senderId = senderId,
+        ).map { it.toSet() }
+    }
+
+    fun senderDenyPackagesFlow(senderId: Long): Flow<Set<String>> {
+        return notifyRouteDao.observePackageNamesByScopeAndSender(
+            scope = NotifyRouteScope.SENDER_DENY_APP,
+            senderId = senderId,
+        ).map { it.toSet() }
+    }
+
+    fun senderNotifyScopeSummaryFlow(senderId: Long): Flow<String> {
+        return combine(
+            senderAllowPackagesFlow(senderId),
+            senderDenyPackagesFlow(senderId),
+        ) { allowPkgs, denyPkgs ->
+            "白名单${allowPkgs.size} / 黑名单${denyPkgs.size}"
+        }
+    }
+
+    data class SenderNotifyScopeSaveResult(
+        val success: Boolean,
+        val conflictPackages: Set<String> = emptySet(),
+    )
+
+    suspend fun saveSenderNotifyScopeSync(
+        senderId: Long,
+        allowPackages: Set<String>,
+        denyPackages: Set<String>,
+    ): SenderNotifyScopeSaveResult {
+        val normalizedAllow = allowPackages.map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        val normalizedDeny = denyPackages.map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        val conflict = normalizedAllow.intersect(normalizedDeny)
+        if (conflict.isNotEmpty()) {
+            return SenderNotifyScopeSaveResult(success = false, conflictPackages = conflict)
+        }
+        withContext(Dispatchers.IO) {
+            notifyRouteDao.deleteByScopesAndSender(
+                scopes = listOf(NotifyRouteScope.SENDER_ALLOW_APP, NotifyRouteScope.SENDER_DENY_APP),
+                senderId = senderId,
+            )
+            val updateTime = System.currentTimeMillis()
+            if (normalizedAllow.isNotEmpty()) {
+                notifyRouteDao.insertAll(
+                    normalizedAllow.map { packageName ->
+                        NotifyRouteRule(
+                            scope = NotifyRouteScope.SENDER_ALLOW_APP,
+                            packageName = packageName,
+                            senderId = senderId,
+                            updateTime = updateTime,
+                        )
+                    },
+                )
+            }
+            if (normalizedDeny.isNotEmpty()) {
+                notifyRouteDao.insertAll(
+                    normalizedDeny.map { packageName ->
+                        NotifyRouteRule(
+                            scope = NotifyRouteScope.SENDER_DENY_APP,
+                            packageName = packageName,
+                            senderId = senderId,
+                            updateTime = updateTime,
+                        )
+                    },
+                )
+            }
+        }
+        return SenderNotifyScopeSaveResult(success = true)
     }
 }

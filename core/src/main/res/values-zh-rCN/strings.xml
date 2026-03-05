@@ -143,6 +143,7 @@
     <string name="pref_enable_code_records_title">保留验证码记录</string>
     <string name="pref_enable_plain_sms_records_title">保留普通短信记录</string>
     <string name="pref_enable_app_notify_records_title">保留应用通知记录</string>
+    <string name="pref_enable_call_notify_records_title">保留通话通知记录</string>
     <string name="selected_count">已选 %d 项</string>
     <string name="pref_history_limit_title">历史记录限制</string>
     <string name="pref_history_limit_title_with_target">历史记录限制（%1$s）</string>
@@ -150,6 +151,7 @@
     <string name="record_settings_target_code">验证码记录</string>
     <string name="record_settings_target_plain">普通短信记录</string>
     <string name="record_settings_target_app_notify">应用通知记录</string>
+    <string name="record_settings_target_call_notify">通话通知记录</string>
     <string name="pref_history_limit_summary">仅保留最近 %s 条记录</string>
     <string name="history_limit_10_entry">10 条记录</string>
     <string name="history_limit_20_entry">20 条记录</string>
@@ -159,9 +161,15 @@
     <string name="records_column_code_title">验证码短信</string>
     <string name="records_column_plain_title">普通短信</string>
     <string name="records_column_app_notify_title">应用通知</string>
+    <string name="records_column_call_notify_title">通话通知</string>
+    <string name="records_column_code_short_title">验证码</string>
+    <string name="records_column_plain_short_title">短信</string>
+    <string name="records_column_app_notify_short_title">应用</string>
+    <string name="records_column_call_notify_short_title">通话</string>
     <string name="records_column_code_empty">暂无验证码短信</string>
     <string name="records_column_plain_empty">暂无普通短信</string>
     <string name="records_column_app_notify_empty">暂无应用通知</string>
+    <string name="records_column_call_notify_empty">暂无通话通知</string>
     <string name="record_export_dialog_title">导出记录</string>
     <string name="record_export_current_tab_option">导出当前页（%1$s）</string>
     <string name="record_export_all_tabs_option">导出所有</string>
@@ -214,6 +222,14 @@
     <string name="pref_force_stop_recovery_summary">转发检测到应用被强停时，尝试解除 stopped 并仅唤起所需后台服务（不拉起前台）。</string>
     <string name="pref_force_stop_recovery_relaunch_once_title">恢复失败时前台拉起一次</string>
     <string name="pref_force_stop_recovery_relaunch_once_summary">当有序广播回执为空时，尝试拉起模块前台一次，帮助恢复通知转发链路。</string>
+    <string name="pref_root_db_catchup_enable_title">Root 直查库补偿</string>
+    <string name="pref_root_db_catchup_enable_summary">当广播链路缺失 token 时，后台轮询系统短信/通话数据库进行补偿。</string>
+    <string name="pref_root_db_catchup_interval_title">补偿间隔</string>
+    <string name="pref_root_db_catchup_interval_summary">后台每 %1$s 分钟执行一次</string>
+    <string name="pref_root_db_catchup_interval_hint">取值范围：1-120 分钟</string>
+    <string name="pref_root_db_catchup_interval_error">请输入 1 到 120 的整数。</string>
+    <string name="pref_root_db_catchup_writeback_title">补偿后写回系统库</string>
+    <string name="pref_root_db_catchup_writeback_summary">补偿入队后可将短信标记已读，并清理未接来电 new 标记（仅 type=3）。</string>
     <!-- preference experimental end -->
 
 
@@ -287,7 +303,7 @@
     <string name="action_sort_by_pkg">包名</string>
     <string name="action_sort_by_usage">使用频率</string>
     <string name="action_sort_by_selection">配置优先</string>
-    <string name="app_config_settings">应用控制</string>
+    <string name="app_config_settings">应用</string>
     <string name="action_search">搜索</string>
     <string name="action_accomplish">完成</string>
     <string name="usage_permission_prompt">按使用频率排序需要使用情况访问权限。请在设置中授予该权限。</string>
@@ -458,6 +474,28 @@
     <string name="label_app_info">应用信息</string>
     <string name="label_blocked">自动输入拦截</string>
     <string name="label_forwarding">应用通知转发</string>
+    <string name="app_input_status_on">开</string>
+    <string name="app_input_status_off">关</string>
+    <string name="app_notify_status_on">开</string>
+    <string name="app_notify_status_off">关</string>
+    <string name="app_notify_summary_line">输入: %1$s | 通知: %2$s | 通道: %3$s</string>
+    <string name="app_notify_channel_config_title">通知通道配置</string>
+    <string name="app_notify_channel_global_summary">使用全局通道</string>
+    <string name="app_notify_channel_global_summary_short">全局</string>
+    <string name="app_notify_channel_bound_count">已绑定 %1$d 个通道</string>
+    <string name="app_notify_channel_bound_count_short">已绑%1$d</string>
+    <string name="app_notify_channel_tip">不选择任何通道时，该应用会沿用全局通道策略。</string>
+    <string name="app_notify_channel_deny_hint">该通道黑名单已包含当前应用，实际可能被拦截。</string>
+    <string name="sender_notify_scope_title">通知应用范围</string>
+    <string name="sender_notify_scope_title_named">%1$s 的通知应用范围</string>
+    <string name="sender_notify_scope_summary">白名单 %1$d / 黑名单 %2$d</string>
+    <string name="sender_notify_scope_whitelist">白名单</string>
+    <string name="sender_notify_scope_blacklist">黑名单</string>
+    <string name="sender_notify_scope_clear_whitelist">清空白名单</string>
+    <string name="sender_notify_scope_clear_blacklist">清空黑名单</string>
+    <string name="sender_notify_scope_conflict_single">冲突：同一应用不能同时存在于白名单和黑名单。</string>
+    <string name="sender_notify_scope_conflict_count">冲突项数量：%1$d</string>
+    <string name="sender_notify_scope_sender_id">通道 ID：%1$d</string>
     <string name="app_config_detail_not_found">未找到应用配置</string>
     <string name="app_notify_template_title">应用通知转发模板</string>
     <string name="app_notify_template_summary">留空表示使用全局转发模板。</string>

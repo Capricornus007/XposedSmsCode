@@ -1,7 +1,6 @@
 package com.tianma.xsmscode.ui.home
 
 import android.os.SystemClock
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -10,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
@@ -23,8 +23,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -48,7 +46,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
@@ -56,10 +53,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tianma.xsmscode.core.R
 import com.tianma.xsmscode.data.db.entity.AppInfo
@@ -76,9 +71,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.viewmodel.koinViewModel
 
-private val BlockedColumnWidth = 84.dp
-private val ForwardingColumnWidth = 108.dp
-private const val MINI_SWITCH_SCALE = 0.75f
 private const val APP_LIST_PREFETCH_DISTANCE = 12
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -96,6 +88,7 @@ fun AppConfigScreen(
     val hasMoreApps by viewModel.hasMoreAppsFlow.collectAsStateWithLifecycle()
     val hideSystemApps by viewModel.hideSystemAppsFlow.collectAsStateWithLifecycle()
     val currentSortOption by viewModel.sortOptionFlow.collectAsStateWithLifecycle()
+    val appNotifyBindingCount by viewModel.appNotifyBindingCountFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val density = LocalDensity.current
     val shouldShowInitialLoading = remember { SessionLoadingRegistry.shouldShowInitial("app_config") }
@@ -222,23 +215,8 @@ fun AppConfigScreen(
                     items(apps) { app ->
                         AppConfigItem(
                             app = app,
+                            appBoundSenderCount = appNotifyBindingCount[app.packageName] ?: 0,
                             onClick = { onAppClick?.invoke(app) },
-                            onBlockedChange = {
-                                viewModel.setBlocked(app, it)
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.pref_sync_toast),
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                            },
-                            onForwardingChange = {
-                                viewModel.setForwarding(app, it)
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.pref_sync_toast),
-                                    Toast.LENGTH_SHORT,
-                                ).show()
-                            },
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -373,7 +351,6 @@ fun AppConfigScreen(
                     },
                 )
             }
-            AppConfigHeader()
         }
 
         SnackbarHost(
@@ -410,46 +387,10 @@ fun AppConfigScreen(
 }
 
 @Composable
-fun AppConfigHeader() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = stringResource(R.string.label_app_info),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = stringResource(R.string.label_blocked),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(BlockedColumnWidth),
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-        )
-        Text(
-            text = stringResource(R.string.label_forwarding),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(ForwardingColumnWidth),
-            textAlign = TextAlign.Center,
-            maxLines = 2,
-        )
-    }
-}
-
-@Composable
 fun AppConfigItem(
     app: AppInfo,
+    appBoundSenderCount: Int,
     onClick: () -> Unit,
-    onBlockedChange: (Boolean) -> Unit,
-    onForwardingChange: (Boolean) -> Unit,
 ) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val bgColor = when {
@@ -472,64 +413,68 @@ fun AppConfigItem(
     }
 
     Box(modifier = Modifier.background(bgColor)) {
-        ListItem(
-            modifier = Modifier.clickable(onClick = onClick),
-            headlineContent = {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(start = 16.dp, end = 20.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AppIconImage(
+                packageName = app.packageName,
+                contentDescription = null,
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
                 Text(
-                    app.label ?: app.packageName,
+                    text = app.label ?: app.packageName,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontWeight = FontWeight.Bold,
                 )
-            },
-            supportingContent = {
                 Text(
-                    app.packageName,
+                    text = app.packageName,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    fontSize = 12.sp,
+                    style = MaterialTheme.typography.bodySmall,
                 )
-            },
-            leadingContent = {
-                AppIconImage(
-                    packageName = app.packageName,
+                Text(
+                    text = stringResource(
+                        R.string.app_notify_summary_line,
+                        if (app.blocked) {
+                            stringResource(R.string.app_input_status_on)
+                        } else {
+                            stringResource(R.string.app_input_status_off)
+                        },
+                        if (app.forwarding) {
+                            stringResource(R.string.app_notify_status_on)
+                        } else {
+                            stringResource(R.string.app_notify_status_off)
+                        },
+                        if (appBoundSenderCount <= 0) {
+                            stringResource(R.string.app_notify_channel_global_summary_short)
+                        } else {
+                            stringResource(R.string.app_notify_channel_bound_count_short, appBoundSenderCount)
+                        },
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
                 )
-            },
-            trailingContent = {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    MiniSwitch(
-                        checked = app.blocked,
-                        onCheckedChange = onBlockedChange,
-                        modifier = Modifier.width(BlockedColumnWidth),
-                    )
-                    MiniSwitch(
-                        checked = app.forwarding,
-                        onCheckedChange = onForwardingChange,
-                        modifier = Modifier.width(ForwardingColumnWidth),
-                    )
-                }
-            },
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        )
+            }
+        }
     }
-}
-
-@Composable
-private fun MiniSwitch(
-    checked: Boolean,
-    onCheckedChange: ((Boolean) -> Unit)?,
-    modifier: Modifier = Modifier,
-) {
-    androidx.compose.material3.Switch(
-        checked = checked,
-        onCheckedChange = onCheckedChange,
-        modifier = modifier
-            .height(24.dp)
-            .scale(MINI_SWITCH_SCALE),
-        thumbContent = null,
-    )
 }

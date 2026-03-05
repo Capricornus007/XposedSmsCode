@@ -54,6 +54,7 @@ fun UrlSchemeConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderVie
     var receiveCode by remember { mutableStateOf(true) }
     var receiveNonCode by remember { mutableStateOf(true) }
     var receiveAppNotify by remember { mutableStateOf(true) }
+    var receiveCallNotify by remember { mutableStateOf(false) }
     var currentSender by remember { mutableStateOf<Sender?>(null) }
     var showExitDialog by remember { mutableStateOf(false) }
 
@@ -65,6 +66,7 @@ fun UrlSchemeConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderVie
                 receiveCode = sender.receiveCode == 1
                 receiveNonCode = sender.receiveNonCode == 1
                 receiveAppNotify = sender.receiveAppNotify == 1
+                receiveCallNotify = sender.receiveCallNotify == 1
                 runCatching { Gson().fromJson(sender.jsonSetting, UrlSchemeSetting::class.java) }.getOrNull()?.let {
                     urlScheme = it.urlScheme
                 }
@@ -81,6 +83,7 @@ fun UrlSchemeConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderVie
             receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
+            receiveCallNotify = if (receiveCallNotify) 1 else 0,
             time = Date(),
         ) ?: Sender(
             id = 0,
@@ -91,6 +94,7 @@ fun UrlSchemeConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderVie
             receiveCode = if (receiveCode) 1 else 0,
             receiveNonCode = if (receiveNonCode) 1 else 0,
             receiveAppNotify = if (receiveAppNotify) 1 else 0,
+            receiveCallNotify = if (receiveCallNotify) 1 else 0,
             time = Date(),
         )
     }
@@ -157,6 +161,8 @@ fun UrlSchemeConfigForm(senderId: Long, onBack: () -> Unit, viewModel: SenderVie
                 onReceiveNonCodeChange = { receiveNonCode = it },
                 receiveAppNotify = receiveAppNotify,
                 onReceiveAppNotifyChange = { receiveAppNotify = it },
+                receiveCallNotify = receiveCallNotify,
+                onReceiveCallNotifyChange = { receiveCallNotify = it },
             )
             SenderTestActionRow(channel = "UrlScheme") {
                 UrlSchemeUtils.sendMsg(

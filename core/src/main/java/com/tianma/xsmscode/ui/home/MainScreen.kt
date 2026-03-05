@@ -68,6 +68,7 @@ fun MainScreen(
         val hierarchy = destination.hierarchy
         return when {
             hierarchy.any { it.hasRoute(OverviewRoute::class) } -> 0
+            hierarchy.any { it.hasRoute(AppNotifySenderBindingRoute::class) } -> 1
             hierarchy.any { it.hasRoute(AppConfigDetailRoute::class) } -> 1
             hierarchy.any { it.hasRoute(AppBlockRoute::class) } -> 1
             hierarchy.any { it.hasRoute(RecordsRoute::class) } -> 2
@@ -75,6 +76,7 @@ fun MainScreen(
                 hierarchy.any { it.hasRoute(InterceptRoute::class) } ||
                 hierarchy.any { it.hasRoute(SendersRoute::class) } ||
                 hierarchy.any { it.hasRoute(SenderConfigRoute::class) } ||
+                hierarchy.any { it.hasRoute(SenderNotifyScopeRoute::class) } ||
                 hierarchy.any { it.hasRoute(RulesRoute::class) } ||
                 hierarchy.any { it.hasRoute(RuleConfigRoute::class) } ||
                 hierarchy.any { it.hasRoute(NotificationRulesRoute::class) } ||
@@ -237,6 +239,17 @@ fun MainScreen(
                         AppConfigDetailScreen(
                             packageName = route.packageName,
                             onBack = { navController.popBackStack() },
+                            onConfigureNotifyChannels = {
+                                navController.navigate(AppNotifySenderBindingRoute(packageName = route.packageName))
+                            },
+                            viewModel = appConfigViewModel,
+                        )
+                    }
+                    composable<AppNotifySenderBindingRoute> { backStackEntry ->
+                        val route = backStackEntry.toRoute<AppNotifySenderBindingRoute>()
+                        AppNotifySenderBindingScreen(
+                            packageName = route.packageName,
+                            onBack = { navController.popBackStack() },
                             viewModel = appConfigViewModel,
                         )
                     }
@@ -290,6 +303,9 @@ fun MainScreen(
                         com.github.magisk317.smscode.ui.sender.SenderConfigScreen(
                             senderId = route.id,
                             senderTypeArg = route.type,
+                            onOpenSenderNotifyScope = { senderId ->
+                                navController.navigate(SenderNotifyScopeRoute(senderId = senderId))
+                            },
                             onBack = { reopenTypeDialog ->
                                 if (reopenTypeDialog) {
                                     navController.previousBackStackEntry
@@ -298,6 +314,13 @@ fun MainScreen(
                                 }
                                 navController.popBackStack()
                             }
+                        )
+                    }
+                    composable<SenderNotifyScopeRoute> { backStackEntry ->
+                        val route = backStackEntry.toRoute<SenderNotifyScopeRoute>()
+                        com.github.magisk317.smscode.ui.sender.SenderNotifyScopeScreen(
+                            senderId = route.senderId,
+                            onBack = { navController.popBackStack() },
                         )
                     }
                     composable<RulesRoute> { backStackEntry ->

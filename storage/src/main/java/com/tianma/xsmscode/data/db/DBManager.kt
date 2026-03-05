@@ -5,6 +5,7 @@ import com.tianma.xsmscode.data.db.dao.AppInfoDao
 import com.tianma.xsmscode.data.db.dao.SmsCodeRuleDao
 import com.tianma.xsmscode.data.db.dao.SmsMsgDao
 import com.tianma.xsmscode.data.db.entity.AppInfo
+import com.tianma.xsmscode.data.db.entity.NotifyRouteRule
 import com.tianma.xsmscode.data.db.entity.SmsCodeRule
 import com.tianma.xsmscode.data.db.entity.SmsMsg
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +20,7 @@ class DBManager private constructor(context: Context) {
     private val mSmsCodeRuleDao: SmsCodeRuleDao = mDatabase.smsCodeRuleDao()
     private val mSmsMsgDao: SmsMsgDao = mDatabase.smsMsgDao()
     private val mAppInfoDao: AppInfoDao = mDatabase.appInfoDao()
+    private val mNotifyRouteRuleDao = mDatabase.notifyRouteRuleDao()
 
 
     suspend fun updateSmsCodeRuleSuspend(smsCodeRule: SmsCodeRule) {
@@ -208,6 +210,46 @@ class DBManager private constructor(context: Context) {
         withContext(Dispatchers.IO) {
             insertOrReplaceInTx(entityClass, entities)
         }
+    }
+
+    fun queryNotifyRouteRules(): List<NotifyRouteRule> = mNotifyRouteRuleDao.getAll()
+
+    fun querySenderIdsByScopeAndPackage(scope: Int, packageName: String): List<Long> =
+        mNotifyRouteRuleDao.getSenderIdsByScopeAndPackage(scope, packageName)
+
+    fun queryPackageNamesByScopeAndSender(scope: Int, senderId: Long): List<String> =
+        mNotifyRouteRuleDao.getPackageNamesByScopeAndSender(scope, senderId)
+
+    fun replaceSenderIdsByScopeAndPackage(scope: Int, packageName: String, senderIds: Set<Long>) {
+        mNotifyRouteRuleDao.deleteByScopeAndPackage(scope, packageName)
+        if (senderIds.isEmpty()) return
+        val updateTime = System.currentTimeMillis()
+        mNotifyRouteRuleDao.insertAll(
+            senderIds.map { senderId ->
+                NotifyRouteRule(
+                    scope = scope,
+                    packageName = packageName,
+                    senderId = senderId,
+                    updateTime = updateTime,
+                )
+            },
+        )
+    }
+
+    fun replacePackageNamesByScopeAndSender(scope: Int, senderId: Long, packageNames: Set<String>) {
+        mNotifyRouteRuleDao.deleteByScopeAndSender(scope, senderId)
+        if (packageNames.isEmpty()) return
+        val updateTime = System.currentTimeMillis()
+        mNotifyRouteRuleDao.insertAll(
+            packageNames.map { packageName ->
+                NotifyRouteRule(
+                    scope = scope,
+                    packageName = packageName,
+                    senderId = senderId,
+                    updateTime = updateTime,
+                )
+            },
+        )
     }
 
     companion object {

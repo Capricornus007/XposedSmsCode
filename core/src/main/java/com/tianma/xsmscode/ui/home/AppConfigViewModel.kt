@@ -6,11 +6,15 @@ import android.content.pm.PackageManager
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.magisk317.smscode.forwarder.entity.Sender
+import com.github.magisk317.smscode.forwarder.utils.SenderSettingSanitizer
 import com.tianma.xsmscode.data.db.AppDatabase
 import com.tianma.xsmscode.common.utils.XLog
 import com.tianma.xsmscode.data.db.DBManager
+import com.tianma.xsmscode.data.db.entity.NotifyRouteRule
 import com.tianma.xsmscode.data.db.entity.AppInfo
 import com.tianma.xsmscode.data.db.entity.SmsMsg
+import com.tianma.xsmscode.forwarder.routing.NotifyRouteScope
 import com.tianma.xsmscode.feature.store.EntityStoreManager
 import com.tianma.xsmscode.feature.store.EntityType
 import com.tianma.xsmscode.common.utils.StorageUtils
@@ -23,9 +27,11 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -38,6 +44,7 @@ private const val APP_LIST_PAGE_SIZE = 80
 
 class AppConfigViewModel(application: Application) : AndroidViewModel(application) {
     private val appDb = AppDatabase.getInstance(application)
+    private val notifyRouteDao = appDb.notifyRouteRuleDao()
 
     private val _appsFlow = MutableStateFlow<ImmutableList<AppInfo>>(persistentListOf())
     val appsFlow: StateFlow<ImmutableList<AppInfo>> = _appsFlow.asStateFlow()
@@ -60,6 +67,25 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
     val events: SharedFlow<AppConfigEvent> = _events.asSharedFlow()
     private val _filterFlow = MutableStateFlow("")
     val filterFlow: StateFlow<String> = _filterFlow.asStateFlow()
+    val notifySenderListFlow: StateFlow<List<Sender>> = appDb.senderDao().getAllFlow()
+        .map { list -> list.map(SenderSettingSanitizer::sanitizeSenderLenient) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList(),
+        )
+    val appNotifyBindingCountFlow: StateFlow<Map<String, Int>> = notifyRouteDao.getAllFlow()
+        .map { rules ->
+            rules.asSequence()
+                .filter { it.scope == NotifyRouteScope.APP_ALLOW_SENDER }
+                .groupingBy { it.packageName }
+                .eachCount()
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyMap(),
+        )
 
     @Immutable
     sealed class AppConfigEvent {
@@ -293,6 +319,52 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
                 .take(APP_NOTIFY_LOG_LIMIT)
                 .toList()
         }
+    }
+
+    fun appNotifyBoundSenderIdsFlow(packageName: String): kotlinx.coroutines.flow.Flow<Set<Long>> {
+        return notifyRouteDao.observeSenderIdsByScopeAndPackage(
+            scope = NotifyRouteScope.APP_ALLOW_SENDER,
+            packageName = packageName,
+        ).map { it.toSet() }
+    }
+
+    fun senderDenyingPackageIdsFlow(packageName: String): kotlinx.coroutines.flow.Flow<Set<Long>> {
+        return notifyRouteDao.observeSenderIdsByScopeAndPackage(
+            scope = NotifyRouteScope.SENDER_DENY_APP,
+            packageName = packageName,
+        ).map { it.toSet() }
+    }
+
+    fun saveAppNotifySenderBindings(packageName: String, senderIds: Set<Long>) {
+        val normalizedPackageName = packageName.trim()
+        if (normalizedPackageName.isBlank()) {
+            return
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            persistMutex.withLock {
+                notifyRouteDao.deleteByScopeAndPackage(
+                    scope = NotifyRouteScope.APP_ALLOW_SENDER,
+                    packageName = normalizedPackageName,
+                )
+                if (senderIds.isNotEmpty()) {
+                    val updateTime = System.currentTimeMillis()
+                    notifyRouteDao.insertAll(
+                        senderIds.map { senderId ->
+                            NotifyRouteRule(
+                                scope = NotifyRouteScope.APP_ALLOW_SENDER,
+                                packageName = normalizedPackageName,
+                                senderId = senderId,
+                                updateTime = updateTime,
+                            )
+                        },
+                    )
+                }
+            }
+        }
+    }
+
+    fun getAppNotifyBindingCount(packageName: String): Int {
+        return appNotifyBindingCountFlow.value[packageName] ?: 0
     }
 
     private fun updateApp(packageName: String, updater: (AppInfo) -> AppInfo) {

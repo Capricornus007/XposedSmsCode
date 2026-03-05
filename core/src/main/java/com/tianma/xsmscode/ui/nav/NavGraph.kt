@@ -55,6 +55,12 @@ object AppConfigRoute
 @Serializable
 data class AppConfigDetailRoute(val packageName: String)
 
+@Serializable
+data class AppNotifySenderBindingRoute(val packageName: String)
+
+@Serializable
+data class SenderNotifyScopeRoute(val senderId: Long)
+
 @Composable
 fun SmsCodeNavHost(
     navController: NavHostController,
