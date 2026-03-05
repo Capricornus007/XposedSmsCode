@@ -345,6 +345,7 @@ class WebUiServer(
                         receiveCode = if (payload.receiveCode) 1 else 0,
                         receiveNonCode = if (payload.receiveNonCode) 1 else 0,
                         receiveAppNotify = if (payload.receiveAppNotify) 1 else 0,
+                        receiveCallNotify = if (payload.receiveCallNotify) 1 else 0,
                     )
                     val insertedId = dao.insert(newSender)
                     dao.getOne(insertedId)?.toSenderItem()
@@ -401,7 +402,8 @@ class WebUiServer(
                     payload.status == null &&
                     payload.receiveCode == null &&
                     payload.receiveNonCode == null &&
-                    payload.receiveAppNotify == null
+                    payload.receiveAppNotify == null &&
+                    payload.receiveCallNotify == null
                 ) {
                     call.respondText(
                         status = HttpStatusCode.BadRequest,
@@ -421,6 +423,7 @@ class WebUiServer(
                     current.receiveCode = if (payload.receiveCode ?: (current.receiveCode == 1)) 1 else 0
                     current.receiveNonCode = if (payload.receiveNonCode ?: (current.receiveNonCode == 1)) 1 else 0
                     current.receiveAppNotify = if (payload.receiveAppNotify ?: (current.receiveAppNotify == 1)) 1 else 0
+                    current.receiveCallNotify = if (payload.receiveCallNotify ?: (current.receiveCallNotify == 1)) 1 else 0
                     dao.update(current)
                     current.toSenderItem()
                 }
@@ -576,6 +579,7 @@ class WebUiServer(
         smsCode = smsCode.orEmpty(),
         packageName = packageName.orEmpty(),
         msgType = msgType,
+        callType = callType,
         forwardStatus = forwardStatus,
         forwardTarget = forwardTarget.orEmpty(),
         forwardMessage = forwardMessage.orEmpty(),
@@ -674,6 +678,7 @@ class WebUiServer(
         receiveCode = receiveCode == 1,
         receiveNonCode = receiveNonCode == 1,
         receiveAppNotify = receiveAppNotify == 1,
+        receiveCallNotify = receiveCallNotify == 1,
     )
 
     private fun senderTypeLabel(type: Int): String = when (type) {
@@ -788,6 +793,7 @@ class WebUiServer(
         val receiveCode: Boolean,
         val receiveNonCode: Boolean,
         val receiveAppNotify: Boolean,
+        val receiveCallNotify: Boolean,
     )
 
     @Serializable
@@ -799,6 +805,7 @@ class WebUiServer(
         val receiveCode: Boolean = true,
         val receiveNonCode: Boolean = true,
         val receiveAppNotify: Boolean = true,
+        val receiveCallNotify: Boolean = false,
     )
 
     @Serializable
@@ -810,6 +817,7 @@ class WebUiServer(
         val receiveCode: Boolean? = null,
         val receiveNonCode: Boolean? = null,
         val receiveAppNotify: Boolean? = null,
+        val receiveCallNotify: Boolean? = null,
     )
 
     @Serializable
@@ -830,6 +838,7 @@ class WebUiServer(
         val smsCode: String,
         val packageName: String,
         val msgType: Int,
+        val callType: Int,
         val forwardStatus: Int,
         val forwardTarget: String,
         val forwardMessage: String,
@@ -869,7 +878,7 @@ class WebUiServer(
                 table { width: 100%; border-collapse: collapse; font-size: 14px; }
                 th, td { border-bottom: 1px solid #eef2f7; text-align: left; padding: 10px 8px; vertical-align: top; }
                 input[type=text] { width: 100%; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 8px; }
-                .record-desktop { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; align-items:start; }
+                .record-desktop { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:10px; align-items:start; }
                 .record-col { min-width:0; border:1px solid #eef2f7; border-radius:10px; background:#fff; padding:10px; }
                 .record-col-title { font-weight:600; margin-bottom:10px; }
                 .record-mobile { display:none; }
@@ -989,12 +998,17 @@ class WebUiServer(
                         <div id="recordDesktopAppTitle" class="record-col-title">应用通知（0）</div>
                         <div id="recordDesktopAppList" class="record-list"></div>
                       </div>
+                      <div class="record-col">
+                        <div id="recordDesktopCallTitle" class="record-col-title">通话通知（0）</div>
+                        <div id="recordDesktopCallList" class="record-list"></div>
+                      </div>
                     </div>
                     <div class="record-mobile">
                       <div class="record-tabs">
                         <button id="recordTabCode" class="record-tab active">验证码短信（0）</button>
                         <button id="recordTabPlain" class="record-tab">普通短信（0）</button>
                         <button id="recordTabApp" class="record-tab">应用通知（0）</button>
+                        <button id="recordTabCall" class="record-tab">通话通知（0）</button>
                       </div>
                       <div id="recordList" class="record-list"></div>
                     </div>
@@ -1086,6 +1100,10 @@ class WebUiServer(
                           <input id="senderReceiveAppNotify" type="checkbox" />
                         </div>
                         <div>
+                          <div class="muted">转发通话通知</div>
+                          <input id="senderReceiveCallNotify" type="checkbox" />
+                        </div>
+                        <div>
                           <div class="muted">ID</div>
                           <input id="senderId" type="text" readonly />
                         </div>
@@ -1103,11 +1121,12 @@ class WebUiServer(
                       <thead>
                         <tr>
                           <th style="width:24%">名称</th>
-                          <th style="width:16%">类型</th>
+                          <th style="width:14%">类型</th>
                           <th style="width:10%">启用</th>
-                          <th style="width:13%">转发验证码</th>
-                          <th style="width:13%">转发非验证码</th>
-                          <th style="width:14%">转发应用通知</th>
+                          <th style="width:11%">转发验证码</th>
+                          <th style="width:11%">转发非验证码</th>
+                          <th style="width:11%">转发应用通知</th>
+                          <th style="width:11%">转发通话通知</th>
                           <th style="width:10%">操作</th>
                         </tr>
                       </thead>
@@ -1195,12 +1214,15 @@ class WebUiServer(
                 const recordDesktopCodeTitle = document.getElementById("recordDesktopCodeTitle");
                 const recordDesktopPlainTitle = document.getElementById("recordDesktopPlainTitle");
                 const recordDesktopAppTitle = document.getElementById("recordDesktopAppTitle");
+                const recordDesktopCallTitle = document.getElementById("recordDesktopCallTitle");
                 const recordDesktopCodeList = document.getElementById("recordDesktopCodeList");
                 const recordDesktopPlainList = document.getElementById("recordDesktopPlainList");
                 const recordDesktopAppList = document.getElementById("recordDesktopAppList");
+                const recordDesktopCallList = document.getElementById("recordDesktopCallList");
                 const recordTabCode = document.getElementById("recordTabCode");
                 const recordTabPlain = document.getElementById("recordTabPlain");
                 const recordTabApp = document.getElementById("recordTabApp");
+                const recordTabCall = document.getElementById("recordTabCall");
                 const recordList = document.getElementById("recordList");
 
                 const advEnableSmsBlacklist = document.getElementById("advEnableSmsBlacklist");
@@ -1235,6 +1257,7 @@ class WebUiServer(
                 const senderReceiveCode = document.getElementById("senderReceiveCode");
                 const senderReceiveNonCode = document.getElementById("senderReceiveNonCode");
                 const senderReceiveAppNotify = document.getElementById("senderReceiveAppNotify");
+                const senderReceiveCallNotify = document.getElementById("senderReceiveCallNotify");
                 const senderJsonSetting = document.getElementById("senderJsonSetting");
                 const saveSender = document.getElementById("saveSender");
                 const cancelSender = document.getElementById("cancelSender");
@@ -1422,8 +1445,11 @@ class WebUiServer(
                   const code = [];
                   const plain = [];
                   const app = [];
+                  const call = [];
                   for (const item of items || []) {
-                    if (item.msgType === 1) {
+                    if (item.msgType === 2) {
+                      call.push(item);
+                    } else if (item.msgType === 1) {
                       app.push(item);
                     } else if (item.msgType === 0 && !!item.smsCode) {
                       code.push(item);
@@ -1431,7 +1457,19 @@ class WebUiServer(
                       plain.push(item);
                     }
                   }
-                  return { code: code, plain: plain, app: app };
+                  return { code: code, plain: plain, app: app, call: call };
+                }
+
+                function callTypeText(callType) {
+                  const type = Number(callType || 0);
+                  if (type === 1) return "来电";
+                  if (type === 2) return "去电";
+                  if (type === 3) return "未接";
+                  if (type === 4) return "语音信箱";
+                  if (type === 5) return "拒接";
+                  if (type === 6) return "拦截";
+                  if (type === 7) return "异地接听";
+                  return "未知类型(" + type + ")";
                 }
 
                 function normalizeForwardMessage(message) {
@@ -1523,8 +1561,21 @@ class WebUiServer(
                   meta.className = "meta";
                   const kind = document.createElement("span");
                   kind.className = "badge";
-                  kind.textContent = item.msgType === 1 ? "应用通知" : (!!item.smsCode ? "验证码短信" : "普通短信");
+                  if (item.msgType === 2) {
+                    kind.textContent = "通话通知";
+                  } else if (item.msgType === 1) {
+                    kind.textContent = "应用通知";
+                  } else {
+                    kind.textContent = !!item.smsCode ? "验证码短信" : "普通短信";
+                  }
                   meta.appendChild(kind);
+
+                  if (item.msgType === 2) {
+                    const callTypeBadge = document.createElement("span");
+                    callTypeBadge.className = "badge";
+                    callTypeBadge.textContent = callTypeText(item.callType);
+                    meta.appendChild(callTypeBadge);
+                  }
 
                   if (item.smsCode) {
                     const smsCode = document.createElement("span");
@@ -1569,21 +1620,26 @@ class WebUiServer(
                   recordDesktopCodeTitle.textContent = "验证码短信（" + grouped.code.length + "）";
                   recordDesktopPlainTitle.textContent = "普通短信（" + grouped.plain.length + "）";
                   recordDesktopAppTitle.textContent = "应用通知（" + grouped.app.length + "）";
+                  recordDesktopCallTitle.textContent = "通话通知（" + grouped.call.length + "）";
                   renderRecordList(recordDesktopCodeList, grouped.code, "暂无验证码短信");
                   renderRecordList(recordDesktopPlainList, grouped.plain, "暂无普通短信");
                   renderRecordList(recordDesktopAppList, grouped.app, "暂无应用通知");
+                  renderRecordList(recordDesktopCallList, grouped.call, "暂无通话通知");
 
                   recordTabCode.textContent = "验证码短信（" + grouped.code.length + "）";
                   recordTabPlain.textContent = "普通短信（" + grouped.plain.length + "）";
                   recordTabApp.textContent = "应用通知（" + grouped.app.length + "）";
+                  recordTabCall.textContent = "通话通知（" + grouped.call.length + "）";
 
                   recordTabCode.classList.toggle("active", activeRecordTab === "code");
                   recordTabPlain.classList.toggle("active", activeRecordTab === "plain");
                   recordTabApp.classList.toggle("active", activeRecordTab === "app");
+                  recordTabCall.classList.toggle("active", activeRecordTab === "call");
 
                   let selected = grouped.code;
                   if (activeRecordTab === "plain") selected = grouped.plain;
                   if (activeRecordTab === "app") selected = grouped.app;
+                  if (activeRecordTab === "call") selected = grouped.call;
                   renderRecordList(recordList, selected, "暂无记录");
                 }
 
@@ -1647,6 +1703,7 @@ class WebUiServer(
                   senderReceiveCode.checked = true;
                   senderReceiveNonCode.checked = true;
                   senderReceiveAppNotify.checked = true;
+                  senderReceiveCallNotify.checked = false;
                   senderJsonSetting.value = "";
                   saveSender.textContent = "创建通道";
                   senderEditor.style.display = "block";
@@ -1660,6 +1717,7 @@ class WebUiServer(
                   senderReceiveCode.checked = !!sender.receiveCode;
                   senderReceiveNonCode.checked = !!sender.receiveNonCode;
                   senderReceiveAppNotify.checked = !!sender.receiveAppNotify;
+                  senderReceiveCallNotify.checked = !!sender.receiveCallNotify;
                   senderJsonSetting.value = sender.jsonSetting || "";
                   saveSender.textContent = "保存修改";
                   senderEditor.style.display = "block";
@@ -1727,6 +1785,17 @@ class WebUiServer(
                     tr.appendChild(c6);
 
                     const c7 = document.createElement("td");
+                    c7.appendChild(createSenderSwitch(sender.receiveCallNotify, async (checked) => {
+                      try {
+                        await updateSender(sender.id, { receiveCallNotify: checked });
+                        await loadSenders();
+                      } catch (e) {
+                        alert("通道配置更新失败: " + e.message);
+                      }
+                    }));
+                    tr.appendChild(c7);
+
+                    const c8 = document.createElement("td");
                     const actions = document.createElement("div");
                     actions.className = "row-actions";
                     const editBtn = document.createElement("button");
@@ -1748,15 +1817,15 @@ class WebUiServer(
                     };
                     actions.appendChild(editBtn);
                     actions.appendChild(deleteBtn);
-                    c7.appendChild(actions);
-                    tr.appendChild(c7);
+                    c8.appendChild(actions);
+                    tr.appendChild(c8);
 
                     senderBody.appendChild(tr);
                   }
                   if (!items || items.length === 0) {
                     const tr = document.createElement("tr");
                     const td = document.createElement("td");
-                    td.colSpan = 6;
+                    td.colSpan = 8;
                     td.className = "muted";
                     td.textContent = "暂无转发通道";
                     tr.appendChild(td);
@@ -1946,6 +2015,10 @@ class WebUiServer(
                   activeRecordTab = "app";
                   renderLogs(latestRecords);
                 };
+                recordTabCall.onclick = () => {
+                  activeRecordTab = "call";
+                  renderLogs(latestRecords);
+                };
 
                 newSender.onclick = () => {
                   openSenderEditorForCreate();
@@ -1968,7 +2041,8 @@ class WebUiServer(
                     status: senderStatus.checked,
                     receiveCode: senderReceiveCode.checked,
                     receiveNonCode: senderReceiveNonCode.checked,
-                    receiveAppNotify: senderReceiveAppNotify.checked
+                    receiveAppNotify: senderReceiveAppNotify.checked,
+                    receiveCallNotify: senderReceiveCallNotify.checked
                   };
                   saveSender.disabled = true;
                   try {

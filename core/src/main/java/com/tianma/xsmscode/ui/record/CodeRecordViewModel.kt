@@ -30,6 +30,7 @@ private data class RecordExportPayload(
     val codeRecords: List<SmsMsg>,
     val plainSmsRecords: List<SmsMsg>,
     val appNotifyRecords: List<SmsMsg>,
+    val callNotifyRecords: List<SmsMsg>,
 )
 
 class CodeRecordViewModel(application: Application) : AndroidViewModel(application) {
@@ -100,6 +101,9 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
                 val appNotifyRecords = allRecords.filter {
                     it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY
                 }
+                val callNotifyRecords = allRecords.filter {
+                    it.msgType == SmsMsg.MSG_TYPE_CALL_NOTIFY
+                }
                 withContext(Dispatchers.IO) {
                     context.contentResolver.openOutputStream(uri)?.use { os ->
                         OutputStreamWriter(os, StandardCharsets.UTF_8).use { osw ->
@@ -109,6 +113,7 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
                                         codeRecords = codeRecords,
                                         plainSmsRecords = plainSmsRecords,
                                         appNotifyRecords = appNotifyRecords,
+                                        callNotifyRecords = callNotifyRecords,
                                     ),
                                     osw,
                                     true,
@@ -117,7 +122,8 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
                                 val currentRecords = when (currentTab) {
                                     0 -> codeRecords
                                     1 -> plainSmsRecords
-                                    else -> appNotifyRecords
+                                    2 -> appNotifyRecords
+                                    else -> callNotifyRecords
                                 }
                                 JsonUtils.toJson(currentRecords, osw, true)
                             }

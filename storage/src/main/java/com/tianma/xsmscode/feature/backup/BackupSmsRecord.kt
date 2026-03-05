@@ -21,6 +21,9 @@ data class BackupSmsRecord(
     @SerialName("msgType")
     val msgType: Int = 0,
 
+    @SerialName("callType")
+    val callType: Int = 0,
+
     @SerialName("forwardStatus")
     val forwardStatus: Int = 0,
 

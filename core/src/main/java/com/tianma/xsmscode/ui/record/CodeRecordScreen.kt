@@ -21,10 +21,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.VpnKey
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -83,29 +87,48 @@ private enum class RecordExportScope {
 private val FORWARD_SUCCESS_COLOR = Color(AndroidColor.parseColor("#2E7D32"))
 private val FORWARD_FAILED_COLOR = Color(AndroidColor.parseColor("#C62828"))
 private val FORWARD_WARNING_COLOR = Color(AndroidColor.parseColor("#B26A00"))
+private val RECORD_TAB_ITEM_HEIGHT = 60.dp
 
 private fun recordEnableKey(tab: Int): String = when (tab) {
     0 -> PrefConst.KEY_ENABLE_CODE_RECORDS_CODE
     1 -> PrefConst.KEY_ENABLE_CODE_RECORDS_PLAIN_SMS
-    else -> PrefConst.KEY_ENABLE_CODE_RECORDS_APP_NOTIFY
+    2 -> PrefConst.KEY_ENABLE_CODE_RECORDS_APP_NOTIFY
+    else -> PrefConst.KEY_ENABLE_CODE_RECORDS_CALL_NOTIFY
 }
 
 private fun recordEnableTitleRes(tab: Int): Int = when (tab) {
     0 -> R.string.pref_enable_code_records_title
     1 -> R.string.pref_enable_plain_sms_records_title
-    else -> R.string.pref_enable_app_notify_records_title
+    2 -> R.string.pref_enable_app_notify_records_title
+    else -> R.string.pref_enable_call_notify_records_title
 }
 
 private fun recordHistoryLimitKey(tab: Int): String = when (tab) {
     0 -> PrefConst.KEY_HISTORY_LIMIT_CODE
     1 -> PrefConst.KEY_HISTORY_LIMIT_PLAIN_SMS
-    else -> PrefConst.KEY_HISTORY_LIMIT_APP_NOTIFY
+    2 -> PrefConst.KEY_HISTORY_LIMIT_APP_NOTIFY
+    else -> PrefConst.KEY_HISTORY_LIMIT_CALL_NOTIFY
 }
 
 private fun recordTabNameRes(tab: Int): Int = when (tab) {
     0 -> R.string.record_settings_target_code
     1 -> R.string.record_settings_target_plain
-    else -> R.string.record_settings_target_app_notify
+    2 -> R.string.record_settings_target_app_notify
+    else -> R.string.record_settings_target_call_notify
+}
+
+private fun recordColumnTitleRes(tab: Int): Int = when (tab) {
+    0 -> R.string.records_column_code_title
+    1 -> R.string.records_column_plain_title
+    2 -> R.string.records_column_app_notify_title
+    else -> R.string.records_column_call_notify_title
+}
+
+private fun recordColumnShortTitleRes(tab: Int): Int = when (tab) {
+    0 -> R.string.records_column_code_short_title
+    1 -> R.string.records_column_plain_short_title
+    2 -> R.string.records_column_app_notify_short_title
+    else -> R.string.records_column_call_notify_short_title
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -184,7 +207,7 @@ fun CodeRecordScreen(
     var selectedIds by remember { mutableStateOf(setOf<Long>()) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
-    var selectedRecordTab by rememberSaveable { mutableIntStateOf(0) } // 0: code, 1: plain, 2: app_notify
+    var selectedRecordTab by rememberSaveable { mutableIntStateOf(0) } // 0: code, 1: plain, 2: app_notify, 3: call_notify
     var fixedTopHeightPx by remember { mutableIntStateOf(0) }
     var exportScope by remember { mutableStateOf(RecordExportScope.CURRENT_TAB) }
     var pendingExportScope by remember { mutableStateOf(RecordExportScope.CURRENT_TAB) }
@@ -193,6 +216,7 @@ fun CodeRecordScreen(
     var historyLimitCode by remember { mutableStateOf("0") }
     var historyLimitPlain by remember { mutableStateOf("0") }
     var historyLimitAppNotify by remember { mutableStateOf("0") }
+    var historyLimitCallNotify by remember { mutableStateOf("20") }
     var legacyRecordEnabled by remember { mutableStateOf(true) }
     var showHistoryLimitDialog by remember { mutableStateOf(false) }
     var showHistoryLimitInput by remember { mutableStateOf(false) }
@@ -210,6 +234,11 @@ fun CodeRecordScreen(
             context,
             PrefConst.KEY_HISTORY_LIMIT_APP_NOTIFY,
             legacyLimit,
+        )
+        historyLimitCallNotify = AppPreferencesDataStore.getString(
+            context,
+            PrefConst.KEY_HISTORY_LIMIT_CALL_NOTIFY,
+            "20",
         )
     }
 
@@ -290,7 +319,8 @@ fun CodeRecordScreen(
         val currentHistoryLimit = when (selectedRecordTab) {
             0 -> historyLimitCode
             1 -> historyLimitPlain
-            else -> historyLimitAppNotify
+            2 -> historyLimitAppNotify
+            else -> historyLimitCallNotify
         }
         ModalBottomSheet(
             onDismissRequest = { showSettingsSheet = false },
@@ -340,7 +370,8 @@ fun CodeRecordScreen(
         val currentHistoryLimit = when (selectedRecordTab) {
             0 -> historyLimitCode
             1 -> historyLimitPlain
-            else -> historyLimitAppNotify
+            2 -> historyLimitAppNotify
+            else -> historyLimitCallNotify
         }
         RetentionDialog(
             selectedValue = currentHistoryLimit,
@@ -355,7 +386,8 @@ fun CodeRecordScreen(
                 when (selectedRecordTab) {
                     0 -> historyLimitCode = value
                     1 -> historyLimitPlain = value
-                    else -> historyLimitAppNotify = value
+                    2 -> historyLimitAppNotify = value
+                    else -> historyLimitCallNotify = value
                 }
                 scope.launch {
                     AppPreferencesDataStore.setString(context, recordHistoryLimitKey(selectedRecordTab), value)
@@ -370,7 +402,8 @@ fun CodeRecordScreen(
         val currentHistoryLimit = when (selectedRecordTab) {
             0 -> historyLimitCode
             1 -> historyLimitPlain
-            else -> historyLimitAppNotify
+            2 -> historyLimitAppNotify
+            else -> historyLimitCallNotify
         }
         TextInputDialog(
             title = stringResource(id = R.string.history_limit_custom_entry),
@@ -385,7 +418,8 @@ fun CodeRecordScreen(
                 when (selectedRecordTab) {
                     0 -> historyLimitCode = value
                     1 -> historyLimitPlain = value
-                    else -> historyLimitAppNotify = value
+                    2 -> historyLimitAppNotify = value
+                    else -> historyLimitCallNotify = value
                 }
                 scope.launch {
                     AppPreferencesDataStore.setString(context, recordHistoryLimitKey(selectedRecordTab), value)
@@ -442,7 +476,8 @@ fun CodeRecordScreen(
                             when (selectedRecordTab) {
                                 0 -> "code"
                                 1 -> "plain"
-                                else -> "app_notify"
+                                2 -> "app_notify"
+                                else -> "call_notify"
                             }
                         }
                         val filename = "Records_${suffix}_${SimpleDateFormat(
@@ -471,20 +506,19 @@ fun CodeRecordScreen(
     val codeSmsList = smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() }
     val plainSmsList = smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && it.smsCode.isNullOrBlank() }
     val appNotifyList = smsList.filter { it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY }
+    val callNotifyList = smsList.filter { it.msgType == SmsMsg.MSG_TYPE_CALL_NOTIFY }
     val activeSmsList = when (selectedRecordTab) {
         0 -> codeSmsList
         1 -> plainSmsList
-        else -> appNotifyList
+        2 -> appNotifyList
+        else -> callNotifyList
     }
-    val activeTitle = when (selectedRecordTab) {
-        0 -> context.getString(R.string.records_column_code_title)
-        1 -> context.getString(R.string.records_column_plain_title)
-        else -> context.getString(R.string.records_column_app_notify_title)
-    }
+    val activeTitle = context.getString(recordColumnTitleRes(selectedRecordTab))
     val activeEmptyHint = when (selectedRecordTab) {
         0 -> context.getString(R.string.records_column_code_empty)
         1 -> context.getString(R.string.records_column_plain_empty)
-        else -> context.getString(R.string.records_column_app_notify_empty)
+        2 -> context.getString(R.string.records_column_app_notify_empty)
+        else -> context.getString(R.string.records_column_call_notify_empty)
     }
 
     Box(
@@ -557,10 +591,12 @@ fun CodeRecordScreen(
                         val codeSmsList = list.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() }
                         val plainSmsList = list.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && it.smsCode.isNullOrBlank() }
                         val appNotifyList = list.filter { it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY }
+                        val callNotifyList = list.filter { it.msgType == SmsMsg.MSG_TYPE_CALL_NOTIFY }
                         val activeSmsList = when (selectedRecordTab) {
                             0 -> codeSmsList
                             1 -> plainSmsList
-                            else -> appNotifyList
+                            2 -> appNotifyList
+                            else -> callNotifyList
                         }
 
                         RecordSplitColumn(
@@ -602,8 +638,7 @@ fun CodeRecordScreen(
                 .onSizeChanged { fixedTopHeightPx = it.height }
                 .hazeEffect(hazeState, hazeStyle) {
                     forceInvalidateOnPreDraw = true
-                }
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f)),
+                },
         ) {
             TopAppBar(
                 title = {
@@ -639,7 +674,8 @@ fun CodeRecordScreen(
                             val visibleIds = when (selectedRecordTab) {
                                 0 -> smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() }
                                 1 -> smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && it.smsCode.isNullOrBlank() }
-                                else -> smsList.filter { it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY }
+                                2 -> smsList.filter { it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY }
+                                else -> smsList.filter { it.msgType == SmsMsg.MSG_TYPE_CALL_NOTIFY }
                             }.mapNotNull { it.id }.toSet()
                             if (visibleIds.isEmpty()) return@IconButton
                             val allVisibleSelected = visibleIds.all { selectedIds.contains(it) }
@@ -680,48 +716,66 @@ fun CodeRecordScreen(
                 windowInsets = WindowInsets.statusBars,
             )
             if (smsList.isNotEmpty()) {
+                val tabCounts = listOf(
+                    codeSmsList.size,
+                    plainSmsList.size,
+                    appNotifyList.size,
+                    callNotifyList.size,
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        .padding(horizontal = 6.dp),
                 ) {
-                    FilterChip(
-                        selected = selectedRecordTab == 0,
-                        onClick = { selectedRecordTab = 0 },
-                        label = {
-                            Text(
-                                text = "${stringResource(R.string.records_column_code_title)}（${codeSmsList.size}）",
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Center,
-                            )
-                        },
-                        modifier = Modifier.weight(1f),
-                    )
-                    FilterChip(
-                        selected = selectedRecordTab == 1,
-                        onClick = { selectedRecordTab = 1 },
-                        label = {
-                            Text(
-                                text = "${stringResource(R.string.records_column_plain_title)}（${plainSmsList.size}）",
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Center,
-                            )
-                        },
-                        modifier = Modifier.weight(1f),
-                    )
-                    FilterChip(
-                        selected = selectedRecordTab == 2,
-                        onClick = { selectedRecordTab = 2 },
-                        label = {
-                            Text(
-                                text = "${stringResource(R.string.records_column_app_notify_title)}（${appNotifyList.size}）",
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Center,
-                            )
-                        },
-                        modifier = Modifier.weight(1f),
-                    )
+                    repeat(tabCounts.size) { tabIndex ->
+                        val selected = selectedRecordTab == tabIndex
+                        val shortTitle = stringResource(recordColumnShortTitleRes(tabIndex))
+                        val text = if (selected) {
+                            "$shortTitle（${tabCounts[tabIndex]}）"
+                        } else {
+                            shortTitle
+                        }
+                        val icon = when (tabIndex) {
+                            0 -> Icons.Default.VpnKey
+                            1 -> Icons.Default.Sms
+                            2 -> Icons.Default.Notifications
+                            else -> Icons.Default.Call
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(RECORD_TAB_ITEM_HEIGHT)
+                                .clickable { selectedRecordTab = tabIndex },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                            ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = if (selected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = text,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = if (selected) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant
+                                    },
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1455,7 +1509,7 @@ fun CodeRecordItem(
             Text(
                 text = displayLabel,
                 style = MaterialTheme.typography.labelMedium,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                textAlign = TextAlign.Center,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier

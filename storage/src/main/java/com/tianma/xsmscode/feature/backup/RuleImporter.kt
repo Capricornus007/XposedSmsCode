@@ -138,6 +138,7 @@ class RuleImporter(private val mJsonStream: InputStream?) : Closeable {
                     smsCode = obj["code"]?.jsonPrimitive?.contentOrNull,
                     packageName = obj["packageName"]?.jsonPrimitive?.contentOrNull,
                     msgType = obj["msgType"]?.jsonPrimitive?.intOrNull ?: 0,
+                    callType = obj["callType"]?.jsonPrimitive?.intOrNull ?: 0,
                     forwardStatus = obj["forwardStatus"]?.jsonPrimitive?.intOrNull ?: 0,
                     forwardTarget = obj["forwardTarget"]?.jsonPrimitive?.contentOrNull,
                     forwardMessage = obj["forwardMessage"]?.jsonPrimitive?.contentOrNull,
