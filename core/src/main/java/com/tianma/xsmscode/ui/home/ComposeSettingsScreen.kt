@@ -94,16 +94,12 @@ fun ComposeSettingsScreen(
     var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
     val showCodeNotificationEnabled = remember { mutableStateOf(true) }
     var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
-    var simSlot1Remark by remember { mutableStateOf("") }
-    var simSlot2Remark by remember { mutableStateOf("") }
     var rootDbCatchupIntervalMin by remember { mutableStateOf("5") }
     var showAutoInputDialog by remember { mutableStateOf(false) }
     var showAutoInputIntervalDialog by remember { mutableStateOf(false) }
     var showRetentionDialog by remember { mutableStateOf(false) }
     var showRootDbCatchupIntervalDialog by remember { mutableStateOf(false) }
     var showSmsTestDialog by remember { mutableStateOf(false) }
-    var showSimSlot1RemarkDialog by remember { mutableStateOf(false) }
-    var showSimSlot2RemarkDialog by remember { mutableStateOf(false) }
     var smsTestInput by remember { mutableStateOf("") }
     var showThemeDialog by remember { mutableStateOf(false) }
     var showDonateDialog by remember { mutableStateOf(false) }
@@ -151,16 +147,6 @@ fun ComposeSettingsScreen(
             context,
             PrefConst.KEY_SMSCODE_KEYWORDS,
             PrefConst.SMSCODE_KEYWORDS_DEFAULT,
-        )
-        simSlot1Remark = AppPreferencesDataStore.getString(
-            context,
-            PrefConst.KEY_SIM_SLOT1_REMARK,
-            "",
-        )
-        simSlot2Remark = AppPreferencesDataStore.getString(
-            context,
-            PrefConst.KEY_SIM_SLOT2_REMARK,
-            "",
         )
         rootDbCatchupIntervalMin = AppPreferencesDataStore.getString(
             context,
@@ -467,18 +453,6 @@ fun ComposeSettingsScreen(
                             title = stringResource(id = R.string.pref_smscode_test_title),
                             summary = stringResource(id = R.string.pref_smscode_test_summary),
                         ) { showSmsTestDialog = true }
-                        Item(
-                            title = stringResource(id = R.string.pref_sim_slot1_remark_title),
-                            summary = simSlot1Remark.ifBlank {
-                                stringResource(id = R.string.pref_sim_slot_remark_not_set)
-                            },
-                        ) { showSimSlot1RemarkDialog = true }
-                        Item(
-                            title = stringResource(id = R.string.pref_sim_slot2_remark_title),
-                            summary = simSlot2Remark.ifBlank {
-                                stringResource(id = R.string.pref_sim_slot_remark_not_set)
-                            },
-                        ) { showSimSlot2RemarkDialog = true }
                     }
 
                     ExpandableSettingsSection(
@@ -713,14 +687,10 @@ fun ComposeSettingsScreen(
         retentionTime = retentionTime,
         smsTestInput = smsTestInput,
         smsCodeKeywords = smsCodeKeywords,
-        simSlot1Remark = simSlot1Remark,
-        simSlot2Remark = simSlot2Remark,
         showAutoInputDialog = showAutoInputDialog,
         showAutoInputIntervalDialog = showAutoInputIntervalDialog,
         showRetentionDialog = showRetentionDialog,
         showSmsTestDialog = showSmsTestDialog,
-        showSimSlot1RemarkDialog = showSimSlot1RemarkDialog,
-        showSimSlot2RemarkDialog = showSimSlot2RemarkDialog,
         showKeywordsDialog = showKeywordsDialog,
         showThemeDialog = showThemeDialog,
         showDonateDialog = showDonateDialog,
@@ -736,14 +706,10 @@ fun ComposeSettingsScreen(
         onRetentionTimeChange = { retentionTime = it },
         onSmsTestInputChange = { smsTestInput = it },
         onSmsKeywordsChange = { smsCodeKeywords = it },
-        onSimSlot1RemarkChange = { simSlot1Remark = it },
-        onSimSlot2RemarkChange = { simSlot2Remark = it },
         onShowAutoInputDialogChange = { showAutoInputDialog = it },
         onShowAutoInputIntervalDialogChange = { showAutoInputIntervalDialog = it },
         onShowRetentionDialogChange = { showRetentionDialog = it },
         onShowSmsTestDialogChange = { showSmsTestDialog = it },
-        onShowSimSlot1RemarkDialogChange = { showSimSlot1RemarkDialog = it },
-        onShowSimSlot2RemarkDialogChange = { showSimSlot2RemarkDialog = it },
         onShowKeywordsDialogChange = { showKeywordsDialog = it },
         onShowThemeDialogChange = { showThemeDialog = it },
         onShowDonateDialogChange = { showDonateDialog = it },
@@ -922,14 +888,10 @@ private fun SettingsDialogs(
     retentionTime: String,
     smsTestInput: String,
     smsCodeKeywords: String,
-    simSlot1Remark: String,
-    simSlot2Remark: String,
     showAutoInputDialog: Boolean,
     showAutoInputIntervalDialog: Boolean,
     showRetentionDialog: Boolean,
     showSmsTestDialog: Boolean,
-    showSimSlot1RemarkDialog: Boolean,
-    showSimSlot2RemarkDialog: Boolean,
     showKeywordsDialog: Boolean,
     showThemeDialog: Boolean,
     showDonateDialog: Boolean,
@@ -945,14 +907,10 @@ private fun SettingsDialogs(
     onRetentionTimeChange: (String) -> Unit,
     onSmsTestInputChange: (String) -> Unit,
     onSmsKeywordsChange: (String) -> Unit,
-    onSimSlot1RemarkChange: (String) -> Unit,
-    onSimSlot2RemarkChange: (String) -> Unit,
     onShowAutoInputDialogChange: (Boolean) -> Unit,
     onShowAutoInputIntervalDialogChange: (Boolean) -> Unit,
     onShowRetentionDialogChange: (Boolean) -> Unit,
     onShowSmsTestDialogChange: (Boolean) -> Unit,
-    onShowSimSlot1RemarkDialogChange: (Boolean) -> Unit,
-    onShowSimSlot2RemarkDialogChange: (Boolean) -> Unit,
     onShowKeywordsDialogChange: (Boolean) -> Unit,
     onShowThemeDialogChange: (Boolean) -> Unit,
     onShowDonateDialogChange: (Boolean) -> Unit,
@@ -1027,42 +985,6 @@ private fun SettingsDialogs(
             onSmsTestInputChange(value)
             settingsViewModel.performSmsCodeTest(value)
             onShowSmsTestDialogChange(false)
-        }
-    }
-
-    if (showSimSlot1RemarkDialog) {
-        TextInputDialog(
-            title = stringResource(id = R.string.pref_sim_slot1_remark_title),
-            initialValue = simSlot1Remark,
-            onDismiss = { onShowSimSlot1RemarkDialogChange(false) },
-            supportingText = stringResource(id = R.string.pref_sim_slot_remark_summary),
-        ) { value ->
-            val trimmed = value.trim()
-            onSimSlot1RemarkChange(trimmed)
-            scope.launch {
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_SIM_SLOT1_REMARK, trimmed)
-                AppPreferencesDataStore.syncToSharedPrefs(context)
-                onPendingSavedToast()
-            }
-            onShowSimSlot1RemarkDialogChange(false)
-        }
-    }
-
-    if (showSimSlot2RemarkDialog) {
-        TextInputDialog(
-            title = stringResource(id = R.string.pref_sim_slot2_remark_title),
-            initialValue = simSlot2Remark,
-            onDismiss = { onShowSimSlot2RemarkDialogChange(false) },
-            supportingText = stringResource(id = R.string.pref_sim_slot_remark_summary),
-        ) { value ->
-            val trimmed = value.trim()
-            onSimSlot2RemarkChange(trimmed)
-            scope.launch {
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_SIM_SLOT2_REMARK, trimmed)
-                AppPreferencesDataStore.syncToSharedPrefs(context)
-                onPendingSavedToast()
-            }
-            onShowSimSlot2RemarkDialogChange(false)
         }
     }
 

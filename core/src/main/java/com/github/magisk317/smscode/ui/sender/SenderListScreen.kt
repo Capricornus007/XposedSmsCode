@@ -32,6 +32,8 @@ import com.github.magisk317.smscode.forwarder.entity.ForwardCommonConfig
 import com.github.magisk317.smscode.forwarder.entity.Sender
 import com.github.magisk317.smscode.forwarder.utils.ForwardCommonConfigStore
 import com.github.magisk317.smscode.forwarder.utils.SenderType
+import com.tianma.xsmscode.common.constant.PrefConst
+import com.tianma.xsmscode.common.utils.AppPreferencesDataStore
 import com.tianma.xsmscode.core.BuildConfig
 import com.tianma.xsmscode.core.R
 import kotlinx.coroutines.async
@@ -175,10 +177,16 @@ fun SenderListScreen(
     val appNotifyTemplate by viewModel.appNotifyTemplate.collectAsStateWithLifecycle()
     val callNotifyTemplate by viewModel.callNotifyTemplate.collectAsStateWithLifecycle()
     var showTypeDialog by remember { mutableStateOf(false) }
-    var showDeviceNameDialog by remember { mutableStateOf(false) }
+    var showGeneralConfigDialog by remember { mutableStateOf(false) }
     var showCommonConfigDialog by remember { mutableStateOf(false) }
     var showAppNotifyConfigDialog by remember { mutableStateOf(false) }
     var showCallNotifyConfigDialog by remember { mutableStateOf(false) }
+    var simSlot1Remark by remember { mutableStateOf("") }
+    var simSlot2Remark by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) {
+        simSlot1Remark = AppPreferencesDataStore.getString(context, PrefConst.KEY_SIM_SLOT1_REMARK, "")
+        simSlot2Remark = AppPreferencesDataStore.getString(context, PrefConst.KEY_SIM_SLOT2_REMARK, "")
+    }
     LaunchedEffect(forceShowTypeDialog) {
         if (forceShowTypeDialog) {
             showTypeDialog = true
@@ -275,13 +283,22 @@ fun SenderListScreen(
             },
         )
     }
-    if (showDeviceNameDialog) {
-        DeviceNameConfigDialog(
+    if (showGeneralConfigDialog) {
+        GeneralConfigDialog(
             currentDeviceName = commonConfig.deviceName,
-            onDismiss = { showDeviceNameDialog = false },
-            onSave = { updated ->
-                viewModel.saveForwardCommonConfig(commonConfig.copy(deviceName = updated))
-                showDeviceNameDialog = false
+            currentSimSlot1Remark = simSlot1Remark,
+            currentSimSlot2Remark = simSlot2Remark,
+            onDismiss = { showGeneralConfigDialog = false },
+            onSave = { deviceName, sim1Remark, sim2Remark ->
+                viewModel.saveForwardCommonConfig(commonConfig.copy(deviceName = deviceName))
+                scope.launch {
+                    AppPreferencesDataStore.setString(context, PrefConst.KEY_SIM_SLOT1_REMARK, sim1Remark)
+                    AppPreferencesDataStore.setString(context, PrefConst.KEY_SIM_SLOT2_REMARK, sim2Remark)
+                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                    simSlot1Remark = sim1Remark
+                    simSlot2Remark = sim2Remark
+                }
+                showGeneralConfigDialog = false
             },
         )
     }
@@ -341,10 +358,12 @@ fun SenderListScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            DeviceNameConfigCard(
+                            GeneralConfigCard(
                                 modifier = Modifier.weight(1f),
                                 deviceName = commonConfig.deviceName,
-                                onEdit = { showDeviceNameDialog = true },
+                                simSlot1Remark = simSlot1Remark,
+                                simSlot2Remark = simSlot2Remark,
+                                onEdit = { showGeneralConfigDialog = true },
                             )
                             SmsConfigCard(
                                 modifier = Modifier.weight(1f),
@@ -515,9 +534,11 @@ private fun CountdownCircle(
 }
 
 @Composable
-private fun DeviceNameConfigCard(
+private fun GeneralConfigCard(
     modifier: Modifier = Modifier,
     deviceName: String,
+    simSlot1Remark: String,
+    simSlot2Remark: String,
     onEdit: () -> Unit,
 ) {
     Card(
@@ -529,12 +550,19 @@ private fun DeviceNameConfigCard(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = "设备名称",
+                text = "通用配置",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                 maxLines = 1,
             )
             Text(
-                text = deviceName.ifBlank { "默认系统值" },
+                text = buildString {
+                    append("设备: ")
+                    append(deviceName.ifBlank { "默认系统值" })
+                    append(" / SIM1: ")
+                    append(simSlot1Remark.ifBlank { "未设置" })
+                    append(" / SIM2: ")
+                    append(simSlot2Remark.ifBlank { "未设置" })
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
             )
@@ -624,27 +652,57 @@ private fun CallNotifyConfigCard(
 }
 
 @Composable
-private fun DeviceNameConfigDialog(
+private fun GeneralConfigDialog(
     currentDeviceName: String,
+    currentSimSlot1Remark: String,
+    currentSimSlot2Remark: String,
     onDismiss: () -> Unit,
-    onSave: (String) -> Unit,
+    onSave: (String, String, String) -> Unit,
 ) {
     var deviceName by remember(currentDeviceName) { mutableStateOf(currentDeviceName) }
+    var simSlot1Remark by remember(currentSimSlot1Remark) { mutableStateOf(currentSimSlot1Remark) }
+    var simSlot2Remark by remember(currentSimSlot2Remark) { mutableStateOf(currentSimSlot2Remark) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("设备名称") },
+        title = { Text("通用配置") },
         text = {
-            OutlinedTextField(
-                value = deviceName,
-                onValueChange = { deviceName = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("设备名称") },
-                placeholder = { Text("默认读取系统值") },
-                singleLine = true,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = deviceName,
+                    onValueChange = { deviceName = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("设备名称") },
+                    placeholder = { Text("默认读取系统值") },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = simSlot1Remark,
+                    onValueChange = { simSlot1Remark = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("SIM1 备注") },
+                    placeholder = { Text("用于 {{CARD_SLOT}} 显示") },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = simSlot2Remark,
+                    onValueChange = { simSlot2Remark = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("SIM2 备注") },
+                    placeholder = { Text("用于 {{CARD_SLOT}} 显示") },
+                    singleLine = true,
+                )
+            }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(deviceName.trim()) }) {
+            TextButton(
+                onClick = {
+                    onSave(
+                        deviceName.trim(),
+                        simSlot1Remark.trim(),
+                        simSlot2Remark.trim(),
+                    )
+                },
+            ) {
                 Text("保存")
             }
         },
