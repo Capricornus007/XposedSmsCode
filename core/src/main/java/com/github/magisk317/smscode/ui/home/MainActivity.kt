@@ -101,10 +101,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyEdgeToEdge(this)
-        playUpdateDelegate.onCreate(this) {
-            PackageUtils.openPlayStoreOrGithub(this)
-        }
         if (!BuildConfig.IS_TRANSITION_BUILD) {
+            playUpdateDelegate.onCreate(this) {
+                PackageUtils.openPlayStoreOrGithub(this)
+            }
             triggerAutoUpdateIfEnabled()
         }
 
@@ -206,7 +206,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             LaunchedEffect(Unit) {
-                if (!SPUtils.isPrivacyPolicyAccepted(context)) {
+                if (!BuildConfig.IS_TRANSITION_BUILD && !SPUtils.isPrivacyPolicyAccepted(context)) {
                     showPrivacyPolicyDialog = true
                 }
             }
@@ -587,14 +587,18 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        playUpdateDelegate.onResume(this) {
-            PackageUtils.openPlayStoreOrGithub(this)
+        if (!BuildConfig.IS_TRANSITION_BUILD) {
+            playUpdateDelegate.onResume(this) {
+                PackageUtils.openPlayStoreOrGithub(this)
+            }
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        playUpdateDelegate.onDestroy()
+        if (!BuildConfig.IS_TRANSITION_BUILD) {
+            playUpdateDelegate.onDestroy()
+        }
     }
 
     private fun requestPlayUpdate() {
