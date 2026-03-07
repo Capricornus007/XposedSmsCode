@@ -2,12 +2,9 @@ package com.github.magisk317.smscode.ui.home
 
 import android.content.Intent
 import android.graphics.Bitmap
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -54,8 +51,6 @@ import com.github.magisk317.smscode.core.BuildConfig
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
-import com.github.magisk317.smscode.common.constant.TransitionConst
-import com.github.magisk317.smscode.common.constant.TransitionExpiryPolicy
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.common.utils.SPUtils
@@ -70,7 +65,6 @@ import com.github.magisk317.smscode.data.update.UpgradeDownloader
 import com.github.magisk317.smscode.data.update.UpgradeInfo
 import com.github.magisk317.smscode.data.update.UpgradeInstaller
 import com.github.magisk317.smscode.data.update.UpdatePolicy
-import com.github.magisk317.smscode.feature.backup.BackupManager
 import com.github.magisk317.smscode.ui.app.base.UpdateSystemBars
 import com.github.magisk317.smscode.ui.app.base.applyEdgeToEdge
 import com.github.magisk317.smscode.ui.app.base.rememberHazeStyle
@@ -101,12 +95,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyEdgeToEdge(this)
-        if (!BuildConfig.IS_TRANSITION_BUILD) {
-            playUpdateDelegate.onCreate(this) {
-                PackageUtils.openPlayStoreOrGithub(this)
-            }
-            triggerAutoUpdateIfEnabled()
+        playUpdateDelegate.onCreate(this) {
+            PackageUtils.openPlayStoreOrGithub(this)
         }
+        triggerAutoUpdateIfEnabled()
 
         setContent {
             val viewModel: SettingsViewModel = koinViewModel()
@@ -120,21 +112,6 @@ class MainActivity : AppCompatActivity() {
             var downloadState by remember { mutableStateOf<UpdateDownloadState>(UpdateDownloadState.Idle) }
             var unknownSourceApk by remember { mutableStateOf<File?>(null) }
             var downloadJob by remember { mutableStateOf<Job?>(null) }
-            val transitionBackupLauncher = rememberLauncherForActivityResult(
-                ActivityResultContracts.StartActivityForResult(),
-            ) { result ->
-                val data = result.data
-                val pickedUri = data?.data ?: data?.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
-                if (result.resultCode == RESULT_OK && pickedUri != null) {
-                    viewModel.performBackup(
-                        uri = pickedUri,
-                        includeConfig = true,
-                        includeRules = true,
-                        includeRecords = true,
-                        includeDatabase = true,
-                    )
-                }
-            }
 
             fun startStructuredDownload(update: GithubStructuredUpdate) {
                 downloadJob?.cancel()
@@ -206,14 +183,12 @@ class MainActivity : AppCompatActivity() {
             }
 
             LaunchedEffect(Unit) {
-                if (!BuildConfig.IS_TRANSITION_BUILD && !SPUtils.isPrivacyPolicyAccepted(context)) {
+                if (!SPUtils.isPrivacyPolicyAccepted(context)) {
                     showPrivacyPolicyDialog = true
                 }
             }
             LaunchedEffect(Unit) {
-                if (!BuildConfig.IS_TRANSITION_BUILD) {
-                    githubUpdateUiState = checkStartupGithubUpdateIfNeeded()
-                }
+                githubUpdateUiState = checkStartupGithubUpdateIfNeeded()
             }
 
             // Effect to trigger logic when ThemeState changes
@@ -324,42 +299,15 @@ class MainActivity : AppCompatActivity() {
 
                         val hazeState = remember { HazeState() }
                         val hazeStyle = rememberHazeStyle(blurRadius = hazeBlurRadius.dp, tintAlpha = hazeTintAlpha)
-                        when {
-                            BuildConfig.IS_TRANSITION_BUILD && TransitionExpiryPolicy.isExpired() -> {
-                                ExpiredBlockScreen(
-                                    onOpenRelay = { openRelayOrDownload() },
-                                    onOpenUninstall = { openSelfUninstallPage() },
-                                )
-                            }
-
-                            BuildConfig.IS_TRANSITION_BUILD -> {
-                                TransitionGateScreen(
-                                    relayInstalled = TransitionConst.isRelayInstalled(context),
-                                    onStartAutoMigration = { openRelayOrDownload() },
-                                    onUpgradeToLite = { Utils.showWebPage(context, TransitionConst.TARGET_LITE_URL) },
-                                    onManualBackupExport = {
-                                        transitionBackupLauncher.launch(
-                                            BackupManager.getExportRuleListSAFIntent(
-                                                context = context,
-                                                includeDatabase = true,
-                                            ),
-                                        )
-                                    },
-                                )
-                            }
-
-                            else -> {
-                                SmsCodeNavHost(
-                                    navController = navController,
-                                    onBack = { finish() },
-                                    initialTab = requestedTab,
-                                    onInitialTabConsumed = { requestedTab = null },
-                                    modifier = Modifier,
-                                    hazeState = hazeState,
-                                    hazeStyle = hazeStyle,
-                                )
-                            }
-                        }
+                        SmsCodeNavHost(
+                            navController = navController,
+                            onBack = { finish() },
+                            initialTab = requestedTab,
+                            onInitialTabConsumed = { requestedTab = null },
+                            modifier = Modifier,
+                            hazeState = hazeState,
+                            hazeStyle = hazeStyle,
+                        )
 
                         if (showPrivacyPolicyDialog) {
                             PrivacyPolicyDialog(
@@ -587,18 +535,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (!BuildConfig.IS_TRANSITION_BUILD) {
-            playUpdateDelegate.onResume(this) {
-                PackageUtils.openPlayStoreOrGithub(this)
-            }
+        playUpdateDelegate.onResume(this) {
+            PackageUtils.openPlayStoreOrGithub(this)
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        if (!BuildConfig.IS_TRANSITION_BUILD) {
-            playUpdateDelegate.onDestroy()
-        }
+        playUpdateDelegate.onDestroy()
     }
 
     private fun requestPlayUpdate() {
@@ -829,30 +773,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             String.format("%.1f%s", value, units[index])
         }
-    }
-
-    private fun openRelayOrDownload() {
-        if (!PackageUtils.isPackageInstalled(this, TransitionConst.TARGET_RELAY_PACKAGE)) {
-            Utils.showWebPage(this, TransitionConst.TARGET_RELAY_URL)
-            return
-        }
-        val launchIntent = packageManager.getLaunchIntentForPackage(TransitionConst.TARGET_RELAY_PACKAGE)
-        if (launchIntent == null) {
-            Utils.showWebPage(this, TransitionConst.TARGET_RELAY_URL)
-            return
-        }
-        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        launchIntent.putExtra("source", "a_transition")
-        startActivity(launchIntent)
-    }
-
-    private fun openSelfUninstallPage() {
-        val intent = Intent(Intent.ACTION_DELETE).apply {
-            data = Uri.parse("package:$packageName")
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        runCatching { startActivity(intent) }
-            .onFailure { Utils.showWebPage(this, TransitionConst.TARGET_RELAY_URL) }
     }
 
 }

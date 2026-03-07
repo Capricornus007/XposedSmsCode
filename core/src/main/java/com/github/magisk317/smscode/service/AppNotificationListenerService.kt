@@ -33,7 +33,7 @@ class AppNotificationListenerService : NotificationListenerService() {
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         super.onNotificationPosted(sbn)
-        if (BuildConfig.IS_TRANSITION_BUILD || BuildConfig.IS_LITE_BUILD) {
+        if (BuildConfig.IS_LITE_BUILD) {
             XLog.w("AppNotificationListenerService disabled: %s", TransitionConst.MIGRATED_REASON_CODE)
             return
         }

@@ -6,12 +6,6 @@ plugins {
 
 val compileSdkInt = libs.versions.compileSdk.get().toInt()
 val minSdkInt = libs.versions.minSdk.get().toInt()
-val aReleaseMode = (findProperty("a.release.mode")?.toString() ?: "lite").lowercase()
-val isTransitionBuildMode = aReleaseMode == "transition"
-val isLiteBuildMode = aReleaseMode == "lite"
-check(isTransitionBuildMode || isLiteBuildMode) {
-    "Invalid a.release.mode=$aReleaseMode, expected transition|lite"
-}
 
 android {
     namespace = "com.github.magisk317.smscode.core"
@@ -40,8 +34,7 @@ android {
         minSdk = minSdkInt
         buildConfigField("int", "VERSION_CODE", libs.versions.versionCode.get())
         buildConfigField("String", "VERSION_NAME", "\"${libs.versions.versionName.get()}\"")
-        buildConfigField("boolean", "IS_TRANSITION_BUILD", isTransitionBuildMode.toString())
-        buildConfigField("boolean", "IS_LITE_BUILD", isLiteBuildMode.toString())
+        buildConfigField("boolean", "IS_LITE_BUILD", "true")
     }
 
     buildFeatures {

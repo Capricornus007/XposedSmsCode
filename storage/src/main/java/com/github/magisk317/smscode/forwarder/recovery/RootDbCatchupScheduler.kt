@@ -20,7 +20,7 @@ object RootDbCatchupScheduler {
     private var periodicJob: Job? = null
 
     fun startPeriodic(context: Context, reason: String) {
-        if (BuildConfig.IS_TRANSITION_BUILD || BuildConfig.IS_LITE_BUILD) return
+        if (BuildConfig.IS_LITE_BUILD) return
         val appContext = context.applicationContext ?: context
         if (periodicJob?.isActive == true) {
             return
@@ -37,7 +37,7 @@ object RootDbCatchupScheduler {
     }
 
     fun stopPeriodic(reason: String) {
-        if (BuildConfig.IS_TRANSITION_BUILD || BuildConfig.IS_LITE_BUILD) return
+        if (BuildConfig.IS_LITE_BUILD) return
         val job = periodicJob ?: return
         job.cancel()
         periodicJob = null
@@ -45,7 +45,7 @@ object RootDbCatchupScheduler {
     }
 
     fun triggerImmediate(context: Context, reason: String) {
-        if (BuildConfig.IS_TRANSITION_BUILD || BuildConfig.IS_LITE_BUILD) return
+        if (BuildConfig.IS_LITE_BUILD) return
         val appContext = context.applicationContext ?: context
         scope.launch {
             RootDbCatchupEngine.runOnce(appContext, reason = reason)

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -20,9 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.github.magisk317.smscode.common.constant.PrefConst
-import com.github.magisk317.smscode.common.constant.TransitionConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
-import com.github.magisk317.smscode.common.utils.Utils
 import kotlinx.coroutines.launch
 
 @Composable
@@ -110,12 +107,6 @@ fun LiteSettingsScreen() {
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
-        Button(
-            onClick = { Utils.showWebPage(context, TransitionConst.TARGET_RELAY_URL) },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text("前往信驿 Relay（通知/转发）")
-        }
     }
 }
 

@@ -2,10 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <permission
-        android:name="${applicationId}.permission.MIGRATION_EXPORT"
-        android:protectionLevel="signature" />
-
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -62,19 +58,6 @@
             </intent-filter>
         </receiver>
 
-        <receiver
-            android:name="com.github.magisk317.smscode.transition.TransitionExpiryReceiver"
-            android:enabled="true"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-                <action android:name="com.github.tianma8023.xposed.smscode.ACTION_DAILY_EXPIRY_CHECK" />
-            </intent-filter>
-        </receiver>
-
-
-
         <activity
             android:name="com.github.magisk317.smscode.ui.home.LauncherActivity"
             android:enabled="true"
@@ -128,12 +111,6 @@
             android:name="com.github.magisk317.smscode.data.prefs.PrefsProvider"
             android:authorities="${applicationId}.pref.provider"
             android:exported="true" />
-
-        <provider
-            android:name="com.github.magisk317.smscode.migration.MigrationProvider"
-            android:authorities="${applicationId}.migration.provider"
-            android:exported="true"
-            android:readPermission="${applicationId}.permission.MIGRATION_EXPORT" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

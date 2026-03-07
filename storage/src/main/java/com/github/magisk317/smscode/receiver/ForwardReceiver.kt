@@ -53,13 +53,13 @@ class ForwardReceiver : BroadcastReceiver() {
                     markResult(RESULT_REJECT_ACTION, "invalid_action")
                     return@runCatching
                 }
-                if (BuildConfig.IS_TRANSITION_BUILD || BuildConfig.IS_LITE_BUILD) {
-                    XLog.w("ForwardReceiver disabled in transition build")
+                if (BuildConfig.IS_LITE_BUILD) {
+                    XLog.w("ForwardReceiver disabled in lite build")
                     ForwardFlowLog.w(
                         traceId,
                         "ForwardReceiver disabled reason=${TransitionConst.MIGRATED_REASON_CODE}",
                     )
-                    markResult(RESULT_TRANSITION_DISABLED, TransitionConst.MIGRATED_REASON_CODE)
+                    markResult(RESULT_LITE_DISABLED, TransitionConst.MIGRATED_REASON_CODE)
                     return@runCatching
                 }
 
@@ -424,7 +424,7 @@ class ForwardReceiver : BroadcastReceiver() {
         private const val RESULT_REJECT_APP_GATE = -103
         private const val RESULT_DROP_DUPLICATE = -104
         private const val RESULT_DISPATCH_FAILED = -105
-        private const val RESULT_TRANSITION_DISABLED = -106
+        private const val RESULT_LITE_DISABLED = -106
         private const val FORWARD_WORKER_COUNT = 2
         private const val SYSTEM_UID = 1000
         private const val PHONE_UID = 1001

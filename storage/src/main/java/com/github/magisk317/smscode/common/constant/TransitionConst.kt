@@ -7,10 +7,7 @@ import com.github.magisk317.smscode.storage.BuildConfig
 object TransitionConst {
     const val TARGET_RELAY_PACKAGE = "io.github.magisk317.xinyi.relay"
     val TARGET_RELAY_URL: String = BuildConfig.B_DOWNLOAD_URL
-    val TARGET_LITE_URL: String = BuildConfig.A_LITE_DOWNLOAD_URL
     const val MIGRATED_REASON_CODE = "migrated_to_xinyi_relay"
-    const val TRANSITION_EXPIRED_REASON_CODE = "transition_expired"
-    const val TRANSITION_EXPIRY_CLEANUP_REASON = "transition_expiry_cleanup"
 
     fun isRelayInstalled(context: Context): Boolean = try {
         context.packageManager.getPackageInfo(TARGET_RELAY_PACKAGE, 0)
@@ -19,5 +16,5 @@ object TransitionConst {
         false
     }
 
-    fun isRestrictedBuild(): Boolean = BuildConfig.IS_TRANSITION_BUILD || BuildConfig.IS_LITE_BUILD
+    fun isRestrictedBuild(): Boolean = BuildConfig.IS_LITE_BUILD
 }

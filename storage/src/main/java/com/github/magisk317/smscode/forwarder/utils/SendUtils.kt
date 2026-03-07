@@ -74,7 +74,7 @@ object SendUtils {
         recordId: Long? = null,
         traceId: String? = null,
     ) {
-        if (BuildConfig.IS_TRANSITION_BUILD || BuildConfig.IS_LITE_BUILD) {
+        if (BuildConfig.IS_LITE_BUILD) {
             val db = AppDatabase.getInstance(context)
             val tip = "转发已迁移至信驿 Relay：${TransitionConst.TARGET_RELAY_URL} [${TransitionConst.MIGRATED_REASON_CODE}]"
             persistForwardResult(

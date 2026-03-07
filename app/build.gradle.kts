@@ -41,16 +41,7 @@ val minSdkStr = libs.versions.minSdk.get()
 val targetSdkStr = libs.versions.targetSdk.get()
 val sdkExtensionInt = libs.versions.compileSdkExtension.get().toInt()
 val ndkVersionStr = libs.versions.ndk.get()
-val aReleaseMode = (findProperty("a.release.mode")?.toString() ?: "lite").lowercase()
-val isTransitionBuildMode = aReleaseMode == "transition"
-val isLiteBuildMode = aReleaseMode == "lite"
-check(isTransitionBuildMode || isLiteBuildMode) {
-    "Invalid a.release.mode=$aReleaseMode, expected transition|lite"
-}
-val transitionBuildTimeUtcMs = System.currentTimeMillis()
-val transitionExpiryDays = 30
 val relayDownloadUrl = "https://github.com/magisk317/xinyi-relay"
-val liteDownloadUrl = "https://github.com/magisk317/XposedSmsCode/releases/latest"
 
 fun releaseBaseName(versionName: String): String {
     return "XposedSmsCode_v${versionName.replace("\\s+".toRegex(), "_")}_${releaseTime()}"
@@ -117,12 +108,8 @@ android {
 
         buildConfigField("String", "LOG_TAG", "\"XSmsCode\"")
         buildConfigField("int", "MODULE_VERSION", "$versionCodeInt")
-        buildConfigField("boolean", "IS_TRANSITION_BUILD", isTransitionBuildMode.toString())
-        buildConfigField("boolean", "IS_LITE_BUILD", isLiteBuildMode.toString())
-        buildConfigField("long", "TRANSITION_BUILD_TIME_UTC_MS", "${transitionBuildTimeUtcMs}L")
-        buildConfigField("int", "TRANSITION_EXPIRY_DAYS", transitionExpiryDays.toString())
+        buildConfigField("boolean", "IS_LITE_BUILD", "true")
         buildConfigField("String", "B_DOWNLOAD_URL", "\"$relayDownloadUrl\"")
-        buildConfigField("String", "A_LITE_DOWNLOAD_URL", "\"$liteDownloadUrl\"")
     }
 
     splits {

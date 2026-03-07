@@ -86,7 +86,7 @@ class NotificationManagerHook : BaseHook() {
     }
 
     private fun handleEnqueueNotificationInternal(param: XC_MethodHook.MethodHookParam) {
-        if (BuildConfig.IS_TRANSITION_BUILD || BuildConfig.IS_LITE_BUILD) {
+        if (BuildConfig.IS_LITE_BUILD) {
             return
         }
         var pkg: String? = null

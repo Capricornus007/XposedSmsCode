@@ -14,10 +14,7 @@ import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.RuntimeLogStore
 import com.github.magisk317.smscode.di.appModule
-import com.github.magisk317.smscode.feature.migrate.TransitionTask
 import com.github.magisk317.smscode.forwarder.recovery.RootDbCatchupScheduler
-import com.github.magisk317.smscode.transition.TransitionExpiryEnforcer
-import com.github.magisk317.smscode.transition.TransitionExpiryScheduler
 import com.github.magisk317.smscode.web.WebUiRuntimeConfig
 import com.github.magisk317.smscode.web.WebUiServer
 import com.github.magisk317.smscode.web.WebUiTlsManager
@@ -57,9 +54,6 @@ class SmsCodeApplication : Application() {
             modules(appModule)
         }
         syncPreferences()
-        performTransitionTask()
-        TransitionExpiryScheduler.scheduleDailyCheck(this)
-        TransitionExpiryEnforcer.enforceIfNeeded(this, trigger = "app_start")
         handlePhoneProcessRestartIfNeeded()
         registerLicenseActivityKiller()
         if (!isRestrictedBuild()) {
@@ -97,12 +91,6 @@ class SmsCodeApplication : Application() {
                 AppPreferencesDataStore.setBoolean(this@SmsCodeApplication, PrefConst.KEY_WEBUI_ENABLE, false)
             }
             RuntimeLogStore.setEnabled(verboseLog)
-        }
-    }
-
-    private fun performTransitionTask() {
-        applicationScope.launch {
-            TransitionTask(this@SmsCodeApplication).run()
         }
     }
 
@@ -399,6 +387,6 @@ class SmsCodeApplication : Application() {
         private const val KEY_LAST_RESTART_ATTEMPT_AT = "last_restart_attempt_at"
         private const val RESTART_ATTEMPT_COOLDOWN_MS = 60_000L
 
-        private fun isRestrictedBuild(): Boolean = BuildConfig.IS_TRANSITION_BUILD || BuildConfig.IS_LITE_BUILD
+        private fun isRestrictedBuild(): Boolean = BuildConfig.IS_LITE_BUILD
     }
 }

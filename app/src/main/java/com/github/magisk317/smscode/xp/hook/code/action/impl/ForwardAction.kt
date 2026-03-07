@@ -29,7 +29,7 @@ class ForwardAction(
 
     override fun action(): Bundle? {
         try {
-            if (BuildConfig.IS_TRANSITION_BUILD || BuildConfig.IS_LITE_BUILD) {
+            if (BuildConfig.IS_LITE_BUILD) {
                 persistForwardResult(
                     success = false,
                     target = "信驿 Relay",

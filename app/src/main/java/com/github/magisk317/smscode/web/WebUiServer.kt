@@ -121,12 +121,12 @@ internal class WebUiServer(
         routing {
             authenticate("webui-basic") {
                 intercept(ApplicationCallPipeline.Call) {
-                    if ((BuildConfig.IS_TRANSITION_BUILD || BuildConfig.IS_LITE_BUILD) && call.request.local.method != HttpMethod.Get) {
+                    if ((BuildConfig.IS_LITE_BUILD) && call.request.local.method != HttpMethod.Get) {
                         call.respondText(
                             status = HttpStatusCode.Forbidden,
                             text = json.encodeToString(
                                 ErrorResponse(
-                                    error = "Forwarding mutation disabled in transition build [migrated_to_xinyi_relay]",
+                                    error = "Forwarding mutation disabled in lite build [migrated_to_xinyi_relay]",
                                 ),
                             ),
                             contentType = ContentType.Application.Json,

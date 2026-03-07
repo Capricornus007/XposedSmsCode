@@ -7,7 +7,6 @@ import android.os.Looper
 import android.util.Log
 import androidx.core.os.BundleCompat
 import com.github.tianma8023.xposed.smscode.BuildConfig
-import com.github.magisk317.smscode.common.constant.TransitionConst
 import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.common.utils.XLog
@@ -64,14 +63,6 @@ class CodeWorker(
             XLog.i("XposedSmsCode disabled, exiting")
             return null
         }
-        if (BuildConfig.IS_TRANSITION_BUILD && TransitionConst.isRelayInstalled(mPluginContext)) {
-            XLog.w(
-                "Diag parse skipped because relay is installed: %s",
-                TransitionConst.TARGET_RELAY_PACKAGE,
-            )
-            return null
-        }
-
         if (verboseLog) {
             XLog.setLogLevel(Log.VERBOSE)
         } else {
