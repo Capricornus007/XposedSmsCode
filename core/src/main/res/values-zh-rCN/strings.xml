@@ -67,6 +67,8 @@
     <string name="pref_enable_auto_input_code_summary">尝试自动输入验证码</string>
     <string name="pref_enable_auto_enter_code_title">自动确认/回车</string>
     <string name="pref_enable_auto_enter_code_summary">填充验证码后自动触发回车操作</string>
+    <string name="pref_kill_me_title">自动输入后自杀</string>
+    <string name="pref_kill_me_summary">自动输入完成后主动结束应用进程，减少后台驻留</string>
     <string name="pref_auto_input_code_delay_title">自动输入延迟</string>
     <string name="pref_auto_input_code_delay_summary">延迟 %ss</string>
     <string name="pref_auto_input_code_interval_title">自动输入间隔</string>
@@ -216,18 +218,6 @@
     <string name="pref_mark_as_read_summary">收到验证码短信后，尝试将其标记为已读。由于系统权限或定制 ROM 限制，该功能可能在某些设备上无法生效。</string>
     <string name="pref_delete_sms_title">验证码短信删除</string>
     <string name="pref_delete_sms_summary">警告：提取成功后验证码短信将被删除</string>
-    <string name="pref_force_stop_recovery_title">强停后自恢复</string>
-    <string name="pref_force_stop_recovery_summary">转发检测到应用被强停时，尝试解除 stopped 并仅唤起所需后台服务（不拉起前台）。</string>
-    <string name="pref_force_stop_recovery_relaunch_once_title">恢复失败时前台拉起一次</string>
-    <string name="pref_force_stop_recovery_relaunch_once_summary">当有序广播回执为空时，尝试拉起模块前台一次，帮助恢复通知转发链路。</string>
-    <string name="pref_root_db_catchup_enable_title">Root 直查库补偿</string>
-    <string name="pref_root_db_catchup_enable_summary">当广播链路缺失 token 时，后台轮询系统短信/通话数据库进行补偿。</string>
-    <string name="pref_root_db_catchup_interval_title">补偿间隔</string>
-    <string name="pref_root_db_catchup_interval_summary">后台每 %1$s 分钟执行一次</string>
-    <string name="pref_root_db_catchup_interval_hint">取值范围：1-120 分钟</string>
-    <string name="pref_root_db_catchup_interval_error">请输入 1 到 120 的整数。</string>
-    <string name="pref_root_db_catchup_writeback_title">补偿后写回系统库</string>
-    <string name="pref_root_db_catchup_writeback_summary">补偿入队后可将短信标记已读，并清理未接来电 new 标记（仅 type=3）。</string>
     <!-- preference experimental end -->
 
 
@@ -317,7 +307,7 @@
     <!-- auto-input block settings -->
     <string name="app_block_settings">禁用自动输入列表</string>
     <string name="tab_overview">概览</string>
-    <string name="tab_blacklist">应用</string>
+    <string name="tab_blacklist">黑名单</string>
     <string name="tab_intercept">短信拦截</string>
     <string name="tab_faq">FAQ</string>
     <string name="tab_records">记录</string>
@@ -333,7 +323,7 @@
     <string name="action_sort_by_pkg">包名</string>
     <string name="action_sort_by_usage">使用频率</string>
     <string name="action_sort_by_selection">配置优先</string>
-    <string name="app_config_settings">应用</string>
+    <string name="app_config_settings">禁用自动输入列表</string>
     <string name="action_search">搜索</string>
     <string name="action_accomplish">完成</string>
     <string name="usage_permission_prompt">按使用频率排序需要使用情况访问权限。请在设置中授予该权限。</string>

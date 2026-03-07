@@ -95,11 +95,9 @@ fun ComposeSettingsScreen(
     var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
     val showCodeNotificationEnabled = remember { mutableStateOf(true) }
     var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
-    var rootDbCatchupIntervalMin by remember { mutableStateOf("5") }
     var showAutoInputDialog by remember { mutableStateOf(false) }
     var showAutoInputIntervalDialog by remember { mutableStateOf(false) }
     var showRetentionDialog by remember { mutableStateOf(false) }
-    var showRootDbCatchupIntervalDialog by remember { mutableStateOf(false) }
     var showSmsTestDialog by remember { mutableStateOf(false) }
     var smsTestInput by remember { mutableStateOf("") }
     var showThemeDialog by remember { mutableStateOf(false) }
@@ -118,7 +116,6 @@ fun ComposeSettingsScreen(
     var expandSmsCode by remember { mutableStateOf(false) }
     var expandAutoInput by remember { mutableStateOf(false) }
     var expandNotification by remember { mutableStateOf(false) }
-    var expandBackgroundKeepAlive by remember { mutableStateOf(false) }
     var expandExperimental by remember { mutableStateOf(false) }
     var expandOthers by remember { mutableStateOf(false) }
     val launcherIconVisible = remember { mutableStateOf(settingsViewModel.isLauncherIconVisible()) }
@@ -148,11 +145,6 @@ fun ComposeSettingsScreen(
             context,
             PrefConst.KEY_SMSCODE_KEYWORDS,
             PrefConst.SMSCODE_KEYWORDS_DEFAULT,
-        )
-        rootDbCatchupIntervalMin = AppPreferencesDataStore.getString(
-            context,
-            PrefConst.KEY_ROOT_DB_CATCHUP_INTERVAL_MIN,
-            "5",
         )
         val launcherVisible = settingsViewModel.isLauncherIconVisible()
         launcherIconVisible.value = launcherVisible
@@ -297,7 +289,6 @@ fun ComposeSettingsScreen(
     val autoUpdateEnabled = rememberPrefBoolean(PrefConst.KEY_AUTO_UPDATE_ON_START, true)
     val moduleEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE, true)
     val accordionMode = rememberPrefBoolean(PrefConst.KEY_SETTINGS_ACCORDION_MODE, true)
-    val rootDbCatchupEnabled = rememberPrefBoolean(PrefConst.KEY_ROOT_DB_CATCHUP_ENABLE, true)
 
     LaunchedEffect(settingsDataLoaded, showLoading, shouldShowInitialLoading) {
         if (shouldShowInitialLoading && settingsDataLoaded && !showLoading) {
@@ -526,50 +517,6 @@ fun ComposeSettingsScreen(
                     }
 
                     ExpandableSettingsSection(
-                        title = stringResource(id = R.string.settings_group_background_keepalive),
-                        expanded = expandBackgroundKeepAlive,
-                        onExpandedChange = { expandBackgroundKeepAlive = !expandBackgroundKeepAlive },
-                        accordionMode = accordionMode.value,
-                    ) {
-                        SwitchItem(
-                            title = stringResource(id = R.string.pref_root_db_catchup_enable_title),
-                            summary = stringResource(id = R.string.pref_root_db_catchup_enable_summary),
-                            key = PrefConst.KEY_ROOT_DB_CATCHUP_ENABLE,
-                            defaultValue = true,
-                            stateOverride = rootDbCatchupEnabled,
-                            onSaved = markPrefsSaved,
-                        )
-                        Item(
-                            title = stringResource(id = R.string.pref_root_db_catchup_interval_title),
-                            summary = stringResource(
-                                id = R.string.pref_root_db_catchup_interval_summary,
-                                rootDbCatchupIntervalMin,
-                            ),
-                        ) { showRootDbCatchupIntervalDialog = true }
-                        SwitchItem(
-                            title = stringResource(id = R.string.pref_root_db_catchup_writeback_title),
-                            summary = stringResource(id = R.string.pref_root_db_catchup_writeback_summary),
-                            key = PrefConst.KEY_ROOT_DB_CATCHUP_WRITEBACK,
-                            defaultValue = false,
-                            onSaved = markPrefsSaved,
-                        )
-                        SwitchItem(
-                            title = stringResource(id = R.string.pref_force_stop_recovery_title),
-                            summary = stringResource(id = R.string.pref_force_stop_recovery_summary),
-                            key = PrefConst.KEY_FORCE_STOP_RECOVERY,
-                            defaultValue = false,
-                            onSaved = markPrefsSaved,
-                        )
-                        SwitchItem(
-                            title = stringResource(id = R.string.pref_force_stop_recovery_relaunch_once_title),
-                            summary = stringResource(id = R.string.pref_force_stop_recovery_relaunch_once_summary),
-                            key = PrefConst.KEY_FORCE_STOP_RECOVERY_RELAUNCH_ONCE,
-                            defaultValue = false,
-                            onSaved = markPrefsSaved,
-                        )
-                    }
-
-                    ExpandableSettingsSection(
                         title = stringResource(id = R.string.settings_group_experimental),
                         expanded = expandExperimental,
                         onExpandedChange = { expandExperimental = !expandExperimental },
@@ -579,6 +526,13 @@ fun ComposeSettingsScreen(
                             title = stringResource(id = R.string.pref_block_sms_title),
                             summary = stringResource(id = R.string.pref_block_sms_summary),
                             key = PrefConst.KEY_BLOCK_SMS,
+                            defaultValue = false,
+                            onSaved = markPrefsSaved,
+                        )
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_kill_me_title),
+                            summary = stringResource(id = R.string.pref_kill_me_summary),
+                            key = PrefConst.KEY_KILL_ME,
                             defaultValue = false,
                             onSaved = markPrefsSaved,
                         )
@@ -776,37 +730,6 @@ fun ComposeSettingsScreen(
         )
     }
 
-    if (showRootDbCatchupIntervalDialog) {
-        val rootDbCatchupIntervalErrorText = stringResource(id = R.string.pref_root_db_catchup_interval_error)
-        TextInputDialog(
-            title = stringResource(id = R.string.pref_root_db_catchup_interval_title),
-            initialValue = rootDbCatchupIntervalMin,
-            supportingText = stringResource(id = R.string.pref_root_db_catchup_interval_hint),
-            validator = { input ->
-                val parsed = input.trim().toIntOrNull()
-                if (parsed == null || parsed !in 1..120) {
-                    rootDbCatchupIntervalErrorText
-                } else {
-                    null
-                }
-            },
-            onDismiss = { showRootDbCatchupIntervalDialog = false },
-            onConfirm = { value ->
-                val normalized = value.trim().toIntOrNull()?.coerceIn(1, 120)?.toString() ?: "5"
-                rootDbCatchupIntervalMin = normalized
-                scope.launch {
-                    AppPreferencesDataStore.setString(
-                        context,
-                        PrefConst.KEY_ROOT_DB_CATCHUP_INTERVAL_MIN,
-                        normalized,
-                    )
-                    AppPreferencesDataStore.syncToSharedPrefs(context)
-                    markPrefsSaved()
-                }
-                showRootDbCatchupIntervalDialog = false
-            },
-        )
-    }
 }
 
 private fun handleSettingsEvent(

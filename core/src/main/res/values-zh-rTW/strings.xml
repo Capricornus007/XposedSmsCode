@@ -67,6 +67,8 @@
     <string name="pref_enable_auto_input_code_summary">嘗試自動輸入驗證碼</string>
     <string name="pref_enable_auto_enter_code_title">自動確認/回車</string>
     <string name="pref_enable_auto_enter_code_summary">填充驗證碼後自動觸發回車操作</string>
+    <string name="pref_kill_me_title">自動輸入後自殺</string>
+    <string name="pref_kill_me_summary">自動輸入完成後主動結束應用進程，減少後台駐留</string>
     <string name="pref_auto_input_code_delay_title">自動輸入延遲</string>
     <string name="pref_auto_input_code_delay_summary">延遲 %ss</string>
     <string name="pref_auto_input_code_interval_title">自動輸入間隔</string>
@@ -214,10 +216,6 @@
     <string name="pref_mark_as_read_summary">收到驗證碼簡訊後，嘗試將其標記為已讀。由於系統權限或定制 ROM 限制，該功能可能在某些設備上無法生效。</string>
     <string name="pref_delete_sms_title">簡訊刪除</string>
     <string name="pref_delete_sms_summary">警告：擷取成功后驗證碼簡訊將被刪除</string>
-    <string name="pref_force_stop_recovery_title">強停後自恢復</string>
-    <string name="pref_force_stop_recovery_summary">轉發檢測到應用被強停時，嘗試解除 stopped 並僅喚起必要背景服務（不拉起前台）。</string>
-    <string name="pref_force_stop_recovery_relaunch_once_title">恢復失敗時前台拉起一次</string>
-    <string name="pref_force_stop_recovery_relaunch_once_summary">當有序廣播回執為空時，嘗試拉起模組前台一次，協助恢復通知轉發鏈路。</string>
     <!-- preference experimental end -->
 
 
@@ -306,7 +304,7 @@
     <!-- auto-input block settings -->
     <string name="app_block_settings">停用自動輸入</string>
     <string name="tab_overview">總覽</string>
-    <string name="tab_blacklist">應用</string>
+    <string name="tab_blacklist">黑名單</string>
     <string name="tab_intercept">簡訊攔截</string>
     <string name="tab_faq">FAQ</string>
     <string name="tab_records">紀錄</string>
@@ -322,7 +320,7 @@
     <string name="action_sort_by_pkg">包名</string>
     <string name="action_sort_by_usage">使用頻率</string>
     <string name="action_sort_by_selection">設定優先</string>
-    <string name="app_config_settings">應用</string>
+    <string name="app_config_settings">禁用自動輸入列表</string>
     <string name="action_search">搜索</string>
     <string name="action_accomplish">完成</string>
     <string name="usage_permission_prompt">按使用頻率排序需要使用情況存取權限。請在設定中授予該權限。</string>
@@ -518,6 +516,7 @@
     <string name="app_notify_template_placeholder">請輸入該應用專屬模板...</string>
     <string name="app_config_detail_save_tip">詳情頁修改會先存於記憶體，請返回應用控制頁點擊完成後再儲存。</string>
     <string name="settings_group_background_keepalive">背景保活</string>
+    <string name="settings_group_experimental">實驗性功能</string>
 
     <!-- backup and restore -->
     <string name="pref_backup_restore_title">備份與還原</string>

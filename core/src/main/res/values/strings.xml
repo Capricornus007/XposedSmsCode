@@ -67,6 +67,8 @@
     <string name="pref_enable_auto_input_code_summary">Try to input SMS code automatically</string>
     <string name="pref_enable_auto_enter_code_title">Auto-Enter/Submit</string>
     <string name="pref_enable_auto_enter_code_summary">Automatically trigger Enter after filling the code</string>
+    <string name="pref_kill_me_title">Kill app after auto input</string>
+    <string name="pref_kill_me_summary">After auto input finishes, kill the app process to reduce background residency</string>
     <string name="pref_auto_input_code_delay_title">Auto input delay</string>
     <string name="pref_auto_input_code_delay_summary">Delay %ss</string>
     <string name="pref_auto_input_code_interval_title">Auto input interval</string>
@@ -217,18 +219,6 @@
     <string name="pref_mark_as_read_summary">Attempt to mark the verification code SMS as read. Due to system limitations, this feature may not work on some devices.</string>
     <string name="pref_delete_sms_title">Delete SMS</string>
     <string name="pref_delete_sms_summary">Warning! Code SMS will be deleted if extract succeed</string>
-    <string name="pref_force_stop_recovery_title">Force-stop self recovery</string>
-    <string name="pref_force_stop_recovery_summary">When forwarding detects app force-stopped, try to unstop and wake required background service only.</string>
-    <string name="pref_force_stop_recovery_relaunch_once_title">Relaunch once on recovery failure</string>
-    <string name="pref_force_stop_recovery_relaunch_once_summary">When ordered delivery ack is empty, relaunch module UI once to help recover the forwarding path.</string>
-    <string name="pref_root_db_catchup_enable_title">Root DB catchup</string>
-    <string name="pref_root_db_catchup_enable_summary">When app receives no tokenized broadcast, query system SMS/call DB in background as fallback.</string>
-    <string name="pref_root_db_catchup_interval_title">Catchup interval</string>
-    <string name="pref_root_db_catchup_interval_summary">Run every %1$s minutes in background</string>
-    <string name="pref_root_db_catchup_interval_hint">Value range: 1-120 minutes</string>
-    <string name="pref_root_db_catchup_interval_error">Please enter an integer between 1 and 120.</string>
-    <string name="pref_root_db_catchup_writeback_title">Write back read state</string>
-    <string name="pref_root_db_catchup_writeback_summary">After catchup dispatch, set SMS read=1 and clear missed-call new flag (type=3 only).</string>
     <!-- preference experimental end -->
 
 
@@ -317,7 +307,7 @@
     <!-- auto-input block settings -->
     <string name="app_block_settings">Disable auto-input</string>
     <string name="tab_overview">Overview</string>
-    <string name="tab_blacklist">Apps</string>
+    <string name="tab_blacklist">Blacklist</string>
     <string name="tab_intercept">SMS Intercept</string>
     <string name="tab_faq">FAQ</string>
     <string name="tab_records">Records</string>
@@ -334,7 +324,7 @@
     <string name="action_sort_by_pkg">Package name</string>
     <string name="action_sort_by_usage">Usage frequency</string>
     <string name="action_sort_by_selection">Selection priority</string>
-    <string name="app_config_settings">App</string>
+    <string name="app_config_settings">Auto-input Blocklist</string>
     <string name="label_blocked">Auto-Input Intercept</string>
     <string name="label_forwarding">App Notification Forwarding</string>
     <string name="app_input_status_on">On</string>

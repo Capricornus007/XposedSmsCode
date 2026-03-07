@@ -29,7 +29,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.github.magisk317.smscode.core.BuildConfig
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.utils.ModuleUtils
@@ -88,6 +87,15 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
             PackageUtils.hasRootAccess()
         }
     }
+    val appVersionState by produceState<Pair<String, Long>?>(
+        initialValue = null,
+    ) {
+        value = withContext(Dispatchers.IO) {
+            PackageUtils.getPackageVersion(context, context.packageName)
+        }
+    }
+    val appVersionName = appVersionState?.first?.takeIf { it.isNotBlank() } ?: stringResource(id = R.string.unknown)
+    val appVersionCode = appVersionState?.second?.toString() ?: stringResource(id = R.string.unknown)
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -128,34 +136,6 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
                     },
                 )
             }
-            if (BuildConfig.IS_LITE_BUILD) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.extraLarge,
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        ),
-                    ) {
-                        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                            Text("过渡版本：通知和转发功能已迁移至信驿 Relay", fontWeight = FontWeight.SemiBold)
-                            Text(
-                                "• 如有相关需求可在底部相关群内下载（支持备份导入）。\n• 无相关需求请等待后续精简版本（仅验证码功能）推送。",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(top = 4.dp),
-                            )
-                            Text(
-                                "• 警告：当前处于特殊阶段，不管后续继续使用当前应用还是新应用，此刻请务必备份数据，避免数据意外丢失！开发者无法帮你找回！也不要在群内反馈此类问题！",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(top = 4.dp),
-                            )
-                        }
-                    }
-                }
-            }
-
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -165,8 +145,8 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
                     ),
                 ) {
                     Column(modifier = Modifier.padding(vertical = 12.dp)) {
-                        InfoItem(Icons.AutoMirrored.Filled.Label, stringResource(id = R.string.version_name), BuildConfig.VERSION_NAME)
-                        InfoItem(Icons.Default.Numbers, stringResource(id = R.string.version_code), BuildConfig.VERSION_CODE.toString())
+                        InfoItem(Icons.AutoMirrored.Filled.Label, stringResource(id = R.string.version_name), appVersionName)
+                        InfoItem(Icons.Default.Numbers, stringResource(id = R.string.version_code), appVersionCode)
                         val rootHint = stringResource(id = R.string.root_permission_hint)
                         InfoItem(
                             Icons.Default.Extension,

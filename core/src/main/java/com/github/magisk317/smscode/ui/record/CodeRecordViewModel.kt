@@ -11,7 +11,6 @@ import com.github.magisk317.smscode.common.utils.JsonUtils
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import kotlinx.serialization.Serializable
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -24,14 +23,6 @@ import java.nio.charset.StandardCharsets
 
 @Immutable
 data class CodeRecordUiState(val smsList: ImmutableList<SmsMsg> = persistentListOf(), val isLoading: Boolean = false)
-
-@Serializable
-private data class RecordExportPayload(
-    val codeRecords: List<SmsMsg>,
-    val plainSmsRecords: List<SmsMsg>,
-    val appNotifyRecords: List<SmsMsg>,
-    val callNotifyRecords: List<SmsMsg>,
-)
 
 class CodeRecordViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -87,7 +78,7 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun exportRecords(context: Context, uri: Uri, currentTab: Int, exportAllTabs: Boolean) {
+    fun exportRecords(context: Context, uri: Uri) {
         viewModelScope.launch {
             _loading.value = true
             try {
@@ -95,38 +86,10 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
                 val codeRecords = allRecords.filter {
                     it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank()
                 }
-                val plainSmsRecords = allRecords.filter {
-                    it.msgType == SmsMsg.MSG_TYPE_SMS && it.smsCode.isNullOrBlank()
-                }
-                val appNotifyRecords = allRecords.filter {
-                    it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY
-                }
-                val callNotifyRecords = allRecords.filter {
-                    it.msgType == SmsMsg.MSG_TYPE_CALL_NOTIFY
-                }
                 withContext(Dispatchers.IO) {
                     context.contentResolver.openOutputStream(uri)?.use { os ->
                         OutputStreamWriter(os, StandardCharsets.UTF_8).use { osw ->
-                            if (exportAllTabs) {
-                                JsonUtils.toJson(
-                                    RecordExportPayload(
-                                        codeRecords = codeRecords,
-                                        plainSmsRecords = plainSmsRecords,
-                                        appNotifyRecords = appNotifyRecords,
-                                        callNotifyRecords = callNotifyRecords,
-                                    ),
-                                    osw,
-                                    true,
-                                )
-                            } else {
-                                val currentRecords = when (currentTab) {
-                                    0 -> codeRecords
-                                    1 -> plainSmsRecords
-                                    2 -> appNotifyRecords
-                                    else -> callNotifyRecords
-                                }
-                                JsonUtils.toJson(currentRecords, osw, true)
-                            }
+                            JsonUtils.toJson(codeRecords, osw, true)
                         }
                     }
                 }

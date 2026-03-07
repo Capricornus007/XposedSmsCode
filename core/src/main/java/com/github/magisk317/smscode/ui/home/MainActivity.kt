@@ -263,7 +263,7 @@ class MainActivity : AppCompatActivity() {
                 viewModel.eventsFlow.collect { event ->
                     when (event) {
                         is SettingsEvent.ShowPrivacyPolicy -> showPrivacyPolicyDialog = true
-                        is SettingsEvent.NavigateToRules -> requestedTab = com.github.magisk317.smscode.ui.nav.InterceptRoute
+                        is SettingsEvent.NavigateToRules -> requestedTab = com.github.magisk317.smscode.ui.nav.AppBlockRoute
                         is SettingsEvent.NavigateToRecords -> requestedTab = com.github.magisk317.smscode.ui.nav.RecordsRoute
                         is SettingsEvent.StartPlayUpdate -> requestPlayUpdate()
                         is SettingsEvent.StartGithubUpdateCheck -> {

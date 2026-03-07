@@ -2,14 +2,12 @@ package com.github.magisk317.smscode.ui.home
 
 import android.os.SystemClock
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
@@ -28,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -79,7 +78,6 @@ fun AppConfigScreen(
     hazeState: HazeState,
     hazeStyle: HazeStyle,
     onBack: (() -> Unit)? = null,
-    onAppClick: ((AppInfo) -> Unit)? = null,
     refreshTrigger: Int = 0,
     viewModel: AppConfigViewModel = koinViewModel(),
 ) {
@@ -88,7 +86,6 @@ fun AppConfigScreen(
     val hasMoreApps by viewModel.hasMoreAppsFlow.collectAsStateWithLifecycle()
     val hideSystemApps by viewModel.hideSystemAppsFlow.collectAsStateWithLifecycle()
     val currentSortOption by viewModel.sortOptionFlow.collectAsStateWithLifecycle()
-    val appNotifyBindingCount by viewModel.appNotifyBindingCountFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val density = LocalDensity.current
     val shouldShowInitialLoading = remember { SessionLoadingRegistry.shouldShowInitial("app_config") }
@@ -215,8 +212,7 @@ fun AppConfigScreen(
                     items(apps) { app ->
                         AppConfigItem(
                             app = app,
-                            appBoundSenderCount = appNotifyBindingCount[app.packageName] ?: 0,
-                            onClick = { onAppClick?.invoke(app) },
+                            onBlockedChange = { blocked -> viewModel.setBlocked(app.packageName, blocked) },
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -389,34 +385,20 @@ fun AppConfigScreen(
 @Composable
 fun AppConfigItem(
     app: AppInfo,
-    appBoundSenderCount: Int,
-    onClick: () -> Unit,
+    onBlockedChange: (Boolean) -> Unit,
 ) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val bgColor = when {
-        app.blocked && app.forwarding -> {
-            val base = MaterialTheme.colorScheme.secondaryContainer
-            if (isDark) base.copy(alpha = 0.25f) else base.copy(alpha = 0.4f)
-        }
-
-        app.blocked -> {
-            val base = MaterialTheme.colorScheme.errorContainer
-            if (isDark) base.copy(alpha = 0.25f) else base.copy(alpha = 0.4f)
-        }
-
-        app.forwarding -> {
-            val base = MaterialTheme.colorScheme.primaryContainer
-            if (isDark) base.copy(alpha = 0.25f) else base.copy(alpha = 0.4f)
-        }
-
-        else -> Color.Transparent
+    val bgColor = if (app.blocked) {
+        val base = MaterialTheme.colorScheme.errorContainer
+        if (isDark) base.copy(alpha = 0.25f) else base.copy(alpha = 0.4f)
+    } else {
+        Color.Transparent
     }
 
     Box(modifier = Modifier.background(bgColor)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(onClick = onClick)
                 .padding(start = 16.dp, end = 20.dp, top = 12.dp, bottom = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -441,40 +423,12 @@ fun AppConfigItem(
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodySmall,
                 )
-                Text(
-                    text = stringResource(
-                        R.string.app_notify_summary_line,
-                        if (app.blocked) {
-                            stringResource(R.string.app_input_status_on)
-                        } else {
-                            stringResource(R.string.app_input_status_off)
-                        },
-                        if (app.forwarding) {
-                            stringResource(R.string.app_notify_status_on)
-                        } else {
-                            stringResource(R.string.app_notify_status_off)
-                        },
-                        if (appBoundSenderCount <= 0) {
-                            stringResource(R.string.app_notify_channel_global_summary_short)
-                        } else {
-                            stringResource(R.string.app_notify_channel_bound_count_short, appBoundSenderCount)
-                        },
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
+            Switch(
+                checked = app.blocked,
+                onCheckedChange = onBlockedChange,
+            )
         }
     }
 }

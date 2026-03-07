@@ -7,19 +7,41 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Sms
+import androidx.compose.material.icons.filled.Widgets
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -28,22 +50,22 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
-import com.github.magisk317.smscode.core.BuildConfig
 import com.github.magisk317.smscode.core.R
-import com.github.magisk317.smscode.ui.nav.*
+import com.github.magisk317.smscode.ui.nav.AppBlockRoute
+import com.github.magisk317.smscode.ui.nav.AppConfigRoute
+import com.github.magisk317.smscode.ui.nav.OverviewRoute
+import com.github.magisk317.smscode.ui.nav.RecordsRoute
+import com.github.magisk317.smscode.ui.nav.SettingsRoute
 import com.github.magisk317.smscode.ui.record.CodeRecordScreen
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Immutable
 data class TabItem<T : Any>(val label: String, val icon: ImageVector, val route: T)
 
 private const val TAB_DOUBLE_TAP_REFRESH_WINDOW_MS = 350L
-private const val BLOCKED_NOTICE_COOLDOWN_MS = 5_000L
 
 @Composable
 @Suppress("CyclomaticComplexMethod")
@@ -53,28 +75,10 @@ fun MainScreen(
     hazeState: HazeState,
     hazeStyle: HazeStyle,
 ) {
-    val isRestrictedBuild = BuildConfig.IS_LITE_BUILD
     val navController = rememberNavController()
     val appConfigViewModel: AppConfigViewModel = koinViewModel()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
-    val snackbarHostState = remember { SnackbarHostState() }
-    val snackbarScope = rememberCoroutineScope()
-    var lastBlockedNoticeAt by remember { mutableLongStateOf(0L) }
-
-    fun showBlockedFeatureNotice(@Suppress("UNUSED_PARAMETER") featureLabel: String) {
-        val now = SystemClock.elapsedRealtime()
-        if (now - lastBlockedNoticeAt < BLOCKED_NOTICE_COOLDOWN_MS) {
-            return
-        }
-        lastBlockedNoticeAt = now
-        snackbarScope.launch {
-            snackbarHostState.showSnackbar(
-                message = "相关功能已迁移至信驿 Relay，请关注首页提示。",
-                duration = SnackbarDuration.Long,
-            )
-        }
-    }
 
     val tabs = listOf(
         TabItem(stringResource(R.string.tab_overview), Icons.Default.Home, OverviewRoute),
@@ -88,23 +92,9 @@ fun MainScreen(
         val hierarchy = destination.hierarchy
         return when {
             hierarchy.any { it.hasRoute(OverviewRoute::class) } -> 0
-            hierarchy.any { it.hasRoute(AppNotifySenderBindingRoute::class) } -> 1
-            hierarchy.any { it.hasRoute(AppForwardFilterRoute::class) } -> 1
-            hierarchy.any { it.hasRoute(AppConfigDetailRoute::class) } -> 1
-            hierarchy.any { it.hasRoute(AppBlockRoute::class) } -> 1
+            hierarchy.any { it.hasRoute(AppBlockRoute::class) } ||
+                hierarchy.any { it.hasRoute(AppConfigRoute::class) } -> 1
             hierarchy.any { it.hasRoute(RecordsRoute::class) } -> 2
-            hierarchy.any { it.hasRoute(AdvancedRoute::class) } ||
-                hierarchy.any { it.hasRoute(GlobalForwardFilterRoute::class) } ||
-                hierarchy.any { it.hasRoute(WebUiConfigRoute::class) } ||
-                hierarchy.any { it.hasRoute(InterceptRoute::class) } ||
-                hierarchy.any { it.hasRoute(SendersRoute::class) } ||
-                hierarchy.any { it.hasRoute(SenderConfigRoute::class) } ||
-                hierarchy.any { it.hasRoute(SenderNotifyScopeRoute::class) } ||
-                hierarchy.any { it.hasRoute(SenderForwardFilterRoute::class) } ||
-                hierarchy.any { it.hasRoute(RulesRoute::class) } ||
-                hierarchy.any { it.hasRoute(RuleConfigRoute::class) } ||
-                hierarchy.any { it.hasRoute(NotificationRulesRoute::class) } -> -1
-            hierarchy.any { it.hasRoute(AppConfigRoute::class) } -> 1
             hierarchy.any { it.hasRoute(SettingsRoute::class) } -> 3
             else -> 0
         }
@@ -116,7 +106,6 @@ fun MainScreen(
         return hierarchy.any { it.hasRoute(OverviewRoute::class) } ||
             hierarchy.any { it.hasRoute(AppBlockRoute::class) } ||
             hierarchy.any { it.hasRoute(RecordsRoute::class) } ||
-            hierarchy.any { it.hasRoute(AdvancedRoute::class) } ||
             hierarchy.any { it.hasRoute(SettingsRoute::class) }
     }
 
@@ -126,7 +115,6 @@ fun MainScreen(
     val isCompact = configuration.screenWidthDp < 600
     var appBlockRefreshTrigger by remember { mutableIntStateOf(0) }
     var recordsRefreshTrigger by remember { mutableIntStateOf(0) }
-    var interceptRefreshTrigger by remember { mutableIntStateOf(0) }
     var settingsRefreshTrigger by remember { mutableIntStateOf(0) }
     val tabLastTapAt = remember { mutableStateMapOf<String, Long>() }
 
@@ -134,7 +122,6 @@ fun MainScreen(
         when (route) {
             is AppBlockRoute -> appBlockRefreshTrigger++
             is RecordsRoute -> recordsRefreshTrigger++
-            is InterceptRoute -> interceptRefreshTrigger++
             is AppConfigRoute -> appBlockRefreshTrigger++
             is SettingsRoute -> settingsRefreshTrigger++
             else -> Unit
@@ -168,7 +155,6 @@ fun MainScreen(
             is OverviewRoute -> navController.navigate(OverviewRoute)
             is AppBlockRoute -> navController.navigate(AppBlockRoute)
             is AppConfigRoute -> navController.navigate(AppConfigRoute)
-            is InterceptRoute -> navController.navigate(InterceptRoute)
             is RecordsRoute -> navController.navigate(RecordsRoute)
             is SettingsRoute -> navController.navigate(SettingsRoute)
             else -> Unit
@@ -179,9 +165,7 @@ fun MainScreen(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
+        modifier = Modifier.fillMaxSize(),
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
@@ -243,9 +227,6 @@ fun MainScreen(
                             hazeState = hazeState,
                             hazeStyle = hazeStyle,
                             onBack = null,
-                            onAppClick = { app ->
-                                navController.navigate(AppConfigDetailRoute(packageName = app.packageName))
-                            },
                             refreshTrigger = appBlockRefreshTrigger,
                             viewModel = appConfigViewModel,
                         )
@@ -255,54 +236,8 @@ fun MainScreen(
                             hazeState = hazeState,
                             hazeStyle = hazeStyle,
                             onBack = { navController.popBackStack() },
-                            onAppClick = { app ->
-                                navController.navigate(AppConfigDetailRoute(packageName = app.packageName))
-                            },
                             refreshTrigger = appBlockRefreshTrigger,
                             viewModel = appConfigViewModel,
-                        )
-                    }
-                    composable<AppConfigDetailRoute> { backStackEntry ->
-                        val route = backStackEntry.toRoute<AppConfigDetailRoute>()
-                        AppConfigDetailScreen(
-                            packageName = route.packageName,
-                            onBack = { navController.popBackStack() },
-                            onConfigureNotifyChannels = {
-                                if (isRestrictedBuild) {
-                                    showBlockedFeatureNotice("通知转发配置")
-                                } else {
-                                    navController.navigate(AppNotifySenderBindingRoute(packageName = route.packageName))
-                                }
-                            },
-                            onConfigureForwardFilters = {
-                                if (isRestrictedBuild) {
-                                    showBlockedFeatureNotice("转发过滤配置")
-                                } else {
-                                    navController.navigate(AppForwardFilterRoute(packageName = route.packageName))
-                                }
-                            },
-                            isRestrictedBuild = isRestrictedBuild,
-                            onRestrictedAction = { showBlockedFeatureNotice("该设置项") },
-                            viewModel = appConfigViewModel,
-                        )
-                    }
-                    composable<AppNotifySenderBindingRoute> { backStackEntry ->
-                        if (isRestrictedBuild) {
-                            LiteFeatureDisabledScreen(onShowBlockedNotice = { showBlockedFeatureNotice("该功能") })
-                        } else {
-                            val route = backStackEntry.toRoute<AppNotifySenderBindingRoute>()
-                            AppNotifySenderBindingScreen(
-                                packageName = route.packageName,
-                                onBack = { navController.popBackStack() },
-                                viewModel = appConfigViewModel,
-                            )
-                        }
-                    }
-                    composable<InterceptRoute> {
-                        InterceptScreen(
-                            hazeState = hazeState,
-                            hazeStyle = hazeStyle,
-                            refreshTrigger = interceptRefreshTrigger,
                         )
                     }
                     composable<RecordsRoute> {
@@ -311,156 +246,6 @@ fun MainScreen(
                             hazeStyle = hazeStyle,
                             onBack = null,
                             refreshTrigger = recordsRefreshTrigger,
-                        )
-                    }
-                    composable<AdvancedRoute> {
-                        AdvancedScreen(
-                            onInterceptClick = {
-                                if (isRestrictedBuild) {
-                                    showBlockedFeatureNotice("拦截设置")
-                                } else {
-                                    navController.navigate(InterceptRoute)
-                                }
-                            },
-                            onForwardClick = {
-                                if (isRestrictedBuild) {
-                                    showBlockedFeatureNotice("转发功能")
-                                } else {
-                                    navController.navigate(SendersRoute)
-                                }
-                            },
-                            onGlobalForwardFilterClick = {
-                                if (isRestrictedBuild) {
-                                    showBlockedFeatureNotice("转发过滤")
-                                } else {
-                                    navController.navigate(GlobalForwardFilterRoute)
-                                }
-                            },
-                            onWebUiConfigClick = {
-                                if (isRestrictedBuild) {
-                                    showBlockedFeatureNotice("WebUI 配置")
-                                } else {
-                                    navController.navigate(WebUiConfigRoute)
-                                }
-                            },
-                        )
-                    }
-                    composable<GlobalForwardFilterRoute> {
-                        if (isRestrictedBuild) {
-                            LiteFeatureDisabledScreen(onShowBlockedNotice = { showBlockedFeatureNotice("该功能") })
-                        } else {
-                            GlobalForwardFilterScreen(onBack = { navController.popBackStack() })
-                        }
-                    }
-                    composable<AppForwardFilterRoute> { backStackEntry ->
-                        if (isRestrictedBuild) {
-                            LiteFeatureDisabledScreen(onShowBlockedNotice = { showBlockedFeatureNotice("该功能") })
-                        } else {
-                            val route = backStackEntry.toRoute<AppForwardFilterRoute>()
-                            AppForwardFilterScreen(
-                                packageName = route.packageName,
-                                onBack = { navController.popBackStack() },
-                            )
-                        }
-                    }
-                    composable<WebUiConfigRoute> {
-                        if (isRestrictedBuild) {
-                            LiteFeatureDisabledScreen(onShowBlockedNotice = { showBlockedFeatureNotice("该功能") })
-                        } else {
-                            WebUiConfigScreen(onBack = { navController.popBackStack() })
-                        }
-                    }
-                    composable<SendersRoute> { backStackEntry ->
-                        if (isRestrictedBuild) {
-                            LiteFeatureDisabledScreen(onShowBlockedNotice = { showBlockedFeatureNotice("该功能") })
-                        } else {
-                            val reopenTypeDialog by backStackEntry.savedStateHandle
-                                .getStateFlow("reopen_type_dialog", false)
-                                .collectAsStateWithLifecycle()
-                            com.github.magisk317.smscode.ui.sender.SenderListScreen(
-                                onAddClick = { type -> navController.navigate(SenderConfigRoute(id = 0L, type = type)) },
-                                onEditClick = { id -> navController.navigate(SenderConfigRoute(id = id, type = 1)) },
-                                forceShowTypeDialog = reopenTypeDialog,
-                                onForceShowHandled = {
-                                    backStackEntry.savedStateHandle["reopen_type_dialog"] = false
-                                }
-                            )
-                        }
-                    }
-                    composable<NotificationRulesRoute> {
-                        if (isRestrictedBuild) {
-                            LiteFeatureDisabledScreen(onShowBlockedNotice = { showBlockedFeatureNotice("该功能") })
-                        } else {
-                            AppConfigScreen(
-                                hazeState = hazeState,
-                                hazeStyle = hazeStyle,
-                                onBack = { navController.popBackStack() },
-                                onAppClick = { app -> navController.navigate(AppConfigDetailRoute(packageName = app.packageName)) },
-                                refreshTrigger = appBlockRefreshTrigger,
-                                viewModel = appConfigViewModel,
-                            )
-                        }
-                    }
-                    composable<SenderConfigRoute> { backStackEntry ->
-                        if (isRestrictedBuild) {
-                            LiteFeatureDisabledScreen(onShowBlockedNotice = { showBlockedFeatureNotice("该功能") })
-                        } else {
-                            val route = backStackEntry.toRoute<SenderConfigRoute>()
-                            com.github.magisk317.smscode.ui.sender.SenderConfigScreen(
-                                senderId = route.id,
-                                senderTypeArg = route.type,
-                                onOpenSenderNotifyScope = { senderId ->
-                                    navController.navigate(SenderNotifyScopeRoute(senderId = senderId))
-                                },
-                                onOpenSenderForwardFilter = { senderId ->
-                                    navController.navigate(SenderForwardFilterRoute(senderId = senderId))
-                                },
-                                onBack = { reopenTypeDialog ->
-                                    if (reopenTypeDialog) {
-                                        navController.previousBackStackEntry
-                                            ?.savedStateHandle
-                                            ?.set("reopen_type_dialog", true)
-                                    }
-                                    navController.popBackStack()
-                                }
-                            )
-                        }
-                    }
-                    composable<SenderNotifyScopeRoute> { backStackEntry ->
-                        if (isRestrictedBuild) {
-                            LiteFeatureDisabledScreen(onShowBlockedNotice = { showBlockedFeatureNotice("该功能") })
-                        } else {
-                            val route = backStackEntry.toRoute<SenderNotifyScopeRoute>()
-                            com.github.magisk317.smscode.ui.sender.SenderNotifyScopeScreen(
-                                senderId = route.senderId,
-                                onBack = { navController.popBackStack() },
-                            )
-                        }
-                    }
-                    composable<SenderForwardFilterRoute> { backStackEntry ->
-                        if (isRestrictedBuild) {
-                            LiteFeatureDisabledScreen(onShowBlockedNotice = { showBlockedFeatureNotice("该功能") })
-                        } else {
-                            val route = backStackEntry.toRoute<SenderForwardFilterRoute>()
-                            com.github.magisk317.smscode.ui.sender.SenderForwardFilterScreen(
-                                senderId = route.senderId,
-                                onBack = { navController.popBackStack() },
-                            )
-                        }
-                    }
-                    composable<RulesRoute> { backStackEntry ->
-                        val route = backStackEntry.toRoute<RulesRoute>()
-                        com.github.magisk317.smscode.ui.rule.RuleListScreen(
-                            senderId = route.senderId,
-                            onAddClick = { navController.navigate(RuleConfigRoute(id = 0L)) },
-                            onEditClick = { id -> navController.navigate(RuleConfigRoute(id = id)) }
-                        )
-                    }
-                    composable<RuleConfigRoute> { backStackEntry ->
-                        val route = backStackEntry.toRoute<RuleConfigRoute>()
-                        com.github.magisk317.smscode.ui.rule.RuleConfigScreen(
-                            ruleId = route.id,
-                            onBack = { navController.popBackStack() }
                         )
                     }
                     composable<SettingsRoute> {
@@ -503,46 +288,6 @@ fun MainScreen(
                     }
                 }
             }
-        }
-
-        SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = if (isCompact && shouldShowCompactBottomBar(currentDestination)) 88.dp else 16.dp,
-                )
-                .navigationBarsPadding(),
-        )
-    }
-}
-
-@Composable
-private fun LiteFeatureDisabledScreen(
-    onShowBlockedNotice: () -> Unit,
-) {
-    LaunchedEffect(Unit) {
-        onShowBlockedNotice()
-    }
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = "该功能在验证码精简版中已移除",
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                text = "当前仅保留验证码解析与自动填充能力。",
-                style = MaterialTheme.typography.bodyMedium,
-            )
         }
     }
 }
