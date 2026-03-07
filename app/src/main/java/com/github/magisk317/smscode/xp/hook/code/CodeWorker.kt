@@ -37,6 +37,7 @@ class CodeWorker(
         val blockSms = PrefsReader.blockSmsEnabled(mPluginContext)
         val markAsRead = PrefsReader.markAsReadEnabled(mPluginContext)
         val deleteSms = PrefsReader.deleteSmsEnabled(mPluginContext)
+        val killMe = PrefsReader.killMeEnabled(mPluginContext)
         val deduplicateSms = PrefsReader.deduplicateSms(mPluginContext)
         XLog.w(
             "Diag settings: event_id=%s enabled=%s, verbose=%s, showNotif=%s, autoCancel=%s, " +
@@ -145,6 +146,16 @@ class CodeWorker(
 
             mScheduledExecutor.schedule(cancelNotifyAction, autoCancelRetentionMs, TimeUnit.MILLISECONDS)
             XLog.d("Scheduled CancelNotifyAction with delay: ${autoCancelRetentionMs}ms for ID: $notificationId")
+        }
+
+        if (killMe) {
+            if (autoInput) {
+                val killMeAction = KillMeAction(mPluginContext, mPhoneContext, smsMsg)
+                val killDelayMs = maxOf(autoInputDelayMs + 1500L, 2500L)
+                mScheduledExecutor.schedule(killMeAction, killDelayMs, TimeUnit.MILLISECONDS)
+            } else {
+                XLog.w("KillMe enabled but auto-input disabled, skip KillMeAction")
+            }
         }
 
         mScheduledExecutor.shutdown()

@@ -255,14 +255,6 @@ object AppPreferencesDataStore {
         editor.putBoolean(PrefConst.KEY_BLOCK_SMS, getBoolean(context, PrefConst.KEY_BLOCK_SMS, false))
         editor.putBoolean(PrefConst.KEY_KILL_ME, getBoolean(context, PrefConst.KEY_KILL_ME, false))
         editor.putBoolean(
-            PrefConst.KEY_FORCE_STOP_RECOVERY,
-            getBoolean(context, PrefConst.KEY_FORCE_STOP_RECOVERY, false),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_FORCE_STOP_RECOVERY_RELAUNCH_ONCE,
-            getBoolean(context, PrefConst.KEY_FORCE_STOP_RECOVERY_RELAUNCH_ONCE, false),
-        )
-        editor.putBoolean(
             PrefConst.KEY_SHOW_CODE_NOTIFICATION,
             getBoolean(context, PrefConst.KEY_SHOW_CODE_NOTIFICATION, true),
         )
@@ -415,30 +407,6 @@ object AppPreferencesDataStore {
         editor.putString(
             PrefConst.KEY_INTERNAL_WEBUI_TLS_KEYSTORE_PASS,
             getString(context, PrefConst.KEY_INTERNAL_WEBUI_TLS_KEYSTORE_PASS, ""),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_ROOT_DB_CATCHUP_ENABLE,
-            getBoolean(context, PrefConst.KEY_ROOT_DB_CATCHUP_ENABLE, true),
-        )
-        editor.putString(
-            PrefConst.KEY_ROOT_DB_CATCHUP_INTERVAL_MIN,
-            getString(context, PrefConst.KEY_ROOT_DB_CATCHUP_INTERVAL_MIN, "5"),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_ROOT_DB_CATCHUP_WRITEBACK,
-            getBoolean(context, PrefConst.KEY_ROOT_DB_CATCHUP_WRITEBACK, false),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_INTERNAL_ROOT_DB_BASELINE_INITED,
-            getBoolean(context, PrefConst.KEY_INTERNAL_ROOT_DB_BASELINE_INITED, false),
-        )
-        editor.putString(
-            PrefConst.KEY_INTERNAL_ROOT_DB_LAST_SMS_ID,
-            getString(context, PrefConst.KEY_INTERNAL_ROOT_DB_LAST_SMS_ID, "0"),
-        )
-        editor.putString(
-            PrefConst.KEY_INTERNAL_ROOT_DB_LAST_CALL_ID,
-            getString(context, PrefConst.KEY_INTERNAL_ROOT_DB_LAST_CALL_ID, "0"),
         )
         editor.apply()
         ensureSharedPrefsReadable(context)

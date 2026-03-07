@@ -56,12 +56,6 @@ object PrefConst {
     const val KEY_HISTORY_LIMIT_PLAIN_SMS = "pref_history_limit_plain_sms"
     const val KEY_HISTORY_LIMIT_APP_NOTIFY = "pref_history_limit_app_notify"
     const val KEY_HISTORY_LIMIT_CALL_NOTIFY = "pref_history_limit_call_notify"
-    const val KEY_ROOT_DB_CATCHUP_ENABLE = "pref_root_db_catchup_enable"
-    const val KEY_ROOT_DB_CATCHUP_INTERVAL_MIN = "pref_root_db_catchup_interval_min"
-    const val KEY_ROOT_DB_CATCHUP_WRITEBACK = "pref_root_db_catchup_writeback"
-    const val KEY_INTERNAL_ROOT_DB_LAST_SMS_ID = "internal_root_db_last_sms_id"
-    const val KEY_INTERNAL_ROOT_DB_LAST_CALL_ID = "internal_root_db_last_call_id"
-    const val KEY_INTERNAL_ROOT_DB_BASELINE_INITED = "internal_root_db_baseline_inited"
 
     // Code Rules
     const val KEY_SMSCODE_KEYWORDS = "pref_smscode_keywords"
@@ -73,8 +67,6 @@ object PrefConst {
     const val KEY_MARK_AS_READ = "pref_mark_as_read"
     const val KEY_DELETE_SMS = "pref_delete_sms"
     const val KEY_KILL_ME = "pref_kill_me"
-    const val KEY_FORCE_STOP_RECOVERY = "pref_force_stop_recovery"
-    const val KEY_FORCE_STOP_RECOVERY_RELAUNCH_ONCE = "pref_force_stop_recovery_relaunch_once"
 
     // Others
     const val KEY_VERBOSE_LOG_MODE = "pref_verbose_log_mode"
@@ -115,4 +107,5 @@ object PrefConst {
     const val KEY_INTERNAL_WEBUI_TLS_KEYSTORE_VERSION_DEFAULT = "2"
     const val KEY_INTERNAL_WEBUI_TLS_KEYSTORE_PASS = "internal_webui_tls_keystore_pass"
     const val ACTION_FORWARD_SMS = "com.github.magisk317.smscode.ACTION_FORWARD_SMS"
+    const val ACTION_KILL_ME = "com.github.magisk317.smscode.ACTION_KILL_ME"
 }

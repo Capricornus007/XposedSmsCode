@@ -275,8 +275,7 @@ internal class WebUiServer(
                     payload.enableAutoInputCode == null &&
                     payload.enableAutoEnterCode == null &&
                     payload.verboseLogMode == null &&
-                    payload.blockSms == null &&
-                    payload.forceStopRecovery == null
+                    payload.blockSms == null
                 ) {
                     call.respondText(
                         status = HttpStatusCode.BadRequest,
@@ -305,9 +304,6 @@ internal class WebUiServer(
                     }
                     payload.blockSms?.let {
                         AppPreferencesDataStore.setBoolean(appContext, PrefConst.KEY_BLOCK_SMS, it)
-                    }
-                    payload.forceStopRecovery?.let {
-                        AppPreferencesDataStore.setBoolean(appContext, PrefConst.KEY_FORCE_STOP_RECOVERY, it)
                     }
                 }
                 call.respondText(
@@ -695,11 +691,6 @@ internal class WebUiServer(
             ),
             verboseLogMode = AppPreferencesDataStore.getBoolean(appContext, PrefConst.KEY_VERBOSE_LOG_MODE, false),
             blockSms = AppPreferencesDataStore.getBoolean(appContext, PrefConst.KEY_BLOCK_SMS, false),
-            forceStopRecovery = AppPreferencesDataStore.getBoolean(
-                appContext,
-                PrefConst.KEY_FORCE_STOP_RECOVERY,
-                false,
-            ),
         )
     }
 
@@ -860,7 +851,6 @@ internal class WebUiServer(
         val enableAutoEnterCode: Boolean,
         val verboseLogMode: Boolean,
         val blockSms: Boolean,
-        val forceStopRecovery: Boolean,
     )
 
     @Serializable
@@ -873,7 +863,6 @@ internal class WebUiServer(
         val enableAutoEnterCode: Boolean? = null,
         val verboseLogMode: Boolean? = null,
         val blockSms: Boolean? = null,
-        val forceStopRecovery: Boolean? = null,
     )
 
     @Serializable
@@ -1302,7 +1291,6 @@ internal class WebUiServer(
                         <h3 class="settings-group-title">实验性功能</h3>
                         <div class="switch-grid">
                           <label class="switch-row"><span class="t">拦截验证码短信</span><input id="setBlockSms" type="checkbox" /></label>
-                          <label class="switch-row"><span class="t">强停后自恢复</span><input id="setForceStopRecovery" type="checkbox" /></label>
                         </div>
                       </div>
                       <div class="settings-group">
@@ -1376,7 +1364,6 @@ internal class WebUiServer(
                 const setEnableAutoInputCode = document.getElementById("setEnableAutoInputCode");
                 const setEnableAutoEnterCode = document.getElementById("setEnableAutoEnterCode");
                 const setBlockSms = document.getElementById("setBlockSms");
-                const setForceStopRecovery = document.getElementById("setForceStopRecovery");
                 const setVerboseLogMode = document.getElementById("setVerboseLogMode");
                 const newSender = document.getElementById("newSender");
                 const senderEditor = document.getElementById("senderEditor");
@@ -1792,7 +1779,6 @@ internal class WebUiServer(
                   setEnableAutoInputCode.checked = !!state.enableAutoInputCode;
                   setEnableAutoEnterCode.checked = !!state.enableAutoEnterCode;
                   setBlockSms.checked = !!state.blockSms;
-                  setForceStopRecovery.checked = !!state.forceStopRecovery;
                   setVerboseLogMode.checked = !!state.verboseLogMode;
                 }
 
@@ -2147,10 +2133,6 @@ internal class WebUiServer(
                 });
                 bindToggle(setBlockSms, async (v) => {
                   await updateSettings({ blockSms: v });
-                  await loadSettings();
-                });
-                bindToggle(setForceStopRecovery, async (v) => {
-                  await updateSettings({ forceStopRecovery: v });
                   await loadSettings();
                 });
                 bindToggle(setVerboseLogMode, async (v) => {

@@ -14,7 +14,6 @@ import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.RuntimeLogStore
 import com.github.magisk317.smscode.di.appModule
-import com.github.magisk317.smscode.forwarder.recovery.RootDbCatchupScheduler
 import com.github.magisk317.smscode.web.WebUiRuntimeConfig
 import com.github.magisk317.smscode.web.WebUiServer
 import com.github.magisk317.smscode.web.WebUiTlsManager
@@ -62,9 +61,6 @@ class SmsCodeApplication : Application() {
                 startWebUiServer()
             }
         }
-        if (!isRestrictedBuild()) {
-            RootDbCatchupScheduler.startPeriodic(this, reason = "app_create")
-        }
     }
 
     override fun onTerminate() {
@@ -72,9 +68,6 @@ class SmsCodeApplication : Application() {
         webUiServerConfigJob = null
         webUiServer?.stop()
         webUiServer = null
-        if (!isRestrictedBuild()) {
-            RootDbCatchupScheduler.stopPeriodic(reason = "app_terminate")
-        }
         super.onTerminate()
     }
 
@@ -99,9 +92,6 @@ class SmsCodeApplication : Application() {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
             override fun onActivityStarted(activity: Activity) {
                 startedActivityCount += 1
-                if (!isRestrictedBuild() && startedActivityCount == 1) {
-                    RootDbCatchupScheduler.stopPeriodic(reason = "app_foreground")
-                }
             }
             override fun onActivityResumed(activity: Activity) {
                 if (activity.javaClass.name == "com.pairip.licensecheck.LicenseActivity") {
@@ -115,12 +105,6 @@ class SmsCodeApplication : Application() {
             override fun onActivityPaused(activity: Activity) {}
             override fun onActivityStopped(activity: Activity) {
                 startedActivityCount = (startedActivityCount - 1).coerceAtLeast(0)
-                if (!isRestrictedBuild() && startedActivityCount == 0) {
-                    RootDbCatchupScheduler.startPeriodic(
-                        this@SmsCodeApplication,
-                        reason = "app_background",
-                    )
-                }
             }
             override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
             override fun onActivityDestroyed(activity: Activity) {}

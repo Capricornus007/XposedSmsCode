@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.os.Process
 import com.github.magisk317.smscode.storage.BuildConfig
 import com.github.magisk317.smscode.common.constant.TransitionConst
 import com.github.magisk317.smscode.forwarder.entity.MsgInfo
@@ -28,6 +29,7 @@ class ForwardReceiver : BroadcastReceiver() {
         val eventId = intent.getStringExtra("event_id").orEmpty()
         val traceId = buildTraceId(intent, eventId)
         val task = Runnable {
+            var killAppAfterFinish = false
             var resultMarked = false
             fun markResult(code: Int, reason: String) {
                 resultMarked = true
@@ -47,7 +49,10 @@ class ForwardReceiver : BroadcastReceiver() {
                     receiveStartMessage,
                 )
                 // 1. Action validation
-                if (intent.action != PrefConst.ACTION_FORWARD_SMS) {
+                if (
+                    intent.action != PrefConst.ACTION_FORWARD_SMS &&
+                    intent.action != PrefConst.ACTION_KILL_ME
+                ) {
                     XLog.e("Rejecting broadcast with invalid action: %s", intent.action)
                     ForwardFlowLog.w(traceId, "Reject invalid action=${intent.action}")
                     markResult(RESULT_REJECT_ACTION, "invalid_action")
@@ -60,6 +65,28 @@ class ForwardReceiver : BroadcastReceiver() {
                         "ForwardReceiver disabled reason=${TransitionConst.MIGRATED_REASON_CODE}",
                     )
                     markResult(RESULT_LITE_DISABLED, TransitionConst.MIGRATED_REASON_CODE)
+                    return@runCatching
+                }
+                if (intent.action == PrefConst.ACTION_KILL_ME) {
+                    val receivedToken = intent.getStringExtra("ipc_token")
+                    val expectedToken = runBlocking {
+                        com.github.magisk317.smscode.common.utils.AppPreferencesDataStore.getString(
+                            context,
+                            PrefConst.KEY_IPC_TOKEN,
+                            "",
+                        )
+                    }
+                    if (expectedToken.isEmpty() || receivedToken != expectedToken) {
+                        ForwardFlowLog.w(
+                            traceId,
+                            "Reject kill action token mismatch expectedEmpty=${expectedToken.isEmpty()} receivedEmpty=${receivedToken.isNullOrBlank()}",
+                        )
+                        markResult(RESULT_REJECT_TOKEN, "token_mismatch")
+                        return@runCatching
+                    }
+                    ForwardFlowLog.w(traceId, "Kill action accepted, app process will terminate")
+                    markResult(RESULT_OK, "kill_requested")
+                    killAppAfterFinish = true
                     return@runCatching
                 }
 
@@ -147,17 +174,6 @@ class ForwardReceiver : BroadcastReceiver() {
                     }
                     XLog.w("IPC token bypass accepted. %s", bypassMessage)
                     ForwardFlowLog.w(traceId, bypassMessage)
-                    if (receivedToken.isNullOrBlank()) {
-                        runCatching {
-                            com.github.magisk317.smscode.forwarder.recovery.RootDbCatchupScheduler
-                                .triggerImmediate(context, reason = "token_blank_bypass")
-                        }.onFailure { error ->
-                            XLog.w(
-                                "Trigger root DB catchup failed: %s",
-                                error.message ?: error.javaClass.simpleName,
-                            )
-                        }
-                    }
                 }
                 if (
                     msgTypeStr == "app_notify" &&
@@ -393,6 +409,9 @@ class ForwardReceiver : BroadcastReceiver() {
             }
             ForwardFlowLog.d(traceId, "ForwardReceiver finished")
             pendingResult.finish()
+            if (killAppAfterFinish) {
+                terminateSelfProcess(traceId)
+            }
         }
         runCatching {
             FORWARD_EXECUTOR.execute(task)
@@ -714,6 +733,16 @@ class ForwardReceiver : BroadcastReceiver() {
         val now = System.currentTimeMillis().toString(36)
         val suffix = kotlin.math.abs((pkg + now).hashCode()).toString(36)
         return "${now}_$suffix"
+    }
+
+    private fun terminateSelfProcess(traceId: String) {
+        val pid = Process.myPid()
+        ForwardFlowLog.w(traceId, "Terminating app process pid=$pid by kill action")
+        XLog.w("ForwardReceiver kill action: terminate process pid=%d", pid)
+        runCatching { Process.killProcess(pid) }
+            .onFailure { error ->
+                XLog.e("ForwardReceiver kill action failed", error)
+            }
     }
 
 }

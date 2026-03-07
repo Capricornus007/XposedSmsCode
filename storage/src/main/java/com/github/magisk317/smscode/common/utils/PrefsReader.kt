@@ -314,25 +314,9 @@ object PrefsReader {
     }
 
     @JvmStatic
-    fun forceStopRecoveryEnabled(context: Context): Boolean {
+    fun killMeEnabled(context: Context): Boolean {
         val defaultValue = false
-        return getBooleanViaProvider(context, PrefConst.KEY_FORCE_STOP_RECOVERY, defaultValue)
-    }
-
-    @JvmStatic
-    fun rootDbCatchupEnabled(context: Context): Boolean {
-        return getBooleanViaProvider(context, PrefConst.KEY_ROOT_DB_CATCHUP_ENABLE, true)
-    }
-
-    @JvmStatic
-    fun rootDbCatchupIntervalMin(context: Context): Long {
-        val value = getStringViaProvider(context, PrefConst.KEY_ROOT_DB_CATCHUP_INTERVAL_MIN, "5")
-        return value.toLongOrNull()?.coerceAtLeast(1L) ?: 5L
-    }
-
-    @JvmStatic
-    fun rootDbCatchupWriteback(context: Context): Boolean {
-        return getBooleanViaProvider(context, PrefConst.KEY_ROOT_DB_CATCHUP_WRITEBACK, false)
+        return getBooleanViaProvider(context, PrefConst.KEY_KILL_ME, defaultValue)
     }
 
     @JvmStatic

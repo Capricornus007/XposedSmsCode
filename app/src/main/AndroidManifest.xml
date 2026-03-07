@@ -135,12 +135,9 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="com.github.magisk317.smscode.ACTION_FORWARD_SMS" />
+                <action android:name="com.github.magisk317.smscode.ACTION_KILL_ME" />
             </intent-filter>
         </receiver>
-
-        <service
-            android:name="com.github.magisk317.smscode.service.ForceStopRecoveryService"
-            android:exported="true" />
 
         <service android:name="com.github.magisk317.smscode.service.AppNotificationListenerService"
             android:label="@string/app_name"
