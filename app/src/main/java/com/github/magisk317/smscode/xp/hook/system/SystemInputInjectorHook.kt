@@ -9,6 +9,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.os.Process
+import android.view.InputEvent
 import android.view.KeyCharacterMap
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.xp.hook.BaseHook
@@ -33,6 +34,9 @@ class SystemInputInjectorHook : BaseHook() {
 
     @Volatile
     private var injectMethod: Method? = null
+
+    @Volatile
+    private var injectMethodParamCount: Int = 0
 
     @Volatile
     private var mainHandler: Handler? = null
@@ -266,33 +270,93 @@ class SystemInputInjectorHook : BaseHook() {
                 manager to method
             } else {
                 try {
-                    val className = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                        "android.hardware.input.InputManagerGlobal"
-                    } else {
-                        "android.hardware.input.InputManager"
+                    val classCandidates = buildList {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                            add("android.hardware.input.InputManagerGlobal")
+                            add("android.hardware.input.InputManager")
+                        } else {
+                            add("android.hardware.input.InputManager")
+                            add("android.hardware.input.InputManagerGlobal")
+                        }
                     }
-                    val inputManagerClass = XposedHelpers.findClass(
-                        className,
-                        null,
+                    val errors = mutableListOf<String>()
+                    for (className in classCandidates) {
+                        try {
+                            val inputManagerClass = XposedHelpers.findClass(className, null)
+                            val instance = XposedHelpers.callStaticMethod(inputManagerClass, "getInstance")
+                            val inject = findInjectMethod(inputManagerClass)
+                            inputManagerGlobal = instance
+                            injectMethod = inject
+                            injectMethodParamCount = inject.parameterTypes.size
+                            XLog.i(
+                                "Resolved input injector: class=%s, method=%s",
+                                className,
+                                inject.toGenericString(),
+                            )
+                            return@synchronized instance to inject
+                        } catch (t: Throwable) {
+                            errors += "$className -> ${t::class.java.simpleName}: ${t.message}"
+                        }
+                    }
+                    throw NoSuchMethodError(
+                        "No compatible injectInputEvent found. Details: ${errors.joinToString(" | ")}",
                     )
-                    val instance = XposedHelpers.callStaticMethod(
-                        inputManagerClass,
-                        "getInstance",
-                    )
-                    val inject = XposedHelpers.findMethodBestMatch(
-                        inputManagerClass,
-                        "injectInputEvent",
-                        android.view.InputEvent::class.java,
-                        Int::class.javaPrimitiveType,
-                    )
-                    inputManagerGlobal = instance
-                    injectMethod = inject
-                    instance to inject
                 } catch (t: Throwable) {
                     XLog.e("Failed to resolve InputManagerGlobal", t)
                     null
                 }
             }
+        }
+    }
+
+    private fun findInjectMethod(inputManagerClass: Class<*>): Method {
+        val candidates = (inputManagerClass.declaredMethods + inputManagerClass.methods).distinctBy {
+            "${it.name}#${it.parameterTypes.joinToString(",") { p -> p.name }}"
+        }
+        val preferred = candidates.firstOrNull { method ->
+            if (method.name != "injectInputEvent") return@firstOrNull false
+            val params = method.parameterTypes
+            params.size == 2 && params[0] == InputEvent::class.java && params[1] == Int::class.javaPrimitiveType
+        }
+        if (preferred != null) {
+            preferred.isAccessible = true
+            return preferred
+        }
+
+        val fallback = candidates.firstOrNull { method ->
+            if (method.name != "injectInputEvent") return@firstOrNull false
+            val params = method.parameterTypes
+            when (params.size) {
+                2 -> InputEvent::class.java.isAssignableFrom(params[0]) &&
+                    (params[1] == Int::class.javaPrimitiveType || params[1] == Int::class.java)
+                3 -> InputEvent::class.java.isAssignableFrom(params[0]) &&
+                    (params[1] == Int::class.javaPrimitiveType || params[1] == Int::class.java) &&
+                    (params[2] == Int::class.javaPrimitiveType || params[2] == Int::class.java)
+                else -> false
+            }
+        }
+        if (fallback != null) {
+            fallback.isAccessible = true
+            return fallback
+        }
+
+        val signatureDump = candidates
+            .filter { it.name == "injectInputEvent" }
+            .joinToString("; ") { it.toGenericString() }
+            .ifBlank { "none" }
+        throw NoSuchMethodException("injectInputEvent signatures: $signatureDump")
+    }
+
+    private fun invokeInject(manager: Any, method: Method, event: InputEvent, mode: Int): Boolean {
+        val result = when (injectMethodParamCount) {
+            2 -> method.invoke(manager, event, mode)
+            3 -> method.invoke(manager, event, mode, 0)
+            else -> return false
+        }
+        return when (result) {
+            is Boolean -> result
+            is Number -> result.toInt() != 0
+            else -> false
         }
     }
 
@@ -311,7 +375,7 @@ class SystemInputInjectorHook : BaseHook() {
                         return@forEachIndexed
                     }
                     for (event in events) {
-                        val result = method.invoke(manager, event, mode) as? Boolean ?: false
+                        val result = invokeInject(manager, method, event, mode)
                         if (result) injectedCount += 1
                     }
                     if (inputIntervalMs > 0L && index < text.lastIndex) {
@@ -324,10 +388,10 @@ class SystemInputInjectorHook : BaseHook() {
                     val now = android.os.SystemClock.uptimeMillis()
                     val downEvent = android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_DOWN, android.view.KeyEvent.KEYCODE_ENTER, 0)
                     val upEvent = android.view.KeyEvent(now, now, android.view.KeyEvent.ACTION_UP, android.view.KeyEvent.KEYCODE_ENTER, 0)
-                    
-                    val downResult = method.invoke(manager, downEvent, mode) as? Boolean ?: false
-                    val upResult = method.invoke(manager, upEvent, mode) as? Boolean ?: false
-                    
+
+                    val downResult = invokeInject(manager, method, downEvent, mode)
+                    val upResult = invokeInject(manager, method, upEvent, mode)
+
                     if (downResult && upResult) {
                         XLog.w("Injected KEYCODE_ENTER from System Server")
                     } else {
