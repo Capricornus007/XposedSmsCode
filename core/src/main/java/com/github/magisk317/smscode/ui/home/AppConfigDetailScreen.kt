@@ -144,7 +144,7 @@ fun AppConfigDetailScreen(
                             .then(
                                 if (isRestrictedBuild) {
                                     Modifier
-                                        .alpha(0.58f)
+                                        .alpha(DISABLED_ITEM_ALPHA)
                                         .clickable { onRestrictedAction?.invoke() }
                                 } else {
                                     Modifier
@@ -184,7 +184,7 @@ fun AppConfigDetailScreen(
                             .then(
                                 if (isRestrictedBuild) {
                                     Modifier
-                                        .alpha(0.58f)
+                                        .alpha(DISABLED_ITEM_ALPHA)
                                         .clickable { onRestrictedAction?.invoke() }
                                 } else {
                                     Modifier
@@ -302,7 +302,7 @@ private fun ConfigToggleRow(
             .then(
                 if (!enabled && onDisabledClick != null) {
                     Modifier
-                        .alpha(0.58f)
+                        .alpha(DISABLED_ITEM_ALPHA)
                         .clickable { onDisabledClick() }
                 } else {
                     Modifier
@@ -320,3 +320,5 @@ private fun ConfigToggleRow(
         },
     )
 }
+
+private const val DISABLED_ITEM_ALPHA = 0.58f

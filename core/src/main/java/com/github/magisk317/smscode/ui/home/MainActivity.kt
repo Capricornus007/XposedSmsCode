@@ -92,6 +92,7 @@ class MainActivity : AppCompatActivity() {
         setIntent(intent)
     }
 
+    @Suppress("CyclomaticComplexMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyEdgeToEdge(this)
@@ -311,7 +312,7 @@ class MainActivity : AppCompatActivity() {
 
                         if (showPrivacyPolicyDialog) {
                             PrivacyPolicyDialog(
-                                onDismiss = { showPrivacyPolicyDialog = false },
+                                onDismiss = {},
                                 onConfirm = {
                                     scope.launch { SPUtils.setPrivacyPolicyAccepted(context, true) }
                                     showPrivacyPolicyDialog = false
@@ -321,12 +322,26 @@ class MainActivity : AppCompatActivity() {
                                     showPrivacyPolicyDialog = false
                                     finish()
                                 },
-                                onViewPolicy = { showPrivacyPolicyPage = true },
+                                onViewPolicy = {
+                                    showPrivacyPolicyDialog = false
+                                    showPrivacyPolicyPage = true
+                                },
+                                dismissOnBackPress = false,
+                                dismissOnClickOutside = false,
                             )
                         }
 
                         if (showPrivacyPolicyPage) {
-                            PrivacyPolicyPage(onDismiss = { showPrivacyPolicyPage = false })
+                            PrivacyPolicyPage(
+                                onDismiss = {
+                                    showPrivacyPolicyPage = false
+                                    scope.launch {
+                                        if (!SPUtils.isPrivacyPolicyAccepted(context)) {
+                                            showPrivacyPolicyDialog = true
+                                        }
+                                    }
+                                },
+                            )
                         }
 
                         githubUpdateUiState?.let { updateState ->

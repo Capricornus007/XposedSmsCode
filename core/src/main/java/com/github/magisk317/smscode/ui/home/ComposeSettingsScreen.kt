@@ -35,6 +35,7 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
@@ -242,12 +243,6 @@ fun ComposeSettingsScreen(
     }
 
     LaunchedEffect(Unit) {
-        if (!SPUtils.isPrivacyPolicyAccepted(context)) {
-            showPrivacyPolicyDialog = true
-        }
-    }
-
-    LaunchedEffect(Unit) {
         reloadSettingsData()
     }
 
@@ -272,7 +267,7 @@ fun ComposeSettingsScreen(
                     context = context,
                     activity = activityOwner ?: (context as? Activity),
                     scope = scope,
-                    onShowPrivacyPolicy = { showPrivacyPolicyDialog = true },
+                    onShowPrivacyPolicy = {},
                     onShowDonate = { showDonateDialog = true },
                     onShowRestoreConfirm = { uri ->
                         restoreUri = uri
@@ -1063,6 +1058,7 @@ private fun SettingsDialogs(
                 onExit()
             },
             onViewPolicy = {
+                onShowPrivacyPolicyDialogChange(false)
                 onShowPrivacyPolicyPageChange(true)
             },
         )
@@ -1571,9 +1567,20 @@ fun QRCodeDialog(resId: Int, type: String, onDismiss: () -> Unit, onSave: () -> 
 }
 
 @Composable
-fun PrivacyPolicyDialog(onDismiss: () -> Unit, onConfirm: () -> Unit, onCancel: () -> Unit, onViewPolicy: () -> Unit) {
+fun PrivacyPolicyDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+    onViewPolicy: () -> Unit,
+    dismissOnBackPress: Boolean = true,
+    dismissOnClickOutside: Boolean = true,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            dismissOnBackPress = dismissOnBackPress,
+            dismissOnClickOutside = dismissOnClickOutside,
+        ),
         title = { Text(stringResource(id = R.string.privacy_dialog_title)) },
         text = {
             Column {
