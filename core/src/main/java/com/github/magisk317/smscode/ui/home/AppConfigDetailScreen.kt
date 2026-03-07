@@ -1,6 +1,7 @@
 package com.github.magisk317.smscode.ui.home
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -20,9 +21,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,6 +44,8 @@ fun AppConfigDetailScreen(
     onBack: () -> Unit,
     onConfigureNotifyChannels: () -> Unit,
     onConfigureForwardFilters: () -> Unit,
+    isRestrictedBuild: Boolean = false,
+    onRestrictedAction: (() -> Unit)? = null,
     viewModel: AppConfigViewModel = koinViewModel(),
 ) {
     val apps by viewModel.appsFlow.collectAsStateWithLifecycle()
@@ -48,6 +53,13 @@ fun AppConfigDetailScreen(
     val appLogs by remember(packageName) { viewModel.appNotifyLogsFlow(packageName) }
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val context = androidx.compose.ui.platform.LocalContext.current
+    val forwardingEnabled = !isRestrictedBuild
+
+    LaunchedEffect(isRestrictedBuild, app?.packageName, app?.forwarding) {
+        if (isRestrictedBuild && app?.packageName != null && app.forwarding) {
+            viewModel.setForwarding(app.packageName, false)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -114,18 +126,30 @@ fun AppConfigDetailScreen(
                     HorizontalDivider()
                     ConfigToggleRow(
                         title = stringResource(R.string.label_forwarding),
-                        checked = app.forwarding,
-                        onCheckedChange = {
-                            viewModel.setForwarding(app.packageName, it)
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.pref_sync_toast),
-                                Toast.LENGTH_SHORT,
-                            ).show()
+                        checked = if (isRestrictedBuild) false else app.forwarding,
+                        enabled = forwardingEnabled,
+                        onCheckedChange = { checked ->
+                            if (!forwardingEnabled) {
+                                onRestrictedAction?.invoke()
+                                return@ConfigToggleRow
+                            }
+                            viewModel.setForwarding(app.packageName, checked)
+                            Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
                         },
+                        onDisabledClick = onRestrictedAction,
                     )
                     HorizontalDivider()
                     androidx.compose.material3.ListItem(
+                        modifier = Modifier
+                            .then(
+                                if (isRestrictedBuild) {
+                                    Modifier
+                                        .alpha(0.58f)
+                                        .clickable { onRestrictedAction?.invoke() }
+                                } else {
+                                    Modifier
+                                },
+                            ),
                         headlineContent = {
                             Text(text = stringResource(R.string.app_notify_channel_config_title))
                         },
@@ -140,13 +164,32 @@ fun AppConfigDetailScreen(
                             )
                         },
                         trailingContent = {
-                            TextButton(onClick = onConfigureNotifyChannels) {
+                            TextButton(
+                                onClick = {
+                                    if (isRestrictedBuild) {
+                                        onRestrictedAction?.invoke()
+                                    } else {
+                                        onConfigureNotifyChannels()
+                                    }
+                                },
+                                enabled = !isRestrictedBuild,
+                            ) {
                                 Text(text = stringResource(R.string.item_config))
                             }
                         },
                     )
                     HorizontalDivider()
                     androidx.compose.material3.ListItem(
+                        modifier = Modifier
+                            .then(
+                                if (isRestrictedBuild) {
+                                    Modifier
+                                        .alpha(0.58f)
+                                        .clickable { onRestrictedAction?.invoke() }
+                                } else {
+                                    Modifier
+                                },
+                            ),
                         headlineContent = {
                             Text(text = "应用关键词过滤")
                         },
@@ -154,7 +197,16 @@ fun AppConfigDetailScreen(
                             Text(text = "配置应用级与通知渠道ID级别的关键词黑白名单")
                         },
                         trailingContent = {
-                            TextButton(onClick = onConfigureForwardFilters) {
+                            TextButton(
+                                onClick = {
+                                    if (isRestrictedBuild) {
+                                        onRestrictedAction?.invoke()
+                                    } else {
+                                        onConfigureForwardFilters()
+                                    }
+                                },
+                                enabled = !isRestrictedBuild,
+                            ) {
                                 Text(text = stringResource(R.string.item_config))
                             }
                         },
@@ -241,16 +293,29 @@ private fun AppRecentLogCard(logs: List<SmsMsg>) {
 private fun ConfigToggleRow(
     title: String,
     checked: Boolean,
+    enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit,
+    onDisabledClick: (() -> Unit)? = null,
 ) {
     androidx.compose.material3.ListItem(
+        modifier = Modifier
+            .then(
+                if (!enabled && onDisabledClick != null) {
+                    Modifier
+                        .alpha(0.58f)
+                        .clickable { onDisabledClick() }
+                } else {
+                    Modifier
+                },
+            ),
         headlineContent = {
             Text(text = title)
         },
         trailingContent = {
             Switch(
                 checked = checked,
-                onCheckedChange = onCheckedChange,
+                onCheckedChange = if (enabled) onCheckedChange else null,
+                enabled = enabled,
             )
         },
     )

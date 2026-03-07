@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.dp
 import com.github.magisk317.smscode.core.BuildConfig
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.Const
-import com.github.magisk317.smscode.common.constant.TransitionConst
 import com.github.magisk317.smscode.common.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.Utils
@@ -89,11 +88,6 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
             PackageUtils.hasRootAccess()
         }
     }
-    val relayInstalled by produceState(initialValue = false) {
-        value = withContext(Dispatchers.IO) {
-            TransitionConst.isRelayInstalled(context)
-        }
-    }
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -134,7 +128,7 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
                     },
                 )
             }
-            if (BuildConfig.IS_TRANSITION_BUILD) {
+            if (BuildConfig.IS_LITE_BUILD) {
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -144,14 +138,18 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
                         ),
                     ) {
                         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-                            Text("过渡模式：转发功能已迁移至信驿 Relay", fontWeight = FontWeight.SemiBold)
+                            Text("过渡版本：通知和转发功能已迁移至信驿 Relay", fontWeight = FontWeight.SemiBold)
                             Text(
-                                if (relayInstalled) "已检测到信驿 Relay，建议在该应用管理转发。"
-                                else "尚未检测到信驿 Relay，点击可前往下载。",
+                                "• 如有相关需求可在底部相关群内下载（支持备份导入）。\n• 无相关需求请等待后续精简版本（仅验证码功能）推送。",
                                 style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier
-                                    .padding(top = 4.dp)
-                                    .clickable { Utils.showWebPage(context, TransitionConst.TARGET_RELAY_URL) },
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                            Text(
+                                "• 警告：当前处于特殊阶段，不管后续继续使用当前应用还是新应用，此刻请务必备份数据，避免数据意外丢失！开发者无法帮你找回！也不要在群内反馈此类问题！",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 4.dp),
                             )
                         }
                     }

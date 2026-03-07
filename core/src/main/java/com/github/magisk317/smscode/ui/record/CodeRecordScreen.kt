@@ -37,6 +37,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
@@ -55,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.github.magisk317.smscode.core.BuildConfig
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
@@ -141,6 +143,7 @@ fun CodeRecordScreen(
     refreshTrigger: Int = 0,
     viewModel: CodeRecordViewModel = koinViewModel(),
 ) {
+    val isRestrictedBuild = BuildConfig.IS_LITE_BUILD
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val smsList = uiState.smsList
     val isLoading = uiState.isLoading
@@ -603,6 +606,7 @@ fun CodeRecordScreen(
                             title = activeTitle,
                             emptyHint = activeEmptyHint,
                             list = activeSmsList,
+                            showForwardStatus = selectedRecordTab != 0,
                             isSelectionMode = isSelectionMode,
                             selectedIds = selectedIds,
                             onToggleSelection = { toggleSelection(it) },
@@ -628,6 +632,29 @@ fun CodeRecordScreen(
                         )
                     }
                 }
+            }
+        }
+
+        if (isRestrictedBuild && selectedRecordTab != 0) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = fixedTopHeight, bottom = bottomPadding)
+                    .hazeEffect(hazeState, hazeStyle) {
+                        forceInvalidateOnPreDraw = true
+                    }
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                    ) {},
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "下个版本移除",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
             }
         }
 
@@ -791,6 +818,9 @@ fun CodeRecordScreen(
                 hazeState = hazeState,
                 hazeStyle = hazeStyle,
                 sms = sms,
+                maskForwardInfo = isRestrictedBuild &&
+                    sms.msgType == SmsMsg.MSG_TYPE_SMS &&
+                    !sms.smsCode.isNullOrBlank(),
                 onDismiss = { detailSmsMsg = null },
                 onCopy = { label, value, toast ->
                     copyWithFeedback(label, value, toast, toast)
@@ -814,6 +844,7 @@ private fun RecordDetailOverlay(
     hazeState: HazeState,
     hazeStyle: HazeStyle,
     sms: SmsMsg,
+    maskForwardInfo: Boolean,
     onDismiss: () -> Unit,
     onCopy: (label: String, value: String, toast: String) -> Unit,
     onDelete: () -> Unit,
@@ -978,59 +1009,142 @@ private fun RecordDetailOverlay(
                         }
                     },
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(
-                        text = "${stringResource(R.string.detail_forward_status)}:",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        text = forwardStatusAnnotated,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(
-                        text = "${stringResource(R.string.detail_forward_target)}:",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        text = forwardTarget,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(
-                        text = "${stringResource(R.string.detail_forward_time)}:",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        text = forwardTime,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    Text(
-                        text = "${stringResource(R.string.detail_forward_message)}:",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    Text(
-                        text = forwardMessageAnnotated,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                if (maskForwardInfo) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)),
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .blur(20.dp)
+                                .padding(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Text(
+                                    text = "${stringResource(R.string.detail_forward_status)}:",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Text(
+                                    text = forwardStatusAnnotated,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Text(
+                                    text = "${stringResource(R.string.detail_forward_target)}:",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Text(
+                                    text = forwardTarget,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Text(
+                                    text = "${stringResource(R.string.detail_forward_time)}:",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Text(
+                                    text = forwardTime,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                )
+                            }
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                Text(
+                                    text = "${stringResource(R.string.detail_forward_message)}:",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Text(
+                                    text = forwardMessageAnnotated,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                            }
+                        }
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "下个版本移除",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = "${stringResource(R.string.detail_forward_status)}:",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = forwardStatusAnnotated,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = "${stringResource(R.string.detail_forward_target)}:",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = forwardTarget,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = "${stringResource(R.string.detail_forward_time)}:",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = forwardTime,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = "${stringResource(R.string.detail_forward_message)}:",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Text(
+                            text = forwardMessageAnnotated,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                 }
                 HorizontalDivider()
                 ButtonGroup(
@@ -1283,6 +1397,7 @@ private fun RecordSplitColumn(
     title: String,
     emptyHint: String,
     list: List<SmsMsg>,
+    showForwardStatus: Boolean,
     isSelectionMode: Boolean,
     selectedIds: Set<Long>,
     onToggleSelection: (Long) -> Unit,
@@ -1363,6 +1478,7 @@ private fun RecordSplitColumn(
                             } else {
                                 CodeRecordItem(
                                     smsMsg = smsMsg,
+                                    showForwardStatus = showForwardStatus,
                                     isSelectionMode = true,
                                     isSelected = isSelected,
                                     onClick = { onToggleSelection(smsMsg.id ?: 0) },
@@ -1417,6 +1533,7 @@ private fun RecordSplitColumn(
                                     } else {
                                         CodeRecordItem(
                                             smsMsg = smsMsg,
+                                            showForwardStatus = showForwardStatus,
                                             isSelectionMode = false,
                                             isSelected = false,
                                             onClick = { onCopyCode(smsMsg) },
@@ -1440,6 +1557,7 @@ private fun RecordSplitColumn(
 @Composable
 fun CodeRecordItem(
     smsMsg: SmsMsg,
+    showForwardStatus: Boolean,
     isSelectionMode: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,
@@ -1567,17 +1685,19 @@ fun CodeRecordItem(
                     modifier = Modifier.clickable { onDetailClick() },
                 )
             }
-            Spacer(modifier = Modifier.height(2.dp))
-            val forwardStatusAnnotated = resolveForwardStatusAnnotated(smsMsg)
-            Text(
-                text = buildAnnotatedString {
-                    append("${stringResource(R.string.detail_forward_status)}: ")
-                    append(forwardStatusAnnotated)
-                },
-                style = MaterialTheme.typography.labelSmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            if (showForwardStatus) {
+                Spacer(modifier = Modifier.height(2.dp))
+                val forwardStatusAnnotated = resolveForwardStatusAnnotated(smsMsg)
+                Text(
+                    text = buildAnnotatedString {
+                        append("${stringResource(R.string.detail_forward_status)}: ")
+                        append(forwardStatusAnnotated)
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
