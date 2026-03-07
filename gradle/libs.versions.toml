@@ -1,10 +1,10 @@
 [versions]
 # Build SDK versions
 compileSdk = "36"
-compileSdkExtension = "1"
+compileSdkExtension = "19"
 minSdk = "26"
 targetSdk = "36"
-ndk = "28.2.13676358"
+ndk = "29.0.14206865"
 
 # JVM versions
 javaBytecode = "25"

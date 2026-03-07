@@ -5,11 +5,13 @@ plugins {
 }
 
 val compileSdkInt = libs.versions.compileSdk.get().toInt()
+val compileSdkExtensionInt = libs.versions.compileSdkExtension.get().toInt()
 val minSdkInt = libs.versions.minSdk.get().toInt()
 
 android {
     namespace = "com.github.magisk317.smscode.core"
     compileSdk = compileSdkInt
+    compileSdkExtension = compileSdkExtensionInt
 
     flavorDimensions += "distribution"
     productFlavors {

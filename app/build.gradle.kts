@@ -29,6 +29,10 @@ fun releaseTime(): String {
 }
 
 fun buildTimestamp(): String {
+    val override = findProperty("buildTs")?.toString()?.trim().orEmpty()
+    if (override.isNotEmpty()) {
+        return override
+    }
     return SimpleDateFormat("yyyyMMddHHmmss").apply { timeZone = TimeZone.getDefault() }.format(Date())
 }
 
