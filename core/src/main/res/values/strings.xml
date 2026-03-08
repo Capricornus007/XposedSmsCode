@@ -497,6 +497,12 @@
     <string name="privacy_dialog_confirm">Agree and Continue</string>
     <string name="privacy_policy_button">Privacy Policy</string>
     <!-- privacy policy end -->
+    <!-- relay conflict dialog start -->
+    <string name="relay_conflict_dialog_title">Dual-Module Risk Notice</string>
+    <string name="relay_conflict_dialog_content">XposedSmsCode and Xinyi Relay are both installed.\n\nTo avoid hook conflicts, this app will suppress SMS parsing and auto-input when Relay is detected.\n\nIf you continue using both apps, behavior may differ from old versions.</string>
+    <string name="relay_conflict_dialog_exit">Exit</string>
+    <string name="relay_conflict_dialog_confirm">I Understand the Risk</string>
+    <!-- relay conflict dialog end -->
     <string name="rule_list_empty_prompt">No rules yet. Click + to add one.</string>
     <string name="rule_keyword_prefix">Keyword: </string>
     <string name="rule_regex_prefix">Regex: </string>

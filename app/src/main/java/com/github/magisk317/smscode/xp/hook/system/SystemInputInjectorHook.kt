@@ -12,6 +12,7 @@ import android.os.Process
 import android.view.InputEvent
 import android.view.KeyCharacterMap
 import com.github.magisk317.smscode.common.utils.XLog
+import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
 import com.github.magisk317.smscode.xp.hook.BaseHook
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
@@ -43,6 +44,8 @@ class SystemInputInjectorHook : BaseHook() {
 
     @Volatile
     private var amsSystemReadyHooked = false
+    @Volatile
+    private var suppressionLogged = false
 
     override fun hookInitZygote(): Boolean = true
 
@@ -95,6 +98,11 @@ class SystemInputInjectorHook : BaseHook() {
             if (activityThread != null) {
                 val systemContext = XposedHelpers.callMethod(activityThread, "getSystemContext") as? Context
                 if (systemContext != null) {
+                    if (ModuleConflictArbiter.shouldSuppressByRelay(systemContext, "SystemInputInjectorHook#onLoadPackage")) {
+                        logSuppressedOnce("onLoadPackage")
+                        receiverRegistered = true
+                        return
+                    }
                     XLog.w("XSmsCode: System context available in onLoadPackage, registering receiver")
                     XposedBridge.log("XSmsCode: System context available in onLoadPackage, registering receiver")
                     scheduleRegister(systemContext)
@@ -126,6 +134,11 @@ class SystemInputInjectorHook : BaseHook() {
                             XLog.i("XSmsCode: ActivityManagerService.systemReady hook triggered")
                             val context = resolveSystemContext(param.thisObject)
                             if (context != null) {
+                                if (ModuleConflictArbiter.shouldSuppressByRelay(context, "SystemInputInjectorHook#systemReady")) {
+                                    logSuppressedOnce("systemReady")
+                                    receiverRegistered = true
+                                    return
+                                }
                                 scheduleRegister(context)
                             }
                         }
@@ -163,6 +176,11 @@ class SystemInputInjectorHook : BaseHook() {
     private fun registerReceiver(context: Context) {
         try {
             if (receiverRegistered) return
+            if (ModuleConflictArbiter.shouldSuppressByRelay(context, "SystemInputInjectorHook#registerReceiver")) {
+                logSuppressedOnce("registerReceiver")
+                receiverRegistered = true
+                return
+            }
             val receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
                     val sendingUid = try {
@@ -220,6 +238,20 @@ class SystemInputInjectorHook : BaseHook() {
             } else {
                 XposedBridge.log("XSmsCode: registerReceiver give up after $registerAttempts attempts")
             }
+        }
+    }
+
+    private fun logSuppressedOnce(stage: String) {
+        if (suppressionLogged) return
+        synchronized(this) {
+            if (suppressionLogged) return
+            XLog.w(
+                "SystemInputInjectorHook suppressed: reason=%s stage=%s package=%s",
+                ModuleConflictArbiter.SUPPRESSION_REASON,
+                stage,
+                ModuleConflictArbiter.TARGET_RELAY_PACKAGE,
+            )
+            suppressionLogged = true
         }
     }
 

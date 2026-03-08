@@ -51,6 +51,7 @@ import com.github.magisk317.smscode.core.BuildConfig
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
+import com.github.magisk317.smscode.common.constant.TransitionConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.common.utils.SPUtils
@@ -109,6 +110,7 @@ class MainActivity : AppCompatActivity() {
             val scope = rememberCoroutineScope()
             var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
             var showPrivacyPolicyPage by remember { mutableStateOf(false) }
+            var showRelayConflictDialog by remember { mutableStateOf(false) }
             var githubUpdateUiState by remember { mutableStateOf<GithubUpdateUiState?>(null) }
             var downloadState by remember { mutableStateOf<UpdateDownloadState>(UpdateDownloadState.Idle) }
             var unknownSourceApk by remember { mutableStateOf<File?>(null) }
@@ -186,6 +188,13 @@ class MainActivity : AppCompatActivity() {
             LaunchedEffect(Unit) {
                 if (!SPUtils.isPrivacyPolicyAccepted(context)) {
                     showPrivacyPolicyDialog = true
+                }
+            }
+            LaunchedEffect(Unit) {
+                if (TransitionConst.isRelayInstalled(context) &&
+                    !SPUtils.isRelayConflictRiskAcknowledged(context)
+                ) {
+                    showRelayConflictDialog = true
                 }
             }
             LaunchedEffect(Unit) {
@@ -339,6 +348,39 @@ class MainActivity : AppCompatActivity() {
                                         if (!SPUtils.isPrivacyPolicyAccepted(context)) {
                                             showPrivacyPolicyDialog = true
                                         }
+                                    }
+                                },
+                            )
+                        }
+
+                        if (showRelayConflictDialog) {
+                            AlertDialog(
+                                onDismissRequest = {},
+                                title = { Text(getString(R.string.relay_conflict_dialog_title)) },
+                                text = { Text(getString(R.string.relay_conflict_dialog_content)) },
+                                dismissButton = {
+                                    OutlinedButton(
+                                        onClick = {
+                                            scope.launch {
+                                                SPUtils.setRelayConflictRiskAcknowledged(context, false)
+                                            }
+                                            showRelayConflictDialog = false
+                                            finish()
+                                        },
+                                    ) {
+                                        Text(getString(R.string.relay_conflict_dialog_exit))
+                                    }
+                                },
+                                confirmButton = {
+                                    FilledTonalButton(
+                                        onClick = {
+                                            scope.launch {
+                                                SPUtils.setRelayConflictRiskAcknowledged(context, true)
+                                            }
+                                            showRelayConflictDialog = false
+                                        },
+                                    ) {
+                                        Text(getString(R.string.relay_conflict_dialog_confirm))
                                     }
                                 },
                             )

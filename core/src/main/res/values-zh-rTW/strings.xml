@@ -476,6 +476,12 @@
     <string name="privacy_dialog_confirm">同意並繼續</string>
     <string name="privacy_policy_button">隱私政策</string>
     <!-- privacy policy end -->
+    <!-- relay conflict dialog start -->
+    <string name="relay_conflict_dialog_title">雙模組風險提示</string>
+    <string name="relay_conflict_dialog_content">檢測到已同時安裝 XposedSmsCode 與信驛 Relay。\n\n為避免 Hook 衝突，檢測到 Relay 時，本應用會抑制簡訊解析與自動輸入鏈路。\n\n若繼續雙裝使用，行為可能與舊版本不同。</string>
+    <string name="relay_conflict_dialog_exit">退出</string>
+    <string name="relay_conflict_dialog_confirm">我已確認知曉風險</string>
+    <!-- relay conflict dialog end -->
     <string name="rule_list_empty_prompt">暫無規則，點擊 + 添加。</string>
     <string name="rule_keyword_prefix">關鍵字: </string>
     <string name="rule_regex_prefix">正規表達式: </string>

@@ -83,6 +83,7 @@ object PrefConst {
     const val KEY_PRIVACY_POLICY = "pref_privacy_policy"
     const val KEY_PRIVACY_POLICY_ACCEPTED = "pref_privacy_policy_accepted"
     const val KEY_BACKUP_COMPAT_TIP_SHOWN = "pref_backup_compat_tip_shown"
+    const val KEY_RELAY_CONFLICT_RISK_ACKNOWLEDGED = "pref_relay_conflict_risk_acknowledged"
     const val KEY_ENABLE_SMS_BLOCK = "enable_sms_block"
     const val KEY_ENABLE_NOTIFICATION_FORWARD = "enable_notification_forward"
     const val KEY_ABOUT_COMPOSE = "pref_about_compose"

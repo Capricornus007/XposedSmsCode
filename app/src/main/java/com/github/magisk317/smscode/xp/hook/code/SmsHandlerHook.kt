@@ -16,6 +16,7 @@ import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.common.utils.SmsBlacklistUtils
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
 import com.github.magisk317.smscode.xp.helper.XposedWrapper
 import com.github.magisk317.smscode.xp.hook.BaseHook
 import com.github.magisk317.smscode.xp.hook.code.action.impl.OperateSmsAction
@@ -35,6 +36,8 @@ class SmsHandlerHook : BaseHook() {
 
     private var mPhoneContext: Context? = null
     private var mPluginContext: Context? = null
+    @Volatile
+    private var suppressionLogged = false
 
     override fun onLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
         if (ANDROID_PHONE_PACKAGE == lpparam.packageName) {
@@ -154,6 +157,9 @@ class SmsHandlerHook : BaseHook() {
                     initNotificationChannel()
                     registerCopyCodeReceiver()
                     mPluginContext?.let { ModuleActivationStore.markActivated(it) }
+                    if (ModuleConflictArbiter.shouldSuppressByRelay(mPhoneContext, "SmsHandlerHook#constructor")) {
+                        logSuppressedOnce("constructor")
+                    }
                 } else {
                     XLog.e("Plugin context is null after creation attempt")
                 }
@@ -226,6 +232,10 @@ class SmsHandlerHook : BaseHook() {
         val phoneContext = mPhoneContext
         if (pluginContext == null || phoneContext == null) {
             XLog.e("Context is null, skip parsing. pluginContext: %s, phoneContext: %s", pluginContext, phoneContext)
+            return
+        }
+        if (ModuleConflictArbiter.shouldSuppressByRelay(phoneContext, "SmsHandlerHook#dispatchIntent")) {
+            logSuppressedOnce("dispatchIntent")
             return
         }
         val smsMsg = runCatching { SmsMsg.fromIntent(intent) }.getOrNull()
@@ -371,6 +381,20 @@ class SmsHandlerHook : BaseHook() {
         val value = sender.orEmpty()
         if (value.isBlank()) return "none"
         return Integer.toHexString(value.hashCode())
+    }
+
+    private fun logSuppressedOnce(stage: String) {
+        if (suppressionLogged) return
+        synchronized(this) {
+            if (suppressionLogged) return
+            XLog.w(
+                "SmsHandlerHook suppressed: reason=%s stage=%s package=%s",
+                ModuleConflictArbiter.SUPPRESSION_REASON,
+                stage,
+                ModuleConflictArbiter.TARGET_RELAY_PACKAGE,
+            )
+            suppressionLogged = true
+        }
     }
 
     private fun getPluginContext(): Context? {
