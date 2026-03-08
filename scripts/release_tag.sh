@@ -65,6 +65,17 @@ run_pre_push_checks() {
   echo "Pre-push checks passed: CI success and Detekt findings=0"
 }
 
+sync_fastlane_metadata() {
+  local sync_script="$ROOT_DIR/scripts/sync_fastlane_metadata.sh"
+  if [[ ! -x "$sync_script" ]]; then
+    echo "ERROR: missing executable fastlane sync script: $sync_script" >&2
+    exit 1
+  fi
+
+  echo "Syncing fastlane metadata..."
+  "$sync_script"
+}
+
 extract_toml_value() {
   local key="$1"
   local file="$2"
@@ -86,6 +97,7 @@ if [[ -z "$current_branch" ]]; then
   exit 1
 fi
 
+sync_fastlane_metadata
 "$ROOT_DIR/scripts/check_release_guard.sh" "$TAG_NAME"
 run_pre_push_checks
 
