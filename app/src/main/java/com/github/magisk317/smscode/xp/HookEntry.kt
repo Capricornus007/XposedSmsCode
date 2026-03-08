@@ -22,7 +22,6 @@ class HookEntry :
         ModuleUtilsHook(), // ModuleUtils Hook
         PermissionGranterHook(), // PackageManagerService Hook
         SystemInputInjectorHook(), // System Server Input Injection Hook
-        com.github.magisk317.smscode.xp.hook.notification.NotificationManagerHook(), // Notification Intercept Hook
     )
 
     @Throws(Throwable::class)
