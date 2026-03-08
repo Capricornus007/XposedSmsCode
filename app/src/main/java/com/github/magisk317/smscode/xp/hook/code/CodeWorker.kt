@@ -8,7 +8,6 @@ import android.util.Log
 import androidx.core.os.BundleCompat
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.utils.PrefsReader
-import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.hook.code.action.impl.*
@@ -85,7 +84,6 @@ class CodeWorker(
         try {
             val parseBundle = smsParseFuture.get()
             if (parseBundle == null) {
-                schedulePlainSmsForwardIfNeeded()
                 mScheduledExecutor.shutdown()
                 return null
             }
@@ -123,16 +121,6 @@ class CodeWorker(
         val recordSmsAction = RecordSmsAction(mPluginContext, mPhoneContext, smsMsg)
         mScheduledExecutor.schedule(recordSmsAction, 0, TimeUnit.MILLISECONDS)
 
-        // 转发 Action
-        val forwardAction = ForwardAction(
-            mPluginContext,
-            mPhoneContext,
-            smsMsg,
-            mSmsIntent,
-            eventId,
-        )
-        mScheduledExecutor.schedule(forwardAction, 100, TimeUnit.MILLISECONDS)
-
         // 操作验证码短信（标记为已读 或者 删除） Action
         scheduleOperateSmsActions(smsMsg)
 
@@ -160,37 +148,6 @@ class CodeWorker(
 
         mScheduledExecutor.shutdown()
         return buildParseResult(blockSms)
-    }
-
-    private fun schedulePlainSmsForwardIfNeeded() {
-        val plainSms = runCatching { SmsMsg.fromIntent(mSmsIntent) }.getOrNull() ?: return
-        val plainBody = plainSms.body
-        if (plainBody.isNullOrBlank()) return
-        val company = SmsCodeUtils.parseCompany(plainBody)
-            .trim()
-            .trim('【', '】', '[', ']')
-            .ifBlank { null }
-        val packageName = if (company.isNullOrBlank()) {
-            null
-        } else {
-            SmsCodeUtils.findPackageNameByLabel(mPhoneContext, company)
-        }
-        XLog.w(
-            "Diag non-code SMS forwarding triggered: bodyLength=%d",
-            plainBody.length,
-        )
-        val forwardAction = ForwardAction(
-            mPluginContext,
-            mPhoneContext,
-            plainSms.copy(
-                smsCode = null,
-                company = company,
-                packageName = packageName,
-            ),
-            mSmsIntent,
-            eventId,
-        )
-        mScheduledExecutor.schedule(forwardAction, 100, TimeUnit.MILLISECONDS)
     }
 
     private fun buildParseResult(blockSms: Boolean): ParseResult {

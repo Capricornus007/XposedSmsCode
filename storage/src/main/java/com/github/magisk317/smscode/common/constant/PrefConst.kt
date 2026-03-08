@@ -107,6 +107,4 @@ object PrefConst {
     const val KEY_INTERNAL_WEBUI_TLS_KEYSTORE_VERSION = "internal_webui_tls_keystore_version"
     const val KEY_INTERNAL_WEBUI_TLS_KEYSTORE_VERSION_DEFAULT = "2"
     const val KEY_INTERNAL_WEBUI_TLS_KEYSTORE_PASS = "internal_webui_tls_keystore_pass"
-    const val ACTION_FORWARD_SMS = "com.github.magisk317.smscode.ACTION_FORWARD_SMS"
-    const val ACTION_KILL_ME = "com.github.magisk317.smscode.ACTION_KILL_ME"
 }

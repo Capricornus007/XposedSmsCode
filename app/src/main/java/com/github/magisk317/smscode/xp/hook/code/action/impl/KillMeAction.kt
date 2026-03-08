@@ -4,12 +4,10 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.core.content.ContextCompat
 import com.github.tianma8023.xposed.smscode.BuildConfig
-import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
@@ -28,7 +26,6 @@ class KillMeAction(
 
     private fun killMe() {
         if (!PrefsReader.killMeEnabled(mPluginContext)) return
-        if (requestSelfKillInAppProcess()) return
         if (!hasKillBackgroundPermission()) {
             XLog.w(
                 "Skip KillMeAction: missing permission %s in process %s",
@@ -38,28 +35,6 @@ class KillMeAction(
             return
         }
         killBackgroundProcess(BuildConfig.APPLICATION_ID)
-    }
-
-    private fun requestSelfKillInAppProcess(): Boolean {
-        return runCatching {
-            val token = PrefsReader.getIpcToken(mPluginContext)
-            if (token.isBlank()) {
-                XLog.w("Skip KillMeAction IPC: token is empty")
-                return false
-            }
-            val intent = Intent(PrefConst.ACTION_KILL_ME).apply {
-                setPackage(mPluginContext.packageName)
-                putExtra("ipc_token", token)
-                putExtra("event_id", "kill_${System.currentTimeMillis().toString(36)}")
-                putExtra("forward_source", "kill_me_action")
-            }
-            mPluginContext.sendBroadcast(intent)
-            XLog.i("KillMeAction: sent self-kill IPC to app process")
-            true
-        }.getOrElse { error ->
-            XLog.w("KillMeAction IPC failed: %s", error.message ?: error.javaClass.simpleName)
-            false
-        }
     }
 
     private fun hasKillBackgroundPermission(): Boolean {
