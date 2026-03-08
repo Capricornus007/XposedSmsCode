@@ -35,15 +35,6 @@
 # ==========================
 
 # ==========================
-# retrofit2 start
--dontwarn retrofit2.**
--keep class retrofit2.** { *; }
--keepattributes Signature
--keepattributes Exceptions
-# retrofit2 end
-# ==========================
-
-# ==========================
 # Kotlin Serialization start
 -keepattributes *Annotation*
 -keepclassmembers class **$Companion {

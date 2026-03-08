@@ -46,7 +46,6 @@ mockk = "1.14.9"
 navigation = "2.9.7"
 okhttp = "5.3.2"
 play-app-update = "2.1.0"
-retrofit = "3.0.0"
 room = "2.8.4"
 test-logger = "4.0.0"
 timber = "5.0.1"
@@ -102,9 +101,6 @@ mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 okhttp-logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "okhttp" }
 play-app-update = { module = "com.google.android.play:app-update", version.ref = "play-app-update" }
-retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
-retrofit-converter-kotlinx-serialization = { module = "com.squareup.retrofit2:converter-kotlinx-serialization", version.ref = "retrofit" }
-retrofit-converter-scalars = { module = "com.squareup.retrofit2:converter-scalars", version.ref = "retrofit" }
 timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 
 [plugins]

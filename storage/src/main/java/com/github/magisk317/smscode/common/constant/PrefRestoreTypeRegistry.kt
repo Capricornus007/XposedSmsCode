@@ -35,14 +35,10 @@ object PrefRestoreTypeRegistry {
         PrefConst.KEY_VERBOSE_LOG_MODE,
         PrefConst.KEY_AUTO_UPDATE_ON_START,
         PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
-        PrefConst.KEY_FORWARD_COMMON_INCLUDE_TIME,
-        PrefConst.KEY_FORWARD_COMMON_INCLUDE_SENDER,
-        PrefConst.KEY_FORWARD_COMMON_INCLUDE_DEVICE_NAME,
         PrefConst.KEY_PRIVACY_POLICY_ACCEPTED,
         PrefConst.KEY_BACKUP_COMPAT_TIP_SHOWN,
         // Legacy compatibility keys from old backups.
         PrefConst.KEY_ENABLE_SMS_BLOCK,
-        PrefConst.KEY_ENABLE_NOTIFICATION_FORWARD,
     )
 
     val INT_KEYS: Set<String> = setOf(

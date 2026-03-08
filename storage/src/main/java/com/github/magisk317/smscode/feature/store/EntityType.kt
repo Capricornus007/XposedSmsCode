@@ -5,6 +5,5 @@ enum class EntityType {
     CODE_RULES,
     CODE_RULE_TEMPLATE,
     PREV_SMS_MSG,
-    FORWARDING_APP,
     APP_CONFIG,
 }

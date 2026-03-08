@@ -352,30 +352,6 @@ object AppPreferencesDataStore {
             PrefConst.KEY_HAZE_TINT_ALPHA,
             getFloat(context, PrefConst.KEY_HAZE_TINT_ALPHA, PrefConst.HAZE_TINT_ALPHA_DEFAULT),
         )
-        editor.putString(
-            PrefConst.KEY_FORWARD_COMMON_DEVICE_NAME,
-            getString(context, PrefConst.KEY_FORWARD_COMMON_DEVICE_NAME, ""),
-        )
-        editor.putString(
-            PrefConst.KEY_FORWARD_COMMON_TEMPLATE,
-            getString(context, PrefConst.KEY_FORWARD_COMMON_TEMPLATE, ""),
-        )
-        editor.putString(
-            PrefConst.KEY_FORWARD_APP_NOTIFY_TEMPLATE,
-            getString(context, PrefConst.KEY_FORWARD_APP_NOTIFY_TEMPLATE, ""),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_FORWARD_COMMON_INCLUDE_TIME,
-            getBoolean(context, PrefConst.KEY_FORWARD_COMMON_INCLUDE_TIME, false),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_FORWARD_COMMON_INCLUDE_SENDER,
-            getBoolean(context, PrefConst.KEY_FORWARD_COMMON_INCLUDE_SENDER, false),
-        )
-        editor.putBoolean(
-            PrefConst.KEY_FORWARD_COMMON_INCLUDE_DEVICE_NAME,
-            getBoolean(context, PrefConst.KEY_FORWARD_COMMON_INCLUDE_DEVICE_NAME, true),
-        )
         editor.apply()
         ensureSharedPrefsReadable(context)
     }
