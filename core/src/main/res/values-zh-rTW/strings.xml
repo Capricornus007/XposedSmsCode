@@ -4,13 +4,11 @@
     <string name="xposed_description">擷取新簡訊中的驗證碼複製到剪貼板，並自動輸入驗證碼</string>
 
     <!-- general -->
-    <string name="i_know">知道了</string>
-    <string name="ignore">忽略</string>
+
     <string name="confirm">確定</string>
     <string name="cancel">取消</string>
-    <string name="yes">是</string>
-    <string name="no">否</string>
-    <string name="okay">好的</string>
+
+
     <!-- general end -->
 
     <!-- preferences general -->
@@ -19,8 +17,7 @@
     <string name="pref_enable_summary">模組已啟用</string>
     <string name="pref_settings_display_mode_title">手風琴模式</string>
     <string name="pref_settings_display_mode_summary">開啟：分組可摺疊；關閉：全部設定直接展開</string>
-    <string name="pref_create_shortcut_title">建立桌面捷徑</string>
-    <string name="pref_create_shortcut_summary">將捷徑固定在桌面上以便快速存取</string>
+
     <string name="pref_show_launcher_icon_title">顯示桌面圖示</string>
     <string name="pref_show_launcher_icon_summary">在桌面顯示應用圖示，便於快速開啟</string>
     <string name="pref_show_launcher_icon_failed">切換桌面圖示顯示狀態失敗</string>
@@ -36,33 +33,26 @@
     <string name="language_en">English</string>
     <string name="language_zh_cn">简体中文</string>
     <string name="language_zh_tw">繁體中文</string>
-    <string name="module_status_active">已啟用</string>
-    <string name="module_status_inactive">未啟用</string>
+
     <string name="pref_haze_blur_radius_title">背景模糊半徑</string>
     <string name="pref_haze_tint_alpha_title">模糊遮罩透明度</string>
     <!-- preferences general end -->
 
     <!-- preferences sms code -->
-    <string name="pref_sms_code_title">驗證碼</string>
     <string name="pref_show_toast_title">顯示 Toast 提示</string>
     <string name="pref_show_toast_summary">擷取到驗證碼時顯示 Toast 提示</string>
     <string name="pref_copy_to_clipboard_title">複製到剪貼簿</string>
     <string name="pref_copy_to_clipboard_summary">擷取成功後將驗證碼複製到剪貼簿</string>
     <string name="pref_block_sms_title">攔截驗證碼簡訊</string>
     <string name="pref_block_sms_summary">警告！擷取成功後驗證碼簡訊將被攔截，簡訊應用程式將無法收到</string>
-    <string name="pref_deduplicate_sms_title">過濾重複簡訊</string>
-    <string name="pref_deduplicate_sms_summary">過濾掉重複的驗證碼簡訊</string>
-    <string name="pref_forwarding_title">轉發</string>
-    <string name="pref_enable_forward_title">啟用轉發</string>
-    <string name="pref_enable_forward_summary">啟用驗證碼轉發，點擊渠道名稱可進入詳細設定</string>
-    <string name="pref_sim_slot1_remark_title">SIM1 備註</string>
-    <string name="pref_sim_slot2_remark_title">SIM2 備註</string>
-    <string name="pref_sim_slot_remark_summary">自定義模板變數 {{CARD_SLOT}} 的顯示內容</string>
-    <string name="pref_sim_slot_remark_not_set">未設定</string>
+
+
+
+
+
     <!-- preferences sms code end -->
 
     <!-- preferences auto-input -->
-    <string name="pref_category_auto_input_title">自動輸入</string>
     <string name="pref_enable_auto_input_code_title">自動輸入驗證碼</string>
     <string name="pref_enable_auto_input_code_summary">嘗試自動輸入驗證碼</string>
     <string name="pref_enable_auto_enter_code_title">自動確認/回車</string>
@@ -76,7 +66,6 @@
     <!-- preferences auto-input end -->
 
     <!-- preference code notification -->
-    <string name="pref_notification_title">通知</string>
     <string name="pref_show_code_notification_title">顯示狀態列通知</string>
     <string name="pref_show_code_notification_summary">擷取到驗證碼時顯示狀態列通知（部分系統顯示為電話服務）</string>
     <string name="pref_auto_cancel_notification_title">自動取消通知</string>
@@ -93,141 +82,97 @@
     <!-- preference code notification -->
 
     <!-- preference code records -->
-    <string name="pref_entry_code_records_title">驗證碼歷史記錄</string>
-    <string name="pref_entry_code_records_summary">共 %d 條記錄</string>
+
     <string name="pref_code_records_title">驗證碼記錄</string>
     <string name="smscode_records">驗證碼記錄</string>
-    <string name="edit_smscode_records">編輯驗證碼記錄</string>
     <string name="prompt_sms_code_copied">驗證碼已複製: %s</string>
     <string name="action_delete">刪除</string>
     <string name="action_select_all">全選</string>
     <string name="some_items_removed">刪除了 %d 條記錄</string>
     <string name="message_details">簡訊詳情</string>
-    <string name="message_details_notification">通知詳情</string>
     <string name="detail_sender">發件人</string>
-    <string name="detail_app">應用</string>
     <string name="detail_time">時間</string>
     <string name="detail_content">內容</string>
     <string name="detail_click_copy_hint">（點擊複製內容）</string>
-    <string name="detail_forward_status">狀態</string>
-    <string name="detail_forward_target">轉發目標</string>
-    <string name="detail_forward_time">轉發時間</string>
-    <string name="detail_forward_message">轉發結果</string>
-    <string name="forward_status_none">未轉發</string>
-    <string name="forward_status_success_count">%1$d通道轉發成功</string>
-    <string name="forward_status_partial">%1$d通道轉發成功%2$d通道轉發失敗</string>
-    <string name="forward_status_failed_count">%1$d通道轉發失敗</string>
-    <string name="forward_status_blocked">簡訊已攔截</string>
-    <string name="forward_status_success">成功</string>
-    <string name="forward_status_failed">失敗</string>
-    <string name="forward_channel_webhook">Webhook</string>
-    <string name="forward_channel_tg">Telegram</string>
-    <string name="forward_configured">已設定</string>
-    <string name="forward_not_configured">未設定</string>
-    <string name="forward_result_no_channel">未啟用任何轉發通道</string>
-    <string name="forward_result_webhook_empty">轉發失敗：Webhook 位址為空</string>
-    <string name="forward_result_tg_config_invalid">轉發失敗：Telegram 設定無效</string>
-    <string name="forward_result_http">HTTP %1$d</string>
-    <string name="forward_result_failed">轉發失敗：%1$s</string>
-    <string name="forward_validation_webhook_required">請輸入 Webhook 位址</string>
-    <string name="forward_validation_webhook_invalid">Webhook 位址必須以 http:// 或 https:// 開頭</string>
-    <string name="forward_validation_tg_required">請輸入 Telegram Bot Token 與 Chat ID</string>
     <string name="prompt_field_copied">%1$s已複製</string>
-    <string name="copy_smscode">複製驗證碼</string>
     <string name="copy_sms">複製簡訊</string>
-    <string name="copy_notification">複製通知</string>
     <string name="delete_sms_action">刪除簡訊</string>
-    <string name="delete_notification_action">刪除通知</string>
     <string name="prompt_sms_copied">簡訊已複製</string>
-    <string name="prompt_notification_copied">通知已複製</string>
     <string name="pref_enable_code_records_title">保留驗證碼記錄</string>
-    <string name="pref_enable_plain_sms_records_title">保留普通簡訊記錄</string>
-    <string name="pref_enable_app_notify_records_title">保留應用通知記錄</string>
+
     <string name="selected_count">已選 %d 項</string>
     <string name="pref_history_limit_title">歷史記錄限制</string>
     <string name="pref_history_limit_title_with_target">歷史記錄限制（%1$s）</string>
     <string name="record_settings_title_with_target">記錄設定（%1$s）</string>
     <string name="record_settings_target_code">驗證碼記錄</string>
-    <string name="record_settings_target_plain">普通簡訊記錄</string>
-    <string name="record_settings_target_app_notify">應用通知記錄</string>
-    <string name="pref_history_limit_summary">僅保留最近 %s 條記錄</string>
+
+
     <string name="history_limit_10_entry">10 條記錄</string>
     <string name="history_limit_20_entry">20 條記錄</string>
     <string name="history_limit_50_entry">50 條記錄</string>
     <string name="history_limit_all_entry">所有記錄</string>
     <string name="history_limit_custom_entry">自定義</string>
     <string name="records_column_code_title">驗證碼簡訊</string>
-    <string name="records_column_plain_title">普通簡訊</string>
-    <string name="records_column_app_notify_title">應用通知</string>
-    <string name="records_column_call_notify_title">通話通知</string>
-    <string name="records_column_code_short_title">驗證碼</string>
-    <string name="records_column_plain_short_title">簡訊</string>
-    <string name="records_column_app_notify_short_title">應用</string>
-    <string name="records_column_call_notify_short_title">通話</string>
+
+
+
+
+
+
     <string name="records_column_code_empty">暫無驗證碼簡訊</string>
-    <string name="records_column_plain_empty">暫無普通簡訊</string>
-    <string name="records_column_app_notify_empty">暫無應用通知紀錄</string>
-    <string name="records_column_call_notify_empty">暫無通話通知</string>
+
+
     <string name="record_export_dialog_title">導出記錄</string>
     <string name="record_export_current_tab_option">導出當前頁（%1$s）</string>
-    <string name="record_export_all_tabs_option">導出所有</string>
-    <string name="title_notification_rules">通知轉發</string>
-    <string name="subtitle_notification_rules">管理應用程式通知的擷取與轉發規則</string>
     <!-- preference code records end -->
 
     <!-- preference code rules -->
-    <string name="pref_match_rules">匹配規則</string>
     <string name="pref_smscode_keywords_title">關鍵字</string>
     <string name="pref_smscode_keywords_summary">用於擷取驗證碼的關鍵字正則，支援中英文 regex。示例：(?i)\\b(驗證碼|otp|verification|verify|pin|passcode|password|code|secure\\s*code)\\b</string>
     <string name="reset">重置</string>
-    <string name="code_keywords_hint">關鍵字(正規表達式)</string>
     <string name="pref_smscode_test_title">驗證碼簡訊測試</string>
     <string name="pref_smscode_test_summary">測試是否能正確讀取簡訊中的驗證碼</string>
-    <string name="pref_sms_blacklist_title">簡訊黑名單</string>
-    <string name="pref_enable_sms_blacklist_title">啟用簡訊黑名單</string>
-    <string name="pref_enable_sms_blacklist_summary">支援號碼、號段、正則、內容匹配。</string>
-    <string name="pref_sms_blacklist_action_delete_title">刪除黑名單簡訊</string>
-    <string name="pref_sms_blacklist_action_delete_summary">命中後自動刪除簡訊。</string>
-    <string name="pref_sms_blacklist_action_block_title">阻斷黑名單簡訊廣播</string>
-    <string name="pref_sms_blacklist_action_block_summary">命中後不再向應用分發簡訊廣播。</string>
-    <string name="pref_sms_blacklist_numbers_title">黑名單號碼</string>
-    <string name="pref_sms_blacklist_numbers_summary">示例：10086, 10010</string>
-    <string name="pref_sms_blacklist_prefixes_title">黑名單號段</string>
-    <string name="pref_sms_blacklist_prefixes_summary">示例：1069, 1065</string>
-    <string name="pref_sms_blacklist_regex_title">黑名單正則規則</string>
-    <string name="pref_sms_blacklist_regex_hint">示例：(?i)\\b(退訂|黑名單)\\b</string>
-    <string name="pref_sms_blacklist_content_title">黑名單內容規則</string>
-    <string name="pref_sms_blacklist_content_summary">示例：退訂回T, 回覆TD</string>
-    <string name="pref_sms_blacklist_separator_hint">支援使用半角逗號 (,)、半角分號 (;) 或換行分隔多個項目。</string>
-    <string name="pref_sms_blacklist_invalid_separator_error">請勿使用全形標點 (， ；) 或豎線 (|) 作為分隔符</string>
-    <string name="pref_sms_blacklist_regex_separator_hint">支援使用半角逗號 (,)、半角分號 (;) 或換行分隔多個正則規則。</string>
-    <string name="pref_sms_blacklist_invalid_regex_separator_error">請勿使用全形標點 (， ；) 作為分隔符</string>
-    <string name="blacklist_not_set">未設定</string>
-    <string name="blacklist_rule_count">已配置 %1$d 條規則</string>
-    <string name="sms_content_hint">簡訊內容</string>
-    <string name="test">測試</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="current_sms_code">當前驗證碼為 %s</string>
     <string name="cannot_parse_smscode">無法解析驗證碼</string>
     <!-- preference code rules end -->
 
     <!-- preference experimental -->
-    <string name="pref_experimental_title">實驗性功能</string>
-    <string name="pref_mark_as_read_title">標記為已讀 (可能不生效)</string>
-    <string name="pref_mark_as_read_summary">收到驗證碼簡訊後，嘗試將其標記為已讀。由於系統權限或定制 ROM 限制，該功能可能在某些設備上無法生效。</string>
-    <string name="pref_delete_sms_title">簡訊刪除</string>
-    <string name="pref_delete_sms_summary">警告：擷取成功后驗證碼簡訊將被刪除</string>
+
+
+
+
     <!-- preference experimental end -->
 
 
     <!-- preference others -->
-    <string name="pref_others_title">其他設定</string>
     <string name="pref_verbose_log_mode_title">詳細日誌</string>
     <string name="pref_verbose_log_mode_summary">列印詳細日誌(僅用於調試)</string>
     <string name="pref_auto_update_on_start_title">啟動時自動更新</string>
     <string name="pref_auto_update_on_start_summary">應用啟動時執行一次更新策略</string>
     <string name="pref_auto_update_wifi_only_title">僅 Wi-Fi 自動檢查更新</string>
     <string name="pref_auto_update_wifi_only_summary">僅在 Wi-Fi 下執行啟動更新檢查</string>
-    <string name="action_copy">複製</string>
     <string name="github_update_dialog_title">發現新版本</string>
     <string name="github_update_dialog_message">檢測到版本 %1$s，可前往下載。</string>
     <string name="github_update_ignore_this_version">此版本不再提示</string>
@@ -248,12 +193,10 @@
     <!-- preference others end -->
 
     <!-- preference about -->
-    <string name="pref_about_title">關於</string>
-    <string name="pref_version_title">版本</string>
-    <string name="pref_version_summary"><![CDATA[當前版本：%1$s (%2$d)]]></string>
+
+
     <string name="pref_join_qq_group_title">QQ</string>
     <string name="pref_join_qq_group_summary">點擊加入</string>
-    <string name="qq_group_number">1075934453</string>
     <string name="prompt_join_qq_group_failed">請先安裝手機 QQ</string>
     <string name="pref_join_telegram_group_title">Telegram</string>
     <string name="pref_join_telegram_group_summary">點擊加入</string>
@@ -269,106 +212,89 @@
     <!-- preference about end -->
 
     <!-- auto-input block settings -->
-    <string name="app_block_settings">停用自動輸入</string>
     <string name="tab_overview">總覽</string>
     <string name="tab_blacklist">黑名單</string>
-    <string name="tab_intercept">簡訊攔截</string>
-    <string name="tab_faq">FAQ</string>
+
     <string name="tab_records">紀錄</string>
-    <string name="tab_advanced">進階</string>
-    <string name="tab_senders">轉發配置</string>
     <string name="tab_settings">設定</string>
-    <string name="action_sort_title">應用排序</string>
-    <string name="action_sort_reverse">倒序</string>
+
     <string name="action_hide_system_apps">隱藏系統應用</string>
-    <string name="app_block_summary">選取禁止自動輸入的應用程式</string>
-    <string name="action_sort">排序</string>
+
     <string name="action_sort_by_label">應用程式名稱</string>
-    <string name="action_sort_by_pkg">包名</string>
     <string name="action_sort_by_usage">使用頻率</string>
     <string name="action_sort_by_selection">設定優先</string>
     <string name="app_config_settings">禁用自動輸入列表</string>
     <string name="action_search">搜索</string>
-    <string name="action_accomplish">完成</string>
     <string name="usage_permission_prompt">按使用頻率排序需要使用情況存取權限。請在設定中授予該權限。</string>
     <string name="save_failed">保存失敗，請重試</string>
-    <string name="load_failed">載入失敗，請重试</string>
     <!-- auto-input block settings end -->
 
     <!-- code rules -->
-    <string name="rule_company_hint">公司或組織名</string>
-    <string name="rule_keyword_hint">驗證碼關鍵字</string>
-    <string name="rule_code_type">驗證碼類型</string>
-    <string name="rule_code_length">驗證碼長度</string>
-    <string name="rule_code_regex_hint">驗證碼正規表達式</string>
+
+
+
+
     <string name="pref_code_rules_title">驗證碼規則</string>
-    <string name="pref_code_rules_summary">自定義特定的驗證碼匹配規則</string>
-    <string name="quick_choose">快速選擇</string>
+
     <string name="sms_code_type_digit_entry">僅數字 [0\-9]</string>
     <string name="sms_code_type_letter_entry">僅字母 [a\-zA\-Z]</string>
     <string name="sms_code_type_text_entry">數字+字母 [a\-zA\-Z0\-9]</string>
-    <string name="action_rule_edit_done">完成</string>
-    <string name="action_import_rules">導入</string>
+
     <string name="action_export_rules">導出</string>
     <string name="revoke">撤回</string>
-    <string name="sender_removed_with_undo">已刪除通道：%1$s（5秒內可撤回）</string>
-    <string name="removed">已刪除</string>
+
     <string name="remove">刪除</string>
     <string name="edit">編輯</string>
-    <string name="actions">操作</string>
     <string name="list_empty_prompt">空空如也~</string>
-    <string name="rule_list_empty_snack_prompt">規則清單為空，無須導出</string>
-    <string name="code_length_empty_prompt">請輸入驗證碼長度</string>
-    <string name="rule_company_empty_hint">請輸入公司或組織名</string>
-    <string name="rule_keyword_empty_hint">請輸入驗證碼關鍵字</string>
-    <string name="rule_code_regex_empty_hint">請輸入驗證碼正規表達式</string>
-    <string name="rule_duplicated_prompt">此規則已存在，請重新編輯或退出</string>
-    <string name="rule_list">規則清單</string>
-    <string name="create_rule">新建規則</string>
-    <string name="edit_rule">編輯規則</string>
-    <string name="import_succeed">導入成功</string>
-    <string name="import_failed_version_missed">導入失敗，缺失版本號</string>
-    <string name="import_failed_version_unknown">導入失敗，未知版本號</string>
-    <string name="import_failed_backup_invalid">導入失敗，備份文件格式錯誤</string>
-    <string name="import_failed_read_error">導入失敗，讀取文件錯誤</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
     <string name="import_failed_version_too_new">導入失敗，備份版本過新</string>
     <string name="import_failed_version_too_old">導入失敗，備份版本過舊</string>
-    <string name="import_warning_app_version_mismatch">備份來自不同版本，請確認規則無誤。</string>
-    <string name="import_compatibility_title">導入相容性提示</string>
-    <string name="import_compatibility_message">此備份可能來自較舊或不相容版本。建議在相同版本重新導出後再導入。</string>
-    <string name="export_succeed">導出成功</string>
-    <string name="export_failed">導出失敗，請重試</string>
-    <string name="import_confirmation_title">導入確認</string>
-    <string name="import_rules_confirm_msg">導入時是否需要保留當前規則？</string>
-    <string name="import_confirmation_message">導入時是否需要保留當前規則？</string>
-    <string name="importing">正在導入</string>
-    <string name="please_wait">請稍候...</string>
-    <string name="import_failed">導入失敗</string>
-    <string name="export_success_simple">導出成功</string>
-    <string name="no_backup_exists">沒有備份文件</string>
-    <string name="choose_backup_file">選擇備份文件</string>
-    <string name="backup_file_dir">備份位置:\n%s</string>
-    <string name="backup_file_name">備份文件名</string>
-    <string name="exporting">正在導出</string>
-    <string name="action_save_as_template">保存為模版</string>
-    <string name="save_template_succeed">保存模版成功</string>
-    <string name="save_template_failed">保存模版失敗</string>
-    <string name="action_rule_help">幫助</string>
-    <string name="share">分享</string>
-    <string name="import_rules">導入規則</string>
-    <string name="no_permission_prompt">沒有相關權限，重啟手機後再試</string>
-    <string name="documents_ui_not_found">未發現 DocumentsUI 應用程式</string>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     <!-- code rules end -->
 
     <!-- theme color -->
-    <string name="red">姨媽紅</string>
-    <string name="pink">櫻花粉</string>
-    <string name="yellow">鹹蛋黃</string>
-    <string name="teal">水鴨青</string>
-    <string name="green">原諒綠</string>
-    <string name="blue">胖次藍</string>
-    <string name="violet">基佬紫</string>
-    <string name="black">暗黑</string>
+
+
+
+
+
+
+
     <!-- theme color end -->
 
     <!-- code parsing notification -->
@@ -378,28 +304,23 @@
 
     <!-- faq -->
     <string name="action_home_faq_title">常見問題</string>
-    <string name="simplified_question">問：</string>
-    <string name="simplified_answer">答：</string>
+
     <!-- faq end -->
 
     <!-- alipay packet start -->
-    <string name="pref_get_alipay_packet_title">領個紅包救救孩子</string>
-    <string name="pref_get_alipay_packet_summary">每天領個免費紅包也是對我的一點支持了 T_T</string>
-    <string name="pref_get_alipay_packet_content">求求了，支付寶搜這個口令領每天的免費紅包，我就能吃上肉了 %s</string>
-    <string name="copy_packet_code_open_alipay"><![CDATA[複製口令並打開支付寶]]></string>
+
+
+
     <string name="alipay_red_packet_code_copied">紅包口令已複製，快去白嫖吧: %s</string>
-    <string name="get_red_packet">領個紅包</string>
     <string name="dialog_donate_title">買杯咖啡吧 T_T</string>
     <string name="dialog_donate_summary">感謝開發者</string>
     <string name="dialog_donate_content">開發者已經餓得快寫不動代碼了，求各位大發慈悲賞口飯吃吧！不管是微信還是支付寶，哪怕是一分錢也是對我的巨大救贖 ✿✿ヽ(°▽°)ノ✿</string>
     <string name="dialog_donate_wechat">咖啡 (微信)</string>
     <string name="dialog_donate_alipay">咖啡 (支付寶)</string>
-    <string name="dialog_donate_alipay_choice_title">請選擇支持方式</string>
-    <string name="dialog_donate_alipay_choice_content">您可以「複製紅包口令」免費支持我，或者「保存收款碼」直接捐贈。保存圖片後會自動幫您打開支付寶哦~</string>
+
     <string name="dialog_donate_alipay_token">複製口令</string>
     <string name="dialog_donate_alipay_qrcode">保存收款碼</string>
-    <string name="dialog_donate_cancel">下次一定</string>
-    <string name="long_press_save_hint">長按圖片可保存到相簿</string>
+
     <string name="save_to_gallery_success">圖片已保存到相簿，正在打開 %s...</string>
     <string name="save_to_gallery_failed">保存失敗，請檢查文件權限</string>
     <string name="save_to_gallery">保存到相簿</string>
@@ -449,50 +370,20 @@
     <string name="relay_conflict_dialog_exit">退出</string>
     <string name="relay_conflict_dialog_confirm">我已確認知曉風險</string>
     <!-- relay conflict dialog end -->
-    <string name="rule_list_empty_prompt">暫無規則，點擊 + 添加。</string>
-    <string name="rule_keyword_prefix">關鍵字: </string>
-    <string name="rule_regex_prefix">正規表達式: </string>
-    <string name="save">保存</string>
-    <string name="app_icon_description">%s 的圖示</string>
+
+
+
+
     <string name="sms_icon_description">簡訊圖示</string>
-    <string name="action_block_app">封鎖 %s</string>
-    <string name="action_unblock_app">允許 %s</string>
+
     <string name="action_back">返回</string>
-    <string name="label_app_info">應用資訊</string>
-    <string name="label_blocked">自動輸入攔截</string>
-    <string name="label_forwarding">應用通知轉發</string>
-    <string name="app_input_status_on">開</string>
-    <string name="app_input_status_off">關</string>
-    <string name="app_notify_status_on">開</string>
-    <string name="app_notify_status_off">關</string>
-    <string name="app_notify_summary_line">輸入: %1$s | 通知: %2$s | 通道: %3$s</string>
-    <string name="app_notify_channel_config_title">通知通道配置</string>
-    <string name="app_notify_channel_global_summary">使用全域通道</string>
-    <string name="app_notify_channel_global_summary_short">全域</string>
-    <string name="app_notify_channel_bound_count">已綁定 %1$d 個通道</string>
-    <string name="app_notify_channel_bound_count_short">已綁%1$d</string>
-    <string name="app_notify_channel_tip">不選擇任何通道時，該應用會沿用全域通道策略。</string>
-    <string name="app_notify_channel_deny_hint">該通道黑名單已包含當前應用，實際可能被攔截。</string>
-    <string name="sender_notify_scope_title">通知應用範圍</string>
-    <string name="sender_notify_scope_title_named">%1$s 的通知應用範圍</string>
-    <string name="sender_notify_scope_summary">白名單 %1$d / 黑名單 %2$d</string>
-    <string name="sender_notify_scope_whitelist">白名單</string>
-    <string name="sender_notify_scope_blacklist">黑名單</string>
-    <string name="sender_notify_scope_clear_whitelist">清空白名單</string>
-    <string name="sender_notify_scope_clear_blacklist">清空黑名單</string>
-    <string name="sender_notify_scope_conflict_single">衝突：同一應用不能同時存在於白名單和黑名單。</string>
-    <string name="sender_notify_scope_conflict_count">衝突項數量：%1$d</string>
-    <string name="sender_notify_scope_sender_id">通道 ID：%1$d</string>
-    <string name="app_config_detail_not_found">找不到應用設定</string>
-    <string name="app_notify_template_title">應用通知轉發模板</string>
-    <string name="app_notify_template_summary">留空代表使用全域轉發模板。</string>
-    <string name="app_notify_template_placeholder">請輸入該應用專屬模板...</string>
-    <string name="app_config_detail_save_tip">詳情頁修改會先存於記憶體，請返回應用控制頁點擊完成後再儲存。</string>
-    <string name="settings_group_background_keepalive">背景保活</string>
+
+
+
+
     <string name="settings_group_experimental">實驗性功能</string>
 
     <!-- backup and restore -->
-    <string name="pref_backup_restore_title">備份與還原</string>
     <string name="pref_backup_title">備份</string>
     <string name="pref_backup_summary">匯出設定、規則和記錄</string>
     <string name="pref_restore_title">還原</string>
@@ -527,7 +418,6 @@
     <string name="status_working">已啟用</string>
     <string name="status_not_active">未啟用</string>
     <string name="status_tip">請在管理器中啟用並重啟設備</string>
-    <string name="rule_company_placeholder">例如: 驗證碼</string>
-    <string name="rule_regex_field_prefix">正規: </string>
+
     <!-- overview end -->
 </resources>

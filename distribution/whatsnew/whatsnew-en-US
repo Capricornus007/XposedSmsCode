@@ -1,3 +1,4 @@
-- This release involves version switching and split-package adjustments. Please back up your data first to avoid unexpected loss.
-- Preview: the next release will remove notification-forwarding related features. Please prepare your migration in advance.
+- Focused on verification-code core flow: SMS parsing, interception, and auto-input.
+- Removed legacy forwarding/app-notify-forwarding code and stale configuration entry points.
+- Kept database compatibility for stable upgrades and historical data readability.
 - GitHub: https://github.com/magisk317/XposedSmsCode/releases

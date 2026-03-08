@@ -13,4 +13,4 @@ Stability and compatibility:
 - Requires root with Xposed/LSPosed module activation and reboot.
 
 F-Droid build note:
-- F-Droid flavor enforces stricter network policy (HTTPS-only webhook, cleartext disabled).
+- F-Droid flavor enforces stricter network policy (cleartext disabled).
