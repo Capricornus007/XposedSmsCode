@@ -20,58 +20,13 @@ object OverviewRoute
 object SettingsRoute
 
 @Serializable
-object FaqRoute
-
-@Serializable
-object InterceptRoute
-
-@Serializable
 object RecordsRoute
 
 @Serializable
 object AppBlockRoute
 
 @Serializable
-object SendersRoute
-
-@Serializable
-object AdvancedRoute
-
-@Serializable
-object WebUiConfigRoute
-
-@Serializable
-object GlobalForwardFilterRoute
-
-@Serializable
-data class SenderConfigRoute(val id: Long, val type: Int)
-
-@Serializable
-data class RulesRoute(val senderId: Long = 0)
-
-@Serializable
-data class RuleConfigRoute(val id: Long = 0)
-
-@Serializable
-object NotificationRulesRoute
-
-@Serializable
 object AppConfigRoute
-
-@Serializable
-data class AppConfigDetailRoute(val packageName: String)
-
-@Serializable
-data class AppNotifySenderBindingRoute(val packageName: String)
-
-@Serializable
-data class SenderNotifyScopeRoute(val senderId: Long)
-
-@Serializable
-data class AppForwardFilterRoute(val packageName: String)
-
-@Serializable
-data class SenderForwardFilterRoute(val senderId: Long)
 
 @Composable
 fun SmsCodeNavHost(

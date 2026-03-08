@@ -14,18 +14,11 @@ import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.RuntimeLogStore
 import com.github.magisk317.smscode.di.appModule
-import com.github.magisk317.smscode.web.WebUiRuntimeConfig
-import com.github.magisk317.smscode.web.WebUiServer
-import com.github.magisk317.smscode.web.WebUiTlsManager
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -35,8 +28,6 @@ import timber.log.Timber
 class SmsCodeApplication : Application() {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var webUiServer: WebUiServer? = null
-    private var webUiServerConfigJob: Job? = null
     private var startedActivityCount: Int = 0
 
     override fun onCreate() {
@@ -55,20 +46,6 @@ class SmsCodeApplication : Application() {
         syncPreferences()
         handlePhoneProcessRestartIfNeeded()
         registerLicenseActivityKiller()
-        if (!isRestrictedBuild()) {
-            applicationScope.launch {
-                ensureWebUiConfigInitialized()
-                startWebUiServer()
-            }
-        }
-    }
-
-    override fun onTerminate() {
-        webUiServerConfigJob?.cancel()
-        webUiServerConfigJob = null
-        webUiServer?.stop()
-        webUiServer = null
-        super.onTerminate()
     }
 
     private fun syncPreferences() {
@@ -80,9 +57,6 @@ class SmsCodeApplication : Application() {
                 PrefConst.KEY_VERBOSE_LOG_MODE,
                 false,
             )
-            if (isRestrictedBuild()) {
-                AppPreferencesDataStore.setBoolean(this@SmsCodeApplication, PrefConst.KEY_WEBUI_ENABLE, false)
-            }
             RuntimeLogStore.setEnabled(verboseLog)
         }
     }
@@ -150,133 +124,6 @@ class SmsCodeApplication : Application() {
 
             // Mark token handled even when root is unavailable to avoid repeated noisy attempts.
             prefs.edit().putString(KEY_LAST_HANDLED_INSTALL_TOKEN, installToken).apply()
-        }
-    }
-
-    private suspend fun ensureWebUiConfigInitialized() {
-        val webUiEnabled = AppPreferencesDataStore.getBoolean(
-            this@SmsCodeApplication,
-            PrefConst.KEY_WEBUI_ENABLE,
-            true,
-        )
-        AppPreferencesDataStore.setBoolean(
-            this@SmsCodeApplication,
-            PrefConst.KEY_WEBUI_ENABLE,
-            webUiEnabled,
-        )
-        val port = AppPreferencesDataStore.getString(
-            this@SmsCodeApplication,
-            PrefConst.KEY_WEBUI_PORT,
-            "",
-        )
-        if (port.isBlank()) {
-            AppPreferencesDataStore.setString(
-                this@SmsCodeApplication,
-                PrefConst.KEY_WEBUI_PORT,
-                PrefConst.KEY_WEBUI_PORT_DEFAULT,
-            )
-        }
-        val username = AppPreferencesDataStore.getString(
-            this@SmsCodeApplication,
-            PrefConst.KEY_WEBUI_USERNAME,
-            "",
-        )
-        if (username.isBlank()) {
-            AppPreferencesDataStore.setString(
-                this@SmsCodeApplication,
-                PrefConst.KEY_WEBUI_USERNAME,
-                PrefConst.KEY_WEBUI_USERNAME_DEFAULT,
-            )
-        }
-        val password = AppPreferencesDataStore.getString(
-            this@SmsCodeApplication,
-            PrefConst.KEY_WEBUI_PASSWORD,
-            "",
-        )
-        if (password.isBlank()) {
-            AppPreferencesDataStore.setString(
-                this@SmsCodeApplication,
-                PrefConst.KEY_WEBUI_PASSWORD,
-                WebUiTlsManager.generateRandomCredential(8),
-            )
-        }
-    }
-
-    private fun startWebUiServer() {
-        webUiServerConfigJob?.cancel()
-        webUiServerConfigJob = applicationScope.launch {
-            combine(
-                AppPreferencesDataStore.getBooleanFlow(
-                    this@SmsCodeApplication,
-                    PrefConst.KEY_WEBUI_ENABLE,
-                    true,
-                ),
-                AppPreferencesDataStore.getBooleanFlow(
-                    this@SmsCodeApplication,
-                    PrefConst.KEY_WEBUI_LAN_ACCESS,
-                    false,
-                ),
-                AppPreferencesDataStore.getStringFlow(
-                    this@SmsCodeApplication,
-                    PrefConst.KEY_WEBUI_PORT,
-                    PrefConst.KEY_WEBUI_PORT_DEFAULT,
-                ),
-                AppPreferencesDataStore.getStringFlow(
-                    this@SmsCodeApplication,
-                    PrefConst.KEY_WEBUI_USERNAME,
-                    PrefConst.KEY_WEBUI_USERNAME_DEFAULT,
-                ),
-                AppPreferencesDataStore.getStringFlow(
-                    this@SmsCodeApplication,
-                    PrefConst.KEY_WEBUI_PASSWORD,
-                    "",
-                ),
-            ) { webUiEnabled, allowLanAccess, portString, username, password ->
-                val port = portString.toIntOrNull()
-                    ?.takeIf { it in 1..65535 }
-                    ?: PrefConst.KEY_WEBUI_PORT_DEFAULT.toInt()
-                WebUiConfigSnapshot(
-                    enabled = webUiEnabled,
-                    host = if (allowLanAccess) "0.0.0.0" else "127.0.0.1",
-                    port = port,
-                    username = username.ifBlank { PrefConst.KEY_WEBUI_USERNAME_DEFAULT },
-                    password = password,
-                    allowLanAccess = allowLanAccess,
-                )
-            }.distinctUntilChanged().collect { snapshot ->
-                if (!snapshot.enabled) {
-                    webUiServer?.stop()
-                    webUiServer = null
-                    return@collect
-                }
-                runCatching {
-                    val tlsMaterial = WebUiTlsManager.loadOrCreate(this@SmsCodeApplication)
-                    val runtimeConfig = WebUiRuntimeConfig(
-                        host = snapshot.host,
-                        port = snapshot.port,
-                        username = snapshot.username,
-                        password = snapshot.password,
-                        allowLanAccess = snapshot.allowLanAccess,
-                        tlsMaterial = tlsMaterial,
-                    )
-                    webUiServer?.stop()
-                    WebUiServer(
-                        context = this@SmsCodeApplication,
-                        runtimeConfig = runtimeConfig,
-                    ).also {
-                        it.start()
-                        webUiServer = it
-                    }
-                }.onFailure {
-                    Timber.e(
-                        it,
-                        "Failed to start WebUI server (host=%s port=%s lan=%s)",
-                        snapshot.host,
-                        snapshot.port,
-                        snapshot.allowLanAccess,
-                    )
-                }
-            }
         }
     }
 
@@ -356,21 +203,10 @@ class SmsCodeApplication : Application() {
         val output: String,
     )
 
-    private data class WebUiConfigSnapshot(
-        val enabled: Boolean,
-        val host: String,
-        val port: Int,
-        val username: String,
-        val password: String,
-        val allowLanAccess: Boolean,
-    )
-
     companion object {
         private const val INSTALL_GUARD_PREFS = "install_guard_prefs"
         private const val KEY_LAST_HANDLED_INSTALL_TOKEN = "last_handled_install_token"
         private const val KEY_LAST_RESTART_ATTEMPT_AT = "last_restart_attempt_at"
         private const val RESTART_ATTEMPT_COOLDOWN_MS = 60_000L
-
-        private fun isRestrictedBuild(): Boolean = BuildConfig.IS_LITE_BUILD
     }
 }

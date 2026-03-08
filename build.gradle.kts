@@ -102,14 +102,6 @@ subprojects {
             force(catalog.jdom2)
             force(catalog.apache.commons.lang3)
             force(catalog.apache.httpclient)
-            force(catalog.netty.codec.http)
-            force(catalog.netty.codec)
-            force(catalog.netty.codec.http2)
-            force(catalog.netty.common)
-            force(catalog.netty.handler)
-            force(catalog.netty.resolver)
-            force(catalog.netty.transport)
-            force(catalog.netty.buffer)
         }
     }
 }

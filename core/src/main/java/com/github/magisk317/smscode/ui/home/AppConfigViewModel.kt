@@ -558,9 +558,8 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         val blockedFiles = listOf(File(internalDir, "blocked_apps"), File(externalDir, "blocked_apps"))
-        val forwardingFiles = listOf(File(internalDir, "forwarding_apps"), File(externalDir, "forwarding_apps"))
 
-        XLog.i("Checking for legacy app configs (blocked_apps, forwarding_apps)...")
+        XLog.i("Checking for legacy app configs (blocked_apps)...")
         val mergedMap = mutableMapOf<String, AppInfo>()
         var migrationTriggered = false
 
@@ -580,27 +579,6 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
 
-        // 2. Migrate forwarding apps
-        forwardingFiles.forEach { file ->
-            if (file.exists()) {
-                XLog.i("Found legacy forwarding apps file: ${file.absolutePath}")
-                try {
-                    val forwardingApps = EntityStoreManager.loadEntitiesFromFile(file, AppInfo::class.java)
-                    forwardingApps.forEach { app ->
-                        val existing = mergedMap[app.packageName]
-                        if (existing != null) {
-                            mergedMap[app.packageName] = existing.copy(forwarding = true)
-                        } else {
-                            mergedMap[app.packageName] = app.copy(forwarding = true)
-                        }
-                    }
-                    migrationTriggered = true
-                } catch (e: Exception) {
-                    XLog.e("Failed to migrate forwarding apps from ${file.absolutePath}", e)
-                }
-            }
-        }
-
         if (!migrationTriggered) {
             XLog.i("No legacy configs found in internal or external storage.")
             return@withContext emptyList<AppInfo>()
@@ -613,7 +591,7 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
             EntityStoreManager.storeEntitiesToFile(context, EntityType.APP_CONFIG, migratedList, AppInfo::class.java)
 
             // Rename old files to avoid repeated migration attempts
-            (blockedFiles + forwardingFiles).forEach { file ->
+            blockedFiles.forEach { file ->
                 if (file.exists()) {
                     try {
                         file.renameTo(File(file.absolutePath + ".bak"))
