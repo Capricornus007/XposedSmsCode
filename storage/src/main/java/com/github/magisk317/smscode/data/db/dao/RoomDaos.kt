@@ -126,9 +126,6 @@ interface AppInfoDao {
     @Query("SELECT * FROM app_info WHERE blocked = 1")
     fun getBlockedApps(): List<AppInfo>
 
-    @Query("SELECT * FROM app_info WHERE forwarding = 1")
-    fun getForwardingApps(): List<AppInfo>
-
     @Query("SELECT * FROM app_info WHERE package_name = :packageName")
     fun getByPackageName(packageName: String): AppInfo?
 

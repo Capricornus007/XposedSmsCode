@@ -6,17 +6,9 @@ import android.content.pm.PackageManager
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.magisk317.smscode.forwarder.entity.ForwardFilterRule
-import com.github.magisk317.smscode.forwarder.entity.Sender
-import com.github.magisk317.smscode.forwarder.filter.ForwardFilterConst
-import com.github.magisk317.smscode.forwarder.utils.SenderSettingSanitizer
-import com.github.magisk317.smscode.data.db.AppDatabase
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.data.db.DBManager
-import com.github.magisk317.smscode.data.db.entity.NotifyRouteRule
 import com.github.magisk317.smscode.data.db.entity.AppInfo
-import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import com.github.magisk317.smscode.forwarder.routing.NotifyRouteScope
 import com.github.magisk317.smscode.feature.store.EntityStoreManager
 import com.github.magisk317.smscode.feature.store.EntityType
 import com.github.magisk317.smscode.common.utils.StorageUtils
@@ -29,12 +21,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -42,15 +30,9 @@ import kotlinx.coroutines.withContext
 import java.util.Comparator
 import java.io.File
 
-private const val APP_NOTIFY_LOG_LIMIT = 20
 private const val APP_LIST_PAGE_SIZE = 80
 
 class AppConfigViewModel(application: Application) : AndroidViewModel(application) {
-    private val appDb = AppDatabase.getInstance(application)
-    private val notifyRouteDao = appDb.notifyRouteRuleDao()
-    private val forwardFilterDao = appDb.forwardFilterRuleDao()
-    private val smsMsgDao = appDb.smsMsgDao()
-
     private val _appsFlow = MutableStateFlow<ImmutableList<AppInfo>>(persistentListOf())
     val appsFlow: StateFlow<ImmutableList<AppInfo>> = _appsFlow.asStateFlow()
 
@@ -72,25 +54,6 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
     val events: SharedFlow<AppConfigEvent> = _events.asSharedFlow()
     private val _filterFlow = MutableStateFlow("")
     val filterFlow: StateFlow<String> = _filterFlow.asStateFlow()
-    val notifySenderListFlow: StateFlow<List<Sender>> = appDb.senderDao().getAllFlow()
-        .map { list -> list.map(SenderSettingSanitizer::sanitizeSenderLenient) }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList(),
-        )
-    val appNotifyBindingCountFlow: StateFlow<Map<String, Int>> = notifyRouteDao.getAllFlow()
-        .map { rules ->
-            rules.asSequence()
-                .filter { it.scope == NotifyRouteScope.APP_ALLOW_SENDER }
-                .groupingBy { it.packageName }
-                .eachCount()
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyMap(),
-        )
 
     @Immutable
     sealed class AppConfigEvent {
@@ -132,7 +95,7 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
                 val appList = withContext(Dispatchers.IO) {
                     val context = getApplication<Application>()
                     val pm = getApplication<Application>().packageManager
-                    // Load all app infos from DB (both blocked and forwarding)
+                    // Load app blocked configs from DB.
                     var configs = DBManager.get(getApplication()).queryAllAppInfosSuspend()
                     
                     if (configs.isEmpty()) {
@@ -162,8 +125,6 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
                             if (config != null) {
                                 appInfoBase.copy(
                                     blocked = config.blocked,
-                                    forwarding = config.forwarding,
-                                    notifyTemplate = config.notifyTemplate,
                                 )
                             } else {
                                 appInfoBase
@@ -294,148 +255,12 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
         setBlocked(item.packageName, blocked)
     }
 
-    fun setForwarding(item: AppInfo, forwarding: Boolean) {
-        setForwarding(item.packageName, forwarding)
-    }
-
     fun setBlocked(packageName: String, blocked: Boolean) {
         updateApp(packageName) { it.copy(blocked = blocked) }
     }
 
-    fun setForwarding(packageName: String, forwarding: Boolean) {
-        updateApp(packageName) { it.copy(forwarding = forwarding) }
-    }
-
-    fun setNotifyTemplate(packageName: String, notifyTemplate: String) {
-        updateApp(packageName) { it.copy(notifyTemplate = notifyTemplate) }
-    }
-
     fun getAppByPackageName(packageName: String): AppInfo? {
         return apps.firstOrNull { it.packageName == packageName }
-    }
-
-    fun appNotifyLogsFlow(packageName: String): kotlinx.coroutines.flow.Flow<List<SmsMsg>> {
-        return appDb.smsMsgDao().getAllFlow().map { list ->
-            list.asSequence()
-                .filter {
-                    it.msgType == SmsMsg.MSG_TYPE_APP_NOTIFY &&
-                        it.packageName == packageName
-                }
-                .take(APP_NOTIFY_LOG_LIMIT)
-                .toList()
-        }
-    }
-
-    fun appNotifyBoundSenderIdsFlow(packageName: String): kotlinx.coroutines.flow.Flow<Set<Long>> {
-        return notifyRouteDao.observeSenderIdsByScopeAndPackage(
-            scope = NotifyRouteScope.APP_ALLOW_SENDER,
-            packageName = packageName,
-        ).map { it.toSet() }
-    }
-
-    fun senderDenyingPackageIdsFlow(packageName: String): kotlinx.coroutines.flow.Flow<Set<Long>> {
-        return notifyRouteDao.observeSenderIdsByScopeAndPackage(
-            scope = NotifyRouteScope.SENDER_DENY_APP,
-            packageName = packageName,
-        ).map { it.toSet() }
-    }
-
-    fun saveAppNotifySenderBindings(packageName: String, senderIds: Set<Long>) {
-        val normalizedPackageName = packageName.trim()
-        if (normalizedPackageName.isBlank()) {
-            return
-        }
-        viewModelScope.launch(Dispatchers.IO) {
-            persistMutex.withLock {
-                notifyRouteDao.deleteByScopeAndPackage(
-                    scope = NotifyRouteScope.APP_ALLOW_SENDER,
-                    packageName = normalizedPackageName,
-                )
-                if (senderIds.isNotEmpty()) {
-                    val updateTime = System.currentTimeMillis()
-                    notifyRouteDao.insertAll(
-                        senderIds.map { senderId ->
-                            NotifyRouteRule(
-                                scope = NotifyRouteScope.APP_ALLOW_SENDER,
-                                packageName = normalizedPackageName,
-                                senderId = senderId,
-                                updateTime = updateTime,
-                            )
-                        },
-                    )
-                }
-            }
-        }
-    }
-
-    fun getAppNotifyBindingCount(packageName: String): Int {
-        return appNotifyBindingCountFlow.value[packageName] ?: 0
-    }
-
-    fun globalForwardRulesFlow(msgType: String): Flow<List<ForwardFilterRule>> {
-        return forwardFilterDao.observeByScope(
-            msgType = msgType,
-            scopeType = ForwardFilterConst.SCOPE_GLOBAL,
-        )
-    }
-
-    fun appPackageForwardRulesFlow(packageName: String): Flow<List<ForwardFilterRule>> {
-        return forwardFilterDao.observeByScope(
-            msgType = ForwardFilterConst.MSG_TYPE_APP_NOTIFY,
-            scopeType = ForwardFilterConst.SCOPE_PACKAGE,
-            scopeKey = packageName.trim(),
-        )
-    }
-
-    fun appChannelForwardRulesFlow(packageName: String): Flow<List<ForwardFilterRule>> {
-        val prefix = "${packageName.trim()}::%"
-        return forwardFilterDao.observeByScopePrefix(
-            msgType = ForwardFilterConst.MSG_TYPE_APP_NOTIFY,
-            scopeType = ForwardFilterConst.SCOPE_ANDROID_CHANNEL,
-            scopeKeyPrefix = prefix,
-        )
-    }
-
-    fun appNotifyChannelHistoryFlow(packageName: String, limit: Int = 20): Flow<List<String>> {
-        return smsMsgDao.observeRecentNotifyChannelIds(
-            packageName = packageName.trim(),
-            msgType = SmsMsg.MSG_TYPE_APP_NOTIFY,
-            limit = limit,
-        )
-    }
-
-    fun saveForwardFilterRule(rule: ForwardFilterRule) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val updateTime = System.currentTimeMillis()
-            val normalized = rule.copy(
-                updateTime = updateTime,
-                scopeKey = rule.scopeKey.trim(),
-                pattern = rule.pattern.trim(),
-            )
-            if (normalized.id <= 0L) {
-                forwardFilterDao.insert(normalized.copy(id = 0L))
-            } else {
-                forwardFilterDao.update(normalized)
-            }
-        }
-    }
-
-    fun deleteForwardFilterRule(id: Long) {
-        if (id <= 0L) return
-        viewModelScope.launch(Dispatchers.IO) {
-            forwardFilterDao.deleteById(id)
-        }
-    }
-
-    fun setForwardFilterRuleEnabled(id: Long, enabled: Boolean) {
-        if (id <= 0L) return
-        viewModelScope.launch(Dispatchers.IO) {
-            forwardFilterDao.updateEnabledById(
-                id = id,
-                enabled = if (enabled) 1 else 0,
-                updateTime = System.currentTimeMillis(),
-            )
-        }
     }
 
     private fun updateApp(packageName: String, updater: (AppInfo) -> AppInfo) {
@@ -478,7 +303,7 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     private fun hasEffectiveConfig(appInfo: AppInfo): Boolean {
-        return appInfo.blocked || appInfo.forwarding || appInfo.notifyTemplate.isNotBlank()
+        return appInfo.blocked
     }
 
     private val mComparator = Comparator<AppInfo> { o1, o2 ->
@@ -509,19 +334,7 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
             return if (hasConfig1) -1 else 1
         }
 
-        // Tie-break when both are configured:
-        // blocked > forwarding > template-only > none.
-        if (o1.blocked != o2.blocked) {
-            return if (o1.blocked) -1 else 1
-        }
-        if (o1.forwarding != o2.forwarding) {
-            return if (o1.forwarding) -1 else 1
-        }
-        val hasTemplate1 = o1.notifyTemplate.isNotBlank()
-        val hasTemplate2 = o2.notifyTemplate.isNotBlank()
-        if (hasTemplate1 != hasTemplate2) {
-            return if (hasTemplate1) -1 else 1
-        }
+        if (o1.blocked != o2.blocked) return if (o1.blocked) -1 else 1
         return 0
     }
 

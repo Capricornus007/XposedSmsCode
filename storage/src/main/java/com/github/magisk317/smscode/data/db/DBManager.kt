@@ -1,12 +1,10 @@
 package com.github.magisk317.smscode.data.db
 
 import android.content.Context
-import com.github.magisk317.smscode.forwarder.entity.ForwardFilterRule
 import com.github.magisk317.smscode.data.db.dao.AppInfoDao
 import com.github.magisk317.smscode.data.db.dao.SmsCodeRuleDao
 import com.github.magisk317.smscode.data.db.dao.SmsMsgDao
 import com.github.magisk317.smscode.data.db.entity.AppInfo
-import com.github.magisk317.smscode.data.db.entity.NotifyRouteRule
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import kotlinx.coroutines.Dispatchers
@@ -21,8 +19,6 @@ class DBManager private constructor(context: Context) {
     private val mSmsCodeRuleDao: SmsCodeRuleDao = mDatabase.smsCodeRuleDao()
     private val mSmsMsgDao: SmsMsgDao = mDatabase.smsMsgDao()
     private val mAppInfoDao: AppInfoDao = mDatabase.appInfoDao()
-    private val mNotifyRouteRuleDao = mDatabase.notifyRouteRuleDao()
-    private val mForwardFilterRuleDao = mDatabase.forwardFilterRuleDao()
 
 
     suspend fun updateSmsCodeRuleSuspend(smsCodeRule: SmsCodeRule) {
@@ -212,65 +208,6 @@ class DBManager private constructor(context: Context) {
         withContext(Dispatchers.IO) {
             insertOrReplaceInTx(entityClass, entities)
         }
-    }
-
-    fun queryNotifyRouteRules(): List<NotifyRouteRule> = mNotifyRouteRuleDao.getAll()
-
-    fun querySenderIdsByScopeAndPackage(scope: Int, packageName: String): List<Long> =
-        mNotifyRouteRuleDao.getSenderIdsByScopeAndPackage(scope, packageName)
-
-    fun queryPackageNamesByScopeAndSender(scope: Int, senderId: Long): List<String> =
-        mNotifyRouteRuleDao.getPackageNamesByScopeAndSender(scope, senderId)
-
-    fun replaceSenderIdsByScopeAndPackage(scope: Int, packageName: String, senderIds: Set<Long>) {
-        mNotifyRouteRuleDao.deleteByScopeAndPackage(scope, packageName)
-        if (senderIds.isEmpty()) return
-        val updateTime = System.currentTimeMillis()
-        mNotifyRouteRuleDao.insertAll(
-            senderIds.map { senderId ->
-                NotifyRouteRule(
-                    scope = scope,
-                    packageName = packageName,
-                    senderId = senderId,
-                    updateTime = updateTime,
-                )
-            },
-        )
-    }
-
-    fun replacePackageNamesByScopeAndSender(scope: Int, senderId: Long, packageNames: Set<String>) {
-        mNotifyRouteRuleDao.deleteByScopeAndSender(scope, senderId)
-        if (packageNames.isEmpty()) return
-        val updateTime = System.currentTimeMillis()
-        mNotifyRouteRuleDao.insertAll(
-            packageNames.map { packageName ->
-                NotifyRouteRule(
-                    scope = scope,
-                    packageName = packageName,
-                    senderId = senderId,
-                    updateTime = updateTime,
-                )
-            },
-        )
-    }
-
-    fun queryAllForwardFilterRules(): List<ForwardFilterRule> = mForwardFilterRuleDao.getAll()
-
-    fun queryEnabledForwardFilterRules(msgType: String): List<ForwardFilterRule> =
-        mForwardFilterRuleDao.getEnabledByMsgType(msgType)
-
-    fun addForwardFilterRule(rule: ForwardFilterRule): Long = mForwardFilterRuleDao.insert(rule)
-
-    fun addForwardFilterRules(rules: List<ForwardFilterRule>) {
-        mForwardFilterRuleDao.insertAll(rules)
-    }
-
-    fun updateForwardFilterRule(rule: ForwardFilterRule) {
-        mForwardFilterRuleDao.update(rule)
-    }
-
-    fun removeForwardFilterRule(rule: ForwardFilterRule) {
-        mForwardFilterRuleDao.delete(rule)
     }
 
     companion object {
