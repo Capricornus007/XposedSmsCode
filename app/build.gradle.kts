@@ -46,6 +46,10 @@ val targetSdkStr = libs.versions.targetSdk.get()
 val sdkExtensionInt = libs.versions.compileSdkExtension.get().toInt()
 val ndkVersionStr = libs.versions.ndk.get()
 val relayDownloadUrl = "https://github.com/magisk317/xinyi-relay"
+val allowConflictBypass = findProperty("allowConflictBypass")
+    ?.toString()
+    ?.toBooleanStrictOrNull()
+    ?: false
 
 fun releaseBaseName(versionName: String): String {
     return "XposedSmsCode_v${versionName.replace("\\s+".toRegex(), "_")}_${releaseTime()}"
@@ -113,6 +117,7 @@ android {
         buildConfigField("String", "LOG_TAG", "\"XSmsCode\"")
         buildConfigField("int", "MODULE_VERSION", "$versionCodeInt")
         buildConfigField("boolean", "IS_LITE_BUILD", "true")
+        buildConfigField("boolean", "ALLOW_CONFLICT_BYPASS", allowConflictBypass.toString())
         buildConfigField("String", "B_DOWNLOAD_URL", "\"$relayDownloadUrl\"")
     }
 

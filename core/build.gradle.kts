@@ -7,6 +7,10 @@ plugins {
 val compileSdkInt = libs.versions.compileSdk.get().toInt()
 val compileSdkExtensionInt = libs.versions.compileSdkExtension.get().toInt()
 val minSdkInt = libs.versions.minSdk.get().toInt()
+val allowConflictBypass = findProperty("allowConflictBypass")
+    ?.toString()
+    ?.toBooleanStrictOrNull()
+    ?: false
 
 android {
     namespace = "com.github.magisk317.smscode.core"
@@ -37,6 +41,7 @@ android {
         buildConfigField("int", "VERSION_CODE", libs.versions.versionCode.get())
         buildConfigField("String", "VERSION_NAME", "\"${libs.versions.versionName.get()}\"")
         buildConfigField("boolean", "IS_LITE_BUILD", "true")
+        buildConfigField("boolean", "ALLOW_CONFLICT_BYPASS", allowConflictBypass.toString())
     }
 
     buildFeatures {
