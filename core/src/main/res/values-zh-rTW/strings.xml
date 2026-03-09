@@ -383,7 +383,12 @@
 
 
 
+    <string name="settings_group_general">通用設定</string>
+    <string name="settings_group_smscode">驗證碼設定</string>
+    <string name="settings_group_auto_input">自動輸入</string>
+    <string name="settings_group_notification">通知設定</string>
     <string name="settings_group_experimental">實驗性功能</string>
+    <string name="settings_group_others">其他</string>
 
     <!-- backup and restore -->
     <string name="pref_backup_title">備份</string>
@@ -401,6 +406,7 @@
     <string name="item_config">設定</string>
     <string name="item_rules">規則</string>
     <string name="item_records">記錄</string>
+    <string name="item_database_with_note">資料庫（較大，包含 db/wal/shm）</string>
     <string name="restore_warning_msg">現有資料將被合併或覆蓋。</string>
     <!-- backup and restore end -->
 
