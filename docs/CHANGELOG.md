@@ -4,6 +4,16 @@
 
 ---
 
+## [v3.1.9-beta] - 2026-03-09
+- 版本：`versionCode 101` / `versionName 3.1.9-beta`。
+- 冲突检测弹窗调整为“仅退出”路径，明确提示需先卸载冲突模块后再继续。
+- 默认 Xposed 作用域补充 `system`，改善 system_server 相关场景下的注入覆盖率。
+- 修复繁体中文（zh-TW）设置分组与备份项字符串缺失问题，提升多语言一致性。
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.1.8...v3.1.9-beta
+
+---
+
 ## [v3.1.8] - 2026-03-08
 - 版本：`versionCode 100` / `versionName 3.1.8`。
 - 聚焦验证码主链路：移除历史转发/通知转发/WebUI 相关遗留代码与配置入口，收敛为短信解析、拦截与自动输入核心能力。
