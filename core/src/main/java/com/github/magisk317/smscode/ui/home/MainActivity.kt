@@ -44,6 +44,9 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
@@ -191,9 +194,7 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             LaunchedEffect(Unit) {
-                if (TransitionConst.isRelayInstalled(context) &&
-                    !SPUtils.isRelayConflictRiskAcknowledged(context)
-                ) {
+                if (TransitionConst.isRelayInstalled(context)) {
                     showRelayConflictDialog = true
                 }
             }
@@ -357,30 +358,44 @@ class MainActivity : AppCompatActivity() {
                             AlertDialog(
                                 onDismissRequest = {},
                                 title = { Text(getString(R.string.relay_conflict_dialog_title)) },
-                                text = { Text(getString(R.string.relay_conflict_dialog_content)) },
-                                dismissButton = {
-                                    OutlinedButton(
-                                        onClick = {
-                                            scope.launch {
-                                                SPUtils.setRelayConflictRiskAcknowledged(context, false)
+                                text = {
+                                    Text(
+                                        buildAnnotatedString {
+                                            append(getString(R.string.relay_conflict_dialog_prefix))
+                                            withStyle(
+                                                SpanStyle(
+                                                    color = MaterialTheme.colorScheme.error,
+                                                    fontWeight = FontWeight.Bold,
+                                                ),
+                                            ) {
+                                                append(getString(R.string.relay_conflict_other_app_name))
                                             }
+                                            append(" (")
+                                            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                                                append(TransitionConst.TARGET_RELAY_PACKAGE)
+                                            }
+                                            append(")")
+                                            append(getString(R.string.relay_conflict_dialog_middle))
+                                            withStyle(
+                                                SpanStyle(
+                                                    color = MaterialTheme.colorScheme.error,
+                                                    fontWeight = FontWeight.Bold,
+                                                ),
+                                            ) {
+                                                append(getString(R.string.app_name))
+                                            }
+                                            append(getString(R.string.relay_conflict_dialog_suffix))
+                                        },
+                                    )
+                                },
+                                confirmButton = {
+                                    FilledTonalButton(
+                                        onClick = {
                                             showRelayConflictDialog = false
                                             finish()
                                         },
                                     ) {
                                         Text(getString(R.string.relay_conflict_dialog_exit))
-                                    }
-                                },
-                                confirmButton = {
-                                    FilledTonalButton(
-                                        onClick = {
-                                            scope.launch {
-                                                SPUtils.setRelayConflictRiskAcknowledged(context, true)
-                                            }
-                                            showRelayConflictDialog = false
-                                        },
-                                    ) {
-                                        Text(getString(R.string.relay_conflict_dialog_confirm))
                                     }
                                 },
                             )

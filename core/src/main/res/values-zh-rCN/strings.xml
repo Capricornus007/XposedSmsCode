@@ -370,10 +370,12 @@
     <string name="privacy_policy_button">隐私政策</string>
     <!-- privacy policy end -->
     <!-- relay conflict dialog start -->
-    <string name="relay_conflict_dialog_title">双模块风险提示</string>
-    <string name="relay_conflict_dialog_content">检测到已同时安装 XposedSmsCode 与信驿 Relay。\n\n为避免 Hook 冲突，检测到 Relay 时，本应用会抑制短信解析与自动输入链路。\n\n若继续双装使用，行为可能与旧版本不同。</string>
+    <string name="relay_conflict_dialog_title">检测到冲突模块</string>
+    <string name="relay_conflict_dialog_prefix">检测到你已安装 </string>
+    <string name="relay_conflict_dialog_middle">。请先卸载该模块，再安装并使用 </string>
+    <string name="relay_conflict_dialog_suffix">。</string>
+    <string name="relay_conflict_other_app_name">信驿 Relay</string>
     <string name="relay_conflict_dialog_exit">退出</string>
-    <string name="relay_conflict_dialog_confirm">我已确认知晓风险</string>
     <!-- relay conflict dialog end -->
 
 

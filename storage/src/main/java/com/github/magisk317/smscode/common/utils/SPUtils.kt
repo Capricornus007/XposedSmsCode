@@ -47,19 +47,6 @@ object SPUtils {
     }
 
     /**
-     * 是否已确认 Relay 双装冲突风险
-     */
-    suspend fun isRelayConflictRiskAcknowledged(context: Context): Boolean =
-        AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_RELAY_CONFLICT_RISK_ACKNOWLEDGED, false)
-
-    /**
-     * 设置是否已确认 Relay 双装冲突风险
-     */
-    suspend fun setRelayConflictRiskAcknowledged(context: Context, acknowledged: Boolean) {
-        AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_RELAY_CONFLICT_RISK_ACKNOWLEDGED, acknowledged)
-    }
-
-    /**
      * 获取当前主题模式
      * 0: Follow System, 1: Light, 2: Dark
      */
