@@ -65,7 +65,7 @@ class DBProvider : ContentProvider() {
         return when (uriType) {
             SMS_CODE_RULE_DIR -> querySmsCodeRules(projection)
             SMS_CODE_RULE_ID -> querySmsCodeRuleById(projection, uri)
-            SMS_MSG_DIR -> querySmsMsgs(projection, sortOrder)
+            SMS_MSG_DIR -> querySmsMsgs(projection, selection, selectionArgs, sortOrder)
             SMS_MSG_ID -> querySmsMsgById(projection, uri)
             APP_INFO_DIR -> queryAppInfo(projection, selection, selectionArgs)
             APP_INFO_ITEM -> queryAppInfoByPackageName(projection, uri)
@@ -109,13 +109,21 @@ class DBProvider : ContentProvider() {
         return cursor
     }
 
-    private fun querySmsMsgs(projection: Array<String>?, sortOrder: String?): Cursor {
-        val rows = mDbManager!!.queryAllSmsMsg().let { list ->
-            when (sortOrder?.trim()?.lowercase()) {
-                "date asc" -> list.sortedBy { it.date }
-                "date desc", null, "" -> list.sortedByDescending { it.date }
-                else -> list
-            }
+    private fun querySmsMsgs(
+        projection: Array<String>?,
+        selection: String?,
+        selectionArgs: Array<String>?,
+        sortOrder: String?,
+    ): Cursor {
+        val filteredRows = mDbManager!!
+            .queryAllSmsMsg()
+            .asSequence()
+            .filterSmsMsgs(selection, selectionArgs)
+            .toList()
+        val rows: List<SmsMsg> = when (sortOrder?.trim()?.lowercase()) {
+            "date asc" -> filteredRows.sortedBy { it.date }
+            "date desc", null, "" -> filteredRows.sortedByDescending { it.date }
+            else -> filteredRows
         }
         val columns = projection ?: arrayOf(
             "_id",
@@ -138,6 +146,54 @@ class DBProvider : ContentProvider() {
             cursor.addRow(buildRow(columns) { column -> valueFromSmsMsg(msg, column) })
         }
         return cursor
+    }
+
+    private fun Sequence<SmsMsg>.filterSmsMsgs(
+        selection: String?,
+        selectionArgs: Array<String>?,
+    ): Sequence<SmsMsg> {
+        if (selection.isNullOrBlank()) {
+            return this
+        }
+        val normalizedClauses = selection
+            .replace("`", "")
+            .split(Regex("(?i)\\s+and\\s+"))
+            .map { it.trim().lowercase() }
+            .filter { it.isNotEmpty() }
+        var argIndex = 0
+        var rows = this
+        normalizedClauses.forEach { clause ->
+            when (clause) {
+                "msg_type = ?" -> {
+                    val expected = selectionArgs?.getOrNull(argIndex)?.toIntOrNull()
+                    argIndex += 1
+                    if (expected != null) {
+                        rows = rows.filter { it.msgType == expected }
+                    }
+                }
+
+                "sms_code is not null" -> {
+                    rows = rows.filter { !it.smsCode.isNullOrEmpty() }
+                }
+
+                "sms_code != ''", "sms_code <> ''" -> {
+                    rows = rows.filter { !it.smsCode.isNullOrBlank() }
+                }
+
+                "package_name = ?" -> {
+                    val expected = selectionArgs?.getOrNull(argIndex)
+                    argIndex += 1
+                    if (expected != null) {
+                        rows = rows.filter { it.packageName == expected }
+                    }
+                }
+
+                "notify_channel_id != ''", "notify_channel_id <> ''" -> {
+                    rows = rows.filter { it.notifyChannelId.isNotBlank() }
+                }
+            }
+        }
+        return rows
     }
 
     private fun querySmsMsgById(projection: Array<String>?, uri: Uri): Cursor {

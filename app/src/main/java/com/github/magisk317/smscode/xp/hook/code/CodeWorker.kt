@@ -118,7 +118,7 @@ class CodeWorker(
         val notificationFuture = mScheduledExecutor.schedule(notifyAction, 0, TimeUnit.MILLISECONDS)
 
         // 记录验证码短信 Action（转发状态与拦截配置解耦）
-        val recordSmsAction = RecordSmsAction(mPluginContext, mPhoneContext, smsMsg)
+        val recordSmsAction = RecordSmsAction(mPluginContext, mPhoneContext, smsMsg, eventId)
         mScheduledExecutor.schedule(recordSmsAction, 0, TimeUnit.MILLISECONDS)
 
         // 操作验证码短信（标记为已读 或者 删除） Action

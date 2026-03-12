@@ -14,6 +14,7 @@ import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.RuntimeLogStore
 import com.github.magisk317.smscode.di.appModule
+import com.github.magisk317.smscode.ui.record.CodeRecordRestoreManager
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
@@ -43,9 +44,16 @@ class SmsCodeApplication : Application() {
             androidContext(this@SmsCodeApplication)
             modules(appModule)
         }
+        importPendingCodeRecords()
         syncPreferences()
         handlePhoneProcessRestartIfNeeded()
         registerLicenseActivityKiller()
+    }
+
+    private fun importPendingCodeRecords() {
+        applicationScope.launch {
+            CodeRecordRestoreManager.importToDatabase(this@SmsCodeApplication)
+        }
     }
 
     private fun syncPreferences() {

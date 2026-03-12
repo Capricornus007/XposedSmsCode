@@ -5,7 +5,6 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.os.Bundle
-import android.os.Process
 import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.data.db.DBProvider
@@ -16,7 +15,12 @@ import com.github.magisk317.smscode.xp.hook.code.action.CallableAction
 /**
  * 记录验证码短信
  */
-class RecordSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg) :
+class RecordSmsAction(
+    pluginContext: Context,
+    phoneContext: Context,
+    smsMsg: SmsMsg,
+    private val eventId: String = "",
+) :
     CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
@@ -27,6 +31,14 @@ class RecordSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
     }
 
     private fun recordSmsMsg(smsMsg: SmsMsg) {
+        val eventLabel = eventId.ifBlank { "<none>" }
+        XLog.w(
+            "Diag record start: event_id=%s sender_hash=%s body_len=%d code_present=%s",
+            eventLabel,
+            senderHash(smsMsg.sender),
+            smsMsg.body?.length ?: 0,
+            !smsMsg.smsCode.isNullOrBlank(),
+        )
         try {
             val smsMsgUri = DBProvider.SMS_MSG_CONTENT_URI
             val resolver = mPluginContext.contentResolver
@@ -46,7 +58,7 @@ class RecordSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
             }
 
             resolver.insert(smsMsgUri, values)
-            XLog.d("Add code record succeed by content provider")
+            XLog.w("Diag record provider insert success: event_id=%s", eventLabel)
 
             val projections = arrayOf("_id")
             val order = "date ASC"
@@ -54,6 +66,7 @@ class RecordSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
             val selectionArgs = arrayOf(SmsMsg.MSG_TYPE_SMS.toString())
             val cursor: Cursor? = resolver.query(smsMsgUri, projections, selection, selectionArgs, order)
             if (cursor == null) {
+                XLog.w("Diag record retention query returned null: event_id=%s", eventLabel)
                 return
             }
 
@@ -78,26 +91,31 @@ class RecordSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
                 }
 
                 resolver.applyBatch(DBProvider.AUTHORITY, operations)
-                XLog.d("Remove outdated code records succeed by content provider")
+                XLog.w(
+                    "Diag record retention cleanup success: event_id=%s removed=%d limit=%d",
+                    eventLabel,
+                    count - limit,
+                    limit,
+                )
             }
             cursor.close()
         } catch (t: Throwable) {
-            val callerUid = Process.myUid()
-            val appUid = mPluginContext.applicationInfo.uid
-            if (callerUid != appUid) {
-                XLog.w(
-                    "Skip record file fallback due to cross-uid context. callerUid=%d appUid=%d err=%s",
-                    callerUid,
-                    appUid,
-                    t.message ?: t.javaClass.simpleName,
-                )
-                return
-            }
+            XLog.w(
+                "Diag record provider insert failed: event_id=%s err=%s",
+                eventLabel,
+                t.message ?: t.javaClass.simpleName,
+            )
             if (CodeRecordRestoreManager.exportToFile(mPluginContext, smsMsg)) {
-                XLog.d("Export code record to file succeed")
+                XLog.w("Diag record file fallback success: event_id=%s", eventLabel)
             } else {
-                XLog.w("Export code record to file failed in app uid fallback")
+                XLog.w("Diag record file fallback failed: event_id=%s", eventLabel)
             }
         }
+    }
+
+    private fun senderHash(sender: String?): String {
+        val value = sender.orEmpty()
+        if (value.isBlank()) return "none"
+        return Integer.toHexString(value.hashCode())
     }
 }
