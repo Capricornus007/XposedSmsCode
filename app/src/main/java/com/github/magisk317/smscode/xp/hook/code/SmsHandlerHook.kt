@@ -36,6 +36,7 @@ class SmsHandlerHook : BaseHook() {
 
     private var mPhoneContext: Context? = null
     private var mPluginContext: Context? = null
+    private var smsInboxObserver: SmsInboxObserver? = null
     @Volatile
     private var suppressionLogged = false
 
@@ -156,6 +157,7 @@ class SmsHandlerHook : BaseHook() {
                 if (mPluginContext != null) {
                     initNotificationChannel()
                     registerCopyCodeReceiver()
+                    registerSmsInboxObserver()
                     mPluginContext?.let { ModuleActivationStore.markActivated(it) }
                     if (ModuleConflictArbiter.shouldSuppressByRelay(mPhoneContext, "SmsHandlerHook#constructor")) {
                         logSuppressedOnce("constructor")
@@ -192,6 +194,13 @@ class SmsHandlerHook : BaseHook() {
         }
     }
 
+    private fun registerSmsInboxObserver() {
+        val pluginContext = mPluginContext ?: return
+        val phoneContext = mPhoneContext ?: return
+        if (smsInboxObserver != null) return
+        smsInboxObserver = SmsInboxObserver(pluginContext, phoneContext).also { it.register() }
+    }
+
     private inner class DispatchIntentHook(private val mReceiverIndex: Int) : XC_MethodHook() {
         @Throws(Throwable::class)
         override fun beforeHookedMethod(param: MethodHookParam) {
@@ -215,13 +224,15 @@ class SmsHandlerHook : BaseHook() {
             }
         }
 
-        if (Telephony.Sms.Intents.SMS_DELIVER_ACTION != action) {
+        if (action != Telephony.Sms.Intents.SMS_DELIVER_ACTION &&
+            action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION
+        ) {
             return
         }
         val eventId = ensureEventId(intent)
         val pduCount = getPduCount(intent)
         XLog.w(
-            "Diag SMS_DELIVER intercepted: event_id=%s action=%s, pduCount=%d, extras=%s",
+            "Diag SMS intent intercepted: event_id=%s action=%s, pduCount=%d, extras=%s",
             eventId,
             action,
             pduCount,
