@@ -29,30 +29,36 @@ class PackageManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(classLoa
 
     private fun hookGrantPermissionsLPw() {
         val pmsClass = XposedWrapper.findClass(CLASS_PACKAGE_MANAGER_SERVICE, mClassLoader)
-        val method: Method = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            // Android 5.0 +
-            XLog.d("Hooking grantPermissionsLPw() for Android 21+")
-            XposedHelpers.findMethodExact(
-                pmsClass,
-                "grantPermissionsLPw",
-                /* PackageParser.Package pkg */
-                CLASS_PACKAGE_PARSER_PACKAGE,
-                /* boolean replace           */
-                Boolean::class.javaPrimitiveType,
-                /* String packageOfInterest  */
-                String::class.java,
-            )
-        } else {
-            // Android 4.4 +
-            XLog.d("Hooking grantPermissionsLPw() for Android 19+")
-            XposedHelpers.findMethodExact(
-                pmsClass,
-                "grantPermissionsLPw",
-                /* PackageParser.Package pkg */
-                CLASS_PACKAGE_PARSER_PACKAGE,
-                /* boolean replace           */
-                Boolean::class.javaPrimitiveType,
-            )
+        val method: Method = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                // Android 5.0 +
+                XLog.d("Hooking grantPermissionsLPw() for Android 21+")
+                XposedHelpers.findMethodExact(
+                    pmsClass,
+                    "grantPermissionsLPw",
+                    /* PackageParser.Package pkg */
+                    CLASS_PACKAGE_PARSER_PACKAGE,
+                    /* boolean replace           */
+                    Boolean::class.javaPrimitiveType,
+                    /* String packageOfInterest  */
+                    String::class.java,
+                )
+            } else {
+                // Android 4.4 +
+                XLog.d("Hooking grantPermissionsLPw() for Android 19+")
+                XposedHelpers.findMethodExact(
+                    pmsClass,
+                    "grantPermissionsLPw",
+                    /* PackageParser.Package pkg */
+                    CLASS_PACKAGE_PARSER_PACKAGE,
+                    /* boolean replace           */
+                    Boolean::class.javaPrimitiveType,
+                )
+            }
+        } catch (e: Throwable) {
+            PermissionDebugProbe.logFailure("PackageManagerServiceHook grantPermissionsLPw", e)
+            PermissionDebugProbe.dumpClass("PackageManagerServiceHook target", pmsClass)
+            throw e
         }
 
         XposedBridge.hookMethod(

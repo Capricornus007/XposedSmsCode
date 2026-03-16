@@ -77,10 +77,10 @@ class PermissionManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(class
                 /* PermissionCallback callback */
                 callbackClass,
             )
-            if (method == null) { // method restorePermissionState() not found
-                val methods = XposedHelpers.findMethodsByExactParameters(
-                    pmsClass,
-                    Void.TYPE,
+        if (method == null) { // method restorePermissionState() not found
+            val methods = XposedHelpers.findMethodsByExactParameters(
+                pmsClass,
+                Void.TYPE,
                     /* PackageParser.Package pkg   */
                     packageClass,
                     /* boolean replace             */
@@ -94,6 +94,9 @@ class PermissionManagerServiceHook(classLoader: ClassLoader) : BaseSubHook(class
                     method = methods[0]
                 }
             }
+        }
+        if (method == null) {
+            PermissionDebugProbe.dumpClass("PermissionManagerServiceHook missing grant/restore", pmsClass)
         }
         return method
     }

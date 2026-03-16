@@ -86,6 +86,9 @@ class PermissionManagerServiceHook34(classLoader: ClassLoader) : BaseSubHook(cla
                 method = methods[0]
             }
         }
+        if (method == null) {
+            PermissionDebugProbe.dumpClass("PermissionManagerServiceHook34 missing restorePermissionState", pmsClass)
+        }
         return method
     }
 
