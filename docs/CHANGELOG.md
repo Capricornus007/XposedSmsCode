@@ -4,6 +4,17 @@
 
 ---
 
+## [v3.1.9] - 2026-03-16
+- 版本：`versionCode 102` / `versionName 3.1.9`。
+- 从 beta 转为正式版，收敛冲突提示、默认作用域（含 `system`）与繁中缺失文案等变更。
+- 适配 Android 16 权限授予链路并增强 Hook 诊断输出。
+- HyperOS 3 改用 Provider 自杀路径，提升 kill 稳定性。
+- 设置页支持一键导出分享日志包，构建签名启用 v1/v2/v3。
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.1.8...v3.1.9
+
+---
+
 ## [v3.1.9-beta] - 2026-03-09
 - 版本：`versionCode 101` / `versionName 3.1.9-beta`。
 - 冲突检测弹窗调整为“仅退出”路径，明确提示需先卸载冲突模块后再继续。
