@@ -171,7 +171,7 @@
 
     <!-- preference others -->
     <string name="pref_verbose_log_mode_title">详细日志</string>
-    <string name="pref_verbose_log_mode_summary">打印详细日志(仅用于调试)</string>
+    <string name="pref_verbose_log_mode_summary">点击后分享日志</string>
     <string name="pref_auto_update_on_start_title">启动时自动更新</string>
     <string name="pref_auto_update_on_start_summary">应用启动时执行一次更新策略</string>
     <string name="pref_auto_update_wifi_only_title">仅 Wi-Fi 自动检查更新</string>

@@ -51,6 +51,7 @@ import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.ModuleActivationStore
 import com.github.magisk317.smscode.common.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
+import com.github.magisk317.smscode.common.utils.LogBundleExporter
 import com.github.magisk317.smscode.common.utils.RuntimeLogStore
 import com.github.magisk317.smscode.common.utils.SPUtils
 import com.github.magisk317.smscode.common.utils.Utils
@@ -64,8 +65,10 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -106,7 +109,6 @@ fun ComposeSettingsScreen(
     var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
     var showPrivacyPolicyPage by remember { mutableStateOf(false) }
-    var showVerboseLogViewer by remember { mutableStateOf(false) }
     var showKeywordsDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var isActivated by remember { mutableStateOf(ModuleUtils.isModuleEnabled()) }
@@ -560,7 +562,23 @@ fun ComposeSettingsScreen(
                             summary = stringResource(id = R.string.pref_verbose_log_mode_summary),
                             key = PrefConst.KEY_VERBOSE_LOG_MODE,
                             defaultValue = false,
-                            onItemClick = { showVerboseLogViewer = true },
+                            onItemClick = {
+                                scope.launch {
+                                    val result = withContext(Dispatchers.IO) {
+                                        LogBundleExporter.buildLogBundle(context)
+                                    }
+                                    val file = result.file
+                                    if (file == null) {
+                                        Toast.makeText(context, "导出失败: ${result.details}", Toast.LENGTH_LONG).show()
+                                        return@launch
+                                    }
+                                    runCatching {
+                                        LogBundleExporter.shareLogBundle(context, file)
+                                    }.onFailure {
+                                        Toast.makeText(context, "分享失败: ${it.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            },
                             onToggle = { on ->
                                 RuntimeLogStore.setEnabled(on)
                                 XLog.setLogLevel(if (on) Log.VERBOSE else com.github.magisk317.smscode.storage.BuildConfig.LOG_LEVEL)
@@ -668,12 +686,6 @@ fun ComposeSettingsScreen(
         onExit = onExit,
         onSetTheme = { mode, x, y -> settingsViewModel.setThemeMode(mode, x, y) },
     )
-
-    if (showVerboseLogViewer) {
-        RuntimeLogViewerSheet(
-            onDismiss = { showVerboseLogViewer = false },
-        )
-    }
 
     if (showLanguageDialog) {
         LanguageChooserDialog(
