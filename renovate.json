@@ -4,6 +4,9 @@
         "config:recommended"
     ],
     "forkProcessing": "enabled",
+    "autoclose": true,
+    "pruneStaleBranches": true,
+    "pruneBranchAfterAutomerge": true,
     "baseBranchPatterns": [
         "beta"
     ],
@@ -13,6 +16,8 @@
                 "minor",
                 "patch"
             ],
+            "automerge": true,
+            "automergeType": "pr",
             "groupName": "all non-major dependencies",
             "groupSlug": "all-minor-patch",
             "matchPackageNames": [
