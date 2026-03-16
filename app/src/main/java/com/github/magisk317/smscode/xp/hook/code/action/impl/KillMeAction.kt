@@ -1,13 +1,8 @@
 package com.github.magisk317.smscode.xp.hook.code.action.impl
 
-import android.Manifest
-import android.annotation.SuppressLint
-import android.app.ActivityManager
 import android.content.Context
-import android.content.pm.PackageManager
 import android.os.Bundle
-import androidx.core.content.ContextCompat
-import com.github.tianma8023.xposed.smscode.BuildConfig
+import com.github.magisk317.smscode.data.prefs.PrefsProvider
 import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
@@ -26,36 +21,32 @@ class KillMeAction(
 
     private fun killMe() {
         if (!PrefsReader.killMeEnabled(mPluginContext)) return
-        if (!hasKillBackgroundPermission()) {
-            XLog.w(
-                "Skip KillMeAction: missing permission %s in process %s",
-                Manifest.permission.KILL_BACKGROUND_PROCESSES,
-                mPhoneContext.packageName,
-            )
+        // HyperOS 3 adaptation:
+        // model=25113PN0EC, build=OS3.0.44.0.WPCCNXM, device=pudding (Android 16 / SDK 36)
+        // Provider self-kill is the primary strategy on this ROM.
+        if (requestSelfKillPrimary()) {
             return
         }
-        killBackgroundProcess(BuildConfig.APPLICATION_ID)
+        XLog.w("KillMeAction: provider self-kill failed for process %s", mPhoneContext.packageName)
     }
 
-    private fun hasKillBackgroundPermission(): Boolean {
-        return ContextCompat.checkSelfPermission(
-            mPhoneContext,
-            Manifest.permission.KILL_BACKGROUND_PROCESSES,
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    @SuppressLint("MissingPermission")
-    private fun killBackgroundProcess(packageName: String) {
-        try {
-            val activityManager = mPluginContext.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager?
-            activityManager?.let {
-                it.killBackgroundProcesses(packageName)
-                XLog.d("Kill %s background process succeed", packageName)
+    private fun requestSelfKillPrimary(): Boolean {
+        return try {
+            val extras = Bundle().apply { putLong(PrefsProvider.EXTRA_DELAY_MS, 80L) }
+            val result = mPluginContext.contentResolver.call(
+                PrefsProvider.BOOL_URI,
+                PrefsProvider.METHOD_KILL_SELF,
+                null,
+                extras,
+            )
+            val ok = result?.getBoolean(PrefsProvider.EXTRA_OK, false) ?: false
+            if (ok) {
+                XLog.w("KillMeAction primary requested via PrefsProvider")
             }
-        } catch (e: SecurityException) {
-            XLog.w("Skip KillMeAction for %s: %s", packageName, e.message ?: "security denied")
+            ok
         } catch (e: Throwable) {
-            XLog.e("Error occurs when kill background process %s", packageName, e)
+            XLog.w("KillMeAction primary failed: %s", e.message ?: e.javaClass.simpleName)
+            false
         }
     }
 }

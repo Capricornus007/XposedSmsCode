@@ -8,6 +8,7 @@ import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
 import android.os.Binder
+import android.os.Bundle
 import android.os.Process
 import com.github.magisk317.smscode.storage.BuildConfig
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
@@ -67,6 +68,35 @@ class PrefsProvider : ContentProvider() {
         return cursor
     }
 
+    override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
+        val ctx = context ?: return null
+        if (!isCallerAllowed(ctx)) {
+            XLog.w("PrefsProvider: deny call method=%s uid=%d", method, Binder.getCallingUid())
+            return null
+        }
+        return when (method) {
+            METHOD_KILL_SELF -> {
+                val delayMs = extras?.getLong(EXTRA_DELAY_MS, 80L) ?: 80L
+                XLog.w(
+                    "PrefsProvider: kill self requested, delay=%dms callerUid=%d",
+                    delayMs,
+                    Binder.getCallingUid(),
+                )
+                Thread {
+                    try {
+                        Thread.sleep(delayMs)
+                    } catch (_: InterruptedException) {
+                        // ignore
+                    }
+                    XLog.w("PrefsProvider: kill self requested by uid=%d", Binder.getCallingUid())
+                    Process.killProcess(Process.myPid())
+                }.start()
+                Bundle().apply { putBoolean(EXTRA_OK, true) }
+            }
+            else -> super.call(method, arg, extras)
+        }
+    }
+
     private fun isCallerAllowed(ctx: Context): Boolean {
         val uid = Binder.getCallingUid()
         // 1. Check for standard System UIDs
@@ -115,6 +145,9 @@ class PrefsProvider : ContentProvider() {
         private const val TYPE_STRING = 2
         private const val TYPE_INT = 3
         private const val COLUMN_VALUE = "value"
+        const val METHOD_KILL_SELF = "kill_self"
+        const val EXTRA_DELAY_MS = "delay_ms"
+        const val EXTRA_OK = "ok"
 
         private val sUriMatcher: UriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
             addURI(AUTHORITY, PATH_BOOL, TYPE_BOOL)
