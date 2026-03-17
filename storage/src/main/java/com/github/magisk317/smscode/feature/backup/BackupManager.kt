@@ -222,6 +222,8 @@ object BackupManager {
         intent.type = "*/*"
         intent.putExtra(Intent.EXTRA_MIME_TYPES, arrayOf(BACKUP_MIME_TYPE, BACKUP_ZIP_MIME_TYPE))
         intent.putExtra(Intent.EXTRA_TITLE, getDefaultBackupFilename(context))
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
 
         return intent
     }

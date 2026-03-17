@@ -214,11 +214,20 @@ fun ComposeSettingsScreen(
             data?.clipData?.itemCount ?: 0,
         )
         if (result.resultCode == android.app.Activity.RESULT_OK && pickedUri != null) {
+            val dataFlags = data?.flags ?: 0
+            val grantFlags = dataFlags and
+                (Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
             runCatching {
-                context.contentResolver.takePersistableUriPermission(
-                    pickedUri,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION,
-                )
+                if ((dataFlags and Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION) != 0) {
+                    val flagsToPersist = if (grantFlags != 0) grantFlags else Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    context.contentResolver.takePersistableUriPermission(pickedUri, flagsToPersist)
+                } else {
+                    XLog.w(
+                        "Persistable grant not returned by picker: uri=%s flags=0x%x",
+                        pickedUri.toString(),
+                        dataFlags,
+                    )
+                }
             }.onFailure {
                 XLog.w(
                     "takePersistableUriPermission failed: uri=%s err=%s",
