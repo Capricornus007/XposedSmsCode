@@ -8,6 +8,7 @@ import com.github.magisk317.smscode.xp.hook.code.SmsHandlerHook
 import com.github.magisk317.smscode.xp.hook.me.ModuleUtilsHook
 import com.github.magisk317.smscode.xp.hook.permission.PermissionGranterHook
 import com.github.magisk317.smscode.xp.hook.system.SystemInputInjectorHook
+import com.github.magisk317.smscode.xp.hook.telephony.SmsProviderHook
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.IXposedHookZygoteInit
 import de.robv.android.xposed.callbacks.XC_LoadPackage
@@ -22,6 +23,7 @@ class HookEntry :
         ModuleUtilsHook(), // ModuleUtils Hook
         PermissionGranterHook(), // PackageManagerService Hook
         SystemInputInjectorHook(), // System Server Input Injection Hook
+        SmsProviderHook(), // Telephony provider write logging
     )
 
     @Throws(Throwable::class)

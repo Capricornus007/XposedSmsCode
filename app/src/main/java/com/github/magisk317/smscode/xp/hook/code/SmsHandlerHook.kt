@@ -80,6 +80,7 @@ class SmsHandlerHook : BaseHook() {
     private fun hookSmsHandler(classloader: ClassLoader) {
         hookConstructor(classloader)
         hookDispatchIntent(classloader)
+        hookSmsDispatcherChain(classloader)
     }
 
     private fun hookConstructor(classloader: ClassLoader) {
@@ -99,6 +100,68 @@ class SmsHandlerHook : BaseHook() {
     private fun hookDispatchIntent(classloader: ClassLoader) {
         // minSdkVersion 35: Only hook for Android 10+ / 15+
         hookDispatchIntent29(classloader)
+    }
+
+    private fun hookSmsDispatcherChain(classLoader: ClassLoader) {
+        // Some ROMs/Android versions may dispatch SMS via alternative paths.
+        hookDispatcherMethods(
+            classLoader,
+            SMS_HANDLER_CLASS,
+            listOf(
+                "dispatchSmsDeliveryIntent",
+                "dispatchSmsDeliveryIntentToApp",
+                "dispatchSmsDeliveryIntentToRegisteredReceivers",
+            ),
+        )
+        hookDispatcherMethods(
+            classLoader,
+            "com.android.internal.telephony.SmsDispatchersController",
+            listOf(
+                "dispatchSmsDeliveryIntent",
+                "dispatchSmsDeliveryIntentToApp",
+                "dispatchSmsDeliveryIntentToRegisteredReceivers",
+                "dispatchSmsDeliveryIntentToAppWithPermission",
+            ),
+        )
+    }
+
+    private fun hookDispatcherMethods(
+        classLoader: ClassLoader,
+        className: String,
+        methodNames: List<String>,
+    ) {
+        val clazz = XposedWrapper.findClass(className, classLoader) ?: return
+        methodNames.forEach { name ->
+            val methods = clazz.declaredMethods.filter { it.name == name }
+            if (methods.isEmpty()) return@forEach
+            methods.forEach { method ->
+                XposedWrapper.hookMethod(
+                    method,
+                    object : XC_MethodHook() {
+                        override fun beforeHookedMethod(param: MethodHookParam) {
+                            val action = extractIntentAction(param.args)
+                            XLog.w(
+                                "Diag SMS dispatch chain: class=%s method=%s action=%s args=%d",
+                                className,
+                                name,
+                                action ?: "<none>",
+                                param.args?.size ?: 0,
+                            )
+                        }
+                    },
+                )
+            }
+        }
+    }
+
+    private fun extractIntentAction(args: Array<Any?>?): String? {
+        if (args == null) return null
+        for (arg in args) {
+            if (arg is Intent) {
+                return arg.action
+            }
+        }
+        return null
     }
 
     // Android 10+
