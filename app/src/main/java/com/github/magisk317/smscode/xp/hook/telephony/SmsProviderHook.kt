@@ -7,8 +7,9 @@ import android.os.Binder
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.xp.hook.BaseHook
 import com.github.magisk317.smscode.xp.helper.XposedWrapper
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.callbacks.XC_LoadPackage
+import com.github.magisk317.smscode.xp.hookapi.LoadParam
+import com.github.magisk317.smscode.xp.hookapi.MethodHook
+import com.github.magisk317.smscode.xp.hookapi.MethodHookParam
 
 /**
  * Log SMS provider writes to identify who inserts/updates SMS rows.
@@ -17,7 +18,7 @@ class SmsProviderHook : BaseHook() {
 
     override fun hookOnLoadPackage(): Boolean = true
 
-    override fun onLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
+    override fun onLoadPackage(lpparam: LoadParam) {
         if (lpparam.packageName != TELEPHONY_PROVIDER_PACKAGE) return
         hookProviderMethods(lpparam.classLoader)
     }
@@ -39,7 +40,7 @@ class SmsProviderHook : BaseHook() {
         methods.forEach { method ->
             XposedWrapper.hookMethod(
                 method,
-                object : XC_MethodHook() {
+                object : MethodHook() {
                     override fun beforeHookedMethod(param: MethodHookParam) {
                         val uri = param.args.getOrNull(0) as? Uri ?: return
                         if (!isSmsUri(uri)) return

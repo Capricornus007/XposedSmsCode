@@ -4,10 +4,11 @@ import com.github.magisk317.smscode.common.constant.PermConst.PACKAGE_PERMISSION
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.xp.helper.MethodHookWrapper
 import com.github.magisk317.smscode.xp.hook.BaseSubHook
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
+import com.github.magisk317.smscode.xp.hookapi.MethodHook
+import com.github.magisk317.smscode.xp.hookapi.HookBridge
+import com.github.magisk317.smscode.xp.hookapi.HookHelpers
 import java.util.concurrent.atomic.AtomicBoolean
+import com.github.magisk317.smscode.xp.hookapi.MethodHookParam
 
 /**
  * Android 16+ permission hook compatibility layer (ROM-aware by capability detection).
@@ -29,21 +30,24 @@ class PermissionManagerServiceHook36Compat(classLoader: ClassLoader) : BaseSubHo
     }
 
     private fun hookInternalImpl(): Boolean {
-        val implClass = XposedHelpers.findClassIfExists(CLASS_INTERNAL_IMPL, mClassLoader) ?: return false
+        val implClass = HookHelpers.findClassIfExists(CLASS_INTERNAL_IMPL, mClassLoader) ?: return false
         var hooked = false
 
         hooked = hookMethodsByName(implClass, "onSystemReady") { param ->
+            val pms = param.thisObject ?: return@hookMethodsByName
             if (systemReadyGranted.compareAndSet(false, true)) {
-                PermissionGrantHelper36.grantAllTargetPermissions(resolvePms(param.thisObject))
+                PermissionGrantHelper36.grantAllTargetPermissions(resolvePms(pms))
             }
         } || hooked
 
         hooked = hookMethodsByName(implClass, "onPackageInstalled") { param ->
-            PermissionGrantHelper36.afterOnPackageInstalled(param, resolvePms(param.thisObject))
+            val pms = param.thisObject ?: return@hookMethodsByName
+            PermissionGrantHelper36.afterOnPackageInstalled(param, resolvePms(pms))
         } || hooked
 
         hooked = hookMethodsByName(implClass, "onPackageAdded") { param ->
-            handlePackageAdded(param, resolvePms(param.thisObject))
+            val pms = param.thisObject ?: return@hookMethodsByName
+            handlePackageAdded(param, resolvePms(pms))
         } || hooked
 
         if (hooked) {
@@ -53,21 +57,24 @@ class PermissionManagerServiceHook36Compat(classLoader: ClassLoader) : BaseSubHo
     }
 
     private fun hookPermissionService(): Boolean {
-        val serviceClass = XposedHelpers.findClassIfExists(CLASS_PERMISSION_SERVICE, mClassLoader) ?: return false
+        val serviceClass = HookHelpers.findClassIfExists(CLASS_PERMISSION_SERVICE, mClassLoader) ?: return false
         var hooked = false
 
         hooked = hookMethodsByName(serviceClass, "onSystemReady") { param ->
+            val pms = param.thisObject ?: return@hookMethodsByName
             if (systemReadyGranted.compareAndSet(false, true)) {
-                PermissionGrantHelper36.grantAllTargetPermissions(resolvePms(param.thisObject))
+                PermissionGrantHelper36.grantAllTargetPermissions(resolvePms(pms))
             }
         } || hooked
 
         hooked = hookMethodsByName(serviceClass, "onPackageInstalled") { param ->
-            PermissionGrantHelper36.afterOnPackageInstalled(param, resolvePms(param.thisObject))
+            val pms = param.thisObject ?: return@hookMethodsByName
+            PermissionGrantHelper36.afterOnPackageInstalled(param, resolvePms(pms))
         } || hooked
 
         hooked = hookMethodsByName(serviceClass, "onPackageAdded") { param ->
-            handlePackageAdded(param, resolvePms(param.thisObject))
+            val pms = param.thisObject ?: return@hookMethodsByName
+            handlePackageAdded(param, resolvePms(pms))
         } || hooked
 
         if (hooked) {
@@ -77,7 +84,7 @@ class PermissionManagerServiceHook36Compat(classLoader: ClassLoader) : BaseSubHo
     }
 
     private fun hookPermissionPolicyService() {
-        val policyClass = XposedHelpers.findClassIfExists(CLASS_PERMISSION_POLICY_SERVICE, mClassLoader) ?: return
+        val policyClass = HookHelpers.findClassIfExists(CLASS_PERMISSION_POLICY_SERVICE, mClassLoader) ?: return
         hookMethodsByName(policyClass, "onBootPhase") { param ->
             val phase = (param.args.firstOrNull() as? Int) ?: return@hookMethodsByName
             val readyPhase = getSystemServicesReadyPhase()
@@ -92,7 +99,7 @@ class PermissionManagerServiceHook36Compat(classLoader: ClassLoader) : BaseSubHo
         }
     }
 
-    private fun handlePackageAdded(param: XC_MethodHook.MethodHookParam, pms: Any) {
+    private fun handlePackageAdded(param: MethodHookParam, pms: Any) {
         val packageName = PermissionGrantHelper36.resolvePackageName(param.args) ?: return
         val permissions = PACKAGE_PERMISSIONS[packageName] ?: return
 
@@ -111,29 +118,29 @@ class PermissionManagerServiceHook36Compat(classLoader: ClassLoader) : BaseSubHo
     }
 
     private fun resolvePms(obj: Any): Any {
-        return runCatching { XposedHelpers.getObjectField(obj, "this$0") }.getOrDefault(obj)
+        return runCatching { HookHelpers.getObjectField(obj, "this$0") }.getOrNull() ?: obj
     }
 
     private fun resolvePmsFromLocalServices(): Any? {
         return runCatching {
-            val localServices = XposedHelpers.findClass(CLASS_LOCAL_SERVICES, mClassLoader)
-            val internalClazz = XposedHelpers.findClass(CLASS_PERMISSION_MANAGER_INTERNAL, mClassLoader)
-            val internal = XposedHelpers.callStaticMethod(localServices, "getService", internalClazz)
+            val localServices = HookHelpers.findClass(CLASS_LOCAL_SERVICES, mClassLoader)
+            val internalClazz = HookHelpers.findClass(CLASS_PERMISSION_MANAGER_INTERNAL, mClassLoader)
+            val internal = HookHelpers.callStaticMethod(localServices, "getService", internalClazz)
             if (internal != null) resolvePms(internal) else null
         }.getOrNull()
     }
 
     private fun getSystemServicesReadyPhase(): Int {
         return runCatching {
-            val cls = XposedHelpers.findClass(CLASS_SYSTEM_SERVICE, mClassLoader)
-            XposedHelpers.getStaticIntField(cls, "PHASE_SYSTEM_SERVICES_READY")
+            val cls = HookHelpers.findClass(CLASS_SYSTEM_SERVICE, mClassLoader)
+            HookHelpers.getStaticIntField(cls, "PHASE_SYSTEM_SERVICES_READY")
         }.getOrDefault(DEFAULT_SYSTEM_SERVICES_READY_PHASE)
     }
 
     private fun hookMethodsByName(
         clazz: Class<*>,
         methodName: String,
-        afterHook: (XC_MethodHook.MethodHookParam) -> Unit,
+        afterHook: (MethodHookParam) -> Unit,
     ): Boolean {
         val methods = clazz.declaredMethods.filter { it.name == methodName }
         if (methods.isEmpty()) {
@@ -142,7 +149,7 @@ class PermissionManagerServiceHook36Compat(classLoader: ClassLoader) : BaseSubHo
         }
 
         methods.forEach { method ->
-            XposedBridge.hookMethod(
+            HookBridge.hookMethod(
                 method,
                 object : MethodHookWrapper() {
                     override fun after(param: MethodHookParam) {

@@ -140,6 +140,7 @@ android {
             excludes += "META-INF/NOTICE.md"
             excludes += "META-INF/LICENSE.md"
             excludes += "META-INF/INDEX.LIST"
+            merges += "META-INF/xposed/*"
         }
     }
 
@@ -275,6 +276,8 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     compileOnly(project(":xposed-stub"))
+    compileOnly(libs.libxposed.api)
+    implementation(libs.libxposed.service)
 
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)

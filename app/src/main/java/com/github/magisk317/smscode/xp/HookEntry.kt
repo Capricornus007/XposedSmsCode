@@ -9,6 +9,10 @@ import com.github.magisk317.smscode.xp.hook.me.ModuleUtilsHook
 import com.github.magisk317.smscode.xp.hook.permission.PermissionGranterHook
 import com.github.magisk317.smscode.xp.hook.system.SystemInputInjectorHook
 import com.github.magisk317.smscode.xp.hook.telephony.SmsProviderHook
+import com.github.magisk317.smscode.xp.hookapi.HookEnv
+import com.github.magisk317.smscode.xp.hookapi.LegacyHookApi
+import com.github.magisk317.smscode.xp.hookapi.LoadParam
+import com.github.magisk317.smscode.xp.hookapi.ZygoteParam
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.IXposedHookZygoteInit
 import de.robv.android.xposed.callbacks.XC_LoadPackage
@@ -28,9 +32,10 @@ class HookEntry :
 
     @Throws(Throwable::class)
     override fun initZygote(startupParam: IXposedHookZygoteInit.StartupParam) {
+        HookEnv.init(LegacyHookApi())
         for (hook in mHookList) {
             if (hook.hookInitZygote()) {
-                hook.initZygote(startupParam)
+                hook.initZygote(ZygoteParam())
             }
         }
 
@@ -43,17 +48,19 @@ class HookEntry :
 
     @Throws(Throwable::class)
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
-        XLog.d("HookEntry: Loaded package: ${lpparam.packageName} process: ${lpparam.processName}")
-        if ("android" == lpparam.packageName || "system" == lpparam.packageName) {
+        HookEnv.init(LegacyHookApi())
+        val loadParam = LoadParam(lpparam.packageName, lpparam.processName, lpparam.classLoader)
+        XLog.d("HookEntry: Loaded package: ${loadParam.packageName} process: ${loadParam.processName}")
+        if ("android" == loadParam.packageName || "system" == loadParam.packageName) {
             XLog.w(
                 "HookEntry: Android/system package loaded: pkg=%s process=%s",
-                lpparam.packageName,
-                lpparam.processName,
+                loadParam.packageName,
+                loadParam.processName,
             )
         }
         for (hook in mHookList) {
             if (hook.hookOnLoadPackage()) {
-                hook.onLoadPackage(lpparam)
+                hook.onLoadPackage(loadParam)
             }
         }
     }

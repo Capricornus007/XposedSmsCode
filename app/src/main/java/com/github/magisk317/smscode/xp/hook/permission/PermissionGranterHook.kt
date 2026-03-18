@@ -2,15 +2,18 @@ package com.github.magisk317.smscode.xp.hook.permission
 
 import android.os.Build
 import com.github.magisk317.smscode.xp.hook.BaseHook
-import de.robv.android.xposed.callbacks.XC_LoadPackage
+import com.github.magisk317.smscode.xp.hookapi.LoadParam
 
 /**
  * Hook com.android.server.pm.PackageManagerService to grant permissions.
  */
 class PermissionGranterHook : BaseHook() {
 
-    override fun onLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
-        if (ANDROID_PACKAGE == lpparam.packageName && ANDROID_PACKAGE == lpparam.processName) {
+    override fun onLoadPackage(lpparam: LoadParam) {
+        if (
+            ANDROID_PACKAGE == lpparam.packageName &&
+            (ANDROID_PACKAGE == lpparam.processName || SYSTEM_SERVER_PROCESS == lpparam.processName)
+        ) {
             val classLoader = lpparam.classLoader
 
             val sdkInt = Build.VERSION.SDK_INT
@@ -48,6 +51,7 @@ class PermissionGranterHook : BaseHook() {
 
     companion object {
         const val ANDROID_PACKAGE = "android"
+        const val SYSTEM_SERVER_PROCESS = "system_server"
         const val ANDROID_16 = 36
     }
 }

@@ -10,13 +10,14 @@ import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.xp.helper.XposedWrapper
 import com.github.magisk317.smscode.xp.hook.BaseHook
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.callbacks.XC_LoadPackage
+import com.github.magisk317.smscode.xp.hookapi.LoadParam
+import com.github.magisk317.smscode.xp.hookapi.MethodHook
+import com.github.magisk317.smscode.xp.hookapi.MethodHookParam
 import java.util.concurrent.Executors
 import java.util.regex.Pattern
 
 class GoogleMessagesHook : BaseHook() {
-    override fun onLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
+    override fun onLoadPackage(lpparam: LoadParam) {
         if (lpparam.packageName != GOOGLE_MESSAGES_PACKAGE_NAME) return
         bugleClassLoader = lpparam.classLoader
         XLog.i("GoogleMessagesHook initializing")
@@ -27,7 +28,7 @@ class GoogleMessagesHook : BaseHook() {
     private fun hookReceiver(classLoader: ClassLoader, receiverClassName: String) {
         val receiverClass = XposedWrapper.findClass(receiverClassName, classLoader) ?: return
         var hookedCount = 0
-        val callback = object : XC_MethodHook() {
+        val callback = object : MethodHook() {
             override fun afterHookedMethod(param: MethodHookParam) {
                 val context = param.args.getOrNull(0) as? Context ?: return
                 val intent = param.args.getOrNull(1) as? Intent ?: return

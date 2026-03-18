@@ -5,10 +5,11 @@ import com.github.magisk317.smscode.common.constant.PermConst.PACKAGE_PERMISSION
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.xp.helper.MethodHookWrapper
 import com.github.magisk317.smscode.xp.hook.BaseSubHook
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
+import com.github.magisk317.smscode.xp.hookapi.MethodHook
+import com.github.magisk317.smscode.xp.hookapi.HookBridge
+import com.github.magisk317.smscode.xp.hookapi.HookHelpers
 import java.lang.reflect.Method
+import com.github.magisk317.smscode.xp.hookapi.MethodHookParam
 
 /**
  * Since Android 11(API 30)<br/>
@@ -32,7 +33,7 @@ class PermissionManagerServiceHook30(classLoader: ClassLoader) : BaseSubHook(cla
             XLog.e("Cannot find the method to grant relevant permission")
             return
         }
-        XposedBridge.hookMethod(
+        HookBridge.hookMethod(
             method,
             object : MethodHookWrapper() {
                 @Throws(Throwable::class)
@@ -44,11 +45,11 @@ class PermissionManagerServiceHook30(classLoader: ClassLoader) : BaseSubHook(cla
     }
 
     private fun findTargetMethod(): Method? {
-        val pmsClass = XposedHelpers.findClass(CLASS_PERMISSION_MANAGER_SERVICE, mClassLoader)
-        val androidPackageClass = XposedHelpers.findClass(CLASS_ANDROID_PACKAGE, mClassLoader)
-        val callbackClass = XposedHelpers.findClassIfExists(CLASS_PERMISSION_CALLBACK, mClassLoader)
+        val pmsClass = HookHelpers.findClass(CLASS_PERMISSION_MANAGER_SERVICE, mClassLoader)
+        val androidPackageClass = HookHelpers.findClass(CLASS_ANDROID_PACKAGE, mClassLoader)
+        val callbackClass = HookHelpers.findClassIfExists(CLASS_PERMISSION_CALLBACK, mClassLoader)
 
-        var method = XposedHelpers.findMethodExactIfExists(
+        var method = HookHelpers.findMethodExactIfExists(
             pmsClass,
             "restorePermissionState",
             /* AndroidPackage pkg   */
@@ -62,7 +63,7 @@ class PermissionManagerServiceHook30(classLoader: ClassLoader) : BaseSubHook(cla
         )
 
         if (method == null) { // method restorePermissionState() not found
-            val methods = XposedHelpers.findMethodsByExactParameters(
+            val methods = HookHelpers.findMethodsByExactParameters(
                 pmsClass,
                 Void.TYPE,
                 /* AndroidPackage pkg   */
@@ -74,7 +75,7 @@ class PermissionManagerServiceHook30(classLoader: ClassLoader) : BaseSubHook(cla
                 /* PermissionCallback callback */
                 callbackClass,
             )
-            if (methods != null && methods.isNotEmpty()) {
+            if (methods.isNotEmpty()) {
                 method = methods[0]
             }
         }
@@ -84,10 +85,10 @@ class PermissionManagerServiceHook30(classLoader: ClassLoader) : BaseSubHook(cla
         return method
     }
 
-    private fun afterGrantPermissionsSinceAndroid11(param: XC_MethodHook.MethodHookParam) {
+    private fun afterGrantPermissionsSinceAndroid11(param: MethodHookParam) {
         // com.android.server.pm.parsing.pkg.AndroidPackage 对象
         val pkg = param.args[0]
-        val packageNameInPkg = XposedHelpers.callMethod(pkg, "getPackageName") as String
+        val packageNameInPkg = HookHelpers.callMethod(pkg, "getPackageName") as String
 
         for (packageName in PACKAGE_PERMISSIONS.keys) {
             if (packageName == packageNameInPkg) {
@@ -96,33 +97,33 @@ class PermissionManagerServiceHook30(classLoader: ClassLoader) : BaseSubHook(cla
                 // PermissionManagerService 对象
                 val permissionManagerService = param.thisObject
                 // PackageManagerInternal 对象 mPackageManagerInt
-                val mPackageManagerInt = XposedHelpers.getObjectField(permissionManagerService, "mPackageManagerInt")
+                val mPackageManagerInt = HookHelpers.getObjectField(permissionManagerService, "mPackageManagerInt")
 
                 // PackageSetting 对象 ps
-                val ps = XposedHelpers.callMethod(mPackageManagerInt, "getPackageSetting", packageName)
+                val ps = HookHelpers.callMethod(mPackageManagerInt, "getPackageSetting", packageName)
 
                 // com.android.server.pm.permission.PermissionsState 对象
-                val permissionsState = XposedHelpers.callMethod(ps, "getPermissionsState")
+                val permissionsState = HookHelpers.callMethod(ps, "getPermissionsState")
 
                 // Manifest.xml 中声明的permission列表
-                val requestedPermissions = XposedHelpers.callMethod(pkg, "getRequestedPermissions") as? List<*>
+                val requestedPermissions = HookHelpers.callMethod(pkg, "getRequestedPermissions") as? List<*>
 
                 // com.android.server.pm.permission.PermissionSettings mSettings 对象
-                val settings = XposedHelpers.getObjectField(permissionManagerService, "mSettings")
+                val settings = HookHelpers.getObjectField(permissionManagerService, "mSettings")
                 // ArrayMap<String, com.android.server.pm.permission.BasePermission> mPermissions 对象
-                val permissions = XposedHelpers.getObjectField(settings, "mPermissions")
+                val permissions = HookHelpers.getObjectField(settings, "mPermissions")
 
                 val permissionsToGrant = PACKAGE_PERMISSIONS[packageName] ?: continue
                 for (permissionToGrant in permissionsToGrant) {
                     if (requestedPermissions?.contains(permissionToGrant) != true) {
-                        val granted = XposedHelpers.callMethod(
+                        val granted = HookHelpers.callMethod(
                             permissionsState,
                             "hasInstallPermission",
                             permissionToGrant,
                         ) as Boolean
                         if (!granted) {
-                            val bpToGrant = XposedHelpers.callMethod(permissions, "get", permissionToGrant)
-                            val result = XposedHelpers.callMethod(
+                            val bpToGrant = HookHelpers.callMethod(permissions, "get", permissionToGrant)
+                            val result = HookHelpers.callMethod(
                                 permissionsState,
                                 "grantInstallPermission",
                                 bpToGrant,

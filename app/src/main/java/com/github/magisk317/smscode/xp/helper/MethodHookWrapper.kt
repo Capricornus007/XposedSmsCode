@@ -1,9 +1,10 @@
 package com.github.magisk317.smscode.xp.helper
 
 import com.github.magisk317.smscode.common.utils.XLog
-import de.robv.android.xposed.XC_MethodHook
+import com.github.magisk317.smscode.xp.hookapi.MethodHook
+import com.github.magisk317.smscode.xp.hookapi.MethodHookParam
 
-abstract class MethodHookWrapper : XC_MethodHook() {
+abstract class MethodHookWrapper : MethodHook() {
     @Throws(Throwable::class)
     override fun beforeHookedMethod(param: MethodHookParam) {
         try {

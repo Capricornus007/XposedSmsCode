@@ -3,9 +3,10 @@ package com.github.magisk317.smscode.xp.hook.permission
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.xp.helper.MethodHookWrapper
 import com.github.magisk317.smscode.xp.hook.BaseSubHook
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
+import com.github.magisk317.smscode.xp.hookapi.MethodHook
+import com.github.magisk317.smscode.xp.hookapi.HookBridge
+import com.github.magisk317.smscode.xp.hookapi.HookHelpers
+import com.github.magisk317.smscode.xp.hookapi.MethodHookParam
 
 /**
  * Since Android 16 (API 36+)
@@ -42,7 +43,7 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
      */
     private fun hookOnSystemReady() {
         XLog.d("Hooking onSystemReady() for Android 36+")
-        val pmsClass = XposedHelpers.findClass(CLASS_PMS, mClassLoader)
+        val pmsClass = HookHelpers.findClass(CLASS_PMS, mClassLoader)
         val methods = pmsClass.declaredMethods.filter { it.name == "onSystemReady" || it.name == "systemReady" }
         if (methods.isEmpty()) {
             XLog.w("Cannot find onSystemReady/systemReady in PermissionManagerService")
@@ -50,14 +51,14 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
             return
         }
         methods.forEach { method ->
-            XposedBridge.hookMethod(
+            HookBridge.hookMethod(
                 method,
-                object : MethodHookWrapper() {
-                    @Throws(Throwable::class)
-                    override fun after(param: MethodHookParam) {
-                        PermissionGrantHelper36.grantAllTargetPermissions(param.thisObject)
-                    }
-                },
+                    object : MethodHookWrapper() {
+                        @Throws(Throwable::class)
+                        override fun after(param: MethodHookParam) {
+                            param.thisObject?.let { PermissionGrantHelper36.grantAllTargetPermissions(it) }
+                        }
+                    },
             )
         }
     }
@@ -68,7 +69,7 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
      */
     private fun hookOnPackageInstalled() {
         XLog.d("Hooking onPackageInstalled() for Android 36+")
-        val pmsClass = XposedHelpers.findClass(CLASS_PMS, mClassLoader)
+        val pmsClass = HookHelpers.findClass(CLASS_PMS, mClassLoader)
         val methods = pmsClass.declaredMethods.filter { method ->
             method.name in PACKAGE_INSTALL_CALLBACK_NAMES &&
                 method.parameterTypes.isNotEmpty() &&
@@ -80,7 +81,7 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
             return
         }
         methods.forEach { method ->
-            XposedBridge.hookMethod(
+            HookBridge.hookMethod(
                 method,
                 object : MethodHookWrapper() {
                     @Throws(Throwable::class)
@@ -95,7 +96,7 @@ class PermissionManagerServiceHook36(classLoader: ClassLoader) : BaseSubHook(cla
     /**
      * After a package is installed, check if it's a target and grant permissions.
      */
-    private fun afterOnPackageInstalled(param: XC_MethodHook.MethodHookParam) {
+    private fun afterOnPackageInstalled(param: MethodHookParam) {
         PermissionGrantHelper36.afterOnPackageInstalled(param)
     }
 

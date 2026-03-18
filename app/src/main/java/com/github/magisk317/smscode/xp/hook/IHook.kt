@@ -1,13 +1,13 @@
 package com.github.magisk317.smscode.xp.hook
 
-import de.robv.android.xposed.IXposedHookZygoteInit
-import de.robv.android.xposed.callbacks.XC_LoadPackage
+import com.github.magisk317.smscode.xp.hookapi.LoadParam
+import com.github.magisk317.smscode.xp.hookapi.ZygoteParam
 
 interface IHook {
 
     @Throws(Throwable::class)
-    fun initZygote(startupParam: IXposedHookZygoteInit.StartupParam)
+    fun initZygote(startupParam: ZygoteParam)
 
     @Throws(Throwable::class)
-    fun onLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam)
+    fun onLoadPackage(lpparam: LoadParam)
 }
