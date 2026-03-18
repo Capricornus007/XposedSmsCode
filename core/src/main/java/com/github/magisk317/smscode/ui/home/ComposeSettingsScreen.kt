@@ -499,32 +499,6 @@ fun ComposeSettingsScreen(
                             defaultValue = true,
                             onSaved = markPrefsSaved,
                         )
-                        SwitchItem(
-                            title = stringResource(id = R.string.pref_show_code_notification_title),
-                            summary = stringResource(id = R.string.pref_show_code_notification_summary),
-                            key = PrefConst.KEY_SHOW_CODE_NOTIFICATION,
-                            defaultValue = true,
-                            stateOverride = showCodeNotificationEnabled,
-                            onSaved = markPrefsSaved,
-                        )
-                        if (showCodeNotificationEnabled.value) {
-                            SwitchItem(
-                                title = stringResource(id = R.string.pref_auto_cancel_notification_title),
-                                summary = stringResource(id = R.string.pref_auto_cancel_notification_summary),
-                                key = PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
-                                defaultValue = false,
-                                onSaved = markPrefsSaved,
-                            )
-                            Item(
-                                title = stringResource(id = R.string.pref_notification_retention_time_title),
-                                summary = run {
-                                    val entries = stringArrayResource(id = R.array.notification_retention_time_entry_list)
-                                    val values = stringArrayResource(id = R.array.notification_retention_time_list)
-                                    val index = values.indexOf(retentionTime)
-                                    if (index >= 0) entries[index] else retentionTime
-                                },
-                            ) { showRetentionDialog = true }
-                        }
                     }
 
                     ExpandableSettingsSection(
