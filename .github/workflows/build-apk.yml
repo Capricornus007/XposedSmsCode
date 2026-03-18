@@ -266,8 +266,7 @@ jobs:
               <img src=\"https://raw.githubusercontent.com/machiav3lli/oandbackupx/master/badge_github.png\" alt=\"Get it on GitHub\" height=\"80\"/>
             </a>
             </div>
-
-            Source: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}" \
+            " \
             --draft
         env:
           GH_TOKEN: ${{ secrets.XPOSED_MODULES_REPO_TOKEN }}
