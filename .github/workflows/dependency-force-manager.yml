@@ -169,7 +169,7 @@ jobs:
       - name: Fetch Dependabot alerts
         id: alerts
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           curl -sS \
             -H "Accept: application/vnd.github+json" \
