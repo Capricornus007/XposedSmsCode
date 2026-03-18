@@ -7,6 +7,7 @@ import android.database.Cursor
 import android.os.Bundle
 import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.common.utils.XLog
+import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.DBProvider
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.ui.record.CodeRecordRestoreManager
