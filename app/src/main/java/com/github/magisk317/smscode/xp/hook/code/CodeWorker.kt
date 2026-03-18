@@ -113,9 +113,11 @@ class CodeWorker(
             mScheduledExecutor.schedule(autoInputAction, autoInputDelayMs, TimeUnit.MILLISECONDS)
         }
 
-        // 显示通知 Action
-        val notifyAction = NotifyAction(mPluginContext, mPhoneContext, smsMsg)
-        val notificationFuture = mScheduledExecutor.schedule(notifyAction, 0, TimeUnit.MILLISECONDS)
+        if (showNotification) {
+            // 显示通知 Action
+            val notifyAction = NotifyAction(mPluginContext, mPhoneContext, smsMsg)
+            mScheduledExecutor.schedule(notifyAction, 0, TimeUnit.MILLISECONDS)
+        }
 
         // 记录验证码短信 Action（转发状态与拦截配置解耦）
         val recordSmsAction = RecordSmsAction(mPluginContext, mPhoneContext, smsMsg, eventId)
@@ -125,7 +127,7 @@ class CodeWorker(
         scheduleOperateSmsActions(smsMsg)
 
         var autoCancelRetentionMs = 0L
-        if (autoCancelNotification) {
+        if (showNotification && autoCancelNotification) {
             autoCancelRetentionMs = PrefsReader.getNotificationRetentionTime(mPluginContext) * 1000L
             val notificationId = smsMsg.hashCode()
 

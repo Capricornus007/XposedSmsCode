@@ -321,8 +321,8 @@ object PrefsReader {
 
     @JvmStatic
     fun showCodeNotification(context: Context): Boolean {
-        val defaultValue = true
-        return getBooleanViaProvider(context, PrefConst.KEY_SHOW_CODE_NOTIFICATION, defaultValue)
+        // Notification feature is being phased out; force disabled.
+        return false
     }
 
     @JvmStatic

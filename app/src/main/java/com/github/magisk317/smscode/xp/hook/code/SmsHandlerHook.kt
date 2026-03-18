@@ -213,10 +213,13 @@ class SmsHandlerHook : BaseHook() {
                     Context.CONTEXT_IGNORE_SECURITY,
                 )
                 if (mPluginContext != null) {
-                    initNotificationChannel()
-                    registerCopyCodeReceiver()
+                    val pluginContext = mPluginContext ?: return
+                    if (PrefsReader.showCodeNotification(pluginContext)) {
+                        initNotificationChannel()
+                        registerCopyCodeReceiver()
+                    }
                     registerSmsInboxObserver()
-                    mPluginContext?.let { ModuleActivationStore.markActivated(it) }
+                    ModuleActivationStore.markActivated(pluginContext)
                     if (ModuleConflictArbiter.shouldSuppressByRelay(mPhoneContext, "SmsHandlerHook#constructor")) {
                         logSuppressedOnce("constructor")
                     }
