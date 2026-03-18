@@ -110,12 +110,6 @@ subprojects {
             force(catalog.apache.httpclient)
             // BEGIN AUTO FORCED DEPENDENCIES (managed by workflow)
             // END AUTO FORCED DEPENDENCIES (managed by workflow)
-            eachDependency {
-                if (requested.group == "io.netty") {
-                    useVersion("4.1.129.Final")
-                    because("Dependabot: netty CVE fixes (transitive build/test deps)")
-                }
-            }
         }
     }
 }
