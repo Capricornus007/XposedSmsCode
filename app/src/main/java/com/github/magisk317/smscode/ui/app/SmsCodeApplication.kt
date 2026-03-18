@@ -12,9 +12,14 @@ import android.telephony.TelephonyManager
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
+import com.github.magisk317.smscode.common.utils.ModuleActivationStore
+import com.github.magisk317.smscode.common.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.RuntimeLogStore
+import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.di.appModule
 import com.github.magisk317.smscode.ui.record.CodeRecordRestoreManager
+import io.github.libxposed.service.XposedService
+import io.github.libxposed.service.XposedServiceHelper
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
@@ -44,6 +49,7 @@ class SmsCodeApplication : Application() {
             androidContext(this@SmsCodeApplication)
             modules(appModule)
         }
+        initXposedServiceActivationMonitor()
         importPendingCodeRecords()
         syncPreferences()
         handlePhoneProcessRestartIfNeeded()
@@ -66,6 +72,31 @@ class SmsCodeApplication : Application() {
                 false,
             )
             RuntimeLogStore.setEnabled(verboseLog)
+        }
+    }
+
+    private fun initXposedServiceActivationMonitor() {
+        runCatching<Unit> {
+            XposedServiceHelper.registerListener(
+                object : XposedServiceHelper.OnServiceListener {
+                    override fun onServiceBind(service: XposedService) {
+                        ModuleUtils.setRuntimeActivated(true)
+                        ModuleActivationStore.markActivated(this@SmsCodeApplication)
+                        XLog.i(
+                            "Xposed service connected: framework=%s version=%s",
+                            service.frameworkName,
+                            service.frameworkVersion,
+                        )
+                    }
+
+                    override fun onServiceDied(service: XposedService) {
+                        ModuleUtils.setRuntimeActivated(false)
+                        XLog.w("Xposed service disconnected")
+                    }
+                },
+            )
+        }.onFailure {
+            XLog.w("Failed to register Xposed service listener: %s", it.message ?: "unknown")
         }
     }
 

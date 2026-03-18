@@ -48,7 +48,6 @@ import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
-import com.github.magisk317.smscode.common.utils.ModuleActivationStore
 import com.github.magisk317.smscode.common.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.LogBundleExporter
@@ -111,7 +110,7 @@ fun ComposeSettingsScreen(
     var showPrivacyPolicyPage by remember { mutableStateOf(false) }
     var showKeywordsDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
-    var isActivated by remember { mutableStateOf(ModuleUtils.isModuleEnabled()) }
+    var isActivated by remember { mutableStateOf(ModuleUtils.isModuleActivated(context)) }
     var settingsDataLoaded by remember { mutableStateOf(false) }
     var manualRefreshing by remember { mutableStateOf(false) }
     var expandGeneral by remember { mutableStateOf(false) }
@@ -251,9 +250,9 @@ fun ComposeSettingsScreen(
 
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
-            isActivated = ModuleUtils.isModuleEnabled() || ModuleActivationStore.isActivatedRecently(context)
+            isActivated = ModuleUtils.isModuleActivated(context)
             delay(1000L)
-            isActivated = ModuleUtils.isModuleEnabled() || ModuleActivationStore.isActivatedRecently(context)
+            isActivated = ModuleUtils.isModuleActivated(context)
         }
     }
 
