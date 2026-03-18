@@ -39,6 +39,11 @@ class RecordSmsAction(
             smsMsg.body?.length ?: 0,
             !smsMsg.smsCode.isNullOrBlank(),
         )
+        if (PrefsReader.deduplicateSms(mPluginContext)) {
+            if (shouldSkipByDedup(smsMsg, eventLabel)) {
+                return
+            }
+        }
         try {
             val smsMsgUri = DBProvider.SMS_MSG_CONTENT_URI
             val resolver = mPluginContext.contentResolver
@@ -113,9 +118,47 @@ class RecordSmsAction(
         }
     }
 
+    private fun shouldSkipByDedup(smsMsg: SmsMsg, eventLabel: String): Boolean {
+        val sender = smsMsg.sender
+        val body = smsMsg.body
+        if (sender.isNullOrBlank() || body.isNullOrBlank()) {
+            return false
+        }
+        val timestamp = if (smsMsg.date > 0) smsMsg.date else System.currentTimeMillis()
+        val from = (timestamp - DEDUP_WINDOW_MS).coerceAtLeast(0L)
+        val to = timestamp + DEDUP_WINDOW_MS
+        val db = DBManager.get(mPluginContext)
+        val fingerprintDup = runCatching {
+            db.querySmsMsgByFingerprintInRange(sender, body, from, to) != null
+        }.getOrDefault(false)
+        if (fingerprintDup) {
+            XLog.w("Diag record dedup skip: reason=fingerprint_window event_id=%s", eventLabel)
+            return true
+        }
+
+        val code = smsMsg.smsCode
+        if (code.isNullOrBlank()) return false
+
+        val pkg = smsMsg.packageName
+        val company = smsMsg.company
+        val channelDup = runCatching {
+            (pkg?.isNotBlank() == true && db.querySmsMsgByCodeAndPackageInRange(code, pkg, from, to) != null) ||
+                (company?.isNotBlank() == true && db.querySmsMsgByCodeAndCompanyInRange(code, company, from, to) != null)
+        }.getOrDefault(false)
+        if (channelDup) {
+            XLog.w("Diag record dedup skip: reason=code_channel event_id=%s", eventLabel)
+            return true
+        }
+        return false
+    }
+
     private fun senderHash(sender: String?): String {
         val value = sender.orEmpty()
         if (value.isBlank()) return "none"
         return Integer.toHexString(value.hashCode())
+    }
+
+    companion object {
+        private const val DEDUP_WINDOW_MS = 5_000L
     }
 }

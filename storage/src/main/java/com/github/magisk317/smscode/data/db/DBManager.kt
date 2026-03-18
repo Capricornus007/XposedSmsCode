@@ -107,6 +107,30 @@ class DBManager private constructor(context: Context) {
         msgType: Int = SmsMsg.MSG_TYPE_SMS,
     ): SmsMsg? = mSmsMsgDao.getByFingerprint(sender, body, date, msgType)
 
+    fun querySmsMsgByFingerprintInRange(
+        sender: String?,
+        body: String?,
+        dateFrom: Long,
+        dateTo: Long,
+        msgType: Int = SmsMsg.MSG_TYPE_SMS,
+    ): SmsMsg? = mSmsMsgDao.getByFingerprintInRange(sender, body, msgType, dateFrom, dateTo)
+
+    fun querySmsMsgByCodeAndCompanyInRange(
+        smsCode: String?,
+        company: String?,
+        dateFrom: Long,
+        dateTo: Long,
+        msgType: Int = SmsMsg.MSG_TYPE_SMS,
+    ): SmsMsg? = mSmsMsgDao.getByCodeAndCompanyInRange(smsCode, company, msgType, dateFrom, dateTo)
+
+    fun querySmsMsgByCodeAndPackageInRange(
+        smsCode: String?,
+        packageName: String?,
+        dateFrom: Long,
+        dateTo: Long,
+        msgType: Int = SmsMsg.MSG_TYPE_SMS,
+    ): SmsMsg? = mSmsMsgDao.getByCodeAndPackageInRange(smsCode, packageName, msgType, dateFrom, dateTo)
+
     fun updateSmsMsg(smsMsg: SmsMsg): Int {
         val id = smsMsg.id ?: return 0
         if (mSmsMsgDao.getById(id) == null) {

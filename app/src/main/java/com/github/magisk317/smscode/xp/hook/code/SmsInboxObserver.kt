@@ -151,6 +151,10 @@ internal class SmsInboxObserver(
             XLog.w("Diag observer auto-input disabled: event_id=%s", eventId)
         }
 
+        if (PrefsReader.deduplicateSms(pluginContext)) {
+            XLog.w("Diag observer record skipped: dedup enabled event_id=%s", eventId)
+            return
+        }
         // Keep record behavior consistent with regular flow when enabled.
         RecordSmsAction(pluginContext, phoneContext, smsMsg, eventId).call()
     }
