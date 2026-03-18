@@ -224,7 +224,7 @@ internal class SmsInboxObserver(
 
     private fun buildObservedEventId(smsId: Long, date: Long): String {
         val ts = if (date > 0) date else System.currentTimeMillis()
-        return "sms_observed_${ts.toString(36)}_${smsId.toString(36)}"
+        return "sms_observed_${ts.toString(EVENT_ID_RADIX)}_${smsId.toString(EVENT_ID_RADIX)}"
     }
 
     private fun markSeen(smsId: Long): Boolean = synchronized(recentSmsIds) {
@@ -247,6 +247,7 @@ internal class SmsInboxObserver(
         private const val RECENT_SMS_WINDOW_MS = 10 * 60 * 1000L
         private const val MAX_RECENT_SMS_COUNT = 32
         private const val MAX_TRACKED_SMS_IDS = 128
+        private const val EVENT_ID_RADIX = 36
         private val queryExecutor = Executors.newSingleThreadExecutor()
         private val recentSmsIds = Collections.synchronizedSet(LinkedHashSet<Long>())
     }
