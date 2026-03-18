@@ -231,8 +231,15 @@ jobs:
 
           # Build security force list from Dependabot alerts
           alerts = json.loads(Path("/tmp/dependabot-alerts.json").read_text())
+          if isinstance(alerts, dict):
+            message = alerts.get("message")
+            if message:
+              print(f"WARN: dependabot alerts response is not a list: {message}")
+            alerts = alerts.get("alerts") if isinstance(alerts.get("alerts"), list) else []
           security_forces = {}
           for alert in alerts:
+            if not isinstance(alert, dict):
+              continue
             dep = alert.get("dependency", {}).get("package", {}).get("name")
             patched = alert.get("security_vulnerability", {}).get("first_patched_version", {}) or {}
             target = patched.get("identifier") or patched.get("version")
