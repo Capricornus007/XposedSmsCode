@@ -108,6 +108,8 @@ subprojects {
             force(catalog.jdom2)
             force(catalog.apache.commons.lang3)
             force(catalog.apache.httpclient)
+            // BEGIN AUTO FORCED DEPENDENCIES (managed by workflow)
+            // END AUTO FORCED DEPENDENCIES (managed by workflow)
             eachDependency {
                 if (requested.group == "io.netty") {
                     useVersion("4.1.129.Final")
