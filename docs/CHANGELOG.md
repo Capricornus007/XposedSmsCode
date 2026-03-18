@@ -4,6 +4,16 @@
 
 ---
 
+## [v3.2.0] - 2026-03-19
+- 版本：`versionCode 103` / `versionName 3.2.0`。
+- 兼容 libxposed 新框架 API 101，与 legacy 同包共存。
+- 抽取 `smscode-core` 共享模块，统一 hook/权限/系统注入与日志能力。
+- 日志包新增 logcat 抓取，便于完整排查。
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.1.9...v3.2.0
+
+---
+
 ## [v3.1.9] - 2026-03-16
 - 版本：`versionCode 102` / `versionName 3.1.9`。
 - 从 beta 转为正式版，收敛冲突提示、默认作用域（含 `system`）与繁中缺失文案等变更。
