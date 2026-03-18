@@ -12,10 +12,17 @@ import android.telephony.TelephonyManager
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
-import com.github.magisk317.smscode.common.utils.ModuleActivationStore
-import com.github.magisk317.smscode.common.utils.ModuleUtils
+import io.github.magisk317.smscode.core.utils.ModuleActivationStore
+import io.github.magisk317.smscode.core.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.RuntimeLogStore
-import com.github.magisk317.smscode.common.utils.XLog
+import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
+import io.github.magisk317.smscode.core.runtime.CoreHookPolicy
+import io.github.magisk317.smscode.core.runtime.CoreHookPolicyHolder
+import io.github.magisk317.smscode.core.runtime.CoreLogSink
+import io.github.magisk317.smscode.core.runtime.CoreLogSinkHolder
+import io.github.magisk317.smscode.core.runtime.CoreRuntime
+import io.github.magisk317.smscode.core.runtime.CoreRuntimeAccess
+import io.github.magisk317.smscode.core.utils.XLog
 import com.github.magisk317.smscode.di.appModule
 import com.github.magisk317.smscode.ui.record.CodeRecordRestoreManager
 import io.github.libxposed.service.XposedService
@@ -40,6 +47,7 @@ class SmsCodeApplication : Application() {
         super.onCreate()
         ensureIpcToken()
         RuntimeLogStore.initialize(this, enableDetailedLogs = false)
+        installCoreRuntime()
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
@@ -98,6 +106,28 @@ class SmsCodeApplication : Application() {
         }.onFailure {
             XLog.w("Failed to register Xposed service listener: %s", it.message ?: "unknown")
         }
+    }
+
+    private fun installCoreRuntime() {
+        CoreRuntime.install(object : CoreRuntimeAccess {
+            override val logTag: String = BuildConfig.LOG_TAG
+            override val logLevel: Int = BuildConfig.LOG_LEVEL
+            override val logToXposed: Boolean = BuildConfig.LOG_TO_XPOSED
+            override val debug: Boolean = BuildConfig.DEBUG
+            override val applicationId: String = BuildConfig.APPLICATION_ID
+            // Keep legacy action namespace for system input broadcast compatibility.
+            override val actionNamespace: String = "com.github.magisk317.smscode"
+        })
+        CoreLogSinkHolder.install(object : CoreLogSink {
+            override fun append(priority: Int, tag: String, message: String) {
+                RuntimeLogStore.append(priority, tag, message)
+            }
+        })
+        CoreHookPolicyHolder.install(object : CoreHookPolicy {
+            override fun shouldSuppressSystemHooks(context: Context?, source: String): Boolean {
+                return ModuleConflictArbiter.shouldSuppressByRelay(context, source)
+            }
+        })
     }
 
     private fun registerLicenseActivityKiller() {

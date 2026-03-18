@@ -57,7 +57,7 @@ import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.constant.TransitionConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
-import com.github.magisk317.smscode.common.utils.XLog
+import io.github.magisk317.smscode.core.utils.XLog
 import com.github.magisk317.smscode.common.utils.SPUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.Utils

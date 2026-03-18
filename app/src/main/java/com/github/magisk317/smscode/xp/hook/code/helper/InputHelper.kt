@@ -1,6 +1,6 @@
 package com.github.magisk317.smscode.xp.hook.code.helper
 
-import com.github.magisk317.smscode.common.utils.XLog
+import io.github.magisk317.smscode.core.utils.XLog
 
 object InputHelper {
 
@@ -13,7 +13,7 @@ object InputHelper {
     ) {
         if (text == null) return
         val intent = android.content.Intent(
-            com.github.magisk317.smscode.xp.hook.system.SystemInputInjectorHook.ACTION_AUTO_INPUT,
+            io.github.magisk317.smscode.core.hook.system.SystemInputInjectorHook.resolveActionAutoInput(),
         )
         intent.putExtra("code", text)
         intent.putExtra("autoEnter", autoEnter)

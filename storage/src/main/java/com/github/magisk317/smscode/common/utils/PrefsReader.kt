@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import android.content.Context
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import io.github.magisk317.smscode.core.utils.XLog
 
 object PrefsReader {
     private const val PREFS_NAME = "xposed_prefs"

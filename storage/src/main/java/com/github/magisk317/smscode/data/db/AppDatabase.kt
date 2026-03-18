@@ -22,7 +22,7 @@ import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.data.db.entity.NotifyRouteRule
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import com.github.magisk317.smscode.common.utils.XLog
+import io.github.magisk317.smscode.core.utils.XLog
 
 @Database(entities = [
     SmsCodeRule::class,

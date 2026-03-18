@@ -31,7 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.Const
-import com.github.magisk317.smscode.common.utils.ModuleUtils
+import io.github.magisk317.smscode.core.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.Utils
 import dev.chrisbanes.haze.HazeState

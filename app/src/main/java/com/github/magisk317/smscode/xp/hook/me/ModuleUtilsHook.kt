@@ -1,13 +1,13 @@
 package com.github.magisk317.smscode.xp.hook.me
 
 import com.github.tianma8023.xposed.smscode.BuildConfig
-import com.github.magisk317.smscode.common.utils.ModuleUtils
-import com.github.magisk317.smscode.common.utils.XLog
-import com.github.magisk317.smscode.xp.helper.XposedWrapper
-import com.github.magisk317.smscode.xp.hook.BaseHook
-import com.github.magisk317.smscode.xp.hookapi.LoadParam
-import com.github.magisk317.smscode.xp.hookapi.MethodHook
-import com.github.magisk317.smscode.xp.hookapi.MethodHookParam
+import io.github.magisk317.smscode.core.utils.ModuleUtils
+import io.github.magisk317.smscode.core.utils.XLog
+import io.github.magisk317.smscode.core.helper.XposedWrapper
+import io.github.magisk317.smscode.core.hook.BaseHook
+import io.github.magisk317.smscode.core.hookapi.LoadParam
+import io.github.magisk317.smscode.core.hookapi.MethodHook
+import io.github.magisk317.smscode.core.hookapi.MethodHookParam
 
 /**
  * Hook class ModuleUtils

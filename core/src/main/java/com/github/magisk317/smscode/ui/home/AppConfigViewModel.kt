@@ -6,7 +6,7 @@ import android.content.pm.PackageManager
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.magisk317.smscode.common.utils.XLog
+import io.github.magisk317.smscode.core.utils.XLog
 import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.feature.store.EntityStoreManager

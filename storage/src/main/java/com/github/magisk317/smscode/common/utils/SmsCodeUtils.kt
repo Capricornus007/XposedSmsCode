@@ -6,6 +6,7 @@ import com.github.magisk317.smscode.data.db.DBProvider
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.feature.store.EntityStoreManager
 import com.github.magisk317.smscode.feature.store.EntityType
+import io.github.magisk317.smscode.core.utils.XLog
 import java.util.Locale
 import java.util.regex.Pattern
 

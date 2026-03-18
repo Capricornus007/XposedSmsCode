@@ -4,12 +4,12 @@ import android.content.ContentProvider
 import android.content.ContentValues
 import android.net.Uri
 import android.os.Binder
-import com.github.magisk317.smscode.common.utils.XLog
-import com.github.magisk317.smscode.xp.hook.BaseHook
-import com.github.magisk317.smscode.xp.helper.XposedWrapper
-import com.github.magisk317.smscode.xp.hookapi.LoadParam
-import com.github.magisk317.smscode.xp.hookapi.MethodHook
-import com.github.magisk317.smscode.xp.hookapi.MethodHookParam
+import io.github.magisk317.smscode.core.utils.XLog
+import io.github.magisk317.smscode.core.hook.BaseHook
+import io.github.magisk317.smscode.core.helper.XposedWrapper
+import io.github.magisk317.smscode.core.hookapi.LoadParam
+import io.github.magisk317.smscode.core.hookapi.MethodHook
+import io.github.magisk317.smscode.core.hookapi.MethodHookParam
 
 /**
  * Log SMS provider writes to identify who inserts/updates SMS rows.

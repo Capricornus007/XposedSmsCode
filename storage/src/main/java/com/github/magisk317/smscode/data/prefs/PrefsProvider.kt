@@ -12,7 +12,7 @@ import android.os.Bundle
 import android.os.Process
 import com.github.magisk317.smscode.storage.BuildConfig
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
-import com.github.magisk317.smscode.common.utils.XLog
+import io.github.magisk317.smscode.core.utils.XLog
 import kotlinx.coroutines.runBlocking
 
 class PrefsProvider : ContentProvider() {

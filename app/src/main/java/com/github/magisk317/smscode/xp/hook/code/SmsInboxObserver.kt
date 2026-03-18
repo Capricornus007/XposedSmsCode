@@ -10,7 +10,7 @@ import android.os.Build
 import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.common.utils.StringUtils
-import com.github.magisk317.smscode.common.utils.XLog
+import io.github.magisk317.smscode.core.utils.XLog
 import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.hook.code.action.impl.AutoInputAction

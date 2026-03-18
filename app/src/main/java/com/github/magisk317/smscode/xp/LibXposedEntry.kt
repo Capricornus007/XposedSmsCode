@@ -1,18 +1,20 @@
 package com.github.magisk317.smscode.xp
 
 import com.github.tianma8023.xposed.smscode.BuildConfig
-import com.github.magisk317.smscode.common.utils.XLog
-import com.github.magisk317.smscode.xp.hook.BaseHook
+import io.github.magisk317.smscode.core.hook.BaseHook
 import com.github.magisk317.smscode.xp.hook.code.SmsHandlerHook
 import com.github.magisk317.smscode.xp.hook.google.GoogleMessagesHook
 import com.github.magisk317.smscode.xp.hook.me.ModuleUtilsHook
-import com.github.magisk317.smscode.xp.hook.permission.PermissionGranterHook
-import com.github.magisk317.smscode.xp.hook.system.SystemInputInjectorHook
+import io.github.magisk317.smscode.core.hook.permission.PermissionGranterHook
+import io.github.magisk317.smscode.core.hook.system.SystemInputInjectorHook
 import com.github.magisk317.smscode.xp.hook.telephony.SmsProviderHook
-import com.github.magisk317.smscode.xp.hookapi.HookEnv
-import com.github.magisk317.smscode.xp.hookapi.LibXposedHookApi
-import com.github.magisk317.smscode.xp.hookapi.LoadParam
-import com.github.magisk317.smscode.xp.hookapi.ZygoteParam
+import io.github.magisk317.smscode.core.hookapi.HookEnv
+import io.github.magisk317.smscode.core.hookapi.LibXposedHookApi
+import io.github.magisk317.smscode.core.hookapi.LoadParam
+import io.github.magisk317.smscode.core.hookapi.ZygoteParam
+import io.github.magisk317.smscode.core.runtime.CoreRuntime
+import io.github.magisk317.smscode.core.runtime.CoreRuntimeAccess
+import io.github.magisk317.smscode.core.utils.XLog
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
@@ -31,6 +33,7 @@ class LibXposedEntry : XposedModule() {
     private var processName: String = "unknown"
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
+        installCoreRuntime()
         HookEnv.init(LibXposedHookApi(this))
         processName = if (param.isSystemServer) "android" else param.processName
 
@@ -58,6 +61,7 @@ class LibXposedEntry : XposedModule() {
     }
 
     private fun dispatchLoad(loadParam: LoadParam) {
+        installCoreRuntime()
         XLog.d("LibXposedEntry: Loaded package: ${loadParam.packageName} process: ${loadParam.processName}")
         if ("android" == loadParam.packageName || "system" == loadParam.packageName) {
             XLog.w(
@@ -71,5 +75,17 @@ class LibXposedEntry : XposedModule() {
                 hook.onLoadPackage(loadParam)
             }
         }
+    }
+
+    private fun installCoreRuntime() {
+        CoreRuntime.install(object : CoreRuntimeAccess {
+            override val logTag: String = BuildConfig.LOG_TAG
+            override val logLevel: Int = BuildConfig.LOG_LEVEL
+            override val logToXposed: Boolean = BuildConfig.LOG_TO_XPOSED
+            override val debug: Boolean = BuildConfig.DEBUG
+            override val applicationId: String = BuildConfig.APPLICATION_ID
+            // Keep legacy action namespace for system input broadcast compatibility.
+            override val actionNamespace: String = "com.github.magisk317.smscode"
+        })
     }
 }
