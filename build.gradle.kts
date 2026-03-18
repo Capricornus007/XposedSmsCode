@@ -12,6 +12,12 @@ buildscript {
             force(libs.jose4j)
             force(libs.jdom2)
             force(libs.apache.commons.lang3)
+            eachDependency {
+                if (requested.group == "io.netty") {
+                    useVersion("4.1.129.Final")
+                    because("Dependabot: netty CVE fixes (transitive build/test deps)")
+                }
+            }
         }
     }
 }
@@ -102,6 +108,12 @@ subprojects {
             force(catalog.jdom2)
             force(catalog.apache.commons.lang3)
             force(catalog.apache.httpclient)
+            eachDependency {
+                if (requested.group == "io.netty") {
+                    useVersion("4.1.129.Final")
+                    because("Dependabot: netty CVE fixes (transitive build/test deps)")
+                }
+            }
         }
     }
 }
