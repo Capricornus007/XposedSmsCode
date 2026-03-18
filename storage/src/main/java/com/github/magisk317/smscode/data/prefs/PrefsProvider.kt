@@ -77,10 +77,14 @@ class PrefsProvider : ContentProvider() {
         return when (method) {
             METHOD_KILL_SELF -> {
                 val delayMs = extras?.getLong(EXTRA_DELAY_MS, 80L) ?: 80L
+                val processName = runCatching { android.app.Application.getProcessName() }.getOrNull()
+                    ?: ctx.packageName
                 XLog.w(
-                    "PrefsProvider: kill self requested, delay=%dms callerUid=%d",
+                    "PrefsProvider: kill self requested, delay=%dms callerUid=%d pid=%d process=%s",
                     delayMs,
                     Binder.getCallingUid(),
+                    Process.myPid(),
+                    processName,
                 )
                 Thread {
                     try {
@@ -88,8 +92,17 @@ class PrefsProvider : ContentProvider() {
                     } catch (_: InterruptedException) {
                         // ignore
                     }
-                    XLog.w("PrefsProvider: kill self requested by uid=%d", Binder.getCallingUid())
-                    Process.killProcess(Process.myPid())
+                    XLog.w(
+                        "PrefsProvider: kill self now, callerUid=%d pid=%d process=%s",
+                        Binder.getCallingUid(),
+                        Process.myPid(),
+                        processName,
+                    )
+                    try {
+                        Process.killProcess(Process.myPid())
+                    } finally {
+                        runCatching { System.exit(0) }
+                    }
                 }.start()
                 Bundle().apply { putBoolean(EXTRA_OK, true) }
             }
