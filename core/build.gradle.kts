@@ -63,6 +63,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":smscode-core:core"))
     implementation(project(":storage"))
 
     implementation(libs.androidx.core.ktx)

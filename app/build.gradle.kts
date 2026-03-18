@@ -266,6 +266,7 @@ tasks.matching { it.name == "bundlePlayRelease" }.configureEach {
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(project(":core"))
+    implementation(project(":smscode-core:core"))
     implementation(project(":storage"))
 
     implementation(libs.androidx.core.ktx)
