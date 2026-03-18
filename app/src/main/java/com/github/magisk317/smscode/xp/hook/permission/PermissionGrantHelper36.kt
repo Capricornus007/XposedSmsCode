@@ -3,7 +3,9 @@ package com.github.magisk317.smscode.xp.hook.permission
 import android.os.UserHandle
 import com.github.magisk317.smscode.common.constant.PermConst.PACKAGE_PERMISSIONS
 import com.github.magisk317.smscode.common.utils.XLog
-import de.robv.android.xposed.XposedHelpers
+import com.github.magisk317.smscode.xp.hookapi.HookHelpers
+import com.github.magisk317.smscode.xp.hookapi.MethodHookParam
+import java.lang.reflect.Method
 
 /**
  * Permission grant helpers for Android 16+ hooks.
@@ -12,6 +14,12 @@ object PermissionGrantHelper36 {
 
     // HyperOS 3 adaptation:
     // model=25113PN0EC, build=OS3.0.44.0.WPCCNXM, device=pudding (Android 16 / SDK 36)
+    @Volatile
+    private var cachedGrantRuntimeMethod: Method? = null
+    @Volatile
+    private var loggedGrantRuntimeSignatures = false
+    @Volatile
+    private var loggedPermissionImplMissing = false
 
     fun grantAllTargetPermissions(pms: Any) {
         XLog.d("System ready - granting permissions for target packages")
@@ -30,11 +38,11 @@ object PermissionGrantHelper36 {
         }
     }
 
-    fun afterOnPackageInstalled(param: de.robv.android.xposed.XC_MethodHook.MethodHookParam, pmsOverride: Any? = null) {
+    fun afterOnPackageInstalled(param: MethodHookParam, pmsOverride: Any? = null) {
         val packageName = resolvePackageName(param.args) ?: return
         val permissions = PACKAGE_PERMISSIONS[packageName] ?: return
         val rawUserId = tryResolveRawUserId(param.args)
-        val pms = pmsOverride ?: param.thisObject
+        val pms = (pmsOverride ?: param.thisObject) ?: return
         val resolvedPms = resolvePermissionManagerService(pms) ?: pms
 
         val userIds = if (rawUserId == USER_ALL) {
@@ -59,7 +67,7 @@ object PermissionGrantHelper36 {
         for (arg in args) {
             if (arg == null) continue
             val pkgName = try {
-                XposedHelpers.callMethod(arg, "getPackageName") as? String
+                HookHelpers.callMethod(arg, "getPackageName") as? String
             } catch (_: Throwable) {
                 null
             }
@@ -79,7 +87,7 @@ object PermissionGrantHelper36 {
                 is Int -> candidate = arg
                 is UserHandle -> {
                     candidate = try {
-                        XposedHelpers.callMethod(arg, "getIdentifier") as Int
+                        HookHelpers.callMethod(arg, "getIdentifier") as Int
                     } catch (_: Throwable) {
                         null
                     }
@@ -113,9 +121,12 @@ object PermissionGrantHelper36 {
         userId: Int,
     ) {
         val impl = try {
-            XposedHelpers.getObjectField(pms, "mPermissionManagerServiceImpl")
+            HookHelpers.getObjectField(pms, "mPermissionManagerServiceImpl") ?: pms
         } catch (e: Throwable) {
-            PermissionDebugProbe.logFailure("grantPermissionsForPackage: mPermissionManagerServiceImpl", e, pms)
+            if (!loggedPermissionImplMissing) {
+                loggedPermissionImplMissing = true
+                PermissionDebugProbe.logFailure("grantPermissionsForPackage: mPermissionManagerServiceImpl", e, pms)
+            }
             pms
         }
 
@@ -148,41 +159,74 @@ object PermissionGrantHelper36 {
         permission: String,
         userId: Int,
     ): GrantAttempt {
-        return try {
-            // Android 16 grantRuntimePermission signature:
-            // grantRuntimePermission(String packageName, String permName,
-            //     String persistentDeviceId, int userId)
-            XposedHelpers.callMethod(
-                impl,
-                "grantRuntimePermission",
-                packageName,
-                permission,
-                PERSISTENT_DEVICE_ID_DEFAULT,
-                userId,
-            )
-            GrantAttempt(true, null)
-        } catch (e: Throwable) {
-            GrantAttempt(false, e.message ?: e.javaClass.simpleName)
+        val cached = cachedGrantRuntimeMethod
+        if (cached != null) {
+            val args = buildGrantRuntimeArgs(cached.parameterTypes, packageName, permission, userId)
+            if (args != null) {
+                return runCatching {
+                    cached.invoke(impl, *args)
+                    GrantAttempt(true, null)
+                }.getOrElse {
+                    cachedGrantRuntimeMethod = null
+                    GrantAttempt(false, it.message ?: it.javaClass.simpleName)
+                }
+            } else {
+                cachedGrantRuntimeMethod = null
+            }
         }
+
+        val clazz = impl.javaClass
+        val methods = collectMethods(clazz, "grantRuntimePermission")
+        for (method in methods) {
+            val args = buildGrantRuntimeArgs(method.parameterTypes, packageName, permission, userId) ?: continue
+            val attempt = runCatching {
+                method.invoke(impl, *args)
+                cachedGrantRuntimeMethod = method
+                GrantAttempt(true, null)
+            }.getOrElse {
+                GrantAttempt(false, it.message ?: it.javaClass.simpleName)
+            }
+            if (attempt.success) {
+                return attempt
+            }
+        }
+
+        if (!loggedGrantRuntimeSignatures) {
+            loggedGrantRuntimeSignatures = true
+            PermissionDebugProbe.dumpMethodSignatures(
+                "grantRuntimePermission signatures",
+                clazz,
+                "grantRuntimePermission",
+            )
+        }
+        return GrantAttempt(false, "No suitable method for ${clazz.name}#grantRuntimePermission")
     }
 
     private fun resolvePermissionManagerService(pms: Any): Any? {
         val name = pms.javaClass.name
-        if (name.contains("PermissionManagerService")) {
+        if (name.contains("PermissionManagerService") || name.contains("PermissionService")) {
             return pms
         }
         return runCatching {
             val loader = pms.javaClass.classLoader
-            val localServices = XposedHelpers.findClass("com.android.server.LocalServices", loader)
-            val internalClazz = XposedHelpers.findClass(
+            val localServices = HookHelpers.findClass("com.android.server.LocalServices", loader)
+            val internalClazz = HookHelpers.findClass(
                 "com.android.server.pm.permission.PermissionManagerServiceInternal",
                 loader,
             )
-            val internal = XposedHelpers.callStaticMethod(localServices, "getService", internalClazz)
+            val internal = HookHelpers.callStaticMethod(localServices, "getService", internalClazz)
             if (internal != null) {
-                runCatching { XposedHelpers.getObjectField(internal, "this$0") }.getOrDefault(internal)
+                runCatching { HookHelpers.getObjectField(internal, "this$0") }.getOrDefault(internal)
             } else {
-                null
+                val permissionServiceClazz = HookHelpers.findClassIfExists(
+                    "com.android.server.permission.access.permission.PermissionService",
+                    loader,
+                )
+                if (permissionServiceClazz != null) {
+                    HookHelpers.callStaticMethod(localServices, "getService", permissionServiceClazz)
+                } else {
+                    null
+                }
             }
         }.getOrNull()
     }
@@ -214,15 +258,15 @@ object PermissionGrantHelper36 {
         if (item == null) return null
         if (item is Int) return item
         return runCatching {
-            XposedHelpers.getIntField(item, "id")
+            HookHelpers.getIntField(item, "id")
         }.getOrElse {
-            runCatching { XposedHelpers.callMethod(item, "getIdentifier") as Int }.getOrNull()
-                ?: runCatching { XposedHelpers.callMethod(item, "getId") as Int }.getOrNull()
+            runCatching { HookHelpers.callMethod(item, "getIdentifier") as Int }.getOrNull()
+                ?: runCatching { HookHelpers.callMethod(item, "getId") as Int }.getOrNull()
         }
     }
 
     private fun tryGetField(target: Any, fieldName: String): Any? {
-        return runCatching { XposedHelpers.getObjectField(target, fieldName) }.getOrNull()
+        return runCatching { HookHelpers.getObjectField(target, fieldName) }.getOrNull()
             ?: runCatching {
                 PermissionDebugProbe.logFailure("getField:$fieldName", Throwable("missing"), target)
                 null
@@ -230,7 +274,7 @@ object PermissionGrantHelper36 {
     }
 
     private fun tryGetFieldQuiet(target: Any, fieldName: String): Any? {
-        return runCatching { XposedHelpers.getObjectField(target, fieldName) }.getOrNull()
+        return runCatching { HookHelpers.getObjectField(target, fieldName) }.getOrNull()
     }
 
     private fun tryGetUserIdsFromTarget(target: Any?): IntArray? {
@@ -244,10 +288,52 @@ object PermissionGrantHelper36 {
         return parseUserIds(direct)
     }
     private fun tryCallMethod(target: Any, methodName: String, vararg args: Any?): Any? {
-        return runCatching { XposedHelpers.callMethod(target, methodName, *args) }.getOrNull()
+        return runCatching { HookHelpers.callMethod(target, methodName, *args) }.getOrNull()
     }
 
     private const val PERSISTENT_DEVICE_ID_DEFAULT = "default:0"
     private const val USER_ALL = -1
     private const val PERM_KILL_BACKGROUND_PROCESSES = "android.permission.KILL_BACKGROUND_PROCESSES"
+
+    private fun buildGrantRuntimeArgs(
+        parameterTypes: Array<Class<*>>,
+        packageName: String,
+        permission: String,
+        userId: Int,
+    ): Array<Any?>? {
+        val stringValues = ArrayDeque<Any?>(listOf(packageName, permission, PERSISTENT_DEVICE_ID_DEFAULT, null))
+        val intValues = ArrayDeque<Any?>(listOf(userId, 0))
+        val longValues = ArrayDeque<Any?>(listOf(0L))
+        val boolValues = ArrayDeque<Any?>(listOf(false))
+        val args = arrayOfNulls<Any?>(parameterTypes.size)
+        for (i in parameterTypes.indices) {
+            val type = parameterTypes[i]
+            when {
+                type == String::class.java -> args[i] = if (stringValues.isNotEmpty()) stringValues.removeFirst() else null
+                type == Int::class.javaPrimitiveType || type == Int::class.javaObjectType ->
+                    args[i] = if (intValues.isNotEmpty()) intValues.removeFirst() else 0
+                type == Long::class.javaPrimitiveType || type == Long::class.javaObjectType ->
+                    args[i] = if (longValues.isNotEmpty()) longValues.removeFirst() else 0L
+                type == Boolean::class.javaPrimitiveType || type == Boolean::class.javaObjectType ->
+                    args[i] = if (boolValues.isNotEmpty()) boolValues.removeFirst() else false
+                else -> args[i] = null
+            }
+        }
+        return args
+    }
+
+    private fun collectMethods(clazz: Class<*>, methodName: String): List<Method> {
+        val methods = mutableListOf<Method>()
+        var current: Class<*>? = clazz
+        while (current != null) {
+            current.declaredMethods
+                .filter { it.name == methodName }
+                .forEach { method ->
+                    method.isAccessible = true
+                    methods += method
+                }
+            current = current.superclass
+        }
+        return methods
+    }
 }
