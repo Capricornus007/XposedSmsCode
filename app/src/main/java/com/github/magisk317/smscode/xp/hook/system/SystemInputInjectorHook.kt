@@ -13,11 +13,14 @@ import android.view.InputEvent
 import android.view.KeyCharacterMap
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
+import com.github.magisk317.smscode.xp.helper.XposedWrapper
 import com.github.magisk317.smscode.xp.hook.BaseHook
-import de.robv.android.xposed.XC_MethodHook
-import de.robv.android.xposed.XposedBridge
-import de.robv.android.xposed.XposedHelpers
-import de.robv.android.xposed.callbacks.XC_LoadPackage
+import com.github.magisk317.smscode.xp.hookapi.HookBridge
+import com.github.magisk317.smscode.xp.hookapi.HookHelpers
+import com.github.magisk317.smscode.xp.hookapi.LoadParam
+import com.github.magisk317.smscode.xp.hookapi.MethodHook
+import com.github.magisk317.smscode.xp.hookapi.MethodHookParam
+import com.github.magisk317.smscode.xp.hookapi.ZygoteParam
 import java.lang.reflect.Method
 
 class SystemInputInjectorHook : BaseHook() {
@@ -46,45 +49,47 @@ class SystemInputInjectorHook : BaseHook() {
     private var amsSystemReadyHooked = false
     @Volatile
     private var suppressionLogged = false
+    @Volatile
+    private var sendingUidFieldsLogged = false
 
     override fun hookInitZygote(): Boolean = true
 
-    override fun initZygote(startupParam: de.robv.android.xposed.IXposedHookZygoteInit.StartupParam) {
+    override fun initZygote(startupParam: ZygoteParam) {
         try {
             // Redmi K60 Ultra (Redmi 23078RKD5C) Android 16 feedback:
             // system_server starts very early, ActivityThread.systemMain might be missed.
-            XposedHelpers.findAndHookMethod(
+            XposedWrapper.findAndHookMethod(
                 "android.app.ActivityThread",
                 null,
                 "systemMain",
-                object : XC_MethodHook() {
+                object : MethodHook() {
                     override fun afterHookedMethod(param: MethodHookParam) {
                         XLog.i("XSmsCode: ActivityThread.systemMain hook triggered")
-                        val activityThreadClass = XposedHelpers.findClass("android.app.ActivityThread", null)
-                        val activityThread = XposedHelpers.callStaticMethod(
+                        val activityThreadClass = HookHelpers.findClass("android.app.ActivityThread", null)
+                        val activityThread = HookHelpers.callStaticMethod(
                             activityThreadClass,
                             "currentActivityThread",
                         )
-                        val systemContext = XposedHelpers.callMethod(activityThread, "getSystemContext") as? Context
+                        val systemContext = HookHelpers.callMethod(activityThread, "getSystemContext") as? Context
                         if (systemContext != null) {
                             scheduleRegister(systemContext)
                         } else {
-                            XposedBridge.log("XSmsCode: systemContext is null in ActivityThread.systemMain hook")
+                            HookBridge.log("XSmsCode: systemContext is null in ActivityThread.systemMain hook")
                         }
                     }
                 },
             )
             XLog.w("SystemInputInjectorHook: hooked ActivityThread.systemMain in zygote")
-            XposedBridge.log("XSmsCode: hooked ActivityThread.systemMain in zygote")
+            HookBridge.log("XSmsCode: hooked ActivityThread.systemMain in zygote")
         } catch (t: Throwable) {
             XLog.e("SystemInputInjectorHook: failed to hook ActivityThread.systemMain in zygote", t)
-            XposedBridge.log("XSmsCode: failed to hook ActivityThread.systemMain in zygote: ${t.message}")
+            HookBridge.log("XSmsCode: failed to hook ActivityThread.systemMain in zygote: ${t.message}")
         }
     }
 
     override fun hookOnLoadPackage(): Boolean = true
 
-    override fun onLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
+    override fun onLoadPackage(lpparam: LoadParam) {
         if (lpparam.packageName != "android") return
 
         // Fallback for Redmi K60 Ultra (Android 16): 
@@ -93,10 +98,10 @@ class SystemInputInjectorHook : BaseHook() {
         
         try {
             // Attempt 1: Check if already ready
-            val activityThreadClass = XposedHelpers.findClass("android.app.ActivityThread", lpparam.classLoader)
-            val activityThread = XposedHelpers.callStaticMethod(activityThreadClass, "currentActivityThread")
+            val activityThreadClass = HookHelpers.findClass("android.app.ActivityThread", lpparam.classLoader)
+            val activityThread = HookHelpers.callStaticMethod(activityThreadClass, "currentActivityThread")
             if (activityThread != null) {
-                val systemContext = XposedHelpers.callMethod(activityThread, "getSystemContext") as? Context
+                val systemContext = HookHelpers.callMethod(activityThread, "getSystemContext") as? Context
                 if (systemContext != null) {
                     if (ModuleConflictArbiter.shouldSuppressByRelay(systemContext, "SystemInputInjectorHook#onLoadPackage")) {
                         logSuppressedOnce("onLoadPackage")
@@ -104,7 +109,7 @@ class SystemInputInjectorHook : BaseHook() {
                         return
                     }
                     XLog.w("XSmsCode: System context available in onLoadPackage, registering receiver")
-                    XposedBridge.log("XSmsCode: System context available in onLoadPackage, registering receiver")
+                    HookBridge.log("XSmsCode: System context available in onLoadPackage, registering receiver")
                     scheduleRegister(systemContext)
                     if (receiverRegistered) return
                 }
@@ -119,16 +124,16 @@ class SystemInputInjectorHook : BaseHook() {
     private fun hookAmsSystemReadyFallback(classLoader: ClassLoader?) {
         if (amsSystemReadyHooked) return
         try {
-            val amsClass = XposedHelpers.findClass("com.android.server.am.ActivityManagerService", classLoader)
+            val amsClass = HookHelpers.findClass("com.android.server.am.ActivityManagerService", classLoader)
             val methods = amsClass.declaredMethods.filter { it.name == "systemReady" }
             if (methods.isEmpty()) {
                 XLog.w("SystemInputInjectorHook: no ActivityManagerService.systemReady method found, skip fallback hook")
                 return
             }
             methods.forEach { method ->
-                XposedBridge.hookMethod(
+                HookBridge.hookMethod(
                     method,
-                    object : XC_MethodHook() {
+                    object : MethodHook() {
                         override fun afterHookedMethod(param: MethodHookParam) {
                             if (receiverRegistered) return
                             XLog.i("XSmsCode: ActivityManagerService.systemReady hook triggered")
@@ -152,12 +157,13 @@ class SystemInputInjectorHook : BaseHook() {
         }
     }
 
-    private fun resolveSystemContext(systemService: Any): Context? {
+    private fun resolveSystemContext(systemService: Any?): Context? {
+        if (systemService == null) return null
         return try {
-            XposedHelpers.getObjectField(systemService, "mContext") as? Context
+            HookHelpers.getObjectField(systemService, "mContext") as? Context
         } catch (_: Throwable) {
             try {
-                XposedHelpers.getObjectField(systemService, "mSystemContext") as? Context
+                HookHelpers.getObjectField(systemService, "mSystemContext") as? Context
             } catch (_: Throwable) {
                 null
             }
@@ -183,20 +189,7 @@ class SystemInputInjectorHook : BaseHook() {
             }
             val receiver = object : BroadcastReceiver() {
                 override fun onReceive(context: Context, intent: Intent) {
-                    val sendingUid = try {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                            XposedHelpers.callMethod(this, "getSendingUid") as Int
-                        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                            // On older versions, it's stored in mPendingResult
-                            val pendingResult = XposedHelpers.getObjectField(this, "mPendingResult")
-                            XposedHelpers.getIntField(pendingResult, "mSendingUid")
-                        } else {
-                            -1
-                        }
-                    } catch (t: Throwable) {
-                        XLog.w("Failed to get sendingUid: ${t.message}")
-                        -1
-                    }
+                    val sendingUid = resolveSendingUid(this)
                     val appUid = context.applicationInfo.uid
                     if (sendingUid != -1 && sendingUid != Process.SYSTEM_UID && sendingUid != Process.PHONE_UID &&
                         sendingUid != appUid
@@ -207,6 +200,13 @@ class SystemInputInjectorHook : BaseHook() {
                     val code = intent.getStringExtra("code")
                     val autoEnter = intent.getBooleanExtra("autoEnter", false)
                     val inputIntervalMs = intent.getLongExtra("inputIntervalMs", 0L).coerceAtLeast(0L)
+                    XLog.w(
+                        "Diag system receiver onReceive: uid=%d code_len=%d autoEnter=%s inputIntervalMs=%d",
+                        sendingUid,
+                        code?.length ?: 0,
+                        autoEnter,
+                        inputIntervalMs,
+                    )
                     if (!code.isNullOrEmpty()) {
                         XLog.i(
                             "SystemServer received input request: %s, autoEnter: %s, inputIntervalMs: %d",
@@ -228,15 +228,15 @@ class SystemInputInjectorHook : BaseHook() {
             }
             receiverRegistered = true
             XLog.w("SystemInputInjectorReceiver registered")
-            XposedBridge.log("XSmsCode: SystemInputInjectorReceiver registered")
+            HookBridge.log("XSmsCode: SystemInputInjectorReceiver registered")
         } catch (t: Throwable) {
             registerAttempts += 1
             XLog.e("Failed to register receiver", t)
-            XposedBridge.log("XSmsCode: Failed to register receiver: ${t.message}")
+            HookBridge.log("XSmsCode: Failed to register receiver: ${t.message}")
             if (registerAttempts < MAX_REGISTER_ATTEMPTS) {
                 scheduleRegister(context)
             } else {
-                XposedBridge.log("XSmsCode: registerReceiver give up after $registerAttempts attempts")
+                HookBridge.log("XSmsCode: registerReceiver give up after $registerAttempts attempts")
             }
         }
     }
@@ -253,6 +253,47 @@ class SystemInputInjectorHook : BaseHook() {
             )
             suppressionLogged = true
         }
+    }
+
+    private fun resolveSendingUid(receiver: BroadcastReceiver): Int {
+        val direct = try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                HookHelpers.callMethod(receiver, "getSendingUid") as Int
+            } else {
+                null
+            }
+        } catch (t: Throwable) {
+            XLog.w("Failed to get sendingUid: ${t.message}")
+            null
+        }
+        if (direct != null) return direct
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            val pendingResult = runCatching { HookHelpers.getObjectField(receiver, "mPendingResult") }.getOrNull()
+            if (pendingResult != null) {
+                val candidates = listOf("mSendingUid", "mSenderUid", "mCallingUid")
+                for (field in candidates) {
+                    runCatching { HookHelpers.getIntField(pendingResult, field) }.getOrNull()?.let { return it }
+                }
+                logPendingResultFieldsOnce(pendingResult)
+            }
+        }
+        return -1
+    }
+
+    private fun logPendingResultFieldsOnce(pendingResult: Any) {
+        if (sendingUidFieldsLogged) return
+        synchronized(this) {
+            if (sendingUidFieldsLogged) return
+            sendingUidFieldsLogged = true
+        }
+        val fields = generateSequence(pendingResult.javaClass) { it.superclass }
+            .flatMap { it.declaredFields.asSequence() }
+            .map { "${it.name}:${it.type.name}" }
+            .distinct()
+            .sorted()
+            .joinToString(limit = 80, truncated = "...")
+        XLog.w("Diag pendingResult fields: %s", fields)
     }
 
     private fun getInputHandler(): Handler {
@@ -314,8 +355,8 @@ class SystemInputInjectorHook : BaseHook() {
                     val errors = mutableListOf<String>()
                     for (className in classCandidates) {
                         try {
-                            val inputManagerClass = XposedHelpers.findClass(className, null)
-                            val instance = XposedHelpers.callStaticMethod(inputManagerClass, "getInstance")
+                            val inputManagerClass = HookHelpers.findClass(className, null)
+                            val instance = HookHelpers.callStaticMethod(inputManagerClass, "getInstance") ?: continue
                             val inject = findInjectMethod(inputManagerClass)
                             inputManagerGlobal = instance
                             injectMethod = inject
