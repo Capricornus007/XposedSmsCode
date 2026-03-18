@@ -83,6 +83,7 @@ internal class SmsInboxObserver(
                         StringUtils.escape(code),
                         StringUtils.escape(body),
                     )
+                    logSmsRoleStateForSms(smsId, triggerUri)
                     handleObservedCode(
                         smsId = smsId,
                         triggerUri = triggerUri.ifBlank { Telephony.Sms.CONTENT_URI.toString() },
@@ -155,6 +156,27 @@ internal class SmsInboxObserver(
     }
 
     private fun logSmsRoleState(eventId: String) {
+        val (defaultSms, roleHolders) = resolveSmsRoleState()
+        XLog.w(
+            "Diag observer sms role: event_id=%s defaultSms=%s roleHolders=%s",
+            eventId,
+            defaultSms ?: "<none>",
+            if (roleHolders.isEmpty()) "<none>" else roleHolders.joinToString(","),
+        )
+    }
+
+    private fun logSmsRoleStateForSms(smsId: Long, triggerUri: String) {
+        val (defaultSms, roleHolders) = resolveSmsRoleState()
+        XLog.w(
+            "Diag observer sms role: sms_id=%d trigger_uri=%s defaultSms=%s roleHolders=%s",
+            smsId,
+            triggerUri.ifBlank { Telephony.Sms.CONTENT_URI.toString() },
+            defaultSms ?: "<none>",
+            if (roleHolders.isEmpty()) "<none>" else roleHolders.joinToString(","),
+        )
+    }
+
+    private fun resolveSmsRoleState(): Pair<String?, List<String>> {
         val defaultSms = runCatching { Telephony.Sms.getDefaultSmsPackage(phoneContext) }.getOrNull()
         val roleHolders: List<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             runCatching {
@@ -171,12 +193,7 @@ internal class SmsInboxObserver(
         } else {
             emptyList()
         }
-        XLog.w(
-            "Diag observer sms role: event_id=%s defaultSms=%s roleHolders=%s",
-            eventId,
-            defaultSms ?: "<none>",
-            if (roleHolders.isEmpty()) "<none>" else roleHolders.joinToString(","),
-        )
+        return defaultSms to roleHolders
     }
 
     private fun resolveCompanyAndPackage(body: String): Pair<String, String?> {
