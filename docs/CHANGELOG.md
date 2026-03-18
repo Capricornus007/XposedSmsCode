@@ -6,9 +6,14 @@
 
 ## [v3.2.0] - 2026-03-19
 - 版本：`versionCode 103` / `versionName 3.2.0`。
-- 兼容 libxposed 新框架 API 101，与 legacy 同包共存。
+- 兼容 libxposed 新框架 API 101，与 legacy 同包共存（新增 libxposed 入口与 metadata）。
 - 抽取 `smscode-core` 共享模块，统一 hook/权限/系统注入与日志能力。
-- 日志包新增 logcat 抓取，便于完整排查。
+- 激活判定改为 service/binder 状态兜底，首页激活显示修正。
+- 短信链路增强：observer 兜底自动输入、dispatch/provider 诊断日志完善、去重修复。
+- 删除/广播回调兼容性增强，权限授予与 sendingUid 获取路径改进并补充诊断。
+- 自杀链路日志增强，便于确认是否被系统重启。
+- 日志包新增 logcat 抓取；恢复流程修复 SAF 持久权限。
+- 依赖/构建更新（Kotlin/Koin/Gradle），CI 支持 submodule 拉取。
 
 > Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.1.9...v3.2.0
 

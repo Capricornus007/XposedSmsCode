@@ -1,8 +1,6 @@
 - Updated to 3.2.0 (103) stable.
-- Compatible with the new libxposed framework API 101 (coexists with legacy).
-- Log bundle now captures logcat.
-- Consolidated fixes: conflict dialog, default scope (incl. system), and missing zh-TW strings.
-- Android 16 permission granting path adapted with improved hook diagnostics.
-- HyperOS 3 now uses Provider self-kill for more reliable kills.
-- Settings can export/share log bundles; build outputs enable v1/v2/v3 signing.
+- Compatible with the new libxposed framework API 101 (coexists with legacy in one APK).
+- Activation check and SMS pipeline improvements (observer fallback, dedup, delete/broadcast/permission/sending-UID compatibility).
+- Self-kill flow and diagnostics improved for clearer troubleshooting.
+- Log bundle now captures logcat for richer diagnostics.
 - Details: https://github.com/magisk317/XposedSmsCode/releases
