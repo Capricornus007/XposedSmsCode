@@ -5,8 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
+import io.github.magisk317.smscode.core.utils.XLog
 import java.io.File
 import java.io.FileOutputStream
+import java.util.concurrent.TimeUnit
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -77,6 +79,8 @@ object LogBundleExporter {
                     details += "lsposed log missing or unreadable"
                 }
 
+                captureLogcat(stagingDir, details)
+
                 File(stagingDir, "summary.txt").writeText(
                     buildString {
                         appendLine("Export Time: $timestamp")
@@ -106,6 +110,38 @@ object LogBundleExporter {
                 }
             }
         }
+    }
+
+    private fun captureLogcat(stagingDir: File, details: MutableList<String>) {
+        val logcatDir = File(stagingDir, "logcat")
+        if (!ensureDirectory(logcatDir, recreateWhenFile = true)) return
+        val output = File(logcatDir, "logcat_all.txt")
+        val command = listOf("logcat", "-d", "-v", "threadtime", "-b", "all")
+        val ok = dumpCommandOutput(command, output)
+        if (ok) {
+            details += "logcat: direct"
+            return
+        }
+        val okSu = dumpCommandOutput(listOf("su", "-c", "logcat -d -v threadtime -b all"), output)
+        if (okSu) {
+            details += "logcat: su"
+        }
+    }
+
+    private fun dumpCommandOutput(command: List<String>, output: File): Boolean {
+        return runCatching {
+            val process = ProcessBuilder(command)
+                .redirectErrorStream(true)
+                .start()
+            output.outputStream().use { out ->
+                process.inputStream.copyTo(out)
+            }
+            process.waitFor(6, TimeUnit.SECONDS)
+            if (process.isAlive) {
+                process.destroy()
+            }
+            output.exists() && output.length() > 0
+        }.getOrDefault(false)
     }
 
     fun shareLogBundle(context: Context, file: File) {
