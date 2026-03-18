@@ -1,13 +1,20 @@
 package com.github.magisk317.smscode.xp.hook.code
 
 import android.content.Context
+import android.app.role.RoleManager
 import android.database.ContentObserver
 import android.os.Handler
 import android.os.Looper
 import android.provider.Telephony
+import android.os.Build
+import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.common.utils.StringUtils
 import com.github.magisk317.smscode.common.utils.XLog
+import com.github.magisk317.smscode.data.db.DBManager
+import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import com.github.magisk317.smscode.xp.hook.code.action.impl.AutoInputAction
+import com.github.magisk317.smscode.xp.hook.code.action.impl.RecordSmsAction
 import java.util.Collections
 import java.util.LinkedHashSet
 import java.util.concurrent.Executors
@@ -76,11 +83,127 @@ internal class SmsInboxObserver(
                         StringUtils.escape(code),
                         StringUtils.escape(body),
                     )
+                    handleObservedCode(
+                        smsId = smsId,
+                        triggerUri = triggerUri.ifBlank { Telephony.Sms.CONTENT_URI.toString() },
+                        sender = sender,
+                        body = body,
+                        date = date,
+                        read = read,
+                        code = code,
+                    )
                 }
             }
         }.onFailure {
             XLog.w("SmsInboxObserver scan failed: %s", it.message ?: it.javaClass.simpleName)
         }
+    }
+
+    private fun handleObservedCode(
+        smsId: Long,
+        triggerUri: String,
+        sender: String,
+        body: String,
+        date: Long,
+        read: Boolean,
+        code: String,
+    ) {
+        val eventId = buildObservedEventId(smsId, date)
+        if (!PrefsReader.isEnabled(pluginContext)) {
+            XLog.w("Diag observer skip: module disabled event_id=%s", eventId)
+            return
+        }
+        logSmsRoleState(eventId)
+        if (PrefsReader.deduplicateSms(pluginContext)) {
+            val timestamp = if (date > 0) date else System.currentTimeMillis()
+            val duplicated = runCatching {
+                DBManager.get(pluginContext).querySmsMsgByFingerprint(sender, body, timestamp) != null
+            }.getOrDefault(false)
+            if (duplicated) {
+                XLog.w("Diag observer duplicate skip: event_id=%s", eventId)
+                return
+            }
+        }
+
+        val (company, resolvedPackage) = resolveCompanyAndPackage(body)
+        val normalizedDate = if (date > 0) date else System.currentTimeMillis()
+        val smsMsg = SmsMsg(
+            sender = sender,
+            body = body,
+            date = normalizedDate,
+            company = company,
+            smsCode = code,
+            packageName = resolvedPackage,
+            msgType = SmsMsg.MSG_TYPE_SMS,
+        )
+
+        if (PrefsReader.autoInputCodeEnabled(pluginContext)) {
+            XLog.w(
+                "Diag observer auto-input: event_id=%s sender_hash=%s read=%s uri=%s",
+                eventId,
+                senderHash(sender),
+                read,
+                triggerUri,
+            )
+            AutoInputAction(pluginContext, phoneContext, smsMsg).call()
+        } else {
+            XLog.w("Diag observer auto-input disabled: event_id=%s", eventId)
+        }
+
+        // Keep record behavior consistent with regular flow when enabled.
+        RecordSmsAction(pluginContext, phoneContext, smsMsg, eventId).call()
+    }
+
+    private fun logSmsRoleState(eventId: String) {
+        val defaultSms = runCatching { Telephony.Sms.getDefaultSmsPackage(phoneContext) }.getOrNull()
+        val roleHolders: List<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            runCatching {
+                val roleManager = phoneContext.getSystemService(RoleManager::class.java)
+                if (roleManager == null) {
+                    emptyList()
+                } else {
+                    val method = roleManager.javaClass.getMethod("getRoleHolders", String::class.java)
+                    @Suppress("UNCHECKED_CAST")
+                    (method.invoke(roleManager, RoleManager.ROLE_SMS) as? List<*>)?.filterIsInstance<String>()
+                        .orEmpty()
+                }
+            }.getOrDefault(emptyList())
+        } else {
+            emptyList()
+        }
+        XLog.w(
+            "Diag observer sms role: event_id=%s defaultSms=%s roleHolders=%s",
+            eventId,
+            defaultSms ?: "<none>",
+            if (roleHolders.isEmpty()) "<none>" else roleHolders.joinToString(","),
+        )
+    }
+
+    private fun resolveCompanyAndPackage(body: String): Pair<String, String?> {
+        val companyCandidates = SmsCodeUtils.parseCompanyCandidates(body)
+            .map { it.trim().trim('【', '】', '[', ']') }
+            .filter { it.isNotBlank() }
+        var company = SmsCodeUtils.parseCompany(body)
+            .trim()
+            .trim('【', '】', '[', ']')
+        var resolvedPackage: String? = null
+        for (candidate in companyCandidates) {
+            val pkg = SmsCodeUtils.findPackageNameByLabel(phoneContext, candidate)
+            if (!pkg.isNullOrBlank()) {
+                company = candidate
+                resolvedPackage = pkg
+                break
+            }
+        }
+        if (resolvedPackage.isNullOrBlank()) {
+            resolvedPackage = SmsCodeUtils.findPackageNameByLabel(phoneContext, company)
+        }
+        return company to resolvedPackage
+    }
+
+    private fun buildObservedEventId(smsId: Long, date: Long): String {
+        val ts = if (date > 0) date else System.currentTimeMillis()
+        return "sms_observed_${ts.toString(36)}_${smsId.toString(36)}"
     }
 
     private fun markSeen(smsId: Long): Boolean = synchronized(recentSmsIds) {
