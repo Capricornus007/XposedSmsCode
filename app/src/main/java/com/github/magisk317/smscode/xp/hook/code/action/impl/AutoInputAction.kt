@@ -22,6 +22,11 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
     CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
+        if (PrefsReader.deduplicateSms(mPluginContext)) {
+            if (shouldSkipByRecentAutoInput(mSmsMsg)) {
+                return null
+            }
+        }
         prepareAutoInputCode(mSmsMsg.smsCode)
         return null
     }
@@ -81,6 +86,59 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
         return false
     }
 
+    private fun shouldSkipByRecentAutoInput(smsMsg: SmsMsg): Boolean {
+        val key = buildAutoInputKey(smsMsg)
+        if (key.isBlank()) return false
+        val now = System.currentTimeMillis()
+        synchronized(AUTO_INPUT_CACHE_LOCK) {
+            val iterator = recentAutoInputs.entries.iterator()
+            while (iterator.hasNext()) {
+                val entry = iterator.next()
+                if (now - entry.value > AUTO_INPUT_DEDUP_WINDOW_MS) {
+                    iterator.remove()
+                }
+            }
+            val last = recentAutoInputs[key]
+            if (last != null && now - last <= AUTO_INPUT_DEDUP_WINDOW_MS) {
+                XLog.w(
+                    "Diag auto-input dedup skip: key=%s ageMs=%d",
+                    key,
+                    now - last,
+                )
+                return true
+            }
+            recentAutoInputs[key] = now
+            while (recentAutoInputs.size > MAX_AUTO_INPUT_CACHE_SIZE) {
+                val firstKey = recentAutoInputs.entries.firstOrNull()?.key ?: break
+                recentAutoInputs.remove(firstKey)
+            }
+        }
+        return false
+    }
+
+    private fun buildAutoInputKey(smsMsg: SmsMsg): String {
+        val sender = smsMsg.sender.orEmpty()
+        val body = smsMsg.body.orEmpty()
+        val code = smsMsg.smsCode.orEmpty()
+        if (sender.isBlank() && body.isBlank() && code.isBlank()) return ""
+
+        val parts = ArrayList<String>(4)
+        if (sender.isNotBlank() && body.isNotBlank()) {
+            parts += "fp:${hash(sender)}:${hash(body)}"
+        }
+        if (code.isNotBlank()) {
+            val channel = when {
+                !smsMsg.packageName.isNullOrBlank() -> "pkg:${smsMsg.packageName}"
+                !smsMsg.company.isNullOrBlank() -> "co:${smsMsg.company}"
+                else -> "co:unknown"
+            }
+            parts += "code:${code}|$channel"
+        }
+        return parts.joinToString("|")
+    }
+
+    private fun hash(value: String): String = Integer.toHexString(value.hashCode())
+
     private fun isPackageBlocked(packageName: String): Boolean {
         queryBlockedStateByProvider(packageName)?.let { return it }
         val appInfoList = EntityStoreManager.loadEntitiesFromFile(
@@ -132,5 +190,12 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
             val result = method.invoke(am, 10) as? List<*>
             result?.filterIsInstance<ActivityManager.RunningTaskInfo>()
         }.getOrNull()
+    }
+
+    companion object {
+        private const val AUTO_INPUT_DEDUP_WINDOW_MS = 5_000L
+        private const val MAX_AUTO_INPUT_CACHE_SIZE = 128
+        private val AUTO_INPUT_CACHE_LOCK = Any()
+        private val recentAutoInputs = LinkedHashMap<String, Long>(MAX_AUTO_INPUT_CACHE_SIZE, 0.75f, true)
     }
 }
