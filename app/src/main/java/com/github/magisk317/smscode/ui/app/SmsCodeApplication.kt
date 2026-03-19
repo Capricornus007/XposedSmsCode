@@ -88,6 +88,12 @@ class SmsCodeApplication : Application() {
             XposedServiceHelper.registerListener(
                 object : XposedServiceHelper.OnServiceListener {
                     override fun onServiceBind(service: XposedService) {
+                        AppPreferencesDataStore.setRemotePrefsProvider {
+                            service.getRemotePreferences("xposed_prefs")
+                        }
+                        applicationScope.launch {
+                            AppPreferencesDataStore.syncToRemotePrefs(this@SmsCodeApplication)
+                        }
                         ModuleUtils.setRuntimeActivated(true)
                         ModuleActivationStore.markActivated(this@SmsCodeApplication)
                         XLog.i(
@@ -98,6 +104,7 @@ class SmsCodeApplication : Application() {
                     }
 
                     override fun onServiceDied(service: XposedService) {
+                        AppPreferencesDataStore.setRemotePrefsProvider(null)
                         ModuleUtils.setRuntimeActivated(false)
                         XLog.w("Xposed service disconnected")
                     }

@@ -1,15 +1,73 @@
 package com.github.magisk317.smscode.common.utils
 
-import android.content.SharedPreferences
 import android.content.Context
+import android.content.SharedPreferences
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import io.github.magisk317.smscode.core.utils.XLog
 
 object PrefsReader {
     private const val PREFS_NAME = "xposed_prefs"
+    @Volatile
+    private var remotePrefsProvider: (() -> SharedPreferences?)? = null
+    @Volatile
+    private var remoteProviderLogged = false
     private data class BooleanReadTrace(val value: Boolean, val source: String)
     private data class StringReadTrace(val value: String, val source: String)
+    @JvmStatic
+    fun setRemotePrefsProvider(provider: (() -> SharedPreferences?)?) {
+        remotePrefsProvider = provider
+        remoteProviderLogged = false
+    }
+
+    private fun getRemotePrefs(): SharedPreferences? {
+        val provider = remotePrefsProvider ?: return null
+        return runCatching { provider.invoke() }.getOrElse { t ->
+            if (!remoteProviderLogged) {
+                remoteProviderLogged = true
+                XLog.w("PrefsReader: remote prefs provider failed", t)
+            }
+            null
+        }
+    }
+
+    private fun getBooleanViaRemote(key: String, defaultValue: Boolean): Boolean? {
+        val prefs = getRemotePrefs() ?: return null
+        return try {
+            if (!prefs.contains(key)) return null
+            prefs.getBoolean(key, defaultValue)
+        } catch (t: Throwable) {
+            XLog.w("PrefsReader: remote prefs boolean '%s' failed, fallback provider", key, t)
+            null
+        }
+    }
+
+    private fun getStringViaRemote(key: String, defaultValue: String): String? {
+        val prefs = getRemotePrefs() ?: return null
+        return try {
+            if (!prefs.contains(key)) return null
+            prefs.getString(key, defaultValue) ?: defaultValue
+        } catch (t: Throwable) {
+            XLog.w("PrefsReader: remote prefs string '%s' failed, fallback provider", key, t)
+            null
+        }
+    }
+
+    private fun getIntViaRemote(key: String, defaultValue: Int): Int? {
+        val prefs = getRemotePrefs() ?: return null
+        return try {
+            if (!prefs.contains(key)) return null
+            when (val any = prefs.all[key]) {
+                is Int -> any
+                is Long -> any.toInt()
+                is String -> any.toIntOrNull() ?: defaultValue
+                else -> prefs.getInt(key, defaultValue)
+            }
+        } catch (t: Throwable) {
+            XLog.w("PrefsReader: remote prefs int '%s' failed, fallback provider", key, t)
+            null
+        }
+    }
 
     private fun getSharedPrefs(context: Context): SharedPreferences? {
         return runCatching {
@@ -56,6 +114,7 @@ object PrefsReader {
     }
 
     private fun getBooleanViaProvider(context: Context, key: String, defaultValue: Boolean): Boolean {
+        getBooleanViaRemote(key, defaultValue)?.let { return it }
         return try {
             val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.BOOL_URI.buildUpon()
                 .appendQueryParameter("key", key)
@@ -75,6 +134,13 @@ object PrefsReader {
     }
 
     private fun readBooleanWithTrace(context: Context, key: String, defaultValue: Boolean): BooleanReadTrace {
+        val remoteValue = getBooleanViaRemote(key, defaultValue)
+        if (remoteValue != null) {
+            return BooleanReadTrace(
+                value = remoteValue,
+                source = "remote",
+            )
+        }
         try {
             val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.BOOL_URI.buildUpon()
                 .appendQueryParameter("key", key)
@@ -115,6 +181,7 @@ object PrefsReader {
     }
 
     private fun getStringViaProvider(context: Context, key: String, defaultValue: String): String {
+        getStringViaRemote(key, defaultValue)?.let { return it }
         return try {
             val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.STRING_URI.buildUpon()
                 .appendQueryParameter("key", key)
@@ -133,6 +200,13 @@ object PrefsReader {
     }
 
     private fun readStringWithTrace(context: Context, key: String, defaultValue: String): StringReadTrace {
+        val remoteValue = getStringViaRemote(key, defaultValue)
+        if (remoteValue != null) {
+            return StringReadTrace(
+                value = remoteValue,
+                source = "remote",
+            )
+        }
         try {
             val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.STRING_URI.buildUpon()
                 .appendQueryParameter("key", key)
@@ -172,6 +246,7 @@ object PrefsReader {
     }
 
     private fun getIntViaProvider(context: Context, key: String, defaultValue: Int): Int {
+        getIntViaRemote(key, defaultValue)?.let { return it }
         return try {
             val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.INT_URI.buildUpon()
                 .appendQueryParameter("key", key)
@@ -286,26 +361,22 @@ object PrefsReader {
 
     @JvmStatic
     fun recordCodeSmsEnabled(context: Context): Boolean {
-        val legacyDefault = getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true)
-        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS_CODE, legacyDefault)
+        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS_CODE, true)
     }
 
     @JvmStatic
     fun recordPlainSmsEnabled(context: Context): Boolean {
-        val legacyDefault = getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true)
-        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS_PLAIN_SMS, legacyDefault)
+        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS_PLAIN_SMS, true)
     }
 
     @JvmStatic
     fun recordAppNotifyEnabled(context: Context): Boolean {
-        val legacyDefault = getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true)
-        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS_APP_NOTIFY, legacyDefault)
+        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS_APP_NOTIFY, true)
     }
 
     @JvmStatic
     fun recordCallNotifyEnabled(context: Context): Boolean {
-        val legacyDefault = getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true)
-        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS_CALL_NOTIFY, legacyDefault)
+        return getBooleanViaProvider(context, PrefConst.KEY_ENABLE_CODE_RECORDS_CALL_NOTIFY, true)
     }
 
     @JvmStatic
@@ -434,12 +505,7 @@ object PrefsReader {
     }
 
     private fun getHistoryLimitByKey(context: Context, key: String): Int {
-        val legacyValue = getStringViaProvider(context, PrefConst.KEY_HISTORY_LIMIT, "0")
-        val value = getStringViaProvider(
-            context,
-            key,
-            legacyValue,
-        )
+        val value = getStringViaProvider(context, key, "0")
         return try {
             value.toInt()
         } catch (ignored: Exception) {

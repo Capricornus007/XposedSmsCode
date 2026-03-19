@@ -1,6 +1,7 @@
 package com.github.magisk317.smscode.xp
 
 import com.github.tianma8023.xposed.smscode.BuildConfig
+import com.github.magisk317.smscode.common.utils.PrefsReader
 import io.github.magisk317.smscode.core.hook.BaseHook
 import com.github.magisk317.smscode.xp.hook.code.SmsHandlerHook
 import com.github.magisk317.smscode.xp.hook.google.GoogleMessagesHook
@@ -8,6 +9,7 @@ import com.github.magisk317.smscode.xp.hook.me.ModuleUtilsHook
 import io.github.magisk317.smscode.core.hook.permission.PermissionGranterHook
 import io.github.magisk317.smscode.core.hook.system.SystemInputInjectorHook
 import com.github.magisk317.smscode.xp.hook.telephony.SmsProviderHook
+import android.util.Log
 import io.github.magisk317.smscode.core.hookapi.HookEnv
 import io.github.magisk317.smscode.core.hookapi.LibXposedHookApi
 import io.github.magisk317.smscode.core.hookapi.LoadParam
@@ -15,12 +17,19 @@ import io.github.magisk317.smscode.core.hookapi.ZygoteParam
 import io.github.magisk317.smscode.core.runtime.CoreRuntime
 import io.github.magisk317.smscode.core.runtime.CoreRuntimeAccess
 import io.github.magisk317.smscode.core.utils.XLog
+import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
 
-class LibXposedEntry : XposedModule() {
+class LibXposedEntry : XposedModule {
+    // Required by libxposed API 101 loaders (LSPosed expects this signature).
+    @Suppress("unused", "UnusedParameter")
+    constructor(xposed: XposedInterface, loadedParam: ModuleLoadedParam) : super()
+
+    constructor() : super()
+
     private val hookList: List<BaseHook> = listOf(
         SmsHandlerHook(),
         GoogleMessagesHook(),
@@ -33,8 +42,14 @@ class LibXposedEntry : XposedModule() {
     private var processName: String = "unknown"
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
+        val api = apiVersion
+        if (api != 101) {
+            Log.w("XSmsCode", "LibXposedEntry skipped: apiVersion=$api")
+            return
+        }
         installCoreRuntime()
         HookEnv.init(LibXposedHookApi(this))
+        PrefsReader.setRemotePrefsProvider { runCatching { getRemotePreferences("xposed_prefs") }.getOrNull() }
         processName = if (param.isSystemServer) "android" else param.processName
 
         for (hook in hookList) {
