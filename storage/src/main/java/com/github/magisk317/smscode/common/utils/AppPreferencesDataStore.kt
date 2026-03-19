@@ -350,14 +350,15 @@ object AppPreferencesDataStore {
         syncToRemotePrefs(context)
     }
 
+    @Suppress("TooGenericExceptionCaught")
     suspend fun syncToRemotePrefs(context: Context) {
         val prefs = getRemotePrefs() ?: return
         try {
             val editor = prefs.edit()
             populateEditor(context, editor)
             editor.apply()
-        } catch (t: Throwable) {
-            XLog.w("RemotePrefs sync failed: %s", t.message ?: t.javaClass.simpleName)
+        } catch (e: Exception) {
+            XLog.w("RemotePrefs sync failed: %s", e.message ?: e.javaClass.simpleName)
         }
     }
 

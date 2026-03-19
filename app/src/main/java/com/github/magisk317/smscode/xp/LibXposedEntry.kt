@@ -24,6 +24,11 @@ import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
 
 class LibXposedEntry : XposedModule {
+    private companion object {
+        private const val LIBXPOSED_API_VERSION = 101
+        private const val REMOTE_PREFS_GROUP = "xposed_prefs"
+    }
+
     // Required by libxposed API 101 loaders (LSPosed expects this signature).
     @Suppress("unused", "UnusedParameter")
     constructor(xposed: XposedInterface, loadedParam: ModuleLoadedParam) : super()
@@ -43,13 +48,13 @@ class LibXposedEntry : XposedModule {
 
     override fun onModuleLoaded(param: ModuleLoadedParam) {
         val api = apiVersion
-        if (api != 101) {
+        if (api != LIBXPOSED_API_VERSION) {
             Log.w("XSmsCode", "LibXposedEntry skipped: apiVersion=$api")
             return
         }
         installCoreRuntime()
         HookEnv.init(LibXposedHookApi(this))
-        PrefsReader.setRemotePrefsProvider { runCatching { getRemotePreferences("xposed_prefs") }.getOrNull() }
+        PrefsReader.setRemotePrefsProvider { runCatching { getRemotePreferences(REMOTE_PREFS_GROUP) }.getOrNull() }
         processName = if (param.isSystemServer) "android" else param.processName
 
         for (hook in hookList) {
