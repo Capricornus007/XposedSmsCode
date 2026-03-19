@@ -4,9 +4,21 @@
 
 ---
 
+## [v3.2.1] - 2026-03-19
+- 版本：`versionCode 104` / `versionName 3.2.1`。
+- 仅支持 libxposed API 101；legacy 框架（API < 100）请停留在 3.2.0 或更低版本。
+- 升级到 3.2.1 需要框架版本 >= 7607。
+- 设置读取链路调整：RemotePreferences 优先、Provider 兜底，降低前台读取失败概率。
+- 自动输入增加“近期去重缓存”，减少重复输入。
+- 移除 legacy 入口、旧配置迁移与兼容依赖。
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.2.0...v3.2.1
+
+---
+
 ## [v3.2.0] - 2026-03-19
 - 版本：`versionCode 103` / `versionName 3.2.0`。
-- 兼容 libxposed 新框架 API 101，与 legacy 同包共存（新增 libxposed 入口与 metadata）。
+- 兼容 libxposed 新框架 API 101（仅支持 API 101）。
 - 抽取 `smscode-core` 共享模块，统一 hook/权限/系统注入与日志能力。
 - 激活判定改为 service/binder 状态兜底，首页激活显示修正。
 - 短信链路增强：observer 兜底自动输入、dispatch/provider 诊断日志完善、去重修复。
