@@ -44,10 +44,8 @@ object PrefConst {
     const val NOTIFICATION_RETENTION_TIME_DEFAULT = "5"
 
     // Code Record
-    const val KEY_ENABLE_CODE_RECORDS = "pref_enable_code_records"
     const val MAX_SMS_RECORDS_COUNT_DEFAULT = 20
     const val KEY_ENTRY_CODE_RECORDS = "pref_entry_code_records"
-    const val KEY_HISTORY_LIMIT = "pref_history_limit"
     const val KEY_ENABLE_CODE_RECORDS_CODE = "pref_enable_code_records_code"
     const val KEY_ENABLE_CODE_RECORDS_PLAIN_SMS = "pref_enable_code_records_plain_sms"
     const val KEY_ENABLE_CODE_RECORDS_APP_NOTIFY = "pref_enable_code_records_app_notify"
@@ -83,7 +81,6 @@ object PrefConst {
     const val KEY_PRIVACY_POLICY = "pref_privacy_policy"
     const val KEY_PRIVACY_POLICY_ACCEPTED = "pref_privacy_policy_accepted"
     const val KEY_BACKUP_COMPAT_TIP_SHOWN = "pref_backup_compat_tip_shown"
-    const val KEY_ENABLE_SMS_BLOCK = "enable_sms_block"
     const val KEY_ABOUT_COMPOSE = "pref_about_compose"
     const val KEY_IPC_TOKEN = "ipc_token"
     const val KEY_SIM_SLOT1_REMARK = "pref_sim_slot1_remark"

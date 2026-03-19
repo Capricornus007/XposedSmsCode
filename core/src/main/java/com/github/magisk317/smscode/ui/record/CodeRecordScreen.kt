@@ -152,14 +152,11 @@ fun CodeRecordScreen(
     var fixedTopHeightPx by remember { mutableIntStateOf(0) }
 
     var historyLimitCode by remember { mutableStateOf("0") }
-    var legacyRecordEnabled by remember { mutableStateOf(true) }
     var showHistoryLimitDialog by remember { mutableStateOf(false) }
     var showHistoryLimitInput by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        legacyRecordEnabled = AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true)
-        val legacyLimit = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT, "0")
-        historyLimitCode = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT_CODE, legacyLimit)
+        historyLimitCode = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT_CODE, "0")
     }
 
     // Detail Dialog State
@@ -251,7 +248,7 @@ fun CodeRecordScreen(
                     title = stringResource(id = R.string.pref_enable_code_records_title),
                     summary = "",
                     key = RECORD_ENABLE_KEY,
-                    defaultValue = legacyRecordEnabled,
+                    defaultValue = true,
                 )
 
                 Item(

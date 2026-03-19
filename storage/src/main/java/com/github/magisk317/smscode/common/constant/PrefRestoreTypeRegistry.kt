@@ -24,7 +24,6 @@ object PrefRestoreTypeRegistry {
         PrefConst.KEY_SMS_BLACKLIST_ACTION_BLOCK,
         PrefConst.KEY_SHOW_CODE_NOTIFICATION,
         PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
-        PrefConst.KEY_ENABLE_CODE_RECORDS,
         PrefConst.KEY_ENABLE_CODE_RECORDS_CODE,
         PrefConst.KEY_ENABLE_CODE_RECORDS_PLAIN_SMS,
         PrefConst.KEY_ENABLE_CODE_RECORDS_APP_NOTIFY,
@@ -37,8 +36,6 @@ object PrefRestoreTypeRegistry {
         PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
         PrefConst.KEY_PRIVACY_POLICY_ACCEPTED,
         PrefConst.KEY_BACKUP_COMPAT_TIP_SHOWN,
-        // Legacy compatibility keys from old backups.
-        PrefConst.KEY_ENABLE_SMS_BLOCK,
     )
 
     val INT_KEYS: Set<String> = setOf(

@@ -11,7 +11,6 @@ import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.feature.store.EntityStoreManager
 import com.github.magisk317.smscode.feature.store.EntityType
-import com.github.magisk317.smscode.common.utils.StorageUtils
 import com.github.magisk317.smscode.ui.block.AppInfoHelper
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -28,7 +27,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.Comparator
-import java.io.File
 
 private const val APP_LIST_PAGE_SIZE = 80
 
@@ -96,11 +94,7 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
                     val context = getApplication<Application>()
                     val pm = getApplication<Application>().packageManager
                     // Load app blocked configs from DB.
-                    var configs = DBManager.get(getApplication()).queryAllAppInfosSuspend()
-                    
-                    if (configs.isEmpty()) {
-                        configs = performMigrationIfNeeded()
-                    }
+                    val configs = DBManager.get(getApplication()).queryAllAppInfosSuspend()
                     EntityStoreManager.storeEntitiesToFile(
                         context,
                         EntityType.APP_CONFIG,
@@ -345,76 +339,4 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
         return s1.compareTo(s2, ignoreCase = true)
     }
 
-    private suspend fun performMigrationIfNeeded(): List<AppInfo> = withContext(Dispatchers.IO) {
-        val context = getApplication<Application>()
-        
-        // Check both internal and external files directories
-        val internalDir = StorageUtils.getInternalFilesDir(context)
-        val externalDir = StorageUtils.getFilesDir(context)
-        
-        XLog.i("Internal dir files: ${internalDir.listFiles()?.map { it.name } ?: "null"}")
-        XLog.i("External dir files: ${externalDir.listFiles()?.map { it.name } ?: "null"}")
-        
-        // Check SharedPreferences and other dirs
-        val dataDir = context.dataDir
-        XLog.i("Data dir subfolders: ${dataDir.listFiles()?.map { it.name } ?: "null"}")
-        val prefsDir = File(dataDir, "shared_prefs")
-        if (prefsDir.exists()) {
-            XLog.i("SharedPrefs files: ${prefsDir.listFiles()?.map { it.name } ?: "null"}")
-        }
-
-        val dbFile = context.getDatabasePath("xsmscode_room.db")
-        if (dbFile.exists()) {
-            XLog.i("Database file found: ${dbFile.absolutePath}, size: ${dbFile.length()} bytes")
-        } else {
-            XLog.i("Database file NOT found at expected path: ${dbFile.absolutePath}")
-        }
-
-        val blockedFiles = listOf(File(internalDir, "blocked_apps"), File(externalDir, "blocked_apps"))
-
-        XLog.i("Checking for legacy app configs (blocked_apps)...")
-        val mergedMap = mutableMapOf<String, AppInfo>()
-        var migrationTriggered = false
-
-        // 1. Migrate blocked apps
-        blockedFiles.forEach { file ->
-            if (file.exists()) {
-                XLog.i("Found legacy blocked apps file: ${file.absolutePath}")
-                try {
-                    val blockedApps = EntityStoreManager.loadEntitiesFromFile(file, AppInfo::class.java)
-                    blockedApps.forEach { app ->
-                        mergedMap[app.packageName] = app.copy(blocked = true)
-                    }
-                    migrationTriggered = true
-                } catch (e: Exception) {
-                    XLog.e("Failed to migrate blocked apps from ${file.absolutePath}", e)
-                }
-            }
-        }
-
-        if (!migrationTriggered) {
-            XLog.i("No legacy configs found in internal or external storage.")
-            return@withContext emptyList<AppInfo>()
-        }
-
-        val migratedList = mergedMap.values.toList()
-        if (migratedList.isNotEmpty()) {
-            val dbManager = DBManager.get(context)
-            dbManager.insertOrReplaceInTxSuspend(AppInfo::class.java, migratedList)
-            EntityStoreManager.storeEntitiesToFile(context, EntityType.APP_CONFIG, migratedList, AppInfo::class.java)
-
-            // Rename old files to avoid repeated migration attempts
-            blockedFiles.forEach { file ->
-                if (file.exists()) {
-                    try {
-                        file.renameTo(File(file.absolutePath + ".bak"))
-                    } catch (ignored: Exception) {}
-                }
-            }
-
-            XLog.i("Migration completed. Migrated ${migratedList.size} apps.")
-        }
-
-        migratedList
-    }
 }
