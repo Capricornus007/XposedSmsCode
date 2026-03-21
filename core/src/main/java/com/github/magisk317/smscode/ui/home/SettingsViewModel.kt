@@ -47,6 +47,7 @@ sealed class SettingsEvent {
     data class SmsCodeTestResult(val code: String) : SettingsEvent()
     data object NavigateToRules : SettingsEvent()
     data object NavigateToRecords : SettingsEvent()
+    data object NavigateToSettings : SettingsEvent()
     data object StartPlayUpdate : SettingsEvent()
     data object StartGithubUpdateCheck : SettingsEvent()
     data class BackupResultEvent(val success: Boolean) : SettingsEvent()
@@ -125,10 +126,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 if (Const.ACTION_DONATE_BY_ALIPAY == extraAction) {
                     args.remove(Const.EXTRA_ACTION)
                     _eventsFlow.tryEmit(SettingsEvent.ShowAlipayPacket)
-                } else if ("smscode_records" == extraAction) {
+                } else if (Const.ACTION_OPEN_RECORDS == extraAction) {
                     args.remove(Const.EXTRA_ACTION)
                     _eventsFlow.tryEmit(SettingsEvent.NavigateToRecords)
-                } else if ("smscode_rules" == extraAction) {
+                } else if (Const.ACTION_OPEN_SETTINGS == extraAction) {
+                    args.remove(Const.EXTRA_ACTION)
+                    _eventsFlow.tryEmit(SettingsEvent.NavigateToSettings)
+                } else if (Const.ACTION_OPEN_RULES == extraAction) {
                     args.remove(Const.EXTRA_ACTION)
                     _eventsFlow.tryEmit(SettingsEvent.NavigateToRules)
                 }

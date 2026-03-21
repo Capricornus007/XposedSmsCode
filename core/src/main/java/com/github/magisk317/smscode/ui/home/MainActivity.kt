@@ -282,6 +282,7 @@ class MainActivity : AppCompatActivity() {
                         is SettingsEvent.ShowPrivacyPolicy -> showPrivacyPolicyDialog = true
                         is SettingsEvent.NavigateToRules -> requestedTab = com.github.magisk317.smscode.ui.nav.AppBlockRoute
                         is SettingsEvent.NavigateToRecords -> requestedTab = com.github.magisk317.smscode.ui.nav.RecordsRoute
+                        is SettingsEvent.NavigateToSettings -> requestedTab = com.github.magisk317.smscode.ui.nav.SettingsRoute
                         is SettingsEvent.StartPlayUpdate -> requestPlayUpdate()
                         is SettingsEvent.StartGithubUpdateCheck -> {
                             requestGithubUpdateCheck(showNoUpdateToast = true) { update ->
