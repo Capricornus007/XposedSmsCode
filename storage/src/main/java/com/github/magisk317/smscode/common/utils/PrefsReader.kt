@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import io.github.magisk317.smscode.core.utils.XLog
+import java.util.Collections
 
 object PrefsReader {
     private const val PREFS_NAME = "xposed_prefs"
@@ -12,6 +13,7 @@ object PrefsReader {
     private var remotePrefsProvider: (() -> SharedPreferences?)? = null
     @Volatile
     private var remoteProviderLogged = false
+    private val remoteTraceLoggedKeys = Collections.synchronizedSet(mutableSetOf<String>())
     private data class BooleanReadTrace(val value: Boolean, val source: String)
     private data class StringReadTrace(val value: String, val source: String)
     @JvmStatic
@@ -28,6 +30,12 @@ object PrefsReader {
                 XLog.w("PrefsReader: remote prefs provider failed", t)
             }
             null
+        }
+    }
+
+    private fun logRemoteTraceOnce(key: String, state: String) {
+        if (remoteTraceLoggedKeys.add(key)) {
+            XLog.w("Diag remote prefs: key=%s state=%s", key, state)
         }
     }
 
@@ -116,7 +124,7 @@ object PrefsReader {
     private fun getBooleanViaProvider(context: Context, key: String, defaultValue: Boolean): Boolean {
         getBooleanViaRemote(key, defaultValue)?.let { return it }
         return try {
-            val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.BOOL_URI.buildUpon()
+            val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.buildBoolUri(context).buildUpon()
                 .appendQueryParameter("key", key)
                 .appendQueryParameter("default", defaultValue.toString())
                 .build()
@@ -134,15 +142,27 @@ object PrefsReader {
     }
 
     private fun readBooleanWithTrace(context: Context, key: String, defaultValue: Boolean): BooleanReadTrace {
-        val remoteValue = getBooleanViaRemote(key, defaultValue)
-        if (remoteValue != null) {
-            return BooleanReadTrace(
-                value = remoteValue,
-                source = "remote",
-            )
+        val remotePrefs = getRemotePrefs()
+        val remoteState = when {
+            remotePrefs == null -> "unavailable"
+            remotePrefs.contains(key) -> "hit"
+            else -> "miss"
+        }
+        logRemoteTraceOnce("bool:$key", remoteState)
+        if (remotePrefs != null) {
+            try {
+                if (remotePrefs.contains(key)) {
+                    return BooleanReadTrace(
+                        value = remotePrefs.getBoolean(key, defaultValue),
+                        source = "remote",
+                    )
+                }
+            } catch (t: Throwable) {
+                XLog.w("PrefsReader: remote prefs boolean '%s' failed, fallback provider", key, t)
+            }
         }
         try {
-            val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.BOOL_URI.buildUpon()
+            val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.buildBoolUri(context).buildUpon()
                 .appendQueryParameter("key", key)
                 .appendQueryParameter("default", defaultValue.toString())
                 .build()
@@ -183,7 +203,7 @@ object PrefsReader {
     private fun getStringViaProvider(context: Context, key: String, defaultValue: String): String {
         getStringViaRemote(key, defaultValue)?.let { return it }
         return try {
-            val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.STRING_URI.buildUpon()
+            val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.buildStringUri(context).buildUpon()
                 .appendQueryParameter("key", key)
                 .appendQueryParameter("default", defaultValue)
                 .build()
@@ -200,15 +220,27 @@ object PrefsReader {
     }
 
     private fun readStringWithTrace(context: Context, key: String, defaultValue: String): StringReadTrace {
-        val remoteValue = getStringViaRemote(key, defaultValue)
-        if (remoteValue != null) {
-            return StringReadTrace(
-                value = remoteValue,
-                source = "remote",
-            )
+        val remotePrefs = getRemotePrefs()
+        val remoteState = when {
+            remotePrefs == null -> "unavailable"
+            remotePrefs.contains(key) -> "hit"
+            else -> "miss"
+        }
+        logRemoteTraceOnce("string:$key", remoteState)
+        if (remotePrefs != null) {
+            try {
+                if (remotePrefs.contains(key)) {
+                    return StringReadTrace(
+                        value = remotePrefs.getString(key, defaultValue) ?: defaultValue,
+                        source = "remote",
+                    )
+                }
+            } catch (t: Throwable) {
+                XLog.w("PrefsReader: remote prefs string '%s' failed, fallback provider", key, t)
+            }
         }
         try {
-            val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.STRING_URI.buildUpon()
+            val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.buildStringUri(context).buildUpon()
                 .appendQueryParameter("key", key)
                 .appendQueryParameter("default", defaultValue)
                 .build()
@@ -248,7 +280,7 @@ object PrefsReader {
     private fun getIntViaProvider(context: Context, key: String, defaultValue: Int): Int {
         getIntViaRemote(key, defaultValue)?.let { return it }
         return try {
-            val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.INT_URI.buildUpon()
+            val uri = com.github.magisk317.smscode.data.prefs.PrefsProvider.buildIntUri(context).buildUpon()
                 .appendQueryParameter("key", key)
                 .appendQueryParameter("default", defaultValue.toString())
                 .build()

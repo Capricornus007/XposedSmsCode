@@ -244,6 +244,7 @@ object AppPreferencesDataStore {
         getSharedPrefs(context).edit().putBoolean(key, value).apply()
         ensureDataStoreReadable(context)
         ensureSharedPrefsReadable(context)
+        syncToRemotePrefs(context)
     }
 
     suspend fun getString(context: Context, key: String, defaultValue: String): String {
@@ -261,6 +262,7 @@ object AppPreferencesDataStore {
         getSharedPrefs(context).edit().putString(key, value).apply()
         ensureDataStoreReadable(context)
         ensureSharedPrefsReadable(context)
+        syncToRemotePrefs(context)
     }
 
     suspend fun getInt(context: Context, key: String, defaultValue: Int): Int {
@@ -278,6 +280,7 @@ object AppPreferencesDataStore {
         getSharedPrefs(context).edit().putInt(key, value).apply()
         ensureDataStoreReadable(context)
         ensureSharedPrefsReadable(context)
+        syncToRemotePrefs(context)
     }
 
     suspend fun getFloat(context: Context, key: String, defaultValue: Float): Float {
@@ -295,6 +298,7 @@ object AppPreferencesDataStore {
         getSharedPrefs(context).edit().putFloat(key, value).apply()
         ensureDataStoreReadable(context)
         ensureSharedPrefsReadable(context)
+        syncToRemotePrefs(context)
     }
 
     suspend fun getBooleanCompat(context: Context, key: String, defaultValue: Boolean): Boolean {

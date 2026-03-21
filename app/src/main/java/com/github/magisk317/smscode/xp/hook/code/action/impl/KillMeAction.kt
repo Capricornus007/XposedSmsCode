@@ -34,7 +34,7 @@ class KillMeAction(
         return try {
             val extras = Bundle().apply { putLong(PrefsProvider.EXTRA_DELAY_MS, 80L) }
             val result = mPluginContext.contentResolver.call(
-                PrefsProvider.BOOL_URI,
+                PrefsProvider.buildBoolUri(mPluginContext),
                 PrefsProvider.METHOD_KILL_SELF,
                 null,
                 extras,
