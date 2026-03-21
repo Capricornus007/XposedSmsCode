@@ -28,4 +28,24 @@ object InputHelper {
             inputIntervalMs,
         )
     }
+
+    @JvmStatic
+    fun sendToast(
+        context: android.content.Context,
+        text: String?,
+        duration: Int = android.widget.Toast.LENGTH_LONG,
+    ) {
+        if (text.isNullOrEmpty()) return
+        val intent = android.content.Intent(
+            io.github.magisk317.smscode.core.hook.system.SystemInputInjectorHook.resolveActionShowToast(),
+        )
+        intent.putExtra("text", text)
+        intent.putExtra("duration", duration)
+        context.sendBroadcast(intent)
+        XLog.i(
+            "Sent Broadcast ACTION_SHOW_TOAST with textLength: %d, duration: %d",
+            text.length,
+            duration,
+        )
+    }
 }
