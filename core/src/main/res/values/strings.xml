@@ -365,6 +365,9 @@
     <string name="relay_conflict_dialog_suffix">.</string>
     <string name="relay_conflict_other_app_name">Xinyi Relay</string>
     <string name="relay_conflict_dialog_exit">Exit</string>
+    <string name="channel_name_relay_conflict_notification">Conflict alert</string>
+    <string name="relay_conflict_notification_content">Detected installed module %1$s (%2$s). Please uninstall it first, then install and use %3$s.</string>
+    <string name="relay_conflict_sms_toast">Feature conflict. Check the notification.</string>
     <!-- relay conflict dialog end -->
 
 

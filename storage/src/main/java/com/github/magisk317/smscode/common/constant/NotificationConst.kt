@@ -8,5 +8,7 @@ object NotificationConst {
     const val CHANNEL_ID_FOREGROUND_SERVICE = "foreground_service"
 
     const val CHANNEL_ID_SMSCODE_NOTIFICATION = "smscode_notification"
+    const val CHANNEL_ID_RELAY_CONFLICT = "relay_conflict"
     const val GROUP_KEY_SMSCODE_NOTIFICATION = "group_key_smscode_notification"
+    const val NOTIFICATION_ID_RELAY_CONFLICT = 0x72636f6e
 }

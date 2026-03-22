@@ -18,6 +18,7 @@ import com.github.magisk317.smscode.common.utils.SmsBlacklistUtils
 import io.github.magisk317.smscode.core.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
+import com.github.magisk317.smscode.xp.helper.RelayConflictNoticeHelper
 import io.github.magisk317.smscode.core.helper.XposedWrapper
 import io.github.magisk317.smscode.core.hook.BaseHook
 import com.github.magisk317.smscode.xp.hook.code.action.impl.OperateSmsAction
@@ -214,14 +215,22 @@ class SmsHandlerHook : BaseHook() {
                 )
                 if (mPluginContext != null) {
                     val pluginContext = mPluginContext ?: return
+                    RelayConflictNoticeHelper.initNotificationChannel(pluginContext, context)
+                    val suppressByRelay = ModuleConflictArbiter.shouldSuppressByRelay(
+                        mPhoneContext,
+                        "SmsHandlerHook#constructor",
+                    )
                     if (PrefsReader.showCodeNotification(pluginContext)) {
                         initNotificationChannel()
-                        registerCopyCodeReceiver()
+                        if (!suppressByRelay) {
+                            registerCopyCodeReceiver()
+                        }
                     }
-                    registerSmsInboxObserver()
                     ModuleActivationStore.markActivated(pluginContext)
-                    if (ModuleConflictArbiter.shouldSuppressByRelay(mPhoneContext, "SmsHandlerHook#constructor")) {
+                    if (suppressByRelay) {
                         logSuppressedOnce("constructor")
+                    } else {
+                        registerSmsInboxObserver()
                     }
                 } else {
                     XLog.e("Plugin context is null after creation attempt")
@@ -307,6 +316,7 @@ class SmsHandlerHook : BaseHook() {
         }
         if (ModuleConflictArbiter.shouldSuppressByRelay(phoneContext, "SmsHandlerHook#dispatchIntent")) {
             logSuppressedOnce("dispatchIntent")
+            RelayConflictNoticeHelper.notifyConflictOnSms(pluginContext, phoneContext, eventId)
             return
         }
         val smsMsg = runCatching { SmsMsg.fromIntent(intent) }.getOrNull()

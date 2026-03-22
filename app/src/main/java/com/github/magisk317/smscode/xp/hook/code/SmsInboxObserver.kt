@@ -13,6 +13,7 @@ import com.github.magisk317.smscode.common.utils.StringUtils
 import io.github.magisk317.smscode.core.utils.XLog
 import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
 import com.github.magisk317.smscode.xp.hook.code.action.impl.AutoInputAction
 import com.github.magisk317.smscode.xp.hook.code.action.impl.RecordSmsAction
 import java.util.Collections
@@ -110,6 +111,10 @@ internal class SmsInboxObserver(
         code: String,
     ) {
         val eventId = buildObservedEventId(smsId, date)
+        if (ModuleConflictArbiter.shouldSuppressByRelay(phoneContext, "SmsInboxObserver#handleObservedCode")) {
+            XLog.w("Diag observer conflict skip: event_id=%s sms_id=%d", eventId, smsId)
+            return
+        }
         if (!PrefsReader.isEnabled(pluginContext)) {
             XLog.w("Diag observer skip: module disabled event_id=%s", eventId)
             return
