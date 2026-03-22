@@ -11,6 +11,7 @@ import android.provider.Telephony
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.NotificationConst
+import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
 import io.github.magisk317.smscode.core.utils.ModuleActivationStore
 import com.github.magisk317.smscode.common.utils.NotificationUtils
 import com.github.magisk317.smscode.common.utils.PrefsReader
@@ -227,6 +228,13 @@ class SmsHandlerHook : BaseHook() {
                         }
                     }
                     ModuleActivationStore.markActivated(pluginContext)
+                    ActivationDiagnosticsStore.recordHookHeartbeat(
+                        context = pluginContext,
+                        packageName = ANDROID_PHONE_PACKAGE,
+                        processName = context.applicationInfo?.processName ?: ANDROID_PHONE_PACKAGE,
+                        source = "sms_handler_constructor",
+                        verboseLogging = PrefsReader.isVerboseLogMode(pluginContext),
+                    )
                     if (suppressByRelay) {
                         logSuppressedOnce("constructor")
                     } else {
@@ -314,6 +322,13 @@ class SmsHandlerHook : BaseHook() {
             XLog.e("Context is null, skip parsing. pluginContext: %s, phoneContext: %s", pluginContext, phoneContext)
             return
         }
+        ActivationDiagnosticsStore.recordHookHeartbeat(
+            context = pluginContext,
+            packageName = ANDROID_PHONE_PACKAGE,
+            processName = phoneContext.applicationInfo?.processName ?: ANDROID_PHONE_PACKAGE,
+            source = "sms_handler_dispatch",
+            verboseLogging = PrefsReader.isVerboseLogMode(pluginContext),
+        )
         if (ModuleConflictArbiter.shouldSuppressByRelay(phoneContext, "SmsHandlerHook#dispatchIntent")) {
             logSuppressedOnce("dispatchIntent")
             RelayConflictNoticeHelper.notifyConflictOnSms(pluginContext, phoneContext, eventId)

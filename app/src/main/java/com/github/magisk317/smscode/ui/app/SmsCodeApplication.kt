@@ -12,7 +12,9 @@ import android.os.Bundle
 import android.telephony.TelephonyManager
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.constant.PrefConst
+import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
+import com.github.magisk317.smscode.common.utils.PrefsReader
 import io.github.magisk317.smscode.core.utils.ModuleActivationStore
 import io.github.magisk317.smscode.core.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.RuntimeLogStore
@@ -117,6 +119,12 @@ class SmsCodeApplication : Application() {
         AppPreferencesDataStore.setRemotePrefsProvider(remotePrefsProvider)
         ModuleUtils.setRuntimeActivated(true)
         ModuleActivationStore.markActivated(this)
+        ActivationDiagnosticsStore.recordServiceBind(
+            context = this,
+            frameworkName = frameworkName ?: "unknown",
+            frameworkVersion = frameworkVersion ?: "unknown",
+            verboseLogging = PrefsReader.isVerboseLogMode(this),
+        )
         XLog.i(
             "Xposed service connected: framework=%s version=%s",
             frameworkName ?: "unknown",
@@ -127,6 +135,10 @@ class SmsCodeApplication : Application() {
     internal fun handleXposedServiceDied() {
         AppPreferencesDataStore.setRemotePrefsProvider(null)
         ModuleUtils.setRuntimeActivated(false)
+        ActivationDiagnosticsStore.recordServiceDied(
+            context = this,
+            verboseLogging = PrefsReader.isVerboseLogMode(this),
+        )
         XLog.w("Xposed service disconnected")
     }
 
