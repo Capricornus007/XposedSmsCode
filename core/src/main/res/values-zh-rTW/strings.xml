@@ -429,6 +429,15 @@
     <string name="status_working">已啟用</string>
     <string name="status_not_active">未啟用</string>
     <string name="status_tip">請在管理器中啟用並重啟設備</string>
+    <string name="status_diag_shown">已顯示執行時診斷</string>
+    <string name="status_diag_hidden">已隱藏執行時診斷</string>
+    <string name="status_diag_service_title">Xposed Service</string>
+    <string name="status_diag_hook_process_title">最近 Hook 行程</string>
+    <string name="status_diag_hook_time_title">最近 Hook 時間</string>
+    <string name="status_diag_connected">已連線</string>
+    <string name="status_diag_disconnected">未連線</string>
+    <string name="status_diag_last_service_prefix">最近連線</string>
+    <string name="status_diag_none">暫無</string>
 
     <!-- overview end -->
 </resources>

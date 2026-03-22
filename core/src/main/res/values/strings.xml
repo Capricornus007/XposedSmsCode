@@ -422,6 +422,15 @@
     <string name="status_working">Working normally</string>
     <string name="status_not_active">Inactive</string>
     <string name="status_tip">Please enable in manager and reboot device</string>
+    <string name="status_diag_shown">Runtime diagnostics shown</string>
+    <string name="status_diag_hidden">Runtime diagnostics hidden</string>
+    <string name="status_diag_service_title">Xposed Service</string>
+    <string name="status_diag_hook_process_title">Last hook process</string>
+    <string name="status_diag_hook_time_title">Last hook time</string>
+    <string name="status_diag_connected">Connected</string>
+    <string name="status_diag_disconnected">Disconnected</string>
+    <string name="status_diag_last_service_prefix">Last bind</string>
+    <string name="status_diag_none">None</string>
 
     <!-- overview end -->
 </resources>

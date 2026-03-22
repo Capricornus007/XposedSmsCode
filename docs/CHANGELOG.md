@@ -4,6 +4,18 @@
 
 ---
 
+## [v3.2.2] - 2026-03-22
+- 版本：`versionCode 105` / `versionName 3.2.2`。
+- 发布说明：Play 渠道继续提供 `api101`；GitHub 渠道同时提供 `api101` 与 `legacy`。下载前请先确认框架类型，避免下错包。
+- `[api101]` Play 版继续面向 libxposed API 101，新框架用户请选择 `api101` 包。
+- `[legacy]` 恢复 legacy 风味构建与旧 Xposed 入口；legacy 框架（API < 100）现在可升级到 3.2.2，但必须安装 `legacy` 包。
+- `[api101/legacy]` 更新检查按 Xposed API flavor 匹配发布资产，减少 `api101` / `legacy` 安装包选错概率。
+- `[api101/legacy]` 状态卡新增激活诊断展示，并记录短信/Provider 链路的激活线索，便于排查未激活或注入失败。
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.2.1...v3.2.2
+
+---
+
 ## [v3.2.1] - 2026-03-19
 - 版本：`versionCode 104` / `versionName 3.2.1`。
 - 仅支持 libxposed API 101；legacy 框架（API < 100）请停留在 3.2.0 或更低版本。

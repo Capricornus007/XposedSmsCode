@@ -1,7 +1,7 @@
 package com.github.magisk317.smscode.ui.home
 
-import android.content.Intent
 import android.os.Build
+import android.os.SystemClock
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
@@ -31,7 +31,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.Const
-import io.github.magisk317.smscode.core.utils.ModuleUtils
+import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsSnapshot
+import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.Utils
 import dev.chrisbanes.haze.HazeState
@@ -39,8 +40,12 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,11 +60,24 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
     var showDonateDialog by remember { mutableStateOf(false) }
     var showAlipayChoiceDialog by remember { mutableStateOf(false) }
     var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
+    var statusTapCount by remember { mutableStateOf(0) }
+    var statusTapStartedAtMs by remember { mutableStateOf(0L) }
+    var showStatusDiagnostics by remember { mutableStateOf(false) }
 
-    val isEnabled = ModuleUtils.isModuleActivated(context)
+    val isEnabled = ActivationDiagnosticsStore.isModuleActivated(context)
+    val runtimeConnected = ActivationDiagnosticsStore.isRuntimeConnected()
 
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+    val activationDiagnostics by produceState(
+        initialValue = ActivationDiagnosticsStore.snapshot(context),
+        context,
+    ) {
+        while (true) {
+            value = ActivationDiagnosticsStore.snapshot(context)
+            delay(1500L)
+        }
+    }
     val frameworkInfoState by produceState<Pair<String, String>?>(
         initialValue = null,
     ) {
@@ -116,22 +134,30 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
             item {
                 StatusCard(
                     isEnabled = isEnabled,
-                    onClick = if (isEnabled) {
-                        null
-                    } else {
-                        {
-                            val intent = Intent().apply {
-                                setClassName(
-                                    "org.lsposed.manager",
-                                    "org.lsposed.manager.ui.activity.MainActivity",
-                                )
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            try {
-                                context.startActivity(intent)
-                            } catch (ignored: Exception) {
-                                // Ignore if LSPosed manager is not installed.
-                            }
+                    showDiagnostics = showStatusDiagnostics,
+                    diagnostics = buildStatusDiagnostics(
+                        context = context,
+                        snapshot = activationDiagnostics,
+                        runtimeConnected = runtimeConnected,
+                    ),
+                    onClick = {
+                        val now = SystemClock.uptimeMillis()
+                        val withinWindow = now - statusTapStartedAtMs <= 1800L
+                        statusTapCount = if (withinWindow) statusTapCount + 1 else 1
+                        statusTapStartedAtMs = now
+                        if (statusTapCount >= 5) {
+                            showStatusDiagnostics = !showStatusDiagnostics
+                            statusTapCount = 0
+                            statusTapStartedAtMs = 0L
+                            Toast.makeText(
+                                context,
+                                if (showStatusDiagnostics) {
+                                    context.getString(R.string.status_diag_shown)
+                                } else {
+                                    context.getString(R.string.status_diag_hidden)
+                                },
+                                Toast.LENGTH_SHORT,
+                            ).show()
                         }
                     },
                 )
@@ -292,7 +318,12 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
 }
 
 @Composable
-fun StatusCard(isEnabled: Boolean, onClick: (() -> Unit)? = null) {
+fun StatusCard(
+    isEnabled: Boolean,
+    showDiagnostics: Boolean,
+    diagnostics: List<Pair<String, String>>,
+    onClick: (() -> Unit)? = null,
+) {
     val containerColor = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.errorContainer
     val contentColor = if (isEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onErrorContainer
 
@@ -305,33 +336,111 @@ fun StatusCard(isEnabled: Boolean, onClick: (() -> Unit)? = null) {
         ),
         onClick = { onClick?.invoke() },
     ) {
-        Row(
-            modifier = Modifier
-                .padding(24.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Icon(
-                imageVector = if (isEnabled) Icons.Default.CheckCircle else Icons.Default.Error,
-                contentDescription = null,
-                modifier = Modifier.size(48.dp),
-            )
-            Column {
-                Text(
-                    text = if (isEnabled) stringResource(id = R.string.status_working) else stringResource(id = R.string.status_not_active),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+        Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Icon(
+                    imageVector = if (isEnabled) Icons.Default.CheckCircle else Icons.Default.Warning,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
                 )
-                if (!isEnabled) {
+                Column {
                     Text(
-                        text = stringResource(id = R.string.status_tip),
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = if (isEnabled) stringResource(id = R.string.status_working) else stringResource(id = R.string.status_not_active),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
                     )
+                    if (!isEnabled) {
+                        Text(
+                            text = stringResource(id = R.string.status_tip),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
+            }
+            if (showDiagnostics && diagnostics.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .padding(top = 18.dp)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    diagnostics.forEach { (label, value) ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = contentColor.copy(alpha = 0.8f),
+                            )
+                            Text(
+                                text = value,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                            )
+                        }
+                    }
                 }
             }
         }
     }
+}
+
+private fun buildStatusDiagnostics(
+    context: android.content.Context,
+    snapshot: ActivationDiagnosticsSnapshot,
+    runtimeConnected: Boolean,
+): List<Pair<String, String>> {
+    val serviceValue = buildString {
+        append(
+            context.getString(
+                if (runtimeConnected) {
+                    R.string.status_diag_connected
+                } else {
+                    R.string.status_diag_disconnected
+                },
+            ),
+        )
+        if (snapshot.lastServiceBindAtMs > 0L) {
+            append(" · ")
+            append(context.getString(R.string.status_diag_last_service_prefix))
+            append(" ")
+            append(formatStatusDiagnosticTime(context, snapshot.lastServiceBindAtMs))
+        }
+        if (snapshot.lastServiceFrameworkName.isNotBlank() || snapshot.lastServiceFrameworkVersion.isNotBlank()) {
+            append(" · ")
+            append(snapshot.lastServiceFrameworkName.ifBlank { context.getString(R.string.unknown) })
+            append(" ")
+            append(snapshot.lastServiceFrameworkVersion.ifBlank { context.getString(R.string.unknown) })
+        }
+    }
+    val hookProcess = listOf(
+        snapshot.lastHookPackage.ifBlank { context.getString(R.string.status_diag_none) },
+        snapshot.lastHookProcess.ifBlank { context.getString(R.string.status_diag_none) },
+    ).joinToString(" / ")
+    val hookTime = buildString {
+        append(formatStatusDiagnosticTime(context, snapshot.lastHookAtMs))
+        if (snapshot.lastHookSource.isNotBlank()) {
+            append(" · ")
+            append(snapshot.lastHookSource)
+        }
+    }
+    return listOf(
+        context.getString(R.string.status_diag_service_title) to serviceValue,
+        context.getString(R.string.status_diag_hook_process_title) to hookProcess,
+        context.getString(R.string.status_diag_hook_time_title) to hookTime,
+    )
+}
+
+private fun formatStatusDiagnosticTime(context: android.content.Context, timestampMs: Long): String {
+    if (timestampMs <= 0L) return context.getString(R.string.status_diag_none)
+    return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(timestampMs))
 }
 
 @Composable
