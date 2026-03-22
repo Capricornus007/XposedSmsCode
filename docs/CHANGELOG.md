@@ -5,7 +5,7 @@
 ---
 
 ## [v3.2.2] - 2026-03-22
-- 版本：`versionCode 105` / `versionName 3.2.2`。
+- 版本：`versionCode 106` / `versionName 3.2.2`。
 - 发布说明：Play 渠道继续提供 `api101`；GitHub 渠道同时提供 `api101` 与 `legacy`。下载前请先确认框架类型，避免下错包。
 - `[api101]` Play 版继续面向 libxposed API 101，新框架用户请选择 `api101` 包。
 - `[legacy]` 恢复 legacy 风味构建与旧 Xposed 入口；legacy 框架（API < 100）现在可升级到 3.2.2，但必须安装 `legacy` 包。

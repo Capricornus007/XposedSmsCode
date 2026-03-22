@@ -197,7 +197,7 @@ jobs:
             </div>
 
           files: |
-            artifacts/apks/*.apk
+            artifacts/apks/**/*.apk
             artifacts/bundle/**/*.aab
           generate_release_notes: true
         env:
@@ -269,8 +269,14 @@ jobs:
       - name: Create Draft Release in Xposed-Modules-Repo
         if: env.HAS_MODULES_REPO_TOKEN == 'true' && env.HAS_RELEASE_KEYSTORE == 'true'
         run: |
+          mapfile -d '' apk_files < <(find artifacts/apks -type f -name '*.apk' -print0 | sort -z)
+          if [[ ${#apk_files[@]} -eq 0 ]]; then
+            echo "ERROR: no APK files found under artifacts/apks" >&2
+            find artifacts/apks -maxdepth 6 -type f | sort >&2 || true
+            exit 1
+          fi
           gh release create "${{ github.ref_name }}" \
-            artifacts/apks/*.apk \
+            "${apk_files[@]}" \
             --repo "${{ env.MODULES_REPO }}" \
             --title "${{ steps.extract_version.outputs.version_name }}" \
             --notes "<div align=\"center\">
