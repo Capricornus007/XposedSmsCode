@@ -105,9 +105,9 @@ jobs:
           from pathlib import Path
 
           configs = [
-            "githubDebugRuntimeClasspath",
-            "playDebugRuntimeClasspath",
-            "fdroidDebugRuntimeClasspath",
+            "githubApi101DebugRuntimeClasspath",
+            "githubLegacyDebugRuntimeClasspath",
+            "playApi101DebugRuntimeClasspath",
           ]
           forced = json.loads(Path("/tmp/forced.json").read_text())
           results = {}

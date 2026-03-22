@@ -55,8 +55,12 @@ fun releaseBaseName(versionName: String): String {
     return "XposedSmsCode_v${versionName.replace("\\s+".toRegex(), "_")}_${releaseTime()}"
 }
 
-fun releaseApkName(versionName: String, buildType: String, abiSuffix: String): String {
-    return "${abiSuffix}_${releaseBaseName(versionName)}_${buildType}.apk"
+fun normalizeAbiForFileName(abi: String): String {
+    return abi.replace("-", "")
+}
+
+fun releaseApkName(versionName: String, buildType: String, abiSuffix: String, xposedApiFlavor: String): String {
+    return "${normalizeAbiForFileName(abiSuffix)}_${xposedApiFlavor}_${releaseBaseName(versionName)}_${buildType}.apk"
 }
 
 fun releaseAabName(versionName: String): String {
@@ -69,7 +73,7 @@ android {
     compileSdkExtension = sdkExtensionInt
     ndkVersion = ndkVersionStr
 
-    flavorDimensions += "distribution"
+    flavorDimensions += listOf("distribution", "xposedApi")
     productFlavors {
         create("play") {
             dimension = "distribution"
@@ -85,6 +89,16 @@ android {
             dimension = "distribution"
             buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
             buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "false")
+        }
+        create("legacy") {
+            dimension = "xposedApi"
+            buildConfigField("String", "XPOSED_API_FLAVOR", "\"legacy\"")
+            proguardFile("proguard-legacy.pro")
+        }
+        create("api101") {
+            dimension = "xposedApi"
+            buildConfigField("String", "XPOSED_API_FLAVOR", "\"api101\"")
+            proguardFile("proguard-api101.pro")
         }
     }
 
@@ -175,7 +189,7 @@ android {
             if (isSigningInfoAvailable) {
                 signingConfig = signingConfigs.getByName("release")
             }
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-common.pro")
             ndk {
                 debugSymbolLevel = "FULL"
             }
@@ -191,7 +205,7 @@ android {
             } else {
                 signingConfig = signingConfigs.getByName("debug")
             }
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-common.pro")
             ndk {
                 debugSymbolLevel = "FULL"
             }
@@ -223,22 +237,34 @@ tasks.withType<Test>().configureEach {
 }
 
 androidComponents {
+    beforeVariants(selector().all()) { variantBuilder ->
+        val flavors = variantBuilder.productFlavors.toMap()
+        val distribution = flavors["distribution"]
+        val xposedApiFlavor = flavors["xposedApi"]
+        variantBuilder.enable = when (distribution) {
+            "play" -> xposedApiFlavor == "api101"
+            "github" -> xposedApiFlavor == "legacy" || xposedApiFlavor == "api101"
+            else -> false
+        }
+    }
+
     onVariants(selector().all()) { variant ->
         val isDebug = variant.buildType == "debug"
         val suffix = if (isDebug) buildTimestamp() else ""
         val vName = if (isDebug) "$versionNameStr-$suffix" else versionNameStr
+        val flavorMap = variant.productFlavors.toMap()
+        val xposedApiFlavor = flavorMap["xposedApi"] ?: "api101"
         
         variant.outputs.forEach { output ->
             if (isDebug) {
                 output.versionName.set(vName)
             }
             val abi = output.filters.find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }?.identifier ?: "universal"
-            // Use reflection or search for the property if outputFileName is unresolved
             try {
                 val outputFileName = output.javaClass.getMethod("getOutputFileName").invoke(output)
                 outputFileName.javaClass
                     .getMethod("set", Any::class.java)
-                    .invoke(outputFileName, releaseApkName(vName, variant.buildType ?: "", abi))
+                    .invoke(outputFileName, releaseApkName(vName, variant.buildType ?: "", abi, xposedApiFlavor))
             } catch (e: Exception) {
                 // Ignore for now, build will fail if this is wrong
             }
@@ -247,9 +273,9 @@ androidComponents {
 }
 
 tasks.register("renamePlayReleaseAab") {
-    dependsOn("bundlePlayRelease")
-    val bundleFileProvider = layout.buildDirectory.file("outputs/bundle/playRelease/app-play-release.aab")
-    val targetFileProvider = layout.buildDirectory.file("outputs/bundle/playRelease/${releaseAabName(versionNameStr)}")
+    dependsOn("bundlePlayApi101Release")
+    val bundleFileProvider = layout.buildDirectory.file("outputs/bundle/playApi101Release/app-play-api101-release.aab")
+    val targetFileProvider = layout.buildDirectory.file("outputs/bundle/playApi101Release/${releaseAabName(versionNameStr)}")
     doLast {
         val bundleFile = bundleFileProvider.get().asFile
         if (bundleFile.exists()) {
@@ -259,7 +285,7 @@ tasks.register("renamePlayReleaseAab") {
     }
 }
 
-tasks.matching { it.name == "bundlePlayRelease" }.configureEach {
+tasks.matching { it.name == "bundlePlayApi101Release" }.configureEach {
     finalizedBy("renamePlayReleaseAab")
 }
 
@@ -276,8 +302,10 @@ dependencies {
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    compileOnly(libs.libxposed.api)
-    implementation(libs.libxposed.service)
+    add("legacyCompileOnly", project(":xposed-stub"))
+    add("legacyCompileOnly", libs.libxposed.api)
+    add("api101CompileOnly", libs.libxposed.api)
+    add("api101Implementation", libs.libxposed.service)
 
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)

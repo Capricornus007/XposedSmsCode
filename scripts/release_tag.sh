@@ -20,10 +20,12 @@ run_pre_push_checks() {
     cd "$ROOT_DIR"
     chmod +x gradlew
     ./gradlew --warning-mode all \
-      assembleGithubDebug \
-      testGithubDebugUnitTest \
-      :app:koverVerifyGithubDebug \
-      :app:koverHtmlReportGithubDebug \
+      assembleGithubApi101Debug \
+      assembleGithubLegacyDebug \
+      testGithubApi101DebugUnitTest \
+      testGithubLegacyDebugUnitTest \
+      :app:koverVerifyGithubApi101Debug \
+      :app:koverHtmlReportGithubApi101Debug \
       -PbuildSplits
   )
 

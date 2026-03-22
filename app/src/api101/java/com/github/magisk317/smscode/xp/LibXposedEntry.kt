@@ -1,15 +1,20 @@
 package com.github.magisk317.smscode.xp
 
+import android.util.Log
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.utils.PrefsReader
-import io.github.magisk317.smscode.core.hook.BaseHook
 import com.github.magisk317.smscode.xp.hook.code.SmsHandlerHook
 import com.github.magisk317.smscode.xp.hook.google.GoogleMessagesHook
 import com.github.magisk317.smscode.xp.hook.me.ModuleUtilsHook
+import com.github.magisk317.smscode.xp.hook.telephony.SmsProviderHook
+import io.github.libxposed.api.XposedInterface
+import io.github.libxposed.api.XposedModule
+import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
+import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
+import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
+import io.github.magisk317.smscode.core.hook.BaseHook
 import io.github.magisk317.smscode.core.hook.permission.PermissionGranterHook
 import io.github.magisk317.smscode.core.hook.system.SystemInputInjectorHook
-import com.github.magisk317.smscode.xp.hook.telephony.SmsProviderHook
-import android.util.Log
 import io.github.magisk317.smscode.core.hookapi.HookEnv
 import io.github.magisk317.smscode.core.hookapi.LibXposedHookApi
 import io.github.magisk317.smscode.core.hookapi.LoadParam
@@ -17,11 +22,6 @@ import io.github.magisk317.smscode.core.hookapi.ZygoteParam
 import io.github.magisk317.smscode.core.runtime.CoreRuntime
 import io.github.magisk317.smscode.core.runtime.CoreRuntimeAccess
 import io.github.magisk317.smscode.core.utils.XLog
-import io.github.libxposed.api.XposedInterface
-import io.github.libxposed.api.XposedModule
-import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
-import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
-import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
 
 class LibXposedEntry : XposedModule {
     private companion object {
@@ -29,7 +29,6 @@ class LibXposedEntry : XposedModule {
         private const val REMOTE_PREFS_GROUP = "xposed_prefs"
     }
 
-    // Required by libxposed API 101 loaders (LSPosed expects this signature).
     @Suppress("unused", "UnusedParameter")
     constructor(xposed: XposedInterface, loadedParam: ModuleLoadedParam) : super()
 
@@ -104,7 +103,6 @@ class LibXposedEntry : XposedModule {
             override val logToXposed: Boolean = BuildConfig.LOG_TO_XPOSED
             override val debug: Boolean = BuildConfig.DEBUG
             override val applicationId: String = BuildConfig.APPLICATION_ID
-            // Keep legacy action namespace for system input broadcast compatibility.
             override val actionNamespace: String = "com.github.magisk317.smscode"
         })
     }

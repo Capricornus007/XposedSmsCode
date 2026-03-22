@@ -17,7 +17,7 @@ android {
     compileSdk = compileSdkInt
     compileSdkExtension = compileSdkExtensionInt
 
-    flavorDimensions += "distribution"
+    flavorDimensions += listOf("distribution", "xposedApi")
     productFlavors {
         create("play") {
             dimension = "distribution"
@@ -33,6 +33,14 @@ android {
             dimension = "distribution"
             buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
             buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "false")
+        }
+        create("legacy") {
+            dimension = "xposedApi"
+            buildConfigField("String", "XPOSED_API_FLAVOR", "\"legacy\"")
+        }
+        create("api101") {
+            dimension = "xposedApi"
+            buildConfigField("String", "XPOSED_API_FLAVOR", "\"api101\"")
         }
     }
 

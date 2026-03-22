@@ -3,6 +3,7 @@ package com.github.magisk317.smscode.ui.app
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.media.AudioManager
@@ -25,8 +26,6 @@ import io.github.magisk317.smscode.core.runtime.CoreRuntimeAccess
 import io.github.magisk317.smscode.core.utils.XLog
 import com.github.magisk317.smscode.di.appModule
 import com.github.magisk317.smscode.ui.record.CodeRecordRestoreManager
-import io.github.libxposed.service.XposedService
-import io.github.libxposed.service.XposedServiceHelper
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
@@ -85,35 +84,7 @@ class SmsCodeApplication : Application() {
     }
 
     private fun initXposedServiceActivationMonitor() {
-        runCatching<Unit> {
-            XposedServiceHelper.registerListener(
-                object : XposedServiceHelper.OnServiceListener {
-                    override fun onServiceBind(service: XposedService) {
-                        AppPreferencesDataStore.setRemotePrefsProvider {
-                            service.getRemotePreferences("xposed_prefs")
-                        }
-                        applicationScope.launch {
-                            AppPreferencesDataStore.syncToRemotePrefs(this@SmsCodeApplication)
-                        }
-                        ModuleUtils.setRuntimeActivated(true)
-                        ModuleActivationStore.markActivated(this@SmsCodeApplication)
-                        XLog.i(
-                            "Xposed service connected: framework=%s version=%s",
-                            service.frameworkName,
-                            service.frameworkVersion,
-                        )
-                    }
-
-                    override fun onServiceDied(service: XposedService) {
-                        AppPreferencesDataStore.setRemotePrefsProvider(null)
-                        ModuleUtils.setRuntimeActivated(false)
-                        XLog.w("Xposed service disconnected")
-                    }
-                },
-            )
-        }.onFailure {
-            XLog.w("Failed to register Xposed service listener: %s", it.message ?: "unknown")
-        }
+        FlavorXposedServiceBridge.initialize(this, applicationScope)
     }
 
     private fun installCoreRuntime() {
@@ -136,6 +107,31 @@ class SmsCodeApplication : Application() {
                 return ModuleConflictArbiter.shouldSuppressByRelay(context, source)
             }
         })
+    }
+
+    internal fun handleXposedServiceBound(
+        remotePrefsProvider: (() -> SharedPreferences?)?,
+        frameworkName: String?,
+        frameworkVersion: String?,
+    ) {
+        AppPreferencesDataStore.setRemotePrefsProvider(remotePrefsProvider)
+        ModuleUtils.setRuntimeActivated(true)
+        ModuleActivationStore.markActivated(this)
+        XLog.i(
+            "Xposed service connected: framework=%s version=%s",
+            frameworkName ?: "unknown",
+            frameworkVersion ?: "unknown",
+        )
+    }
+
+    internal fun handleXposedServiceDied() {
+        AppPreferencesDataStore.setRemotePrefsProvider(null)
+        ModuleUtils.setRuntimeActivated(false)
+        XLog.w("Xposed service disconnected")
+    }
+
+    internal fun logXposedServiceBridgeFailure(throwable: Throwable) {
+        XLog.w("Failed to register Xposed service listener: %s", throwable.message ?: "unknown")
     }
 
     private fun registerLicenseActivityKiller() {
