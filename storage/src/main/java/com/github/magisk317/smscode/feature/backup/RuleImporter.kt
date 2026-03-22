@@ -1,7 +1,7 @@
 package com.github.magisk317.smscode.feature.backup
 
 import com.github.magisk317.smscode.common.utils.JsonUtils
-import io.github.magisk317.smscode.core.utils.XLog
+import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.feature.backup.exception.BackupInvalidException
 import com.github.magisk317.smscode.feature.backup.exception.VersionInvalidException
 import com.github.magisk317.smscode.feature.backup.exception.VersionMissedException

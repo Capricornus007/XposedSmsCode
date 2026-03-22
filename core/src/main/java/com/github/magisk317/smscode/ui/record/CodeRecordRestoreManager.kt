@@ -5,7 +5,7 @@ import android.content.Context
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.JsonUtils
 import com.github.magisk317.smscode.common.utils.StorageUtils
-import io.github.magisk317.smscode.core.utils.XLog
+import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import java.io.*

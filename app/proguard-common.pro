@@ -1,4 +1,4 @@
--keep class io.github.magisk317.smscode.core.utils.ModuleUtils {
+-keep class io.github.magisk317.smscode.xposed.utils.ModuleUtils {
     int getModuleVersion();
 }
 

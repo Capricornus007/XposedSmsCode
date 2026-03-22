@@ -5,7 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.constant.TransitionConst
-import io.github.magisk317.smscode.core.utils.XLog
+import io.github.magisk317.smscode.xposed.utils.XLog
 
 object ModuleConflictArbiter {
     const val SUPPRESSION_REASON = "suppressed_by_relay_package"

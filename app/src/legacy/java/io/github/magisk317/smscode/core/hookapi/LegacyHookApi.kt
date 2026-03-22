@@ -1,8 +1,8 @@
-package io.github.magisk317.smscode.core.hookapi
+package io.github.magisk317.smscode.xposed.hookapi
 
 import de.robv.android.xposed.XC_MethodHook
 import de.robv.android.xposed.XposedBridge
-import io.github.magisk317.smscode.core.utils.XLog
+import io.github.magisk317.smscode.xposed.utils.XLog
 import java.lang.reflect.Member
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier

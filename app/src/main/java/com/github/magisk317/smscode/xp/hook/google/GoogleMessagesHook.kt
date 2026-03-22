@@ -7,12 +7,12 @@ import android.net.Uri
 import android.provider.Telephony
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.utils.PrefsReader
-import io.github.magisk317.smscode.core.utils.XLog
-import io.github.magisk317.smscode.core.helper.XposedWrapper
-import io.github.magisk317.smscode.core.hook.BaseHook
-import io.github.magisk317.smscode.core.hookapi.LoadParam
-import io.github.magisk317.smscode.core.hookapi.MethodHook
-import io.github.magisk317.smscode.core.hookapi.MethodHookParam
+import io.github.magisk317.smscode.xposed.utils.XLog
+import io.github.magisk317.smscode.xposed.helper.XposedWrapper
+import io.github.magisk317.smscode.xposed.hook.BaseHook
+import io.github.magisk317.smscode.xposed.hookapi.LoadParam
+import io.github.magisk317.smscode.xposed.hookapi.MethodHook
+import io.github.magisk317.smscode.xposed.hookapi.MethodHookParam
 import java.util.concurrent.Executors
 import java.util.regex.Pattern
 

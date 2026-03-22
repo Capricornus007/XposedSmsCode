@@ -48,13 +48,13 @@ import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
-import io.github.magisk317.smscode.core.utils.ModuleUtils
+import com.github.magisk317.smscode.common.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.LogBundleExporter
 import com.github.magisk317.smscode.common.utils.RuntimeLogStore
 import com.github.magisk317.smscode.common.utils.SPUtils
 import com.github.magisk317.smscode.common.utils.Utils
-import io.github.magisk317.smscode.core.utils.XLog
+import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.ui.common.LoadingIndicatorTokens
 import com.github.magisk317.smscode.ui.common.PolygonMorphLoadingIndicator
 import com.github.magisk317.smscode.ui.common.SessionLoadingRegistry

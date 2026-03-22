@@ -6,7 +6,7 @@ import android.net.Uri
 import android.os.Environment
 import androidx.core.content.FileProvider
 import com.github.magisk317.smscode.common.utils.JsonUtils
-import io.github.magisk317.smscode.core.utils.XLog
+import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.AppDatabase
 import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.feature.backup.exception.BackupInvalidException

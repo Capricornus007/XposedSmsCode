@@ -6,4 +6,4 @@ pluginManagement {
     }
 }
 
-include(":app", ":storage", ":core", ":smscode-core:core", ":xposed-stub")
+include(":app", ":storage", ":core", ":smscode-core:smscode-xposed-core", ":smscode-core:smscode-domain", ":xposed-stub")

@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.SystemClock
 import android.util.Log
 import com.github.magisk317.smscode.storage.BuildConfig
-import io.github.magisk317.smscode.core.utils.ModuleUtils
+import com.github.magisk317.smscode.common.utils.ModuleUtils
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat

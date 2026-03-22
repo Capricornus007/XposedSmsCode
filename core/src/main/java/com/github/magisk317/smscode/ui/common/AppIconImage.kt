@@ -18,7 +18,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
-import io.github.magisk317.smscode.core.utils.XLog
+import com.github.magisk317.smscode.common.utils.XLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

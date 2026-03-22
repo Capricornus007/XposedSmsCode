@@ -25,7 +25,7 @@ import com.github.magisk317.smscode.feature.backup.BackupManager
 import com.github.magisk317.smscode.feature.backup.BackupRule
 import com.github.magisk317.smscode.feature.backup.BackupSmsRecord
 import com.github.magisk317.smscode.feature.backup.ExportResult
-import io.github.magisk317.smscode.core.utils.XLog
+import com.github.magisk317.smscode.common.utils.XLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow

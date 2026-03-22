@@ -7,16 +7,16 @@ import com.github.magisk317.smscode.xp.hook.me.ModuleUtilsHook
 import de.robv.android.xposed.IXposedHookLoadPackage
 import de.robv.android.xposed.IXposedHookZygoteInit
 import de.robv.android.xposed.callbacks.XC_LoadPackage
-import io.github.magisk317.smscode.core.hook.BaseHook
-import io.github.magisk317.smscode.core.hook.permission.PermissionGranterHook
-import io.github.magisk317.smscode.core.hook.system.SystemInputInjectorHook
-import io.github.magisk317.smscode.core.hookapi.HookEnv
-import io.github.magisk317.smscode.core.hookapi.LegacyHookApi
-import io.github.magisk317.smscode.core.hookapi.LoadParam
-import io.github.magisk317.smscode.core.hookapi.ZygoteParam
-import io.github.magisk317.smscode.core.runtime.CoreRuntime
-import io.github.magisk317.smscode.core.runtime.CoreRuntimeAccess
-import io.github.magisk317.smscode.core.utils.XLog
+import io.github.magisk317.smscode.xposed.hook.BaseHook
+import io.github.magisk317.smscode.xposed.hook.permission.PermissionGranterHook
+import io.github.magisk317.smscode.xposed.hook.system.SystemInputInjectorHook
+import io.github.magisk317.smscode.xposed.hookapi.HookEnv
+import io.github.magisk317.smscode.xposed.hookapi.LegacyHookApi
+import io.github.magisk317.smscode.xposed.hookapi.LoadParam
+import io.github.magisk317.smscode.xposed.hookapi.ZygoteParam
+import io.github.magisk317.smscode.xposed.runtime.CoreRuntime
+import io.github.magisk317.smscode.xposed.runtime.CoreRuntimeAccess
+import io.github.magisk317.smscode.xposed.utils.XLog
 
 class HookEntry :
     IXposedHookLoadPackage,

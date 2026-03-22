@@ -7,7 +7,7 @@ import android.text.TextUtils
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.common.utils.StringUtils
-import io.github.magisk317.smscode.core.utils.XLog
+import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.hook.code.action.CallableAction

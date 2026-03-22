@@ -95,7 +95,8 @@ tasks.withType<Test>().configureEach {
 }
 
 dependencies {
-    implementation(project(":smscode-core:core"))
+    implementation(project(":smscode-core:smscode-xposed-core"))
+    implementation(project(":smscode-core:smscode-domain"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.serialization.json)

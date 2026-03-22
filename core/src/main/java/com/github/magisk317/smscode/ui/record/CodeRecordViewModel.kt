@@ -8,7 +8,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.utils.JsonUtils
-import io.github.magisk317.smscode.core.utils.XLog
+import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import kotlinx.collections.immutable.ImmutableList

@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import io.github.magisk317.smscode.core.utils.XLog
+import com.github.magisk317.smscode.common.utils.XLog
 import java.util.Collections
 
 object PrefsReader {

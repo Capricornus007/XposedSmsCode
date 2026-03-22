@@ -12,16 +12,16 @@ import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import io.github.libxposed.api.XposedModuleInterface.SystemServerStartingParam
-import io.github.magisk317.smscode.core.hook.BaseHook
-import io.github.magisk317.smscode.core.hook.permission.PermissionGranterHook
-import io.github.magisk317.smscode.core.hook.system.SystemInputInjectorHook
-import io.github.magisk317.smscode.core.hookapi.HookEnv
-import io.github.magisk317.smscode.core.hookapi.LibXposedHookApi
-import io.github.magisk317.smscode.core.hookapi.LoadParam
-import io.github.magisk317.smscode.core.hookapi.ZygoteParam
-import io.github.magisk317.smscode.core.runtime.CoreRuntime
-import io.github.magisk317.smscode.core.runtime.CoreRuntimeAccess
-import io.github.magisk317.smscode.core.utils.XLog
+import io.github.magisk317.smscode.xposed.hook.BaseHook
+import io.github.magisk317.smscode.xposed.hook.permission.PermissionGranterHook
+import io.github.magisk317.smscode.xposed.hook.system.SystemInputInjectorHook
+import io.github.magisk317.smscode.xposed.hookapi.HookEnv
+import io.github.magisk317.smscode.xposed.hookapi.LibXposedHookApi
+import io.github.magisk317.smscode.xposed.hookapi.LoadParam
+import io.github.magisk317.smscode.xposed.hookapi.ZygoteParam
+import io.github.magisk317.smscode.xposed.runtime.CoreRuntime
+import io.github.magisk317.smscode.xposed.runtime.CoreRuntimeAccess
+import io.github.magisk317.smscode.xposed.utils.XLog
 
 class LibXposedEntry : XposedModule {
     private companion object {
