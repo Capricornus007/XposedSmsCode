@@ -111,6 +111,25 @@ class GithubUpdateCheckerTest {
     }
 
     @Test
+    fun parseStructuredUpgradeJson_infersXposedApiFlavorFromAssetName() {
+        val json = """
+            {
+              "versionCode": 32000,
+              "versionName": "3.2.0",
+              "apks": [
+                {"abi":"arm64-v8a","downloadUrl":"https://example.com/arm64v8a_legacy_app.apk"},
+                {"abi":"arm64-v8a","downloadUrl":"https://example.com/arm64v8a_api101_app.apk"}
+              ]
+            }
+        """.trimIndent()
+
+        val info = GithubUpdateChecker.parseStructuredUpgradeJson(json)
+
+        assertEquals("legacy", info?.apks?.get(0)?.xposedApiFlavor)
+        assertEquals("api101", info?.apks?.get(1)?.xposedApiFlavor)
+    }
+
+    @Test
     fun parseUpgradeCheckResult_fallsBackToLegacy() {
         val json = """{"tag_name":"v3.1.9","html_url":"https://example.com/release"}"""
         val result = GithubUpdateChecker.parseUpgradeCheckResult(json)
@@ -137,5 +156,37 @@ class GithubUpdateCheckerTest {
             supportedAbis = listOf("x86_64"),
         )
         assertEquals("u", x86?.downloadUrl)
+    }
+
+    @Test
+    fun selectBestApkForDevice_prefersMatchingXposedApiFlavorBeforeAbi() {
+        val apks = listOf(
+            UpgradeApkAsset(abi = "arm64-v8a", downloadUrl = "legacy", xposedApiFlavor = "legacy"),
+            UpgradeApkAsset(abi = "arm64-v8a", downloadUrl = "api101", xposedApiFlavor = "api101"),
+        )
+
+        val selected = GithubUpdateChecker.selectBestApkForDevice(
+            apks = apks,
+            supportedAbis = listOf("arm64-v8a"),
+            requiredXposedApiFlavor = "legacy",
+        )
+
+        assertEquals("legacy", selected?.downloadUrl)
+    }
+
+    @Test
+    fun selectBestApkForDevice_onlyFallsBackToUniversalWithinSameFlavor() {
+        val apks = listOf(
+            UpgradeApkAsset(abi = "universal", downloadUrl = "legacy-u", xposedApiFlavor = "legacy"),
+            UpgradeApkAsset(abi = "arm64-v8a", downloadUrl = "api101-arm64", xposedApiFlavor = "api101"),
+        )
+
+        val selected = GithubUpdateChecker.selectBestApkForDevice(
+            apks = apks,
+            supportedAbis = listOf("arm64-v8a"),
+            requiredXposedApiFlavor = "legacy",
+        )
+
+        assertEquals("legacy-u", selected?.downloadUrl)
     }
 }
