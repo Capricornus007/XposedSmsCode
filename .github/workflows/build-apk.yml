@@ -217,6 +217,17 @@ jobs:
             echo "track=production" >> $GITHUB_OUTPUT
           fi
 
+      - name: Resolve Play Mapping File
+        id: resolve_mapping
+        run: |
+          mapping_file=$(find artifacts/bundle -type f -name mapping.txt | head -n 1)
+          if [[ -z "$mapping_file" ]]; then
+            echo "ERROR: mapping.txt not found under artifacts/bundle" >&2
+            find artifacts/bundle -maxdepth 4 -type f | sort >&2 || true
+            exit 1
+          fi
+          echo "mapping_file=$mapping_file" >> "$GITHUB_OUTPUT"
+
       - name: Publish to Google Play
         uses: r0adkll/upload-google-play@v1
         if: startsWith(github.ref, 'refs/tags/') && env.HAS_GOOGLE_PLAY_CREDENTIALS == 'true'
@@ -224,7 +235,7 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
           packageName: com.github.tianma8023.xposed.smscode
           releaseFiles: artifacts/bundle/**/*.aab
-          mappingFile: artifacts/bundle/**/mapping.txt
+          mappingFile: ${{ steps.resolve_mapping.outputs.mapping_file }}
           track: ${{ steps.determine_track.outputs.track }}
           status: completed
           whatsNewDirectory: distribution/whatsnew
