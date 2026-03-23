@@ -47,7 +47,7 @@ object ActivationDiagnosticsStore {
 
     fun isModuleActivated(context: Context): Boolean {
         if (BuildConfig.XPOSED_API_FLAVOR == XPOSED_API_FLAVOR_LEGACY) {
-            return ModuleUtils.isModuleActivated(context)
+            return ModuleUtils.isModuleActivated(context) || hasHookHeartbeatThisBoot(context)
         }
         return isRuntimeConnected() || hasHookHeartbeatThisBoot(context)
     }
