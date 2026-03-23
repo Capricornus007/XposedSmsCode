@@ -4,6 +4,18 @@
 
 ---
 
+## [v3.2.3] - 2026-03-23
+- 版本：`versionCode 107` / `versionName 3.2.3`。
+- 发布说明：Play 渠道继续提供 `api101`；GitHub 渠道同时提供 `api101` 与 `legacy`。下载前请先确认框架类型，避免下错包。
+- `[api101/legacy]` 重构为 split shared layers，并同步更新 `smscode-core` 子模块，统一共享 hook、日志与输入基础能力，减少 flavor 之间的实现漂移。
+- `[legacy]` 首页激活状态改为接受 `sms_handler` heartbeat，修复旧框架下“已激活但状态卡误判未激活”的问题。
+- `[api101/legacy]` 强化验证码 Toast 去重与短信分发防重，降低重复提示、重复处理与重复自动输入概率。
+- `[legacy]` 进一步避免 `InboundSmsHandler` 重复初始化与重复分发，兼容旧框架重复加载场景并提升稳定性。
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.2.2...v3.2.3
+
+---
+
 ## [v3.2.2] - 2026-03-22
 - 版本：`versionCode 106` / `versionName 3.2.2`。
 - 发布说明：Play 渠道继续提供 `api101`；GitHub 渠道同时提供 `api101` 与 `legacy`。下载前请先确认框架类型，避免下错包。
