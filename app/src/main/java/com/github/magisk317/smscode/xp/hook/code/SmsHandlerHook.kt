@@ -30,6 +30,7 @@ import io.github.magisk317.smscode.xposed.hookapi.HookHelpers
 import io.github.magisk317.smscode.xposed.hookapi.LoadParam
 import io.github.magisk317.smscode.xposed.hookapi.MethodHookParam
 import java.lang.reflect.Method
+import java.util.Collections
 import java.util.concurrent.Executors
 import kotlin.math.abs
 
@@ -46,6 +47,16 @@ class SmsHandlerHook : BaseHook() {
 
     override fun onLoadPackage(lpparam: LoadParam) {
         if (ANDROID_PHONE_PACKAGE == lpparam.packageName) {
+            val hookKey = buildHookInstallKey(lpparam)
+            if (!markHookInstalled(hookKey)) {
+                XLog.w(
+                    "SmsHandlerHook already initialized, skip duplicate load: pkg=%s process=%s loader=%s",
+                    lpparam.packageName,
+                    lpparam.processName,
+                    Integer.toHexString(System.identityHashCode(lpparam.classLoader)),
+                )
+                return
+            }
             XLog.i("SmsCode initializing")
             printDeviceInfo()
             try {
@@ -681,6 +692,7 @@ class SmsHandlerHook : BaseHook() {
         private const val BLOCK_REASON_PREF_BLOCK = "pref_block_sms"
         private const val PERSISTENT_DEVICE_ID_DEFAULT = "default:0"
         private val SMS_OPERATION_EXECUTOR = Executors.newSingleThreadExecutor()
+        private val installedHookKeys = Collections.synchronizedSet(mutableSetOf<String>())
         @Volatile
         private var cachedDeleteRawMethod: Method? = null
         @Volatile
@@ -689,6 +701,18 @@ class SmsHandlerHook : BaseHook() {
         private var loggedDeleteRawSignatures = false
         @Volatile
         private var loggedSendMessageSignatures = false
+
+        private fun buildHookInstallKey(lpparam: LoadParam): String {
+            return buildString {
+                append(lpparam.packageName)
+                append('|')
+                append(lpparam.processName)
+                append('|')
+                append(Integer.toHexString(System.identityHashCode(lpparam.classLoader)))
+            }
+        }
+
+        private fun markHookInstalled(key: String): Boolean = installedHookKeys.add(key)
 
     }
 }
