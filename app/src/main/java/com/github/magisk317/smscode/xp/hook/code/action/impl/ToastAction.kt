@@ -12,6 +12,8 @@ import com.github.magisk317.smscode.xp.hook.code.helper.InputHelper
 import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.hook.code.action.RunnableAction
+import java.util.LinkedHashMap
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -32,9 +34,15 @@ class ToastAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg)
     private fun showCodeToast() {
         val smsCode = mSmsMsg.smsCode.orEmpty()
         val text = mPluginContext.getString(R.string.current_sms_code, smsCode)
+        val toastKey = buildToastKey(mSmsMsg)
+        val ownerToken = acquireToastOwner(toastKey)
+        if (ownerToken == null) {
+            return
+        }
         val toast = Toast.makeText(mPhoneContext, text, Toast.LENGTH_LONG)
         XLog.w(
-            "Diag toast request: pkg=%s uid=%d code_len=%d text_len=%d",
+            "Diag toast request: key=%s pkg=%s uid=%d code_len=%d text_len=%d",
+            toastKey.ifBlank { "<none>" },
             mPhoneContext.packageName,
             android.os.Process.myUid(),
             smsCode.length,
@@ -46,8 +54,10 @@ class ToastAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg)
                 object : Toast.Callback() {
                     override fun onToastShown() {
                         shown.set(true)
+                        touchToastOwner(toastKey, ownerToken)
                         XLog.w(
-                            "Diag toast shown: pkg=%s code_len=%d",
+                            "Diag toast shown: key=%s pkg=%s code_len=%d",
+                            toastKey.ifBlank { "<none>" },
                             mPhoneContext.packageName,
                             smsCode.length,
                         )
@@ -55,7 +65,8 @@ class ToastAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg)
 
                     override fun onToastHidden() {
                         XLog.w(
-                            "Diag toast hidden: pkg=%s code_len=%d",
+                            "Diag toast hidden: key=%s pkg=%s code_len=%d",
+                            toastKey.ifBlank { "<none>" },
                             mPhoneContext.packageName,
                             smsCode.length,
                         )
@@ -64,9 +75,11 @@ class ToastAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg)
             )
             mainHandler.postDelayed(
                 {
-                    if (!shown.get()) {
+                    if (!shown.get() && ownsToastOwner(toastKey, ownerToken)) {
+                        touchToastOwner(toastKey, ownerToken)
                         XLog.w(
-                            "Diag toast fallback via system receiver: pkg=%s code_len=%d",
+                            "Diag toast fallback via system receiver: key=%s pkg=%s code_len=%d",
+                            toastKey.ifBlank { "<none>" },
                             mPhoneContext.packageName,
                             smsCode.length,
                         )
@@ -81,5 +94,96 @@ class ToastAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg)
 
     companion object {
         private const val TOAST_FALLBACK_DELAY_MS = 1500L
+        private const val TOAST_DEDUP_WINDOW_MS = 5_000L
+        private const val MAX_TOAST_CACHE_SIZE = 128
+        private val TOAST_CACHE_LOCK = Any()
+        private val recentToasts = LinkedHashMap<String, ToastOwner>(MAX_TOAST_CACHE_SIZE, 0.75f, true)
+
+        private data class ToastOwner(
+            val token: String,
+            var timestamp: Long,
+        )
+
+        private fun acquireToastOwner(key: String): String? {
+            if (key.isBlank()) return UUID.randomUUID().toString()
+
+            val now = System.currentTimeMillis()
+            val token = UUID.randomUUID().toString()
+            synchronized(TOAST_CACHE_LOCK) {
+                trimToastCache(now)
+                val last = recentToasts[key]
+                if (last != null && now - last.timestamp <= TOAST_DEDUP_WINDOW_MS) {
+                    XLog.w(
+                        "Diag toast dedup skip: key=%s ageMs=%d",
+                        key,
+                        now - last.timestamp,
+                    )
+                    return null
+                }
+                recentToasts[key] = ToastOwner(token, now)
+                trimToastCacheSize()
+            }
+            return token
+        }
+
+        private fun ownsToastOwner(key: String, token: String): Boolean {
+            if (key.isBlank()) return true
+            synchronized(TOAST_CACHE_LOCK) {
+                val current = recentToasts[key] ?: return false
+                return current.token == token
+            }
+        }
+
+        private fun touchToastOwner(key: String, token: String) {
+            if (key.isBlank()) return
+            val now = System.currentTimeMillis()
+            synchronized(TOAST_CACHE_LOCK) {
+                val current = recentToasts[key] ?: return
+                if (current.token != token) return
+                current.timestamp = now
+            }
+        }
+
+        private fun trimToastCache(now: Long) {
+            val iterator = recentToasts.entries.iterator()
+            while (iterator.hasNext()) {
+                val entry = iterator.next()
+                if (now - entry.value.timestamp > TOAST_DEDUP_WINDOW_MS) {
+                    iterator.remove()
+                }
+            }
+        }
+
+        private fun trimToastCacheSize() {
+            while (recentToasts.size > MAX_TOAST_CACHE_SIZE) {
+                val firstKey = recentToasts.entries.firstOrNull()?.key ?: break
+                recentToasts.remove(firstKey)
+            }
+        }
+
+        private fun buildToastKey(smsMsg: SmsMsg): String {
+            val sender = smsMsg.sender.orEmpty()
+            val body = smsMsg.body.orEmpty()
+            val code = smsMsg.smsCode.orEmpty()
+            if (sender.isBlank() && body.isBlank() && code.isBlank()) {
+                return ""
+            }
+
+            val parts = ArrayList<String>(4)
+            if (sender.isNotBlank() && body.isNotBlank()) {
+                parts += "fp:${hashValue(sender)}:${hashValue(body)}"
+            }
+            if (code.isNotBlank()) {
+                val channel = when {
+                    !smsMsg.packageName.isNullOrBlank() -> "pkg:${smsMsg.packageName}"
+                    !smsMsg.company.isNullOrBlank() -> "co:${smsMsg.company}"
+                    else -> "co:unknown"
+                }
+                parts += "code:${code}|$channel"
+            }
+            return parts.joinToString("|")
+        }
+
+        private fun hashValue(value: String): String = Integer.toHexString(value.hashCode())
     }
 }
