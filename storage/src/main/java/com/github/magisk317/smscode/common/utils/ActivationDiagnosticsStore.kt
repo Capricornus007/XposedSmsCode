@@ -23,6 +23,7 @@ data class ActivationDiagnosticsSnapshot(
 
 object ActivationDiagnosticsStore {
     private const val FILE_NAME = "activation_diagnostics"
+    private const val XPOSED_API_FLAVOR_LEGACY = "legacy"
     private const val KEY_LAST_SERVICE_BIND_AT_MS = "last_service_bind_at_ms"
     private const val KEY_LAST_SERVICE_FRAMEWORK_NAME = "last_service_framework_name"
     private const val KEY_LAST_SERVICE_FRAMEWORK_VERSION = "last_service_framework_version"
@@ -45,6 +46,9 @@ object ActivationDiagnosticsStore {
     fun isRuntimeConnected(): Boolean = ModuleUtils.isRuntimeActivated()
 
     fun isModuleActivated(context: Context): Boolean {
+        if (BuildConfig.XPOSED_API_FLAVOR == XPOSED_API_FLAVOR_LEGACY) {
+            return ModuleUtils.isModuleActivated(context)
+        }
         return isRuntimeConnected() || hasHookHeartbeatThisBoot(context)
     }
 
