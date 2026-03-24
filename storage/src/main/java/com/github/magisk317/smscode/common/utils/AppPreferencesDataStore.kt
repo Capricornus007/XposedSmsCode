@@ -133,6 +133,10 @@ object AppPreferencesDataStore {
             PrefConst.KEY_SHOW_CODE_NOTIFICATION,
             getBoolean(context, PrefConst.KEY_SHOW_CODE_NOTIFICATION, true),
         )
+        editor.putString(
+            PrefConst.KEY_CODE_NOTIFICATION_OWNER,
+            getString(context, PrefConst.KEY_CODE_NOTIFICATION_OWNER, ""),
+        )
         editor.putBoolean(
             PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
             getBoolean(context, PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION, false),

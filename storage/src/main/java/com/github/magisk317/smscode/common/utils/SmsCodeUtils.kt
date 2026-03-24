@@ -6,6 +6,7 @@ import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.feature.store.EntityStoreManager
 import com.github.magisk317.smscode.feature.store.EntityType
 import io.github.magisk317.smscode.domain.model.AppLabelResolver
+import io.github.magisk317.smscode.domain.model.SmsCodeParseResult
 import io.github.magisk317.smscode.domain.model.SmsCodeRuleSpec
 import com.github.magisk317.smscode.common.utils.XLog
 
@@ -17,7 +18,11 @@ object SmsCodeUtils {
     private suspend fun loadCodeKeywordsBySP(context: Context): String? = PrefsReader.getSMSCodeKeywords(context)
 
     suspend fun parseSmsCodeIfExists(context: Context, content: String): String {
-        return io.github.magisk317.smscode.domain.utils.SmsCodeUtils.parseSmsCodeIfExists(
+        return parseSmsCodeResultIfExists(context, content).code
+    }
+
+    suspend fun parseSmsCodeResultIfExists(context: Context, content: String): SmsCodeParseResult {
+        return io.github.magisk317.smscode.domain.utils.SmsCodeUtils.parseSmsCodeResultIfExists(
             content = content,
             keywordsRegex = loadCodeKeywordsBySP(context).orEmpty(),
             rules = queryAllSmsCodeRules(context).map { it.toSpec() },

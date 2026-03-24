@@ -68,6 +68,13 @@
     <!-- preference code notification -->
     <string name="pref_show_code_notification_title">Show status bar notification</string>
     <string name="pref_show_code_notification_summary">Show a status bar notification when an SMS code is extracted (some systems may label it as Phone Services)</string>
+    <string name="pref_code_notification_owner_title">Notification owner</string>
+    <string name="pref_code_notification_owner_summary">Current: %1$s. App owner shows your module name; Phone Services may be steadier in some scenarios, but it will be shown as Phone Services.</string>
+    <string name="pref_code_notification_owner_app">App</string>
+    <string name="pref_code_notification_owner_phone">Phone Services</string>
+    <string name="pref_code_notification_owner_unselected">Not selected</string>
+    <string name="pref_code_notification_owner_app_option">App: displayed as this app, but app force-stop may affect follow-up behavior</string>
+    <string name="pref_code_notification_owner_phone_option">Phone Services: steadier in some scenarios, but displayed as Phone Services</string>
     <string name="pref_auto_cancel_notification_title">Auto cancel notification</string>
     <string name="pref_auto_cancel_notification_summary">Auto cancel SMS code notification</string>
     <!-- notification retention time -->
@@ -232,10 +239,35 @@
 
     <!-- code rules -->
 
-
-
-
     <string name="pref_code_rules_title">SMS code match rules</string>
+    <string name="pref_code_rules_summary">Custom code match rules for specific SMS</string>
+    <string name="rule_company_hint">Institution or company</string>
+    <string name="rule_keyword_hint">Code keyword</string>
+    <string name="rule_code_regex_hint">Code regular expression</string>
+    <string name="rule_company_empty_hint">Please enter institution or company name</string>
+    <string name="rule_keyword_empty_hint">Please enter code keyword</string>
+    <string name="rule_code_regex_empty_hint">Please enter code regular expression</string>
+    <string name="rule_duplicated_prompt">Rule exists, please reedit it or exit</string>
+    <string name="rule_list">Code Rule List</string>
+    <string name="create_rule">New Rule</string>
+    <string name="edit_rule">Edit Rule</string>
+    <string name="rule_list_empty_prompt">No rules yet. Click + to add one.</string>
+    <string name="rule_company_placeholder">eg. Verification Code</string>
+    <string name="builtin_code_rules_title">Built-in rules (read only)</string>
+    <string name="builtin_code_rules_summary">Default parsing rules are shown here for reference. They use the keyword setting as the anchor and still apply keyword-distance priority, whitespace retry, and date-time filtering.</string>
+    <string name="builtin_rule_badge">Built-in</string>
+    <string name="builtin_rule_badge_format">Built-in rule %1$d</string>
+    <string name="user_rule_badge_format">User rule %1$d</string>
+    <string name="builtin_rule_keyword_setting">Built-in rules use global keywords by default</string>
+    <string name="builtin_rule_alphanumeric_title">Default alphanumeric code rule</string>
+    <string name="builtin_rule_digits_title">Default numeric code rule</string>
+    <string name="user_code_rules_title">User rules</string>
+    <string name="user_code_rules_summary">Your saved custom rules are shown here and can be edited or removed.</string>
+    <string name="rule_test_guidance">After saving this rule, go to %1$s to test the effect.</string>
+    <string name="hit_rule_label">Hit rule: %1$s</string>
+    <string name="sms_code_test_result_with_rule">%1$s, %2$s</string>
+    <string name="removed">Removed</string>
+    <string name="load_failed">Load failed, please try again.</string>
 
     <string name="sms_code_type_digit_entry">Digit Only [0\-9]</string>
     <string name="sms_code_type_letter_entry">Letter Only [a\-zA\-Z]</string>
@@ -246,7 +278,9 @@
 
     <string name="remove">Remove</string>
     <string name="edit">Edit</string>
+    <string name="action_copy">Copy</string>
     <string name="list_empty_prompt">No items yet!</string>
+    <string name="record_empty_summary">Wait for a new message to arrive, or trigger one of your configured test flows.</string>
 
 
 

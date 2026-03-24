@@ -2,7 +2,6 @@ package com.github.magisk317.smscode.ui.record
 
 import android.content.ClipData
 import android.os.SystemClock
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -52,6 +51,7 @@ import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.ui.common.AppIconImage
 import com.github.magisk317.smscode.ui.common.LoadingIndicatorTokens
+import com.github.magisk317.smscode.ui.common.LocalSnackbarHostState
 import com.github.magisk317.smscode.ui.common.PolygonMorphLoadingIndicator
 import com.github.magisk317.smscode.ui.common.SessionLoadingRegistry
 import com.github.magisk317.smscode.ui.common.rememberMinDurationLoading
@@ -64,6 +64,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import io.github.magisk317.uikit.surface.WorkspaceEmptyState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
@@ -134,8 +135,7 @@ fun CodeRecordScreen(
     fun copyWithFeedback(label: String, text: String, toastText: String, snackbarText: String) {
         scope.launch {
             clipboard.setClipEntry(ClipData.newPlainText(label, text).toClipEntry())
-            Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show()
-            snackbarHostState.showSnackbar(snackbarText)
+            snackbarHostState.showSnackbar(snackbarText.ifBlank { toastText })
         }
     }
 
@@ -357,9 +357,10 @@ fun CodeRecordScreen(
     val activeTitle = context.getString(R.string.records_column_code_title)
     val activeEmptyHint = context.getString(R.string.records_column_code_empty)
 
-    Box(
-        modifier = Modifier.fillMaxSize(),
-    ) {
+    CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+        ) {
         val defaultTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 120.dp
         val fixedTopHeight = if (fixedTopHeightPx > 0) with(density) { fixedTopHeightPx.toDp() } else defaultTopPadding
         val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
@@ -405,24 +406,19 @@ fun CodeRecordScreen(
                             )
                         }
                     } else if (list.isEmpty() && !loading) {
-                        // Empty View
-                        Column(
+                        WorkspaceEmptyState(
+                            title = stringResource(R.string.list_empty_prompt),
+                            summary = stringResource(R.string.record_empty_summary),
                             modifier = Modifier.fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Email,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Text(
-                                text = stringResource(R.string.list_empty_prompt),
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                            icon = {
+                                Icon(
+                                    imageVector = Icons.Default.Email,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            },
+                        )
                     } else {
                         RecordSplitColumn(
                             title = activeTitle,
@@ -555,14 +551,10 @@ fun CodeRecordScreen(
                     copyWithFeedback(label, value, toast, toast)
                 },
                 onDelete = {
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.some_items_removed, 1),
-                        Toast.LENGTH_SHORT,
-                    ).show()
                     deleteAndUndo(sms)
                 },
             )
+        }
         }
     }
 }

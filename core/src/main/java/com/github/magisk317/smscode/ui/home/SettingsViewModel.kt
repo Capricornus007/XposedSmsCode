@@ -26,6 +26,8 @@ import com.github.magisk317.smscode.feature.backup.BackupRule
 import com.github.magisk317.smscode.feature.backup.BackupSmsRecord
 import com.github.magisk317.smscode.feature.backup.ExportResult
 import com.github.magisk317.smscode.common.utils.XLog
+import io.github.magisk317.smscode.domain.model.SmsCodeMatchedRule
+import io.github.magisk317.smscode.domain.model.SmsCodeMatchedRuleSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -44,12 +46,16 @@ import java.util.Locale
 sealed class SettingsEvent {
     data object ShowPrivacyPolicy : SettingsEvent()
     data object ShowAlipayPacket : SettingsEvent()
-    data class SmsCodeTestResult(val code: String) : SettingsEvent()
+    data class SmsCodeTestResult(
+        val code: String,
+        val matchedRuleLabel: String? = null,
+    ) : SettingsEvent()
     data object NavigateToRules : SettingsEvent()
     data object NavigateToRecords : SettingsEvent()
     data object NavigateToSettings : SettingsEvent()
     data object StartPlayUpdate : SettingsEvent()
     data object StartGithubUpdateCheck : SettingsEvent()
+    data class ShowSnackbar(val message: String) : SettingsEvent()
     data class BackupResultEvent(val success: Boolean) : SettingsEvent()
     data class RestoreResultEvent(val result: BackupImportResult) : SettingsEvent()
     data class ImportDialogConfirm(val uri: android.net.Uri) : SettingsEvent()
@@ -156,7 +162,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 .build()
             ShortcutManagerCompat.requestPinShortcut(context, shortcut, null)
         } else {
-            android.widget.Toast.makeText(context, "当前系统不支持创建快捷方式", android.widget.Toast.LENGTH_SHORT).show()
+            _eventsFlow.tryEmit(SettingsEvent.ShowSnackbar("当前系统不支持创建快捷方式"))
+        }
+    }
+
+    fun openSmsCodeRules() {
+        viewModelScope.launch {
+            _eventsFlow.tryEmit(SettingsEvent.NavigateToRules)
         }
     }
 
@@ -202,19 +214,35 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun performSmsCodeTest(msgBody: String) {
         viewModelScope.launch {
-            val code = try {
+            val result = try {
+                XLog.i("Sms code test start: length=%d", msgBody.length)
                 withContext(Dispatchers.IO) {
                     if (TextUtils.isEmpty(msgBody)) {
-                        ""
+                        null
                     } else {
-                        SmsCodeUtils.parseSmsCodeIfExists(getApplication(), msgBody)
+                        SmsCodeUtils.parseSmsCodeResultIfExists(getApplication(), msgBody)
                     }
                 }
             } catch (e: Exception) {
+                XLog.e("Sms code test failed", e)
                 e.printStackTrace()
-                ""
+                null
             }
-            _eventsFlow.tryEmit(SettingsEvent.SmsCodeTestResult(code))
+            val code = result?.code.orEmpty()
+            val matchedRuleLabel = result?.matchedRule?.let(::formatMatchedRuleLabel)
+            XLog.i("Sms code test finished: code=%s", code)
+            _eventsFlow.tryEmit(SettingsEvent.SmsCodeTestResult(code, matchedRuleLabel))
+        }
+    }
+
+    private fun formatMatchedRuleLabel(matchedRule: SmsCodeMatchedRule): String {
+        val app = getApplication<Application>()
+        return when (matchedRule.source) {
+            SmsCodeMatchedRuleSource.BUILTIN ->
+                app.getString(R.string.builtin_rule_badge_format, matchedRule.ordinal)
+
+            SmsCodeMatchedRuleSource.CUSTOM ->
+                app.getString(R.string.user_rule_badge_format, matchedRule.ordinal)
         }
     }
 

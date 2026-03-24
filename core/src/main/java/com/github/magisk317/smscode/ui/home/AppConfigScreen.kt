@@ -8,8 +8,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -22,7 +20,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -37,7 +34,6 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,9 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,6 +60,9 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import io.github.magisk317.uikit.surface.OverlayHeaderScaffold
+import io.github.magisk317.uikit.surface.WorkspaceTopBarSearchOverlay
+import io.github.magisk317.uikit.surface.WorkspaceListItem
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.viewmodel.koinViewModel
@@ -87,7 +84,6 @@ fun AppConfigScreen(
     val hideSystemApps by viewModel.hideSystemAppsFlow.collectAsStateWithLifecycle()
     val currentSortOption by viewModel.sortOptionFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    val density = LocalDensity.current
     val shouldShowInitialLoading = remember { SessionLoadingRegistry.shouldShowInitial("app_config") }
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -97,7 +93,6 @@ fun AppConfigScreen(
     var showUsagePermissionDialog by remember { mutableStateOf(false) }
     val searchQuery by viewModel.filterFlow.collectAsStateWithLifecycle()
     var showSettingsMenu by remember { mutableStateOf(false) }
-    var fixedTopHeightPx by remember { mutableIntStateOf(0) }
 
     val showLoading = rememberMinDurationLoading(
         actualLoading = isLoading && shouldShowInitialLoading,
@@ -157,7 +152,6 @@ fun AppConfigScreen(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val pullToRefreshState = rememberPullToRefreshState()
     val defaultTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 156.dp
-    val fixedTopHeight = if (fixedTopHeightPx > 0) with(density) { fixedTopHeightPx.toDp() } else defaultTopPadding
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
 
     LaunchedEffect(listState, apps.size, hasMoreApps, manualRefreshing, showLoading) {
@@ -173,181 +167,155 @@ fun AppConfigScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        PullToRefreshBox(
-            state = pullToRefreshState,
-            isRefreshing = manualRefreshing,
-            onRefresh = {
-                manualRefreshStartedAt = SystemClock.elapsedRealtime()
-                manualRefreshing = true
-                viewModel.refreshData(force = true)
-            },
-            indicator = {
-                PullToRefreshDefaults.LoadingIndicator(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = fixedTopHeight + LoadingIndicatorTokens.OverlayTopSpacing),
-                    isRefreshing = manualRefreshing,
-                    state = pullToRefreshState,
-                )
-            },
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            if (showLoading && !manualRefreshing) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    PolygonMorphLoadingIndicator(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = fixedTopHeight + LoadingIndicatorTokens.OverlayTopSpacing),
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .hazeSource(state = hazeState)
-                        .nestedScroll(scrollBehavior.nestedScrollConnection),
-                    state = listState,
-                    contentPadding = PaddingValues(top = fixedTopHeight, bottom = bottomPadding),
-                ) {
-                    items(apps) { app ->
-                        AppConfigItem(
-                            app = app,
-                            onBlockedChange = { blocked -> viewModel.setBlocked(app.packageName, blocked) },
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                        )
-                    }
-                }
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
+        OverlayHeaderScaffold(
+            fallbackTopPadding = defaultTopPadding,
+            bottomPadding = bottomPadding,
+            overlayModifier = Modifier
                 .align(Alignment.TopCenter)
-                .onSizeChanged { fixedTopHeightPx = it.height }
+                .fillMaxWidth()
                 .hazeEffect(hazeState, hazeStyle) {
                     forceInvalidateOnPreDraw = true
                 },
-        ) {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.app_config_settings),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-                scrollBehavior = scrollBehavior,
-                windowInsets = WindowInsets.statusBars,
-                navigationIcon = {
-                    if (onBack != null) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.action_back),
-                            )
+            overlay = {
+                WorkspaceTopBarSearchOverlay(
+                    title = stringResource(R.string.app_config_settings),
+                    searchQuery = searchQuery,
+                    searchPlaceholder = stringResource(R.string.action_search),
+                    navigationIcon = if (onBack != null) {
+                        {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.action_back),
+                                )
+                            }
                         }
-                    }
-                },
-                actions = {
-                    Box {
-                        IconButton(onClick = { showSettingsMenu = true }) {
-                            Icon(Icons.Default.Tune, contentDescription = null)
-                        }
-                        DropdownMenu(
-                            expanded = showSettingsMenu,
-                            onDismissRequest = { showSettingsMenu = false },
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_sort_by_label)) },
-                                trailingIcon = {
-                                    RadioButton(
-                                        selected = currentSortOption == AppConfigViewModel.SortOption.LABEL,
-                                        onClick = null,
-                                    )
-                                },
-                                onClick = {
-                                    viewModel.setSortOption(AppConfigViewModel.SortOption.LABEL)
-                                    showSettingsMenu = false
-                                },
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_sort_by_selection)) },
-                                trailingIcon = {
-                                    RadioButton(
-                                        selected = currentSortOption == AppConfigViewModel.SortOption.SELECTION,
-                                        onClick = null,
-                                    )
-                                },
-                                onClick = {
-                                    viewModel.setSortOption(AppConfigViewModel.SortOption.SELECTION)
-                                    showSettingsMenu = false
-                                },
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_sort_by_usage)) },
-                                trailingIcon = {
-                                    RadioButton(
-                                        selected = currentSortOption == AppConfigViewModel.SortOption.USAGE,
-                                        onClick = null,
-                                    )
-                                },
-                                onClick = {
-                                    viewModel.setSortOption(AppConfigViewModel.SortOption.USAGE)
-                                    showSettingsMenu = false
-                                },
-                            )
-                            HorizontalDivider()
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_hide_system_apps)) },
-                                trailingIcon = {
-                                    Checkbox(checked = hideSystemApps, onCheckedChange = null)
-                                },
-                                onClick = {
-                                    viewModel.setHideSystemApps(!hideSystemApps)
-                                    showSettingsMenu = false
-                                },
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent,
-                ),
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = {
-                        viewModel.doFilter(it)
+                    } else {
+                        null
                     },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaterialTheme.shapes.extraLarge,
-                    singleLine = true,
-                    placeholder = { Text(stringResource(R.string.action_search)) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                    trailingIcon = {
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = {
-                                viewModel.doFilter("")
-                            }) {
-                                Icon(Icons.Default.Close, contentDescription = null)
+                    actions = {
+                        Box {
+                            IconButton(onClick = { showSettingsMenu = true }) {
+                                Icon(Icons.Default.Tune, contentDescription = null)
+                            }
+                            DropdownMenu(
+                                expanded = showSettingsMenu,
+                                onDismissRequest = { showSettingsMenu = false },
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_sort_by_label)) },
+                                    trailingIcon = {
+                                        RadioButton(
+                                            selected = currentSortOption == AppConfigViewModel.SortOption.LABEL,
+                                            onClick = null,
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.setSortOption(AppConfigViewModel.SortOption.LABEL)
+                                        showSettingsMenu = false
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_sort_by_selection)) },
+                                    trailingIcon = {
+                                        RadioButton(
+                                            selected = currentSortOption == AppConfigViewModel.SortOption.SELECTION,
+                                            onClick = null,
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.setSortOption(AppConfigViewModel.SortOption.SELECTION)
+                                        showSettingsMenu = false
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_sort_by_usage)) },
+                                    trailingIcon = {
+                                        RadioButton(
+                                            selected = currentSortOption == AppConfigViewModel.SortOption.USAGE,
+                                            onClick = null,
+                                        )
+                                    },
+                                    onClick = {
+                                        viewModel.setSortOption(AppConfigViewModel.SortOption.USAGE)
+                                        showSettingsMenu = false
+                                    },
+                                )
+                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.action_hide_system_apps)) },
+                                    trailingIcon = {
+                                        Checkbox(checked = hideSystemApps, onCheckedChange = null)
+                                    },
+                                    onClick = {
+                                        viewModel.setHideSystemApps(!hideSystemApps)
+                                        showSettingsMenu = false
+                                    },
+                                )
                             }
                         }
                     },
+                    scrollBehavior = scrollBehavior,
+                    onSearchChange = { viewModel.doFilter(it) },
                 )
-            }
-        }
+            },
+            content = { overlayPadding ->
+                val overlayTopPadding = overlayPadding.calculateTopPadding()
+                PullToRefreshBox(
+                    state = pullToRefreshState,
+                    isRefreshing = manualRefreshing,
+                    onRefresh = {
+                        manualRefreshStartedAt = SystemClock.elapsedRealtime()
+                        manualRefreshing = true
+                        viewModel.refreshData(force = true)
+                    },
+                    indicator = {
+                        PullToRefreshDefaults.LoadingIndicator(
+                            modifier = Modifier
+                                .align(Alignment.TopCenter)
+                                .padding(top = overlayTopPadding + LoadingIndicatorTokens.OverlayTopSpacing),
+                            isRefreshing = manualRefreshing,
+                            state = pullToRefreshState,
+                        )
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    if (showLoading && !manualRefreshing) {
+                        Box(modifier = Modifier.fillMaxSize()) {
+                            PolygonMorphLoadingIndicator(
+                                modifier = Modifier
+                                    .align(Alignment.TopCenter)
+                                    .padding(top = overlayTopPadding + LoadingIndicatorTokens.OverlayTopSpacing),
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .hazeSource(state = hazeState)
+                                .nestedScroll(scrollBehavior.nestedScrollConnection),
+                            state = listState,
+                            contentPadding = PaddingValues(
+                                top = overlayTopPadding,
+                                bottom = overlayPadding.calculateBottomPadding(),
+                            ),
+                        ) {
+                            items(apps) { app ->
+                                AppConfigItem(
+                                    app = app,
+                                    onBlockedChange = { blocked -> viewModel.setBlocked(app.packageName, blocked) },
+                                )
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    thickness = 0.5.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+        )
 
         SnackbarHost(
             hostState = snackbarHostState,
@@ -395,40 +363,32 @@ fun AppConfigItem(
         Color.Transparent
     }
 
-    Box(modifier = Modifier.background(bgColor)) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 16.dp, end = 20.dp, top = 12.dp, bottom = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+    WorkspaceListItem(
+        containerColor = bgColor,
+        leadingContent = {
             AppIconImage(
                 packageName = app.packageName,
                 contentDescription = null,
             )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(
-                    text = app.label ?: app.packageName,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = app.packageName,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            Spacer(modifier = Modifier.width(12.dp))
+        },
+        trailingContent = {
             Switch(
                 checked = app.blocked,
                 onCheckedChange = onBlockedChange,
             )
-        }
+        },
+    ) {
+        Text(
+            text = app.label ?: app.packageName,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = app.packageName,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }

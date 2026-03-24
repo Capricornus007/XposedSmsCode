@@ -28,6 +28,16 @@ object AppBlockRoute
 @Serializable
 object AppConfigRoute
 
+@Serializable
+data class SmsCodeRulesRoute(
+    val fromShortcut: Boolean = false,
+)
+
+@Serializable
+data class SmsCodeRuleEditorRoute(
+    val id: Long = 0,
+)
+
 @Composable
 fun SmsCodeNavHost(
     navController: NavHostController,

@@ -2,6 +2,7 @@ package com.github.magisk317.smscode.common.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.github.magisk317.smscode.common.constant.CodeNotificationOwner
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.common.utils.XLog
@@ -425,8 +426,14 @@ object PrefsReader {
 
     @JvmStatic
     fun showCodeNotification(context: Context): Boolean {
-        // Notification feature is being phased out; force disabled.
-        return false
+        val defaultValue = true
+        return getBooleanViaProvider(context, PrefConst.KEY_SHOW_CODE_NOTIFICATION, defaultValue)
+    }
+
+    @JvmStatic
+    fun getCodeNotificationOwner(context: Context): String {
+        val value = getStringViaProvider(context, PrefConst.KEY_CODE_NOTIFICATION_OWNER, "")
+        return CodeNotificationOwner.normalize(value)
     }
 
     @JvmStatic

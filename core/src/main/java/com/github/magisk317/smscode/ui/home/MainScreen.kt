@@ -50,12 +50,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.ui.nav.AppBlockRoute
 import com.github.magisk317.smscode.ui.nav.AppConfigRoute
 import com.github.magisk317.smscode.ui.nav.OverviewRoute
 import com.github.magisk317.smscode.ui.nav.RecordsRoute
 import com.github.magisk317.smscode.ui.nav.SettingsRoute
+import com.github.magisk317.smscode.ui.nav.SmsCodeRuleEditorRoute
+import com.github.magisk317.smscode.ui.nav.SmsCodeRulesRoute
 import com.github.magisk317.smscode.ui.record.CodeRecordScreen
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
@@ -95,7 +98,9 @@ fun MainScreen(
             hierarchy.any { it.hasRoute(AppBlockRoute::class) } ||
                 hierarchy.any { it.hasRoute(AppConfigRoute::class) } -> 1
             hierarchy.any { it.hasRoute(RecordsRoute::class) } -> 2
-            hierarchy.any { it.hasRoute(SettingsRoute::class) } -> 3
+            hierarchy.any { it.hasRoute(SettingsRoute::class) } ||
+                hierarchy.any { it.hasRoute(SmsCodeRulesRoute::class) } ||
+                hierarchy.any { it.hasRoute(SmsCodeRuleEditorRoute::class) } -> 3
             else -> 0
         }
     }
@@ -157,6 +162,8 @@ fun MainScreen(
             is AppConfigRoute -> navController.navigate(AppConfigRoute)
             is RecordsRoute -> navController.navigate(RecordsRoute)
             is SettingsRoute -> navController.navigate(SettingsRoute)
+            is SmsCodeRulesRoute -> navController.navigate(initialTab)
+            is SmsCodeRuleEditorRoute -> navController.navigate(initialTab)
             else -> Unit
         }
         if (initialTab != null) {
@@ -238,6 +245,24 @@ fun MainScreen(
                             onBack = { navController.popBackStack() },
                             refreshTrigger = appBlockRefreshTrigger,
                             viewModel = appConfigViewModel,
+                        )
+                    }
+                    composable<SmsCodeRulesRoute> {
+                        com.github.magisk317.smscode.ui.smscoderule.SmsCodeRuleListScreen(
+                            onBack = { navController.popBackStack() },
+                            onAddClick = {
+                                navController.navigate(SmsCodeRuleEditorRoute())
+                            },
+                            onEditClick = { id ->
+                                navController.navigate(SmsCodeRuleEditorRoute(id = id))
+                            },
+                        )
+                    }
+                    composable<SmsCodeRuleEditorRoute> { backStackEntry ->
+                        val route = backStackEntry.toRoute<SmsCodeRuleEditorRoute>()
+                        com.github.magisk317.smscode.ui.smscoderule.SmsCodeRuleEditorScreen(
+                            ruleId = route.id,
+                            onBack = { navController.popBackStack() },
                         )
                     }
                     composable<RecordsRoute> {

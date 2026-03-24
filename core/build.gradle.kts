@@ -72,6 +72,8 @@ android {
 
 dependencies {
     implementation(project(":storage"))
+    implementation(project(":magisk-ui-kit"))
+    implementation(project(":smscode-core:smscode-domain"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

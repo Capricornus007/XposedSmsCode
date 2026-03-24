@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.os.SystemClock
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -45,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.github.magisk317.smscode.core.BuildConfig
 import com.github.magisk317.smscode.core.R
+import com.github.magisk317.smscode.common.constant.CodeNotificationOwner
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
@@ -56,6 +56,7 @@ import com.github.magisk317.smscode.common.utils.SPUtils
 import com.github.magisk317.smscode.common.utils.Utils
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.ui.common.LoadingIndicatorTokens
+import com.github.magisk317.smscode.ui.common.LocalSnackbarHostState
 import com.github.magisk317.smscode.ui.common.PolygonMorphLoadingIndicator
 import com.github.magisk317.smscode.ui.common.SessionLoadingRegistry
 import com.github.magisk317.smscode.ui.common.rememberMinDurationLoading
@@ -96,10 +97,13 @@ fun ComposeSettingsScreen(
     var autoInputInterval by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL_DEFAULT) }
     var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
     val showCodeNotificationEnabled = remember { mutableStateOf(true) }
+    var codeNotificationOwner by remember { mutableStateOf("") }
     var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
     var showAutoInputDialog by remember { mutableStateOf(false) }
     var showAutoInputIntervalDialog by remember { mutableStateOf(false) }
     var showRetentionDialog by remember { mutableStateOf(false) }
+    var showNotificationOwnerDialog by remember { mutableStateOf(false) }
+    var pendingEnableNotification by remember { mutableStateOf(false) }
     var showSmsTestDialog by remember { mutableStateOf(false) }
     var smsTestInput by remember { mutableStateOf("") }
     var showThemeDialog by remember { mutableStateOf(false) }
@@ -141,6 +145,13 @@ fun ComposeSettingsScreen(
             context,
             PrefConst.KEY_SHOW_CODE_NOTIFICATION,
             true,
+        )
+        codeNotificationOwner = CodeNotificationOwner.normalize(
+            AppPreferencesDataStore.getString(
+                context,
+                PrefConst.KEY_CODE_NOTIFICATION_OWNER,
+                "",
+            ),
         )
         smsCodeKeywords = AppPreferencesDataStore.getString(
             context,
@@ -257,8 +268,10 @@ fun ComposeSettingsScreen(
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val markPrefsSaved = {
-        Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
+    val markPrefsSaved: () -> Unit = {
+        scope.launch {
+            snackbarHostState.showSnackbar(context.getString(R.string.pref_sync_toast))
+        }
     }
 
     LaunchedEffect(settingsViewModel, lifecycleOwner) {
@@ -269,6 +282,7 @@ fun ComposeSettingsScreen(
                     context = context,
                     activity = activityOwner ?: (context as? Activity),
                     scope = scope,
+                    snackbarHostState = snackbarHostState,
                     onShowPrivacyPolicy = {},
                     onShowDonate = { showDonateDialog = true },
                     onShowRestoreConfirm = { uri ->
@@ -312,7 +326,8 @@ fun ComposeSettingsScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
+        Box(modifier = Modifier.fillMaxSize()) {
         val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
             Const.TOP_BAR_HEIGHT.dp // TopBar height
         val isCompact = LocalConfiguration.current.screenWidthDp < 600
@@ -401,11 +416,11 @@ fun ComposeSettingsScreen(
                                         )
                                         AppPreferencesDataStore.syncToSharedPrefs(context)
                                     }
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.pref_show_launcher_icon_failed),
-                                        Toast.LENGTH_SHORT,
-                                    ).show()
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar(
+                                            context.getString(R.string.pref_show_launcher_icon_failed),
+                                        )
+                                    }
                                 }
                             },
                             onSaved = markPrefsSaved,
@@ -449,6 +464,12 @@ fun ComposeSettingsScreen(
                             title = stringResource(id = R.string.pref_smscode_test_title),
                             summary = stringResource(id = R.string.pref_smscode_test_summary),
                         ) { showSmsTestDialog = true }
+                        Item(
+                            title = stringResource(id = R.string.pref_code_rules_title),
+                            summary = stringResource(id = R.string.pref_code_rules_summary),
+                        ) {
+                            settingsViewModel.openSmsCodeRules()
+                        }
                     }
 
                     ExpandableSettingsSection(
@@ -498,6 +519,80 @@ fun ComposeSettingsScreen(
                             defaultValue = true,
                             onSaved = markPrefsSaved,
                         )
+                        ListItem(
+                            headlineContent = {
+                                Text(
+                                    text = stringResource(id = R.string.pref_show_code_notification_title),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                            },
+                            supportingContent = {
+                                Text(
+                                    text = stringResource(id = R.string.pref_show_code_notification_summary),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            },
+                            trailingContent = {
+                                Switch(
+                                    checked = showCodeNotificationEnabled.value,
+                                    onCheckedChange = { enabled ->
+                                        if (!enabled) {
+                                            showCodeNotificationEnabled.value = false
+                                            scope.launch {
+                                                AppPreferencesDataStore.setBoolean(
+                                                    context,
+                                                    PrefConst.KEY_SHOW_CODE_NOTIFICATION,
+                                                    false,
+                                                )
+                                                AppPreferencesDataStore.syncToSharedPrefs(context)
+                                                markPrefsSaved()
+                                            }
+                                        } else {
+                                            pendingEnableNotification = true
+                                            showNotificationOwnerDialog = true
+                                        }
+                                    },
+                                )
+                            },
+                            modifier = Modifier.clickable {
+                                if (showCodeNotificationEnabled.value) {
+                                    showCodeNotificationEnabled.value = false
+                                    scope.launch {
+                                        AppPreferencesDataStore.setBoolean(
+                                            context,
+                                            PrefConst.KEY_SHOW_CODE_NOTIFICATION,
+                                            false,
+                                        )
+                                        AppPreferencesDataStore.syncToSharedPrefs(context)
+                                        markPrefsSaved()
+                                    }
+                                } else {
+                                    pendingEnableNotification = true
+                                    showNotificationOwnerDialog = true
+                                }
+                            },
+                        )
+                        Item(
+                            title = stringResource(id = R.string.pref_code_notification_owner_title),
+                            summary = codeNotificationOwnerItemSummary(codeNotificationOwner),
+                        ) {
+                            pendingEnableNotification = false
+                            showNotificationOwnerDialog = true
+                        }
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_auto_cancel_notification_title),
+                            summary = stringResource(id = R.string.pref_auto_cancel_notification_summary),
+                            key = PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
+                            defaultValue = false,
+                            enabled = showCodeNotificationEnabled.value,
+                            onSaved = markPrefsSaved,
+                        )
+                        Item(
+                            title = stringResource(id = R.string.pref_notification_retention_time_title),
+                            summary = notificationRetentionEntryLabel(retentionTime),
+                            enabled = showCodeNotificationEnabled.value,
+                        ) { showRetentionDialog = true }
                     }
 
                     ExpandableSettingsSection(
@@ -551,13 +646,15 @@ fun ComposeSettingsScreen(
                                     }
                                     val file = result.file
                                     if (file == null) {
-                                        Toast.makeText(context, "导出失败: ${result.details}", Toast.LENGTH_LONG).show()
+                                        snackbarHostState.showSnackbar("导出失败: ${result.details}")
                                         return@launch
                                     }
                                     runCatching {
                                         LogBundleExporter.shareLogBundle(context, file)
                                     }.onFailure {
-                                        Toast.makeText(context, "分享失败: ${it.message}", Toast.LENGTH_LONG).show()
+                                        scope.launch {
+                                            snackbarHostState.showSnackbar("分享失败: ${it.message}")
+                                        }
                                     }
                                 }
                             },
@@ -705,6 +802,38 @@ fun ComposeSettingsScreen(
         )
     }
 
+    if (showNotificationOwnerDialog) {
+        NotificationOwnerDialog(
+            owner = codeNotificationOwner,
+            onDismiss = {
+                showNotificationOwnerDialog = false
+                pendingEnableNotification = false
+            },
+        ) { owner ->
+            codeNotificationOwner = owner
+            val enableNotification = pendingEnableNotification
+            showNotificationOwnerDialog = false
+            pendingEnableNotification = false
+            scope.launch {
+                AppPreferencesDataStore.setString(
+                    context,
+                    PrefConst.KEY_CODE_NOTIFICATION_OWNER,
+                    owner,
+                )
+                if (enableNotification) {
+                    showCodeNotificationEnabled.value = true
+                    AppPreferencesDataStore.setBoolean(
+                        context,
+                        PrefConst.KEY_SHOW_CODE_NOTIFICATION,
+                        true,
+                    )
+                }
+                AppPreferencesDataStore.syncToSharedPrefs(context)
+                markPrefsSaved()
+            }
+        }
+    }
+
     if (showTintAlphaDialog) {
         SliderDialog(
             title = stringResource(id = R.string.pref_haze_tint_alpha_title),
@@ -724,6 +853,7 @@ fun ComposeSettingsScreen(
         )
     }
 
+    }
 }
 
 private fun handleSettingsEvent(
@@ -731,25 +861,19 @@ private fun handleSettingsEvent(
     context: android.content.Context,
     activity: Activity?,
     scope: kotlinx.coroutines.CoroutineScope,
+    snackbarHostState: SnackbarHostState,
     onShowPrivacyPolicy: () -> Unit,
     onShowDonate: () -> Unit,
     onShowRestoreConfirm: (android.net.Uri) -> Unit,
 ) {
     when (event) {
-        is SettingsEvent.SmsCodeTestResult -> {
-            val text = if (event.code.isBlank()) {
-                context.getString(R.string.cannot_parse_smscode)
-            } else {
-                context.getString(R.string.current_sms_code, event.code)
-            }
-            android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_LONG).show()
-        }
-
         is SettingsEvent.ShowPrivacyPolicy -> onShowPrivacyPolicy()
         is SettingsEvent.ShowAlipayPacket -> onShowDonate()
         is SettingsEvent.BackupResultEvent -> {
             val msg = if (event.success) R.string.backup_success else R.string.backup_failed
-            android.widget.Toast.makeText(context, context.getString(msg), android.widget.Toast.LENGTH_SHORT).show()
+            scope.launch {
+                snackbarHostState.showSnackbar(context.getString(msg))
+            }
         }
 
         is SettingsEvent.RestoreResultEvent -> {
@@ -759,10 +883,11 @@ private fun handleSettingsEvent(
                 com.github.magisk317.smscode.feature.backup.ImportResult.VERSION_TOO_OLD -> R.string.import_failed_version_too_old
                 else -> R.string.restore_failed
             }
-            android.widget.Toast.makeText(context, context.getString(msg), android.widget.Toast.LENGTH_SHORT).show()
+            scope.launch {
+                snackbarHostState.showSnackbar(context.getString(msg))
+            }
 
             if (event.result.result == com.github.magisk317.smscode.feature.backup.ImportResult.SUCCESS) {
-                Toast.makeText(context, context.getString(R.string.restore_success), Toast.LENGTH_SHORT).show()
                 scope.launch {
                     delay(1200L)
                     if (activity != null) {
@@ -832,6 +957,7 @@ private fun SettingsDialogs(
     onExit: () -> Unit,
     onSetTheme: (Int, Float, Float) -> Unit,
 ) {
+    val snackbarHostState = LocalSnackbarHostState.current
     if (showAutoInputDialog) {
         TextInputDialog(
             title = stringResource(id = R.string.pref_auto_input_code_delay_title),
@@ -947,8 +1073,10 @@ private fun SettingsDialogs(
             },
             onToken = {
                 onShowAlipayChoiceDialogChange(false)
-                PackageUtils.copyAlipayPocketToken(context)
-                PackageUtils.startAlipayActivity(context)
+                scope.launch {
+                    snackbarHostState.showSnackbar(PackageUtils.copyAlipayPocketToken(context))
+                    PackageUtils.startAlipayActivity(context)?.let { snackbarHostState.showSnackbar(it) }
+                }
             },
         )
     }
@@ -958,7 +1086,12 @@ private fun SettingsDialogs(
             resId = pair.first,
             type = pair.second,
             onDismiss = { onShowQrCodeDialogChange(null) },
-            onSave = { Utils.saveImageToGallery(context, pair.first, "${pair.second}_qrcode") },
+            onSave = {
+                scope.launch {
+                    Utils.saveImageToGallery(context, pair.first, "${pair.second}_qrcode")
+                        .forEach { snackbarHostState.showSnackbar(it) }
+                }
+            },
         )
     }
 
@@ -1039,64 +1172,35 @@ private fun ExpandableSettingsSection(
 ) {
     val sectionExpanded = if (accordionMode) expanded else true
 
-    Card(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Const.PADDING_SMALL.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            ListItem(
-                headlineContent = {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                },
-                trailingContent = {
-                    if (accordionMode) {
-                        Icon(
-                            imageVector = if (sectionExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = accordionMode, onClick = onExpandedChange),
-            )
-
-            AnimatedVisibility(visible = sectionExpanded) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    content()
-                }
-            }
-        }
+        io.github.magisk317.uikit.preference.SectionCard(
+            title = title,
+            accordionMode = accordionMode,
+            sectionExpanded = sectionExpanded,
+            onExpandedChange = onExpandedChange,
+            content = content,
+        )
     }
 }
 
 @Composable
-fun Item(title: String, summary: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    ListItem(
-        headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
-        supportingContent = if (summary.isNotEmpty()) {
-            {
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        } else {
-            null
-        },
-        modifier = modifier.clickable(onClick = onClick),
+fun Item(
+    title: String,
+    summary: String,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    io.github.magisk317.uikit.preference.Item(
+        title = title,
+        summary = summary,
+        modifier = modifier,
+        enabled = enabled,
+        onClick = onClick,
     )
 }
 
@@ -1115,6 +1219,7 @@ fun SwitchItem(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val snackbarHostState = LocalSnackbarHostState.current
     val checkedState = stateOverride ?: rememberPrefBoolean(key, defaultValue)
     val defaultSavedToast = context.getString(R.string.pref_sync_toast)
 
@@ -1127,7 +1232,7 @@ fun SwitchItem(
             if (onSaved != null) {
                 onSaved()
             } else {
-                Toast.makeText(context, defaultSavedToast, Toast.LENGTH_SHORT).show()
+                snackbarHostState.showSnackbar(defaultSavedToast)
             }
         }
         onToggle?.invoke(checked)
@@ -1171,6 +1276,92 @@ fun rememberPrefBoolean(key: String, defaultValue: Boolean): MutableState<Boolea
         state.value = AppPreferencesDataStore.getBoolean(context, key, defaultValue)
     }
     return state
+}
+
+@Composable
+private fun NotificationOwnerDialog(
+    owner: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var selectedOwner by remember(owner) {
+        mutableStateOf(
+            when (owner) {
+                CodeNotificationOwner.PHONE -> CodeNotificationOwner.PHONE
+                else -> CodeNotificationOwner.APP
+            },
+        )
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = stringResource(id = R.string.pref_code_notification_owner_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                NotificationOwnerOption(
+                    selected = selectedOwner == CodeNotificationOwner.APP,
+                    text = stringResource(id = R.string.pref_code_notification_owner_app_option),
+                    onClick = { selectedOwner = CodeNotificationOwner.APP },
+                )
+                NotificationOwnerOption(
+                    selected = selectedOwner == CodeNotificationOwner.PHONE,
+                    text = stringResource(id = R.string.pref_code_notification_owner_phone_option),
+                    onClick = { selectedOwner = CodeNotificationOwner.PHONE },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(selectedOwner) }) {
+                Text(text = stringResource(id = R.string.confirm))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(text = stringResource(id = R.string.cancel))
+            }
+        },
+    )
+}
+
+@Composable
+private fun NotificationOwnerOption(
+    selected: Boolean,
+    text: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
+}
+
+@Composable
+private fun codeNotificationOwnerItemSummary(owner: String): String {
+    val ownerLabel = when (owner) {
+        CodeNotificationOwner.PHONE -> stringResource(id = R.string.pref_code_notification_owner_phone)
+        CodeNotificationOwner.APP -> stringResource(id = R.string.pref_code_notification_owner_app)
+        else -> stringResource(id = R.string.pref_code_notification_owner_unselected)
+    }
+    return stringResource(id = R.string.pref_code_notification_owner_summary, ownerLabel)
+}
+
+@Composable
+private fun notificationRetentionEntryLabel(value: String): String {
+    val entries = stringArrayResource(id = R.array.notification_retention_time_entry_list)
+    val values = stringArrayResource(id = R.array.notification_retention_time_list)
+    val index = values.indexOf(value)
+    if (index >= 0) {
+        return entries[index]
+    }
+    return value.takeIf { it.isNotBlank() } ?: "0"
 }
 
 @Composable

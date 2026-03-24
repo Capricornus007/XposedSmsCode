@@ -68,6 +68,13 @@
     <!-- preference code notification -->
     <string name="pref_show_code_notification_title">显示状态栏通知</string>
     <string name="pref_show_code_notification_summary">提取到验证码时显示状态栏通知（部分系统显示为电话服务）</string>
+    <string name="pref_code_notification_owner_title">通知归属</string>
+    <string name="pref_code_notification_owner_summary">当前：%1$s。模块自身会显示为本应用；电话服务在部分场景更稳，但会显示为电话服务。</string>
+    <string name="pref_code_notification_owner_app">模块自身</string>
+    <string name="pref_code_notification_owner_phone">电话服务</string>
+    <string name="pref_code_notification_owner_unselected">未选择</string>
+    <string name="pref_code_notification_owner_app_option">模块自身：显示为本应用，但应用被强停后后续行为可能受影响</string>
+    <string name="pref_code_notification_owner_phone_option">电话服务：部分场景更稳，但会显示为电话服务</string>
     <string name="pref_auto_cancel_notification_title">自动取消通知</string>
     <string name="pref_auto_cancel_notification_summary">自动取消验证码通知</string>
     <!-- notification retention time -->
@@ -234,10 +241,35 @@
 
     <!-- code rules -->
 
-
-
-
     <string name="pref_code_rules_title">验证码匹配规则</string>
+    <string name="pref_code_rules_summary">为特定短信定制验证码匹配规则</string>
+    <string name="rule_company_hint">机构或公司</string>
+    <string name="rule_keyword_hint">验证码关键字</string>
+    <string name="rule_code_regex_hint">验证码正则表达式</string>
+    <string name="rule_company_empty_hint">请输入机构或公司名</string>
+    <string name="rule_keyword_empty_hint">请输入验证码关键字</string>
+    <string name="rule_code_regex_empty_hint">请输入验证码正则表达式</string>
+    <string name="rule_duplicated_prompt">该规则已存在，请重新编辑或退出</string>
+    <string name="rule_list">验证码规则列表</string>
+    <string name="create_rule">新建规则</string>
+    <string name="edit_rule">编辑规则</string>
+    <string name="rule_list_empty_prompt">暂无规则，点击 + 添加。</string>
+    <string name="rule_company_placeholder">例如: 验证码</string>
+    <string name="builtin_code_rules_title">内置规则（只读）</string>
+    <string name="builtin_code_rules_summary">默认解析规则会展示在这里供参考。它们会使用“关键字”设置作为锚点，并继续应用近关键字优先、去空白重试和日期时间排除。</string>
+    <string name="builtin_rule_badge">内置</string>
+    <string name="builtin_rule_badge_format">内置规则%1$d</string>
+    <string name="user_rule_badge_format">用户规则%1$d</string>
+    <string name="builtin_rule_keyword_setting">内置规则默认使用全局关键字</string>
+    <string name="builtin_rule_alphanumeric_title">默认字母数字验证码规则</string>
+    <string name="builtin_rule_digits_title">默认纯数字验证码规则</string>
+    <string name="user_code_rules_title">用户规则</string>
+    <string name="user_code_rules_summary">你保存的自定义规则会展示在这里，可继续编辑或删除。</string>
+    <string name="rule_test_guidance">保存此规则后，请到“%1$s”测试效果。</string>
+    <string name="hit_rule_label">命中规则：%1$s</string>
+    <string name="sms_code_test_result_with_rule">%1$s，%2$s</string>
+    <string name="removed">已移除</string>
+    <string name="load_failed">加载失败，请重试。</string>
 
     <string name="sms_code_type_digit_entry">仅数字 [0\-9]</string>
     <string name="sms_code_type_letter_entry">仅字母 [a\-zA\-Z]</string>
@@ -248,6 +280,7 @@
 
     <string name="remove">移除</string>
     <string name="edit">编辑</string>
+    <string name="action_copy">复制</string>
     <string name="list_empty_prompt">空空如也！</string>
 
 

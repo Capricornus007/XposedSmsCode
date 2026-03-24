@@ -26,6 +26,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,6 +35,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -51,6 +53,8 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.runtime.CompositionLocalProvider
 import com.github.magisk317.smscode.core.BuildConfig
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.Const
@@ -73,6 +77,8 @@ import com.github.magisk317.smscode.data.update.UpdatePolicy
 import com.github.magisk317.smscode.ui.app.base.UpdateSystemBars
 import com.github.magisk317.smscode.ui.app.base.applyEdgeToEdge
 import com.github.magisk317.smscode.ui.app.base.rememberHazeStyle
+import com.github.magisk317.smscode.ui.common.DismissibleSnackbarHost
+import com.github.magisk317.smscode.ui.common.LocalSnackbarHostState
 import com.github.magisk317.smscode.ui.home.update.FlavorPlayUpdateDelegate
 import com.github.magisk317.smscode.ui.home.update.PlayUpdateDelegate
 import com.github.magisk317.smscode.ui.nav.SmsCodeNavHost
@@ -81,6 +87,7 @@ import com.github.magisk317.smscode.ui.theme.AppTheme
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
 import org.koin.androidx.compose.koinViewModel
@@ -91,6 +98,11 @@ class MainActivity : AppCompatActivity() {
 
     private val playUpdateDelegate: PlayUpdateDelegate = FlavorPlayUpdateDelegate()
     private var autoUpdateChecked = false
+    private val snackbarMessages = MutableSharedFlow<String>(extraBufferCapacity = 8)
+
+    private fun enqueueSnackbar(message: String) {
+        snackbarMessages.tryEmit(message)
+    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -102,7 +114,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         applyEdgeToEdge(this)
         playUpdateDelegate.onCreate(this) {
-            PackageUtils.openPlayStoreOrGithub(this)
+            PackageUtils.openPlayStoreOrGithub(this)?.let(::enqueueSnackbar)
         }
         triggerAutoUpdateIfEnabled()
 
@@ -112,6 +124,7 @@ class MainActivity : AppCompatActivity() {
             val navController = rememberNavController()
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
+            val appSnackbarHostState = remember { SnackbarHostState() }
             var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
             var showPrivacyPolicyPage by remember { mutableStateOf(false) }
             var showRelayConflictDialog by remember { mutableStateOf(false) }
@@ -208,6 +221,11 @@ class MainActivity : AppCompatActivity() {
             LaunchedEffect(Unit) {
                 githubUpdateUiState = checkStartupGithubUpdateIfNeeded()
             }
+            LaunchedEffect(Unit) {
+                snackbarMessages.collect { message ->
+                    appSnackbarHostState.showSnackbar(message)
+                }
+            }
 
             // Effect to trigger logic when ThemeState changes
             LaunchedEffect(themeState) {
@@ -280,22 +298,49 @@ class MainActivity : AppCompatActivity() {
                 viewModel.eventsFlow.collect { event ->
                     when (event) {
                         is SettingsEvent.ShowPrivacyPolicy -> showPrivacyPolicyDialog = true
-                        is SettingsEvent.NavigateToRules -> requestedTab = com.github.magisk317.smscode.ui.nav.AppBlockRoute
+                        is SettingsEvent.SmsCodeTestResult -> {
+                            val message = if (event.code.isBlank()) {
+                                context.getString(R.string.cannot_parse_smscode)
+                            } else {
+                                val base = context.getString(R.string.current_sms_code, event.code)
+                                val hitRule = event.matchedRuleLabel?.takeIf { it.isNotBlank() }?.let {
+                                    context.getString(R.string.hit_rule_label, it)
+                                }
+                                if (hitRule == null) {
+                                    base
+                                } else {
+                                    context.getString(R.string.sms_code_test_result_with_rule, base, hitRule)
+                                }
+                            }
+                            XLog.i(
+                                "Sms code test result delivered in MainActivity: code=%s matchedRule=%s",
+                                event.code,
+                                event.matchedRuleLabel ?: "",
+                            )
+                            scope.launch { appSnackbarHostState.showSnackbar(message) }
+                        }
+                        is SettingsEvent.NavigateToRules -> {
+                            requestedTab = com.github.magisk317.smscode.ui.nav.SmsCodeRulesRoute()
+                        }
                         is SettingsEvent.NavigateToRecords -> requestedTab = com.github.magisk317.smscode.ui.nav.RecordsRoute
                         is SettingsEvent.NavigateToSettings -> requestedTab = com.github.magisk317.smscode.ui.nav.SettingsRoute
                         is SettingsEvent.StartPlayUpdate -> requestPlayUpdate()
                         is SettingsEvent.StartGithubUpdateCheck -> {
-                            requestGithubUpdateCheck(showNoUpdateToast = true) { update ->
+                            requestGithubUpdateCheck(showNoUpdateSnackbar = true) { update ->
                                 githubUpdateUiState = update
                             }
+                        }
+                        is SettingsEvent.ShowSnackbar -> {
+                            scope.launch { appSnackbarHostState.showSnackbar(event.message) }
                         }
                         else -> {}
                     }
                 }
             }
 
-            AppTheme(themeMode = currentThemeMode) {
-                Surface(color = MaterialTheme.colorScheme.background) {
+            CompositionLocalProvider(LocalSnackbarHostState provides appSnackbarHostState) {
+                AppTheme(themeMode = currentThemeMode) {
+                    Surface(color = MaterialTheme.colorScheme.background) {
                     LaunchedEffect(Unit) {
                         viewModel.setInternalFilesWritable()
                     }
@@ -427,7 +472,10 @@ class MainActivity : AppCompatActivity() {
                                         onClick = {
                                             when (updateState) {
                                                 is GithubUpdateUiState.Legacy -> {
-                                                    Utils.showWebPage(this@MainActivity, updateState.release.htmlUrl)
+                                                    Utils.showWebPage(
+                                                        this@MainActivity,
+                                                        updateState.release.htmlUrl,
+                                                    )?.let(::enqueueSnackbar)
                                                     githubUpdateUiState = null
                                                 }
 
@@ -607,7 +655,14 @@ class MainActivity : AppCompatActivity() {
                                     },
                             )
                         }
+                        DismissibleSnackbarHost(
+                            hostState = appSnackbarHostState,
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .navigationBarsPadding(),
+                        )
                     }
+                }
                 }
             }
         }
@@ -616,7 +671,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         playUpdateDelegate.onResume(this) {
-            PackageUtils.openPlayStoreOrGithub(this)
+            PackageUtils.openPlayStoreOrGithub(this)?.let(::enqueueSnackbar)
         }
     }
 
@@ -635,7 +690,7 @@ class MainActivity : AppCompatActivity() {
             silentIfNoUpdate = silentIfNoUpdate,
             fallbackOnQueryFailure = fallbackOnQueryFailure,
         ) {
-            PackageUtils.openPlayStoreOrGithub(this)
+            PackageUtils.openPlayStoreOrGithub(this)?.let(::enqueueSnackbar)
         }
     }
 
@@ -683,7 +738,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestGithubUpdateCheck(
-        showNoUpdateToast: Boolean,
+        showNoUpdateSnackbar: Boolean,
         onUpdateFound: (GithubUpdateUiState) -> Unit,
     ) {
         lifecycleScope.launch {
@@ -694,20 +749,12 @@ class MainActivity : AppCompatActivity() {
                 )
             ) {
                 is GithubUpdateQueryResult.Failed -> {
-                    android.widget.Toast.makeText(
-                        this@MainActivity,
-                        getString(R.string.check_update_failed),
-                        android.widget.Toast.LENGTH_SHORT,
-                    ).show()
+                    enqueueSnackbar(getString(R.string.check_update_failed))
                 }
 
                 GithubUpdateQueryResult.NoUpdate -> {
-                    if (showNoUpdateToast) {
-                        android.widget.Toast.makeText(
-                            this@MainActivity,
-                            getString(R.string.app_already_newest),
-                            android.widget.Toast.LENGTH_SHORT,
-                        ).show()
+                    if (showNoUpdateSnackbar) {
+                        enqueueSnackbar(getString(R.string.app_already_newest))
                     }
                 }
 
