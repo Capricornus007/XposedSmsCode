@@ -36,7 +36,6 @@ import java.lang.reflect.Method
 import java.util.Collections
 import java.util.LinkedHashMap
 import java.util.concurrent.Executors
-import kotlin.math.abs
 
 /**
  * Hook class com.android.internal.telephony.InboundSmsHandler
@@ -170,7 +169,11 @@ class SmsHandlerHook : BaseHook() {
                     method,
                     object : MethodHook() {
                         override fun beforeHookedMethod(param: MethodHookParam) {
-                            val action = extractIntentAction(param.args)
+                            val intent = extractOrBuildSmsIntent(
+                                param.args,
+                                fallbackAction = Telephony.Sms.Intents.SMS_DELIVER_ACTION,
+                            )
+                            val action = intent?.action ?: extractIntentAction(param.args)
                             XLog.w(
                                 "Diag SMS dispatch chain: class=%s method=%s action=%s args=%d",
                                 className,
@@ -178,6 +181,9 @@ class SmsHandlerHook : BaseHook() {
                                 action ?: "<none>",
                                 param.args.size,
                             )
+                            if (className == SMS_HANDLER_CLASS) {
+                                maybeBlockFromDispatchChain(name, param, intent)
+                            }
                         }
                     },
                 )
@@ -203,27 +209,20 @@ class SmsHandlerHook : BaseHook() {
             return
         }
 
-        val methods = inboundSmsHandlerClass.declaredMethods
-        var exactMethod: Method? = null
         val dispatchIntentMethodName = "dispatchIntent"
-        var receiverIndex = 0
-        for (method in methods) {
-            if (dispatchIntentMethodName == method.name) {
-                exactMethod = method
-                val parameterTypes = method.parameterTypes
-                for (i in parameterTypes.indices) {
-                    if (BroadcastReceiver::class.java.isAssignableFrom(parameterTypes[i])) {
-                        receiverIndex = i
-                    }
-                }
-                break
-            }
-        }
-
-        exactMethod?.let {
-            XposedWrapper.hookMethod(it, DispatchIntentHook(receiverIndex))
-        } ?: run {
+        val methods = inboundSmsHandlerClass.declaredMethods.filter { it.name == dispatchIntentMethodName }
+        if (methods.isEmpty()) {
             XLog.e("Method %s for Class %s cannot found", dispatchIntentMethodName, SMS_HANDLER_CLASS)
+            return
+        }
+        methods.forEach { method ->
+            var receiverIndex = -1
+            method.parameterTypes.forEachIndexed { index, clazz ->
+                if (receiverIndex < 0 && BroadcastReceiver::class.java.isAssignableFrom(clazz)) {
+                    receiverIndex = index
+                }
+            }
+            XposedWrapper.hookMethod(method, DispatchIntentHook(receiverIndex))
         }
     }
 
@@ -353,19 +352,17 @@ class SmsHandlerHook : BaseHook() {
             }
         }
 
-        if (action != Telephony.Sms.Intents.SMS_DELIVER_ACTION &&
-            action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION
-        ) {
+        if (!SmsIntentHookSupport.isSmsAction(action)) {
             return
         }
-        val eventId = ensureEventId(intent)
+        val eventId = SmsIntentHookSupport.ensureEventId(intent)
         val pluginContext = getPluginContext()
         val phoneContext = mPhoneContext
         if (pluginContext == null || phoneContext == null) {
             XLog.e("Context is null, skip parsing. pluginContext: %s, phoneContext: %s", pluginContext, phoneContext)
             return
         }
-        if (markDispatchHandled(intent, action)) {
+        if (SmsIntentHookSupport.markDispatchHandled(intent, action)) {
             XLog.w(
                 "Diag SMS dispatch duplicate skip: event_id=%s action=%s source=intent_extra",
                 eventId,
@@ -411,16 +408,18 @@ class SmsHandlerHook : BaseHook() {
                 scheduleBlacklistDelete(pluginContext, phoneContext, smsMsg)
             }
             if (blacklistResult.actionBlock) {
-                XLog.w("Diag sms block reason=%s event_id=%s", BLOCK_REASON_BLACKLIST, eventId)
+                XLog.w("Diag sms block reason=%s event_id=%s", SmsBlockEvaluator.BLOCK_REASON_BLACKLIST, eventId)
                 param.args.getOrNull(receiverIndex)?.let { receiver ->
                     val inbound = param.thisObject ?: return
-                    deleteRawTableAndSendMessage(
+                    val blocked = deleteRawTableAndSendMessage(
                         inboundSmsHandler = inbound,
                         smsReceiver = receiver,
-                        reason = BLOCK_REASON_BLACKLIST,
+                        reason = SmsBlockEvaluator.BLOCK_REASON_BLACKLIST,
                         eventId = eventId,
                     )
-                    param.result = null
+                    if (blocked) {
+                        param.result = null
+                    }
                 }
                 return
             }
@@ -434,16 +433,18 @@ class SmsHandlerHook : BaseHook() {
         }
         if (parseResult != null) {
             if (parseResult.isBlockSms) {
-                XLog.w("Diag sms block reason=%s event_id=%s", BLOCK_REASON_PREF_BLOCK, eventId)
+                XLog.w("Diag sms block reason=%s event_id=%s", SmsBlockEvaluator.BLOCK_REASON_PREF_BLOCK, eventId)
                 param.args.getOrNull(receiverIndex)?.let { receiver ->
                     val inbound = param.thisObject ?: return
-                    deleteRawTableAndSendMessage(
+                    val blocked = deleteRawTableAndSendMessage(
                         inboundSmsHandler = inbound,
                         smsReceiver = receiver,
-                        reason = BLOCK_REASON_PREF_BLOCK,
+                        reason = SmsBlockEvaluator.BLOCK_REASON_PREF_BLOCK,
                         eventId = eventId,
                     )
-                    param.result = null
+                    if (blocked) {
+                        param.result = null
+                    }
                 }
             } else {
                 XLog.w(
@@ -485,22 +486,27 @@ class SmsHandlerHook : BaseHook() {
         smsReceiver: Any,
         reason: String,
         eventId: String,
-    ) {
+    ): Boolean {
         XLog.w("Diag raw-table delete start: reason=%s event_id=%s", reason, eventId)
         val token = Binder.clearCallingIdentity()
+        var deleteSucceeded = false
         try {
             deleteFromRawTable(inboundSmsHandler, smsReceiver, reason, eventId)
+            deleteSucceeded = true
         } catch (e: Throwable) {
             XLog.e("Error occurs when delete SMS data from raw table", e)
         } finally {
             Binder.restoreCallingIdentity(token)
         }
 
+        var sendSucceeded = false
         try {
             sendEventBroadcastComplete(inboundSmsHandler, reason, eventId)
+            sendSucceeded = true
         } catch (e: Throwable) {
             XLog.e("Error occurs when sending broadcast complete", e)
         }
+        return deleteSucceeded && sendSucceeded
     }
 
     private fun sendEventBroadcastComplete(inboundSmsHandler: Any, reason: String, eventId: String) {
@@ -688,26 +694,6 @@ class SmsHandlerHook : BaseHook() {
         XLog.w("%s: %s methods=[%s]", tag, clazz.name, signatures)
     }
 
-    private fun ensureEventId(intent: Intent): String {
-        val existing = intent.getStringExtra(EVENT_ID_EXTRA).orEmpty().trim()
-        if (existing.isNotEmpty()) {
-            return existing
-        }
-        val generated = "sms_${System.currentTimeMillis().toString(36)}_${abs(intent.hashCode()).toString(36)}"
-        intent.putExtra(EVENT_ID_EXTRA, generated)
-        return generated
-    }
-
-    private fun markDispatchHandled(intent: Intent, action: String?): Boolean {
-        if (action.isNullOrBlank()) return false
-        val key = "$DISPATCH_HANDLED_EXTRA_PREFIX$action"
-        if (intent.getBooleanExtra(key, false)) {
-            return true
-        }
-        intent.putExtra(key, true)
-        return false
-    }
-
     private fun shouldSkipDispatchBySharedDedup(
         pluginContext: Context,
         eventId: String,
@@ -800,6 +786,175 @@ class SmsHandlerHook : BaseHook() {
         return Integer.toHexString(value.hashCode())
     }
 
+    private fun maybeBlockFromDispatchChain(
+        methodName: String,
+        param: MethodHookParam,
+        smsIntent: Intent?,
+    ) {
+        val intent = smsIntent ?: return
+        val action = intent.action
+        if (!SmsIntentHookSupport.isSmsAction(action)) return
+        val pluginContext = getPluginContext() ?: return
+        val phoneContext = mPhoneContext ?: return
+        if (ModuleConflictArbiter.shouldSuppressByRelay(phoneContext, "SmsHandlerHook#$methodName")) {
+            logSuppressedOnce("dispatchChain:$methodName")
+            return
+        }
+        val eventId = SmsIntentHookSupport.ensureEventId(intent)
+        val evaluation = SmsBlockEvaluator.evaluate(pluginContext, intent, eventId, "dispatch_chain") ?: return
+        if (evaluation.blacklistDeleteOnly && evaluation.smsMsg != null) {
+            scheduleBlacklistDelete(pluginContext, phoneContext, evaluation.smsMsg)
+        }
+        val reason = evaluation.blockReason ?: return
+        if (shouldSkipDispatchChainBlock(evaluation.smsMsg, action, reason)) {
+            return
+        }
+        ActivationDiagnosticsStore.recordHookHeartbeat(
+            context = pluginContext,
+            packageName = ANDROID_PHONE_PACKAGE,
+            processName = phoneContext.applicationInfo?.processName ?: ANDROID_PHONE_PACKAGE,
+            source = "sms_handler_dispatch_chain",
+            verboseLogging = PrefsReader.isVerboseLogMode(pluginContext),
+        )
+        XLog.w(
+            "Diag SMS dispatch chain block: method=%s reason=%s event_id=%s",
+            methodName,
+            reason,
+            eventId,
+        )
+        CodeWorker(pluginContext, phoneContext, intent, eventId).parse()
+        val inbound = param.thisObject ?: return
+        val smsReceiver = findRawTableReceiver(param.args)
+        if (smsReceiver != null) {
+            val blocked = deleteRawTableAndSendMessage(
+                inboundSmsHandler = inbound,
+                smsReceiver = smsReceiver,
+                reason = reason,
+                eventId = eventId,
+            )
+            if (!blocked) {
+                XLog.w(
+                    "Diag dispatch chain block aborted: cleanup incomplete method=%s event_id=%s",
+                    methodName,
+                    eventId,
+                )
+                return
+            }
+        } else {
+            XLog.w(
+                "Diag dispatch chain block fallback: receiver unavailable method=%s event_id=%s",
+                methodName,
+                eventId,
+            )
+            return
+        }
+        param.result = defaultResultForType((param.method as? Method)?.returnType)
+    }
+
+    private fun extractOrBuildSmsIntent(args: Array<Any?>?, fallbackAction: String): Intent? {
+        if (args == null) return null
+        args.forEach { arg ->
+            if (arg is Intent) {
+                return arg
+            }
+        }
+        val pduList = args.firstNotNullOfOrNull { arg ->
+            val array = arg as? Array<*> ?: return@firstNotNullOfOrNull null
+            val pdus = array.mapNotNull { it as? ByteArray }
+            if (pdus.isEmpty() || pdus.size != array.size) null else pdus
+        } ?: return null
+        val format = args.firstNotNullOfOrNull { arg ->
+            val text = arg as? String ?: return@firstNotNullOfOrNull null
+            if (text.equals("3gpp", ignoreCase = true) || text.equals("3gpp2", ignoreCase = true)) {
+                text
+            } else {
+                null
+            }
+        }
+        return Intent(fallbackAction).apply {
+            putExtra("pdus", pduList.toTypedArray())
+            if (!format.isNullOrBlank()) {
+                putExtra("format", format)
+            }
+        }
+    }
+
+    private fun findRawTableReceiver(args: Array<Any?>?): Any? {
+        if (args == null) return null
+        return args.firstOrNull { candidate ->
+            candidate != null &&
+                hasField(candidate, "mDeleteWhere") &&
+                hasField(candidate, "mDeleteWhereArgs")
+        }
+    }
+
+    private fun hasField(instance: Any, fieldName: String): Boolean {
+        var current: Class<*>? = instance.javaClass
+        while (current != null) {
+            if (current.declaredFields.any { it.name == fieldName }) {
+                return true
+            }
+            current = current.superclass
+        }
+        return false
+    }
+
+    private fun shouldSkipDispatchChainBlock(
+        smsMsg: SmsMsg?,
+        action: String?,
+        reason: String,
+    ): Boolean {
+        if (smsMsg == null || action.isNullOrBlank()) return false
+        val now = System.currentTimeMillis()
+        val key = buildString {
+            append(senderHash(smsMsg.sender))
+            append('|')
+            append(smsMsg.body.orEmpty().hashCode())
+            append('|')
+            append(smsMsg.date)
+            append('|')
+            append(action)
+            append('|')
+            append(reason)
+        }
+        synchronized(DISPATCH_CHAIN_BLOCK_LOCK) {
+            val iterator = dispatchChainBlockHistory.entries.iterator()
+            while (iterator.hasNext()) {
+                val entry = iterator.next()
+                if (now - entry.value > DISPATCH_CHAIN_BLOCK_WINDOW_MS) {
+                    iterator.remove()
+                }
+            }
+            val last = dispatchChainBlockHistory[key]
+            if (last != null && now - last <= DISPATCH_CHAIN_BLOCK_WINDOW_MS) {
+                XLog.w(
+                    "Diag dispatch chain block duplicate skip: action=%s reason=%s ageMs=%d",
+                    action,
+                    reason,
+                    now - last,
+                )
+                return true
+            }
+            dispatchChainBlockHistory[key] = now
+            return false
+        }
+    }
+
+    private fun defaultResultForType(type: Class<*>?): Any? {
+        return when (type) {
+            null, Void.TYPE, Void::class.java -> null
+            Boolean::class.javaPrimitiveType, Boolean::class.javaObjectType -> false
+            Int::class.javaPrimitiveType, Int::class.javaObjectType -> 0
+            Long::class.javaPrimitiveType, Long::class.javaObjectType -> 0L
+            Float::class.javaPrimitiveType, Float::class.javaObjectType -> 0f
+            Double::class.javaPrimitiveType, Double::class.javaObjectType -> 0.0
+            Short::class.javaPrimitiveType, Short::class.javaObjectType -> 0.toShort()
+            Byte::class.javaPrimitiveType, Byte::class.javaObjectType -> 0.toByte()
+            Char::class.javaPrimitiveType, Char::class.javaObjectType -> 0.toChar()
+            else -> null
+        }
+    }
+
     private fun logSuppressedOnce(stage: String) {
         if (suppressionLogged) return
         synchronized(this) {
@@ -834,16 +989,14 @@ class SmsHandlerHook : BaseHook() {
         private const val SMS_HANDLER_CLASS = "$TELEPHONY_PACKAGE.InboundSmsHandler"
         private val SMSCODE_PACKAGE = BuildConfig.APPLICATION_ID
         private const val EVENT_BROADCAST_COMPLETE = 3
-        private const val EVENT_ID_EXTRA = "event_id"
-        private const val DISPATCH_HANDLED_EXTRA_PREFIX = "xsms_dispatch_handled:"
         private const val DISPATCH_DEDUP_FILE_NAME = "dispatch_dedup"
         private const val DISPATCH_DEDUP_WINDOW_MS = 8_000L
         private const val MAX_DISPATCH_DEDUP_ENTRIES = 256
-        private const val BLOCK_REASON_BLACKLIST = "blacklist_block"
-        private const val BLOCK_REASON_PREF_BLOCK = "pref_block_sms"
+        private const val DISPATCH_CHAIN_BLOCK_WINDOW_MS = 8_000L
         private const val PERSISTENT_DEVICE_ID_DEFAULT = "default:0"
         private val SMS_OPERATION_EXECUTOR = Executors.newSingleThreadExecutor()
         private val installedHookKeys = Collections.synchronizedSet(mutableSetOf<String>())
+        private val dispatchChainBlockHistory = LinkedHashMap<String, Long>()
         @Volatile
         private var cachedDeleteRawMethod: Method? = null
         @Volatile
@@ -896,5 +1049,6 @@ class SmsHandlerHook : BaseHook() {
         private const val SHARED_HOOK_INIT_WINDOW_MS = 5 * 60 * 1000L
         private const val SHARED_OBSERVER_WINDOW_MS = 5 * 60 * 1000L
         private val PROCESS_PROPERTY_LOCK = Any()
+        private val DISPATCH_CHAIN_BLOCK_LOCK = Any()
     }
 }

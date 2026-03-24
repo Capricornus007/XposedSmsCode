@@ -5,6 +5,7 @@
         <item>system</item>
         <item>com.android.phone</item>
         <item>com.android.providers.telephony</item>
+        <item>com.android.mms</item>
     </string-array>
 
     <string-array name="history_limit_entry_list">
