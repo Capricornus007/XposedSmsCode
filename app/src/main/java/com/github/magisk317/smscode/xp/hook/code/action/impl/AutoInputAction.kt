@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Bundle
 import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.common.utils.SharedRuntimeGate
 import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.DBProvider
 import com.github.magisk317.smscode.data.db.entity.AppInfo
@@ -89,6 +90,21 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
     private fun shouldSkipByRecentAutoInput(smsMsg: SmsMsg): Boolean {
         val key = buildAutoInputKey(smsMsg)
         if (key.isBlank()) return false
+        val sharedClaim = SharedRuntimeGate.claimWithinWindow(
+            context = mPluginContext,
+            fileName = SHARED_AUTO_INPUT_FILE_NAME,
+            key = key,
+            windowMs = AUTO_INPUT_DEDUP_WINDOW_MS,
+            maxEntries = MAX_AUTO_INPUT_CACHE_SIZE,
+        )
+        if (!sharedClaim.claimed) {
+            XLog.w(
+                "Diag auto-input dedup skip: key=%s ageMs=%d source=shared_store",
+                key,
+                sharedClaim.ageMs ?: -1L,
+            )
+            return true
+        }
         val now = System.currentTimeMillis()
         synchronized(AUTO_INPUT_CACHE_LOCK) {
             val iterator = recentAutoInputs.entries.iterator()
@@ -193,6 +209,7 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
     }
 
     companion object {
+        private const val SHARED_AUTO_INPUT_FILE_NAME = "auto_input_dedup"
         private const val AUTO_INPUT_DEDUP_WINDOW_MS = 5_000L
         private const val MAX_AUTO_INPUT_CACHE_SIZE = 128
         private val AUTO_INPUT_CACHE_LOCK = Any()

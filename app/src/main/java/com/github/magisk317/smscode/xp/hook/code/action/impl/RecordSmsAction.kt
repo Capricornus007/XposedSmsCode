@@ -6,6 +6,7 @@ import android.content.Context
 import android.database.Cursor
 import android.os.Bundle
 import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.common.utils.SharedRuntimeGate
 import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.DBProvider
@@ -41,10 +42,24 @@ class RecordSmsAction(
             !smsMsg.smsCode.isNullOrBlank(),
         )
         if (PrefsReader.deduplicateSms(mPluginContext)) {
+            val locked = SharedRuntimeGate.withFileLock(mPluginContext, SHARED_RECORD_DEDUP_FILE_NAME) {
+                if (shouldSkipByDedup(smsMsg, eventLabel)) {
+                    return@withFileLock false
+                }
+                insertSmsMsg(smsMsg, eventLabel)
+                true
+            }
+            if (locked != null) {
+                return
+            }
             if (shouldSkipByDedup(smsMsg, eventLabel)) {
                 return
             }
         }
+        insertSmsMsg(smsMsg, eventLabel)
+    }
+
+    private fun insertSmsMsg(smsMsg: SmsMsg, eventLabel: String) {
         try {
             val smsMsgUri = DBProvider.smsMsgContentUri(mPluginContext)
             val resolver = mPluginContext.contentResolver
@@ -160,6 +175,7 @@ class RecordSmsAction(
     }
 
     companion object {
+        private const val SHARED_RECORD_DEDUP_FILE_NAME = "record_insert_gate"
         private const val DEDUP_WINDOW_MS = 5_000L
     }
 }

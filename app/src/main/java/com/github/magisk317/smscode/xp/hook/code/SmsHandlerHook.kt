@@ -51,6 +51,25 @@ class SmsHandlerHook : BaseHook() {
 
     override fun onLoadPackage(lpparam: LoadParam) {
         if (ANDROID_PHONE_PACKAGE == lpparam.packageName) {
+            val sharedHookKey = buildSharedProcessKey(
+                prefix = "hook_init",
+                packageName = lpparam.packageName,
+                processName = lpparam.processName,
+            )
+            val sharedHookAge = claimProcessPropertyWithinWindow(
+                key = sharedHookKey,
+                windowMs = SHARED_HOOK_INIT_WINDOW_MS,
+            )
+            if (sharedHookAge != null) {
+                XLog.w(
+                    "SmsHandlerHook shared init skip: pkg=%s process=%s pid=%d ageMs=%d",
+                    lpparam.packageName,
+                    lpparam.processName,
+                    android.os.Process.myPid(),
+                    sharedHookAge,
+                )
+                return
+            }
             val hookKey = buildHookInstallKey(lpparam)
             if (!markHookInstalled(hookKey)) {
                 XLog.w(
@@ -291,6 +310,24 @@ class SmsHandlerHook : BaseHook() {
         val pluginContext = mPluginContext ?: return
         val phoneContext = mPhoneContext ?: return
         if (smsInboxObserver != null) return
+        val observerKey = buildSharedProcessKey(
+            prefix = "sms_observer",
+            packageName = phoneContext.packageName,
+            processName = phoneContext.applicationInfo?.processName ?: phoneContext.packageName,
+        )
+        val observerAge = claimProcessPropertyWithinWindow(
+            key = observerKey,
+            windowMs = SHARED_OBSERVER_WINDOW_MS,
+        )
+        if (observerAge != null) {
+            XLog.w(
+                "SmsInboxObserver shared register skip: key=%s pid=%d ageMs=%d",
+                observerKey,
+                android.os.Process.myPid(),
+                observerAge,
+            )
+            return
+        }
         smsInboxObserver = SmsInboxObserver(pluginContext, phoneContext).also { it.register() }
     }
 
@@ -824,7 +861,40 @@ class SmsHandlerHook : BaseHook() {
             }
         }
 
+        private fun buildSharedProcessKey(
+            prefix: String,
+            packageName: String,
+            processName: String,
+        ): String {
+            return buildString {
+                append(prefix)
+                append('|')
+                append(packageName)
+                append('|')
+                append(processName.ifBlank { packageName })
+                append("|pid:")
+                append(android.os.Process.myPid())
+            }
+        }
+
+        private fun claimProcessPropertyWithinWindow(
+            key: String,
+            windowMs: Long,
+        ): Long? = synchronized(PROCESS_PROPERTY_LOCK) {
+            val now = System.currentTimeMillis()
+            val raw = System.getProperty(key)
+            val last = raw?.toLongOrNull()
+            if (last != null && now - last <= windowMs) {
+                return@synchronized now - last
+            }
+            System.setProperty(key, now.toString())
+            null
+        }
+
         private fun markHookInstalled(key: String): Boolean = installedHookKeys.add(key)
 
+        private const val SHARED_HOOK_INIT_WINDOW_MS = 5 * 60 * 1000L
+        private const val SHARED_OBSERVER_WINDOW_MS = 5 * 60 * 1000L
+        private val PROCESS_PROPERTY_LOCK = Any()
     }
 }
