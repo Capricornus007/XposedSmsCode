@@ -7,6 +7,7 @@ import android.net.Uri
 import android.provider.Telephony
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.utils.PrefsReader
+import io.github.magisk317.smscode.domain.model.BuiltinSmsCodeRules
 import io.github.magisk317.smscode.xposed.utils.XLog
 import io.github.magisk317.smscode.xposed.helper.XposedWrapper
 import io.github.magisk317.smscode.xposed.hook.BaseHook
@@ -87,7 +88,7 @@ class GoogleMessagesHook : BaseHook() {
         val keywordsRegex = PrefsReader.getSMSCodeKeywords(pluginContext).orEmpty()
         if (keywordsRegex.isBlank()) return
         val keywordPattern = runCatching { Pattern.compile(keywordsRegex, Pattern.CASE_INSENSITIVE) }.getOrNull() ?: return
-        val codePattern = Pattern.compile("(?<![a-zA-Z0-9])[a-zA-Z0-9]{4,8}(?![a-zA-Z0-9])")
+        val codePattern = Pattern.compile(BuiltinSmsCodeRules.DEFAULT_ALPHANUMERIC_CODE_REGEX)
 
         val cutoff = System.currentTimeMillis() - RECENT_SMS_WINDOW_MS
         val projection = arrayOf(

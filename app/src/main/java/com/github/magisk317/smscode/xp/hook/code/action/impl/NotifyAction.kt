@@ -11,9 +11,11 @@ import android.os.Bundle
 import android.text.TextUtils
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
+import com.github.magisk317.smscode.common.constant.CodeNotificationOwner
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.NotificationConst
 import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.xp.hook.code.CodeNotificationBroadcastContract
 import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.hook.code.AutoCancelReceiver
@@ -27,14 +29,46 @@ class NotifyAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg
     CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
-        if (PrefsReader.showCodeNotification(mPluginContext)) {
-            return showCodeNotification(mSmsMsg)
+        if (!PrefsReader.showCodeNotification(mPluginContext)) {
+            return null
         }
+        return when (PrefsReader.getCodeNotificationOwner(mPluginContext)) {
+            CodeNotificationOwner.PHONE -> showPhoneOwnedNotification(mSmsMsg)
+            CodeNotificationOwner.APP -> showAppOwnedNotification(mSmsMsg)
+            else -> {
+                XLog.w("Skip code notification: owner not selected")
+                null
+            }
+        }
+    }
+
+    private fun showAppOwnedNotification(smsMsg: SmsMsg): Bundle? {
+        val notificationId = smsMsg.hashCode()
+        val autoCancelEnabled = PrefsReader.autoCancelCodeNotification(mPluginContext)
+        val retentionTimeMs = PrefsReader.getNotificationRetentionTime(mPluginContext) * 1000L
+        val token = PrefsReader.getIpcToken(mPluginContext).takeIf { it.isNotBlank() }
+        val intent = CodeNotificationBroadcastContract.createIntent(
+            sender = smsMsg.sender,
+            company = smsMsg.company,
+            smsCode = smsMsg.smsCode,
+            notificationId = notificationId,
+            autoCancelEnabled = autoCancelEnabled,
+            retentionTimeMs = retentionTimeMs,
+            token = token,
+        )
+        mPhoneContext.sendBroadcast(intent)
+        XLog.i(
+            "Requested app-owned code notification id=%d autoCancel=%s retentionMs=%d tokenPresent=%s",
+            notificationId,
+            autoCancelEnabled,
+            retentionTimeMs,
+            token != null,
+        )
         return null
     }
 
     @SuppressLint("UnspecifiedImmutableFlag", "NotificationPermission")
-    private fun showCodeNotification(smsMsg: SmsMsg): Bundle? {
+    private fun showPhoneOwnedNotification(smsMsg: SmsMsg): Bundle? {
         val manager = mPhoneContext.getSystemService(
             Context.NOTIFICATION_SERVICE,
         ) as NotificationManager? ?: return null
@@ -46,12 +80,12 @@ class NotifyAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg
 
         val notificationId = smsMsg.hashCode()
 
-        val copyCodeIntent = CopyCodeReceiver.createIntent(smsCode, notificationId)
+        val copyCodeIntent = CopyCodeReceiver.createIntent(mPluginContext, smsCode, notificationId)
         val contentIntent = PendingIntent.getBroadcast(
             mPhoneContext,
-            0,
+            notificationId,
             copyCodeIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE or 0x01000000, // PendingIntent.FLAG_ALLOW_UNSAFE_IMPLICIT_INTENT
+            PendingIntent.FLAG_UPDATE_CURRENT or pendingIntentFlag(),
         )
 
         val builder = NotificationCompat.Builder(mPluginContext, NotificationConst.CHANNEL_ID_SMSCODE_NOTIFICATION)
@@ -81,15 +115,7 @@ class NotifyAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg
         val notification = builder.build()
 
         manager.notify(notificationId, notification)
-        XLog.d("Show notification succeed")
-
-        if (autoCancelEnabled) {
-            val retentionTime = PrefsReader.getNotificationRetentionTime(mPluginContext) * 1000L
-            val bundle = Bundle()
-            bundle.putLong(NOTIFY_RETENTION_TIME, retentionTime)
-            bundle.putInt(NOTIFY_ID, notificationId)
-            return bundle
-        }
+        XLog.i("Posted phone-owned code notification id=%d autoCancel=%s", notificationId, autoCancelEnabled)
         return null
     }
 
@@ -118,8 +144,11 @@ class NotifyAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg
         XLog.i("Schedule auto cancel alarm, id=%d, delayMs=%d", notificationId, retentionTimeMs)
     }
 
-    companion object {
-        const val NOTIFY_RETENTION_TIME = "notify_retention_time"
-        const val NOTIFY_ID = "notify_id"
+    private fun pendingIntentFlag(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_IMMUTABLE
+        } else {
+            0
+        }
     }
 }

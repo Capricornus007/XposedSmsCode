@@ -6,18 +6,16 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import com.github.tianma8023.xposed.smscode.BuildConfig
-import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.utils.ClipboardUtils
+import com.github.magisk317.smscode.core.R
+import com.github.tianma8023.xposed.smscode.BuildConfig
 
 /**
  * Receiver for copy code when notification clicked
  */
-class CopyCodeReceiver private constructor() : BroadcastReceiver() {
+class CopyCodeReceiver : BroadcastReceiver() {
 
-    private var mPluginContext: Context? = null
-
-    override fun onReceive(phoneContext: Context, intent: Intent) {
+    override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action
         if (ACTION_COPY_CODE == action) {
             val smsCode = intent.getStringExtra(EXTRA_KEY_CODE)
@@ -25,42 +23,23 @@ class CopyCodeReceiver private constructor() : BroadcastReceiver() {
 
             // cancel notification
             if (notificationId != -1) {
-                val manager = phoneContext.getSystemService(
+                val manager = context.getSystemService(
                     Context.NOTIFICATION_SERVICE,
                 ) as android.app.NotificationManager?
                 manager?.cancel(notificationId)
             }
             // copy to clipboard
             smsCode?.let {
-                ClipboardUtils.copyToClipboard(phoneContext, it)
+                ClipboardUtils.copyToClipboard(context, it)
                 // show toast
-                val pluginContext = createSmsCodeAppContext(phoneContext)
-                showToast(pluginContext, phoneContext, it)
+                showToast(context, it)
             }
         }
     }
 
-    private fun createSmsCodeAppContext(phoneContext: Context): Context? {
-        if (mPluginContext == null) {
-            try {
-                mPluginContext = phoneContext.createPackageContext(
-                    BuildConfig.APPLICATION_ID,
-                    Context.CONTEXT_IGNORE_SECURITY,
-                )
-            } catch (ignored: Exception) {
-                // ignore
-            }
-        }
-        return mPluginContext
-    }
-
-    private fun showToast(pluginContext: Context?, phoneContext: Context?, smsCode: String) {
-        pluginContext?.let {
-            val text = it.getString(R.string.prompt_sms_code_copied, smsCode)
-            phoneContext?.let { pc ->
-                Toast.makeText(pc, text, Toast.LENGTH_LONG).show()
-            }
-        }
+    private fun showToast(context: Context, smsCode: String) {
+        val text = context.getString(R.string.prompt_sms_code_copied, smsCode)
+        Toast.makeText(context, text, Toast.LENGTH_LONG).show()
     }
 
     companion object {
@@ -71,12 +50,12 @@ class CopyCodeReceiver private constructor() : BroadcastReceiver() {
         private val instance: CopyCodeReceiver by lazy { CopyCodeReceiver() }
 
         @JvmStatic
-        fun createIntent(smsCode: String?, notificationId: Int): Intent {
-            val intent = Intent(ACTION_COPY_CODE)
-            intent.putExtra(EXTRA_KEY_CODE, smsCode)
-            intent.putExtra(EXTRA_NOTIFICATION_ID, notificationId)
-            return intent
-        }
+        fun createIntent(context: Context, smsCode: String?, notificationId: Int): Intent =
+            Intent(context, CopyCodeReceiver::class.java).apply {
+                action = ACTION_COPY_CODE
+                putExtra(EXTRA_KEY_CODE, smsCode)
+                putExtra(EXTRA_NOTIFICATION_ID, notificationId)
+            }
 
         @JvmStatic
         fun registerMe(context: Context) {

@@ -292,6 +292,7 @@ tasks.matching { it.name == "bundlePlayApi101Release" }.configureEach {
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(project(":core"))
+    implementation(project(":smscode-core:smscode-domain"))
     implementation(project(":smscode-core:smscode-xposed-core"))
     implementation(project(":storage"))
 

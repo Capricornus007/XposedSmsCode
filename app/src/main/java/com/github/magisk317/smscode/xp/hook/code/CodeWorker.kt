@@ -126,18 +126,6 @@ class CodeWorker(
         // 操作验证码短信（标记为已读 或者 删除） Action
         scheduleOperateSmsActions(smsMsg)
 
-        var autoCancelRetentionMs = 0L
-        if (showNotification && autoCancelNotification) {
-            autoCancelRetentionMs = PrefsReader.getNotificationRetentionTime(mPluginContext) * 1000L
-            val notificationId = smsMsg.hashCode()
-
-            val cancelNotifyAction = CancelNotifyAction(mPluginContext, mPhoneContext, smsMsg)
-            cancelNotifyAction.setNotificationId(notificationId)
-
-            mScheduledExecutor.schedule(cancelNotifyAction, autoCancelRetentionMs, TimeUnit.MILLISECONDS)
-            XLog.d("Scheduled CancelNotifyAction with delay: ${autoCancelRetentionMs}ms for ID: $notificationId")
-        }
-
         if (killMe) {
             if (autoInput) {
                 val killMeAction = KillMeAction(mPluginContext, mPhoneContext, smsMsg)

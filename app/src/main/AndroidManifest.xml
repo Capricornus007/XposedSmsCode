@@ -127,6 +127,14 @@
         <receiver
             android:name="com.github.magisk317.smscode.xp.hook.code.AutoCancelReceiver"
             android:exported="false" />
+
+        <receiver
+            android:name="com.github.magisk317.smscode.xp.hook.code.CopyCodeReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name="com.github.magisk317.smscode.receiver.CodeNotificationReceiver"
+            android:exported="true" />
     </application>
 
 </manifest>
