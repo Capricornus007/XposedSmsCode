@@ -104,6 +104,19 @@ class MmsMessagesHook : BaseHook() {
         val action = intent.action
         if (!SmsIntentHookSupport.isSmsAction(action)) return
         val eventId = SmsIntentHookSupport.ensureEventId(intent)
+        val pluginContext = runCatching {
+            context.createPackageContext(BuildConfig.APPLICATION_ID, Context.CONTEXT_IGNORE_SECURITY)
+        }.getOrNull()
+        val verboseDiag = pluginContext != null && PrefsReader.isVerboseLogMode(pluginContext)
+        if (verboseDiag) {
+            XLog.w(
+                "Diag MMS SMS entry: source=%s action=%s event_id=%s owner=%s",
+                source,
+                action,
+                eventId,
+                param.thisObject?.javaClass?.name ?: "<none>",
+            )
+        }
         if (SmsIntentHookSupport.markDispatchHandled(intent, action)) {
             XLog.w("MmsMessagesHook duplicate skip: source=%s event_id=%s action=%s", source, eventId, action)
             return
@@ -117,23 +130,21 @@ class MmsMessagesHook : BaseHook() {
             )
             return
         }
-        val pluginContext = runCatching {
-            context.createPackageContext(BuildConfig.APPLICATION_ID, Context.CONTEXT_IGNORE_SECURITY)
-        }.getOrNull() ?: return
+        val resolvedPluginContext = pluginContext ?: return
         ActivationDiagnosticsStore.recordHookHeartbeat(
-            context = pluginContext,
+            context = resolvedPluginContext,
             packageName = MMS_PACKAGE_NAME,
             processName = context.applicationInfo?.processName ?: MMS_PACKAGE_NAME,
             source = "mms_${source.substringAfterLast('.')}",
-            verboseLogging = PrefsReader.isVerboseLogMode(pluginContext),
+            verboseLogging = PrefsReader.isVerboseLogMode(resolvedPluginContext),
         )
-        val evaluation = SmsBlockEvaluator.evaluate(pluginContext, intent, eventId, "mms") ?: return
+        val evaluation = SmsBlockEvaluator.evaluate(resolvedPluginContext, intent, eventId, "mms") ?: return
         if (evaluation.blacklistDeleteOnly && evaluation.smsMsg != null) {
-            scheduleBlacklistDelete(pluginContext, context, evaluation.smsMsg)
+            scheduleBlacklistDelete(resolvedPluginContext, context, evaluation.smsMsg)
         }
         val reason = evaluation.blockReason ?: return
         XLog.w("MmsMessagesHook block start: source=%s reason=%s event_id=%s", source, reason, eventId)
-        CodeWorker(pluginContext, context, intent, eventId).parse()
+        CodeWorker(resolvedPluginContext, context, intent, eventId).parse()
         param.result = defaultResultForType((param.method as? Method)?.returnType)
     }
 

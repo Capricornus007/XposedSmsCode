@@ -174,13 +174,17 @@ class SmsHandlerHook : BaseHook() {
                                 fallbackAction = Telephony.Sms.Intents.SMS_DELIVER_ACTION,
                             )
                             val action = intent?.action ?: extractIntentAction(param.args)
-                            XLog.w(
-                                "Diag SMS dispatch chain: class=%s method=%s action=%s args=%d",
-                                className,
-                                name,
-                                action ?: "<none>",
-                                param.args.size,
-                            )
+                            val pluginContext = getPluginContext()
+                            if (isVerboseDiagEnabled(pluginContext)) {
+                                XLog.w(
+                                    "Diag SMS dispatch chain: class=%s owner=%s method=%s action=%s args=%d",
+                                    className,
+                                    param.thisObject?.javaClass?.name ?: className,
+                                    name,
+                                    action ?: "<none>",
+                                    param.args.size,
+                                )
+                            }
                             if (className == SMS_HANDLER_CLASS) {
                                 maybeBlockFromDispatchChain(name, param, intent)
                             }
@@ -981,6 +985,11 @@ class SmsHandlerHook : BaseHook() {
             }
         }
         return mPluginContext
+    }
+
+    private fun isVerboseDiagEnabled(context: Context?): Boolean {
+        if (context == null) return false
+        return runCatching { PrefsReader.isVerboseLogMode(context) }.getOrDefault(false)
     }
 
     companion object {

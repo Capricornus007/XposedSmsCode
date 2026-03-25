@@ -65,6 +65,8 @@ class SmsProviderHook : BaseHook() {
                                 verboseLogging = PrefsReader.isVerboseLogMode(pluginContext),
                             )
                         }
+                        val verboseDiag = pluginContext != null && PrefsReader.isVerboseLogMode(pluginContext)
+                        if (!verboseDiag) return
                         val callingUid = Binder.getCallingUid()
                         val callingPid = Binder.getCallingPid()
                         val packages = runCatching {
@@ -82,8 +84,10 @@ class SmsProviderHook : BaseHook() {
                             else -> "<none>"
                         }
                         XLog.w(
-                            "Diag sms provider %s: uri=%s uid=%d pid=%d pkgs=%s values=%s",
+                            "Diag sms provider %s: class=%s process=%s uri=%s uid=%d pid=%d pkgs=%s values=%s",
                             methodName,
+                            provider?.javaClass?.name ?: TELEPHONY_PROVIDER_CLASS,
+                            context?.applicationInfo?.processName ?: TELEPHONY_PROVIDER_PACKAGE,
                             uri,
                             callingUid,
                             callingPid,
