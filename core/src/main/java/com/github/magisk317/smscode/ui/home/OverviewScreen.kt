@@ -171,207 +171,101 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
                 )
             }
             item {
-                io.github.magisk317.uikit.surface.DetailSectionCard(
-                    title = stringResource(id = R.string.app_name),
-                    summary = stringResource(id = R.string.status_diag_service_title),
+                val rootHint = stringResource(id = R.string.root_permission_hint)
+                OverviewInfoCard(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Column(modifier = Modifier.padding(vertical = 12.dp)) {
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.version_name),
-                            value = appVersionName,
-                            leadingContent = {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.Label,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                        )
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.version_code),
-                            value = appVersionCode,
-                            leadingContent = {
-                                Icon(
-                                    Icons.Default.Numbers,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                        )
-                        val rootHint = stringResource(id = R.string.root_permission_hint)
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.framework_type),
-                            value = frameworkType,
-                            leadingContent = {
-                                Icon(
-                                    Icons.Default.Extension,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                            onClick = if (hasRootAccessState) {
-                                null
-                            } else {
-                                { showMessage(rootHint) }
-                            },
-                        )
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.framework_version),
-                            value = frameworkVersion,
-                            leadingContent = {
-                                Icon(
-                                    Icons.Default.Verified,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                            onClick = if (hasRootAccessState) {
-                                null
-                            } else {
-                                { showMessage(rootHint) }
-                            },
-                        )
-                    }
+                    InfoItem(
+                        icon = Icons.AutoMirrored.Filled.Label,
+                        label = stringResource(id = R.string.version_name),
+                        value = appVersionName,
+                    )
+                    InfoItem(
+                        icon = Icons.Default.Numbers,
+                        label = stringResource(id = R.string.version_code),
+                        value = appVersionCode,
+                    )
+                    InfoItem(
+                        icon = Icons.Default.Extension,
+                        label = stringResource(id = R.string.framework_type),
+                        value = frameworkType,
+                        onClick = if (hasRootAccessState) null else { { showMessage(rootHint) } },
+                    )
+                    InfoItem(
+                        icon = Icons.Default.Verified,
+                        label = stringResource(id = R.string.framework_version),
+                        value = frameworkVersion,
+                        onClick = if (hasRootAccessState) null else { { showMessage(rootHint) } },
+                    )
                 }
             }
 
             item {
-                io.github.magisk317.uikit.surface.DetailSectionCard(
-                    title = stringResource(id = R.string.android_version),
-                    summary = Build.MODEL,
+                OverviewInfoCard(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Column(modifier = Modifier.padding(vertical = 12.dp)) {
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.android_version),
-                            value = Build.VERSION.RELEASE,
-                            leadingContent = {
-                                Icon(
-                                    Icons.Default.Android,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                        )
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.android_codename),
-                            value = Build.VERSION.CODENAME,
-                            leadingContent = {
-                                Icon(
-                                    Icons.Default.Terminal,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                        )
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.api_level),
-                            value = Build.VERSION.SDK_INT.toString(),
-                            leadingContent = {
-                                Icon(
-                                    Icons.Default.Code,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                        )
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.manufacturer),
-                            value = Build.MANUFACTURER,
-                            leadingContent = {
-                                Icon(
-                                    Icons.Default.Business,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                        )
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.model),
-                            value = Build.MODEL,
-                            leadingContent = {
-                                Icon(
-                                    Icons.Default.Smartphone,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                        )
-                    }
+                    InfoItem(
+                        icon = Icons.Default.Android,
+                        label = stringResource(id = R.string.android_version),
+                        value = Build.VERSION.RELEASE,
+                    )
+                    InfoItem(
+                        icon = Icons.Default.Terminal,
+                        label = stringResource(id = R.string.android_codename),
+                        value = Build.VERSION.CODENAME,
+                    )
+                    InfoItem(
+                        icon = Icons.Default.Code,
+                        label = stringResource(id = R.string.api_level),
+                        value = Build.VERSION.SDK_INT.toString(),
+                    )
+                    InfoItem(
+                        icon = Icons.Default.Business,
+                        label = stringResource(id = R.string.manufacturer),
+                        value = Build.MANUFACTURER,
+                    )
+                    InfoItem(
+                        icon = Icons.Default.Smartphone,
+                        label = stringResource(id = R.string.model),
+                        value = Build.MODEL,
+                    )
                 }
             }
 
             item {
-                io.github.magisk317.uikit.surface.DetailSectionCard(
-                    title = stringResource(id = R.string.check_update_title),
-                    summary = stringResource(id = R.string.pref_source_code_summary),
+                OverviewInfoCard(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Column(modifier = Modifier.padding(vertical = 12.dp)) {
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.check_update_title),
-                            value = stringResource(id = R.string.check_update_summary),
-                            leadingContent = {
-                                Icon(
-                                    Icons.Default.Info,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                            onClick = {
-                                settingsViewModel.requestPreferredUpdate()
-                            },
-                        )
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.pref_join_qq_group_title),
-                            value = stringResource(id = R.string.pref_join_qq_group_summary),
-                            leadingContent = {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.Chat,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                            onClick = { PackageUtils.joinQQGroup(context)?.let(::showMessage) },
-                        )
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.pref_join_telegram_group_title),
-                            value = stringResource(id = R.string.pref_join_telegram_group_summary),
-                            leadingContent = {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.Send,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                            onClick = { Utils.showWebPage(context, Const.TELEGRAM_GROUP_URL)?.let(::showMessage) },
-                        )
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.pref_source_code_title),
-                            value = stringResource(id = R.string.pref_source_code_summary),
-                            leadingContent = {
-                                Icon(
-                                    Icons.Default.Code,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                            onClick = { Utils.showWebPage(context, Const.PROJECT_SOURCE_CODE_URL)?.let(::showMessage) },
-                        )
-                        io.github.magisk317.uikit.surface.DetailRow(
-                            label = stringResource(id = R.string.pref_donate_by_alipay_title),
-                            value = stringResource(id = R.string.dialog_donate_summary),
-                            leadingContent = {
-                                Icon(
-                                    Icons.Default.Favorite,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                )
-                            },
-                            onClick = { showDonateDialog = true },
-                        )
-                    }
+                    InfoItem(
+                        icon = Icons.Default.Info,
+                        label = stringResource(id = R.string.check_update_title),
+                        value = stringResource(id = R.string.check_update_summary),
+                        onClick = { settingsViewModel.requestPreferredUpdate() },
+                    )
+                    InfoItem(
+                        icon = Icons.AutoMirrored.Filled.Chat,
+                        label = stringResource(id = R.string.pref_join_qq_group_title),
+                        value = stringResource(id = R.string.pref_join_qq_group_summary),
+                        onClick = { PackageUtils.joinQQGroup(context)?.let(::showMessage) },
+                    )
+                    InfoItem(
+                        icon = Icons.AutoMirrored.Filled.Send,
+                        label = stringResource(id = R.string.pref_join_telegram_group_title),
+                        value = stringResource(id = R.string.pref_join_telegram_group_summary),
+                        onClick = { Utils.showWebPage(context, Const.TELEGRAM_GROUP_URL)?.let(::showMessage) },
+                    )
+                    InfoItem(
+                        icon = Icons.Default.Code,
+                        label = stringResource(id = R.string.pref_source_code_title),
+                        value = stringResource(id = R.string.pref_source_code_summary),
+                        onClick = { Utils.showWebPage(context, Const.PROJECT_SOURCE_CODE_URL)?.let(::showMessage) },
+                    )
+                    InfoItem(
+                        icon = Icons.Default.Favorite,
+                        label = stringResource(id = R.string.pref_donate_by_alipay_title),
+                        value = stringResource(id = R.string.dialog_donate_summary),
+                        onClick = { showDonateDialog = true },
+                    )
                 }
             }
         }
@@ -558,6 +452,26 @@ private fun buildStatusDiagnostics(
 private fun formatStatusDiagnosticTime(context: android.content.Context, timestampMs: Long): String {
     if (timestampMs <= 0L) return context.getString(R.string.status_diag_none)
     return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(timestampMs))
+}
+
+@Composable
+private fun OverviewInfoCard(
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    ElevatedCard(
+        modifier = modifier,
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            content = content,
+        )
+    }
 }
 
 @Composable
