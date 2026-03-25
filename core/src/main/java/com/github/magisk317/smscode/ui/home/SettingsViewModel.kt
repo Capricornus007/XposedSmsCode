@@ -230,7 +230,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             }
             val code = result?.code.orEmpty()
             val matchedRuleLabel = result?.matchedRule?.let(::formatMatchedRuleLabel)
-            XLog.i("Sms code test finished: code=%s", code)
+            val safeCode = if (PrefsReader.isSensitiveDebugLogMode(getApplication())) {
+                StringUtils.escape(code)
+            } else {
+                StringUtils.summarizeCode(code)
+            }
+            XLog.i("Sms code test finished: code=%s", safeCode)
             _eventsFlow.tryEmit(SettingsEvent.SmsCodeTestResult(code, matchedRuleLabel))
         }
     }

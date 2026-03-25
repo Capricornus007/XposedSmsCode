@@ -61,9 +61,11 @@ import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.constant.TransitionConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
+import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.common.utils.SPUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
+import com.github.magisk317.smscode.common.utils.StringUtils
 import com.github.magisk317.smscode.common.utils.Utils
 import com.github.magisk317.smscode.data.update.ApkSecurityVerifier
 import com.github.magisk317.smscode.data.update.GithubReleaseInfo
@@ -314,7 +316,11 @@ class MainActivity : AppCompatActivity() {
                             }
                             XLog.i(
                                 "Sms code test result delivered in MainActivity: code=%s matchedRule=%s",
-                                event.code,
+                                if (PrefsReader.isSensitiveDebugLogMode(context)) {
+                                    StringUtils.escape(event.code)
+                                } else {
+                                    StringUtils.summarizeCode(event.code)
+                                },
                                 event.matchedRuleLabel ?: "",
                             )
                             scope.launch { appSnackbarHostState.showSnackbar(message) }

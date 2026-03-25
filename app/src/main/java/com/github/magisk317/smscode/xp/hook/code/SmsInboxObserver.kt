@@ -81,8 +81,16 @@ internal class SmsInboxObserver(
                         senderHash(sender),
                         date,
                         read,
-                        StringUtils.escape(code),
-                        StringUtils.escape(body),
+                        if (PrefsReader.isSensitiveDebugLogMode(pluginContext)) {
+                            StringUtils.escape(code)
+                        } else {
+                            StringUtils.summarizeCode(code)
+                        },
+                        if (PrefsReader.isSensitiveDebugLogMode(pluginContext)) {
+                            StringUtils.escape(body)
+                        } else {
+                            StringUtils.summarizeBody(body)
+                        },
                     )
                     logSmsRoleStateForSms(smsId, triggerUri)
                     handleObservedCode(

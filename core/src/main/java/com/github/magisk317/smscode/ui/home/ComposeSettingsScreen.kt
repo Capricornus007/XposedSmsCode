@@ -802,6 +802,15 @@ fun ComposeSettingsScreen(
                             },
                             onSaved = markPrefsSaved,
                         )
+                        if (BuildConfig.DEBUG) {
+                            SwitchItem(
+                                title = stringResource(id = R.string.pref_sensitive_debug_log_mode_title),
+                                summary = stringResource(id = R.string.pref_sensitive_debug_log_mode_summary),
+                                key = PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE,
+                                defaultValue = false,
+                                onSaved = markPrefsSaved,
+                            )
+                        }
                         SwitchItem(
                             title = stringResource(id = R.string.pref_auto_update_on_start_title),
                             summary = stringResource(id = R.string.pref_auto_update_on_start_summary),

@@ -178,6 +178,8 @@
     <!-- preference others -->
     <string name="pref_verbose_log_mode_title">詳細日誌</string>
     <string name="pref_verbose_log_mode_summary">點擊後分享日誌</string>
+    <string name="pref_sensitive_debug_log_mode_title">敏感除錯日誌</string>
+    <string name="pref_sensitive_debug_log_mode_summary">僅 Debug 版本提供。開啟後日誌可輸出手機號、簡訊正文與驗證碼明文。</string>
     <string name="pref_auto_update_on_start_title">啟動時自動更新</string>
     <string name="pref_auto_update_on_start_summary">應用啟動時執行一次更新策略</string>
     <string name="pref_auto_update_wifi_only_title">僅 Wi-Fi 自動檢查更新</string>

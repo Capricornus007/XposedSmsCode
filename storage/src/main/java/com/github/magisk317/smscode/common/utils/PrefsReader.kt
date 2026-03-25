@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.github.magisk317.smscode.common.constant.CodeNotificationOwner
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import com.github.magisk317.smscode.storage.BuildConfig
 import com.github.magisk317.smscode.common.utils.XLog
 import java.util.Collections
 
@@ -307,6 +308,15 @@ object PrefsReader {
     fun isVerboseLogMode(context: Context): Boolean {
         val defaultValue = false
         return getBooleanViaProvider(context, PrefConst.KEY_VERBOSE_LOG_MODE, defaultValue)
+    }
+
+    @JvmStatic
+    fun isSensitiveDebugLogSupported(): Boolean = BuildConfig.DEBUG
+
+    @JvmStatic
+    fun isSensitiveDebugLogMode(context: Context): Boolean {
+        if (!isSensitiveDebugLogSupported()) return false
+        return getBooleanViaProvider(context, PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE, false)
     }
 
     @JvmStatic

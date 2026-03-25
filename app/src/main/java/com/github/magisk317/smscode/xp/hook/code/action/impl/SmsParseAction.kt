@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
-import com.github.tianma8023.xposed.smscode.BuildConfig
+import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.common.utils.StringUtils
 import io.github.magisk317.smscode.xposed.utils.XLog
@@ -48,14 +48,16 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
 
         val sender = smsMsg.sender
         val msgBody = smsMsg.body
+        val sensitiveDebugLog = PrefsReader.isSensitiveDebugLogMode(mPluginContext)
 
-        if (BuildConfig.DEBUG) {
-            XLog.d("Sender: %s", sender)
-            XLog.d("Body: %s", msgBody)
-        } else {
-            XLog.d("Sender: %s", StringUtils.escape(sender))
-            XLog.d("Body length: %d", msgBody?.length ?: 0)
-        }
+        XLog.d(
+            "Sender: %s",
+            if (sensitiveDebugLog) StringUtils.escape(sender) else StringUtils.summarizeSender(sender),
+        )
+        XLog.d(
+            "Body: %s",
+            if (sensitiveDebugLog) StringUtils.escape(msgBody) else StringUtils.summarizeBody(msgBody),
+        )
 
         if (TextUtils.isEmpty(sender) || TextUtils.isEmpty(msgBody)) {
             XLog.w("Diag SMS parse aborted: sender/body is empty")
@@ -64,7 +66,10 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
 
         val msgBodyNotNull = msgBody ?: ""
         val timestamp = if (smsMsg.date > 0) smsMsg.date else System.currentTimeMillis()
-        XLog.w("Diag SMS body: %s", StringUtils.escape(msgBodyNotNull))
+        XLog.w(
+            "Diag SMS body: %s",
+            if (sensitiveDebugLog) StringUtils.escape(msgBodyNotNull) else StringUtils.summarizeBody(msgBodyNotNull),
+        )
         if (mDeduplicateEnabled) {
             val duplicated = runCatching {
                 DBManager.get(mPluginContext).querySmsMsgByFingerprint(sender, msgBodyNotNull, timestamp) != null
@@ -82,7 +87,10 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
             )
         }
         if (TextUtils.isEmpty(smsCode)) { // isn't code message
-            XLog.w("Diag SMS parsed but no code matched, body=%s", StringUtils.escape(msgBodyNotNull))
+            XLog.w(
+                "Diag SMS parsed but no code matched, body=%s",
+                if (sensitiveDebugLog) StringUtils.escape(msgBodyNotNull) else StringUtils.summarizeBody(msgBodyNotNull),
+            )
             return null
         }
 
@@ -116,8 +124,8 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
             "Diag SMS code matched: companyPresent=%s, codeLength=%d, code=%s, body=%s",
             !company.isNullOrBlank(),
             smsCode.length,
-            StringUtils.escape(smsCode),
-            StringUtils.escape(msgBodyNotNull),
+            if (sensitiveDebugLog) StringUtils.escape(smsCode) else StringUtils.summarizeCode(smsCode),
+            if (sensitiveDebugLog) StringUtils.escape(msgBodyNotNull) else StringUtils.summarizeBody(msgBodyNotNull),
         )
 
         val bundle = Bundle()
