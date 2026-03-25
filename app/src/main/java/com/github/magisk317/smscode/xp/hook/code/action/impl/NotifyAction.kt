@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import com.github.magisk317.smscode.common.constant.CodeNotificationOwner
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.NotificationConst
+import com.github.magisk317.smscode.common.utils.NotificationUtils
 import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.xp.hook.code.CodeNotificationBroadcastContract
 import io.github.magisk317.smscode.xposed.utils.XLog
@@ -43,6 +44,23 @@ class NotifyAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg
     }
 
     private fun showAppOwnedNotification(smsMsg: SmsMsg): Bundle? {
+        NotificationUtils.createNotificationChannel(
+            mPluginContext,
+            NotificationConst.CHANNEL_ID_SMSCODE_NOTIFICATION,
+            mPluginContext.getString(R.string.channel_name_smscode_notification),
+            NotificationManager.IMPORTANCE_HIGH,
+        )
+        val diagnostics = NotificationUtils.inspectDelivery(
+            mPluginContext,
+            NotificationConst.CHANNEL_ID_SMSCODE_NOTIFICATION,
+        )
+        if (!diagnostics.canPost) {
+            XLog.w(
+                "App-owned code notification unavailable, fallback to phone-owned: %s",
+                diagnostics.summary(),
+            )
+            return showPhoneOwnedNotification(smsMsg)
+        }
         val notificationId = smsMsg.hashCode()
         val autoCancelEnabled = PrefsReader.autoCancelCodeNotification(mPluginContext)
         val retentionTimeMs = PrefsReader.getNotificationRetentionTime(mPluginContext) * 1000L
@@ -79,6 +97,12 @@ class NotifyAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg
         val content = mPluginContext.getString(R.string.code_notification_content, smsCode)
 
         val notificationId = smsMsg.hashCode()
+        NotificationUtils.createNotificationChannel(
+            mPhoneContext,
+            NotificationConst.CHANNEL_ID_SMSCODE_NOTIFICATION,
+            mPluginContext.getString(R.string.channel_name_smscode_notification),
+            NotificationManager.IMPORTANCE_HIGH,
+        )
 
         val copyCodeIntent = CopyCodeReceiver.createIntent(mPluginContext, smsCode, notificationId)
         val contentIntent = PendingIntent.getBroadcast(

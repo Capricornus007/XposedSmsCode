@@ -102,7 +102,6 @@ class CodeNotificationReceiver : BroadcastReceiver() {
 
         if (autoCancelEnabled && retentionTimeMs > 0L) {
             builder.setTimeoutAfter(retentionTimeMs)
-            scheduleAutoCancel(appContext, notificationId, retentionTimeMs)
         }
 
         val manager = appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
@@ -111,8 +110,24 @@ class CodeNotificationReceiver : BroadcastReceiver() {
             return
         }
 
+        val diagnostics = NotificationUtils.inspectDelivery(
+            appContext,
+            NotificationConst.CHANNEL_ID_SMSCODE_NOTIFICATION,
+        )
+        XLog.i("CodeNotificationReceiver delivery diagnostics: %s", diagnostics.summary())
+        if (!diagnostics.canPost) {
+            XLog.w(
+                "CodeNotificationReceiver posting while app-owned notifications are unavailable: %s",
+                diagnostics.summary(),
+            )
+        }
+
         showNotification(manager, notificationId, builder.build())
         XLog.i("CodeNotificationReceiver posted app-owned notification id=%d", notificationId)
+
+        if (autoCancelEnabled && retentionTimeMs > 0L) {
+            scheduleAutoCancelSafely(appContext, notificationId, retentionTimeMs)
+        }
     }
 
     @SuppressLint("NotificationPermission")
@@ -122,6 +137,23 @@ class CodeNotificationReceiver : BroadcastReceiver() {
         notification: android.app.Notification,
     ) {
         manager.notify(notificationId, notification)
+    }
+
+    private fun scheduleAutoCancelSafely(
+        context: Context,
+        notificationId: Int,
+        retentionTimeMs: Long,
+    ) {
+        runCatching {
+            scheduleAutoCancel(context, notificationId, retentionTimeMs)
+        }.onFailure { throwable ->
+            XLog.w(
+                "CodeNotificationReceiver auto-cancel scheduling failed: id=%d retentionMs=%d err=%s",
+                notificationId,
+                retentionTimeMs,
+                throwable.message ?: throwable.javaClass.simpleName,
+            )
+        }
     }
 
     private fun scheduleAutoCancel(
@@ -138,7 +170,9 @@ class CodeNotificationReceiver : BroadcastReceiver() {
             PendingIntent.FLAG_UPDATE_CURRENT or pendingIntentImmutableFlag(),
         )
         val triggerAt = System.currentTimeMillis() + retentionTimeMs
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
+            alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
