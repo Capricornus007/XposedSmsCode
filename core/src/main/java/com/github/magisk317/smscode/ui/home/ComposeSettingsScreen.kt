@@ -1,8 +1,12 @@
 package com.github.magisk317.smscode.ui.home
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.SystemClock
+import android.provider.Settings
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -51,12 +55,14 @@ import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.LogBundleExporter
+import com.github.magisk317.smscode.common.utils.NotificationUtils
 import com.github.magisk317.smscode.common.utils.RuntimeLogStore
 import com.github.magisk317.smscode.common.utils.SPUtils
 import com.github.magisk317.smscode.common.utils.Utils
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.ui.common.LoadingIndicatorTokens
 import com.github.magisk317.smscode.ui.common.LocalSnackbarHostState
+import com.github.magisk317.smscode.ui.common.DismissibleSnackbarHost
 import com.github.magisk317.smscode.ui.common.PolygonMorphLoadingIndicator
 import com.github.magisk317.smscode.ui.common.SessionLoadingRegistry
 import com.github.magisk317.smscode.ui.common.rememberMinDurationLoading
@@ -104,6 +110,8 @@ fun ComposeSettingsScreen(
     var showRetentionDialog by remember { mutableStateOf(false) }
     var showNotificationOwnerDialog by remember { mutableStateOf(false) }
     var pendingEnableNotification by remember { mutableStateOf(false) }
+    var pendingNotificationOwnerPermissionSelection by remember { mutableStateOf<String?>(null) }
+    var pendingNotificationPermissionEnable by remember { mutableStateOf(false) }
     var showSmsTestDialog by remember { mutableStateOf(false) }
     var smsTestInput by remember { mutableStateOf("") }
     var showThemeDialog by remember { mutableStateOf(false) }
@@ -259,19 +267,147 @@ fun ComposeSettingsScreen(
         reloadSettingsData()
     }
 
-    LaunchedEffect(lifecycleOwner) {
-        lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
-            isActivated = ModuleUtils.isModuleActivated(context)
-            delay(1000L)
-            isActivated = ModuleUtils.isModuleActivated(context)
-        }
-    }
-
     val snackbarHostState = remember { SnackbarHostState() }
     val markPrefsSaved: () -> Unit = {
         scope.launch {
             snackbarHostState.showSnackbar(context.getString(R.string.pref_sync_toast))
         }
+    }
+
+    suspend fun persistNotificationOwnerSelection(owner: String, enableNotification: Boolean) {
+        codeNotificationOwner = owner
+        AppPreferencesDataStore.setString(
+            context,
+            PrefConst.KEY_CODE_NOTIFICATION_OWNER,
+            owner,
+        )
+        if (enableNotification) {
+            showCodeNotificationEnabled.value = true
+            AppPreferencesDataStore.setBoolean(
+                context,
+                PrefConst.KEY_SHOW_CODE_NOTIFICATION,
+                true,
+            )
+        }
+        AppPreferencesDataStore.syncToSharedPrefs(context)
+        scope.launch {
+            snackbarHostState.showSnackbar(context.getString(R.string.pref_sync_toast))
+        }
+    }
+
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            isActivated = ModuleUtils.isModuleActivated(context)
+            if (
+                pendingNotificationOwnerPermissionSelection == CodeNotificationOwner.APP &&
+                NotificationUtils.hasPostNotificationsPermission(context)
+            ) {
+                val enableNotification = pendingNotificationPermissionEnable
+                pendingNotificationOwnerPermissionSelection = null
+                pendingNotificationPermissionEnable = false
+                persistNotificationOwnerSelection(
+                    owner = CodeNotificationOwner.APP,
+                    enableNotification = enableNotification,
+                )
+            }
+            delay(1000L)
+            isActivated = ModuleUtils.isModuleActivated(context)
+        }
+    }
+    val notificationSettingsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) {
+        scope.launch {
+            if (
+                pendingNotificationOwnerPermissionSelection == CodeNotificationOwner.APP &&
+                NotificationUtils.hasPostNotificationsPermission(context)
+            ) {
+                val enableNotification = pendingNotificationPermissionEnable
+                pendingNotificationOwnerPermissionSelection = null
+                pendingNotificationPermissionEnable = false
+                persistNotificationOwnerSelection(
+                    owner = CodeNotificationOwner.APP,
+                    enableNotification = enableNotification,
+                )
+            } else if (pendingNotificationOwnerPermissionSelection == CodeNotificationOwner.APP) {
+                pendingNotificationOwnerPermissionSelection = null
+                pendingNotificationPermissionEnable = false
+                snackbarHostState.showSnackbar(
+                    context.getString(R.string.pref_code_notification_owner_permission_denied),
+                )
+            }
+        }
+    }
+    fun openNotificationSettings() {
+        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        }
+        val fallbackIntent = Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.fromParts("package", context.packageName, null),
+        )
+        if (activityOwner != null) {
+            runCatching {
+                notificationSettingsLauncher.launch(intent)
+            }.recoverCatching {
+                notificationSettingsLauncher.launch(fallbackIntent)
+            }.onFailure {
+                pendingNotificationOwnerPermissionSelection = null
+                pendingNotificationPermissionEnable = false
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        context.getString(R.string.pref_code_notification_owner_permission_denied),
+                    )
+                }
+            }
+            return
+        }
+        runCatching {
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }.recoverCatching {
+            context.startActivity(fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }.onFailure {
+            pendingNotificationOwnerPermissionSelection = null
+            pendingNotificationPermissionEnable = false
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    context.getString(R.string.pref_code_notification_owner_permission_denied),
+                )
+            }
+        }
+    }
+    val requestNotificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted && pendingNotificationOwnerPermissionSelection == CodeNotificationOwner.APP) {
+            scope.launch {
+                val enableNotification = pendingNotificationPermissionEnable
+                pendingNotificationOwnerPermissionSelection = null
+                pendingNotificationPermissionEnable = false
+                persistNotificationOwnerSelection(
+                    owner = CodeNotificationOwner.APP,
+                    enableNotification = enableNotification,
+                )
+            }
+        } else {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    context.getString(R.string.pref_code_notification_owner_permission_settings_hint),
+                )
+            }
+            openNotificationSettings()
+        }
+    }
+    fun requestNotificationPermissionIfNeeded(enableNotification: Boolean): Boolean {
+        val permissionRequired = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            !NotificationUtils.hasPostNotificationsPermission(context)
+        if (!permissionRequired) {
+            return false
+        }
+        pendingNotificationOwnerPermissionSelection = CodeNotificationOwner.APP
+        pendingNotificationPermissionEnable = enableNotification
+        requestNotificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        return true
     }
 
     LaunchedEffect(settingsViewModel, lifecycleOwner) {
@@ -711,9 +847,12 @@ fun ComposeSettingsScreen(
             )
         }
 
-        SnackbarHost(
+        DismissibleSnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = if (isCompact) Const.BOTTOM_SPACE_HEIGHT.dp else 0.dp)
+                .navigationBarsPadding(),
         )
     }
 
@@ -810,26 +949,16 @@ fun ComposeSettingsScreen(
                 pendingEnableNotification = false
             },
         ) { owner ->
-            codeNotificationOwner = owner
             val enableNotification = pendingEnableNotification
             showNotificationOwnerDialog = false
             pendingEnableNotification = false
+            if (owner == CodeNotificationOwner.APP &&
+                requestNotificationPermissionIfNeeded(enableNotification)
+            ) {
+                return@NotificationOwnerDialog
+            }
             scope.launch {
-                AppPreferencesDataStore.setString(
-                    context,
-                    PrefConst.KEY_CODE_NOTIFICATION_OWNER,
-                    owner,
-                )
-                if (enableNotification) {
-                    showCodeNotificationEnabled.value = true
-                    AppPreferencesDataStore.setBoolean(
-                        context,
-                        PrefConst.KEY_SHOW_CODE_NOTIFICATION,
-                        true,
-                    )
-                }
-                AppPreferencesDataStore.syncToSharedPrefs(context)
-                markPrefsSaved()
+                persistNotificationOwnerSelection(owner, enableNotification)
             }
         }
     }

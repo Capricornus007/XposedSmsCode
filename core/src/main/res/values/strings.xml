@@ -73,6 +73,8 @@
     <string name="pref_code_notification_owner_app">App</string>
     <string name="pref_code_notification_owner_phone">Phone Services</string>
     <string name="pref_code_notification_owner_unselected">Not selected</string>
+    <string name="pref_code_notification_owner_permission_denied">Notification permission is still not granted. The App owner selection was not applied.</string>
+    <string name="pref_code_notification_owner_permission_settings_hint">App-owned notifications require notification permission. Please enable it in the system notification settings.</string>
     <string name="pref_code_notification_owner_app_option">App: displayed as this app, but app force-stop may affect follow-up behavior</string>
     <string name="pref_code_notification_owner_phone_option">Phone Services: steadier in some scenarios, but displayed as Phone Services</string>
     <string name="pref_auto_cancel_notification_title">Auto cancel notification</string>

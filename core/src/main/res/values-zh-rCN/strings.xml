@@ -73,6 +73,8 @@
     <string name="pref_code_notification_owner_app">模块自身</string>
     <string name="pref_code_notification_owner_phone">电话服务</string>
     <string name="pref_code_notification_owner_unselected">未选择</string>
+    <string name="pref_code_notification_owner_permission_denied">通知权限仍未授予，未应用“模块自身”选择。</string>
+    <string name="pref_code_notification_owner_permission_settings_hint">模块自身通知需要通知权限，请在系统通知设置中开启。</string>
     <string name="pref_code_notification_owner_app_option">模块自身：显示为本应用，但应用被强停后后续行为可能受影响</string>
     <string name="pref_code_notification_owner_phone_option">电话服务：部分场景更稳，但会显示为电话服务</string>
     <string name="pref_auto_cancel_notification_title">自动取消通知</string>

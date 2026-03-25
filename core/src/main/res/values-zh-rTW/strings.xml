@@ -73,6 +73,8 @@
     <string name="pref_code_notification_owner_app">模組自身</string>
     <string name="pref_code_notification_owner_phone">電話服務</string>
     <string name="pref_code_notification_owner_unselected">未選擇</string>
+    <string name="pref_code_notification_owner_permission_denied">通知權限仍未授予，未套用「模組自身」選擇。</string>
+    <string name="pref_code_notification_owner_permission_settings_hint">模組自身通知需要通知權限，請在系統通知設定中開啟。</string>
     <string name="pref_code_notification_owner_app_option">模組自身：顯示為本應用，但應用被強停後後續行為可能受影響</string>
     <string name="pref_code_notification_owner_phone_option">電話服務：部分場景更穩，但會顯示為電話服務</string>
     <string name="pref_auto_cancel_notification_title">自動取消通知</string>
