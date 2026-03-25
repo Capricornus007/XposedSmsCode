@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.github.magisk317.smscode.ui.home
 
 import android.Manifest
@@ -1413,42 +1415,28 @@ private fun NotificationOwnerDialog(
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
-    var selectedOwner by remember(owner) {
-        mutableStateOf(
-            when (owner) {
-                CodeNotificationOwner.PHONE -> CodeNotificationOwner.PHONE
-                else -> CodeNotificationOwner.APP
-            },
-        )
+    val selectedOwner = when (owner) {
+        CodeNotificationOwner.PHONE -> CodeNotificationOwner.PHONE
+        else -> CodeNotificationOwner.APP
     }
-    AlertDialog(
+    BasicAlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = stringResource(id = R.string.pref_code_notification_owner_title)) },
-        text = {
+    ) {
+        SingleChoiceDialogSurface(title = stringResource(id = R.string.pref_code_notification_owner_title)) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 NotificationOwnerOption(
                     selected = selectedOwner == CodeNotificationOwner.APP,
                     text = stringResource(id = R.string.pref_code_notification_owner_app_option),
-                    onClick = { selectedOwner = CodeNotificationOwner.APP },
+                    onClick = { onConfirm(CodeNotificationOwner.APP) },
                 )
                 NotificationOwnerOption(
                     selected = selectedOwner == CodeNotificationOwner.PHONE,
                     text = stringResource(id = R.string.pref_code_notification_owner_phone_option),
-                    onClick = { selectedOwner = CodeNotificationOwner.PHONE },
+                    onClick = { onConfirm(CodeNotificationOwner.PHONE) },
                 )
             }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(selectedOwner) }) {
-                Text(text = stringResource(id = R.string.confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = stringResource(id = R.string.cancel))
-            }
-        },
-    )
+        }
+    }
 }
 
 @Composable
@@ -1623,11 +1611,11 @@ fun RetentionDialog(
 ) {
     val entries = stringArrayResource(id = entriesId)
     val values = stringArrayResource(id = valuesId)
-    AlertDialog(
+    BasicAlertDialog(
         onDismissRequest = onDismiss,
         modifier = modifier,
-        title = { Text(stringResource(id = titleId)) },
-        text = {
+    ) {
+        SingleChoiceDialogSurface(title = stringResource(id = titleId), modifier = modifier) {
             Column {
                 entries.forEachIndexed { index, entry ->
                     val value = values.getOrNull(index) ?: return@forEachIndexed
@@ -1643,9 +1631,8 @@ fun RetentionDialog(
                     }
                 }
             }
-        },
-        confirmButton = {},
-    )
+        }
+    }
 }
 
 @Composable
@@ -1656,10 +1643,10 @@ fun ThemeChooserDialog(currentMode: Int, onDismiss: () -> Unit, onThemeSelected:
         stringResource(id = R.string.theme_dark) to 2,
         stringResource(id = R.string.theme_black) to 3,
     )
-    AlertDialog(
+    BasicAlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(id = R.string.pref_choose_theme_title)) },
-        text = {
+    ) {
+        SingleChoiceDialogSurface(title = stringResource(id = R.string.pref_choose_theme_title)) {
             Column {
                 modes.forEach { (label, mode) ->
                     var rowCoords: LayoutCoordinates? by remember { mutableStateOf(null) }
@@ -1694,9 +1681,8 @@ fun ThemeChooserDialog(currentMode: Int, onDismiss: () -> Unit, onThemeSelected:
                     }
                 }
             }
-        },
-        confirmButton = {},
-    )
+        }
+    }
 }
 
 @Composable
@@ -1712,10 +1698,10 @@ fun LanguageChooserDialog(onDismiss: () -> Unit, onLanguageSelected: (String) ->
         stringResource(id = R.string.language_zh_tw) to "zh-TW",
     )
 
-    AlertDialog(
+    BasicAlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(id = R.string.pref_language_title)) },
-        text = {
+    ) {
+        SingleChoiceDialogSurface(title = stringResource(id = R.string.pref_language_title)) {
             Column {
                 languages.forEach { (label, tag) ->
                     val selected = if (tag.isEmpty()) currentTag.isEmpty() else currentTag.startsWith(tag)
@@ -1734,9 +1720,36 @@ fun LanguageChooserDialog(onDismiss: () -> Unit, onLanguageSelected: (String) ->
                     }
                 }
             }
-        },
-        confirmButton = {},
-    )
+        }
+    }
+}
+
+@Composable
+private fun SingleChoiceDialogSurface(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            content()
+        }
+    }
 }
 
 @Composable
