@@ -61,6 +61,39 @@ object SmsCodeUtils {
         }
     }
 
+    private fun loadRulesFromFile(context: Context): List<SmsCodeRule> =
+        EntityStoreManager.loadEntitiesFromFile(
+            context,
+            EntityType.CODE_RULES,
+            SmsCodeRule::class.java,
+        )
+
+    private fun logProviderEmptyFallback(fileRules: List<SmsCodeRule>) {
+        if (fileRules.isEmpty()) {
+            XLog.d("Load SmsCode rules by file: provider empty and no persisted user rules")
+        } else {
+            XLog.w(
+                "Load SmsCode rules by file: provider empty but %d persisted user rule(s) found",
+                fileRules.size,
+            )
+        }
+    }
+
+    private fun logProviderFailureFallback(fileRules: List<SmsCodeRule>, throwable: Throwable) {
+        if (fileRules.isEmpty()) {
+            XLog.d(
+                "Load SmsCode rules by file after provider failure: no persisted user rules, err=%s",
+                throwable.message ?: throwable.javaClass.simpleName,
+            )
+        } else {
+            XLog.w(
+                "Load SmsCode rules by file after provider failure: %d persisted user rule(s) found, err=%s",
+                fileRules.size,
+                throwable.message ?: throwable.javaClass.simpleName,
+            )
+        }
+    }
+
     private fun queryAllSmsCodeRules(context: Context): List<SmsCodeRule> {
         var rules: List<SmsCodeRule>
         try {
@@ -83,24 +116,14 @@ object SmsCodeUtils {
                     XLog.d("Load SmsCode rules succeed by content provider")
                     resultRules
                 } else {
-                    EntityStoreManager.loadEntitiesFromFile(
-                        context,
-                        EntityType.CODE_RULES,
-                        SmsCodeRule::class.java,
-                    ).also {
-                        XLog.w("Load SmsCode rules by file: provider returned empty result")
-                    }
+                    loadRulesFromFile(context).also(::logProviderEmptyFallback)
                 }
             } else {
                 throw IllegalStateException("Cursor is null for URI: $smsCodeRuleUri")
             }
-        } catch (_: Throwable) {
-            rules = EntityStoreManager.loadEntitiesFromFile(
-                context,
-                EntityType.CODE_RULES,
-                SmsCodeRule::class.java,
-            )
-            XLog.d("Load SmsCode rules by file")
+        } catch (throwable: Throwable) {
+            rules = loadRulesFromFile(context)
+            logProviderFailureFallback(rules, throwable)
         }
         return rules
     }
