@@ -2,10 +2,27 @@ import dev.detekt.gradle.extensions.DetektExtension
 import com.adarshr.gradle.testlogger.theme.ThemeType
 
 buildscript {
+    val nettyVersion = "4.1.129.Final"
+    val nettyModules = listOf(
+        "netty-codec",
+        "netty-codec-http",
+        "netty-codec-http2",
+        "netty-common",
+        "netty-handler",
+    )
     repositories {
         google()
         mavenCentral()
         gradlePluginPortal()
+    }
+    dependencies {
+        constraints {
+            nettyModules.forEach { module ->
+                classpath("io.netty:$module:$nettyVersion") {
+                    because("Dependabot: declare patched netty modules for build/plugin dependency graph")
+                }
+            }
+        }
     }
     configurations.all {
         resolutionStrategy {
@@ -14,7 +31,7 @@ buildscript {
             force(libs.apache.commons.lang3)
             eachDependency {
                 if (requested.group == "io.netty") {
-                    useVersion("4.1.129.Final")
+                    useVersion(nettyVersion)
                     because("Dependabot: netty CVE fixes (transitive build/test deps)")
                 }
             }

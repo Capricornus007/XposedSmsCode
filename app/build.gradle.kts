@@ -79,16 +79,19 @@ android {
             dimension = "distribution"
             buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "false")
             buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "true")
+            buildConfigField("boolean", "ENABLE_ACCESSIBILITY_AUTO_INPUT", "false")
         }
         create("github") {
             dimension = "distribution"
             buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
             buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "true")
+            buildConfigField("boolean", "ENABLE_ACCESSIBILITY_AUTO_INPUT", "true")
         }
         create("fdroid") {
             dimension = "distribution"
             buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
             buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "false")
+            buildConfigField("boolean", "ENABLE_ACCESSIBILITY_AUTO_INPUT", "true")
         }
         create("legacy") {
             dimension = "xposedApi"

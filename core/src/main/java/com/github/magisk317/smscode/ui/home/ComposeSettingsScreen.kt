@@ -127,7 +127,12 @@ fun ComposeSettingsScreen(
     var showKeywordsDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var isActivated by remember { mutableStateOf(ModuleUtils.isModuleActivated(context)) }
-    var autoInputAccessibilityEnabled by remember { mutableStateOf(isAutoInputAccessibilityServiceEnabled(context)) }
+    val supportsAccessibilityAutoInput = BuildConfig.ENABLE_ACCESSIBILITY_AUTO_INPUT
+    var autoInputAccessibilityEnabled by remember {
+        mutableStateOf(
+            supportsAccessibilityAutoInput && isAutoInputAccessibilityServiceEnabled(context),
+        )
+    }
     var settingsDataLoaded by remember { mutableStateOf(false) }
     var manualRefreshing by remember { mutableStateOf(false) }
     var expandGeneral by remember { mutableStateOf(false) }
@@ -171,7 +176,8 @@ fun ComposeSettingsScreen(
             PrefConst.KEY_SMSCODE_KEYWORDS,
             PrefConst.SMSCODE_KEYWORDS_DEFAULT,
         )
-        autoInputAccessibilityEnabled = isAutoInputAccessibilityServiceEnabled(context)
+        autoInputAccessibilityEnabled =
+            supportsAccessibilityAutoInput && isAutoInputAccessibilityServiceEnabled(context)
         val launcherVisible = settingsViewModel.isLauncherIconVisible()
         launcherIconVisible.value = launcherVisible
         val storedLauncherVisible = AppPreferencesDataStore.getBoolean(
@@ -304,7 +310,8 @@ fun ComposeSettingsScreen(
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
             isActivated = ModuleUtils.isModuleActivated(context)
-            autoInputAccessibilityEnabled = isAutoInputAccessibilityServiceEnabled(context)
+            autoInputAccessibilityEnabled =
+                supportsAccessibilityAutoInput && isAutoInputAccessibilityServiceEnabled(context)
             if (
                 pendingNotificationOwnerPermissionSelection == CodeNotificationOwner.APP &&
                 NotificationUtils.hasPostNotificationsPermission(context)
@@ -319,13 +326,15 @@ fun ComposeSettingsScreen(
             }
             delay(1000L)
             isActivated = ModuleUtils.isModuleActivated(context)
-            autoInputAccessibilityEnabled = isAutoInputAccessibilityServiceEnabled(context)
+            autoInputAccessibilityEnabled =
+                supportsAccessibilityAutoInput && isAutoInputAccessibilityServiceEnabled(context)
         }
     }
     val accessibilitySettingsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
     ) {
-        autoInputAccessibilityEnabled = isAutoInputAccessibilityServiceEnabled(context)
+        autoInputAccessibilityEnabled =
+            supportsAccessibilityAutoInput && isAutoInputAccessibilityServiceEnabled(context)
     }
     fun openAccessibilitySettings() {
         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
@@ -651,14 +660,16 @@ fun ComposeSettingsScreen(
                         onExpandedChange = { expandAutoInput = !expandAutoInput },
                         accordionMode = accordionMode.value,
                     ) {
-                        Item(
-                            title = stringResource(id = R.string.pref_auto_input_accessibility_service_title),
-                            summary = accessibilityAutoInputServiceSummary(
-                                context = context,
-                                enabled = autoInputAccessibilityEnabled,
-                            ),
-                        ) {
-                            openAccessibilitySettings()
+                        if (supportsAccessibilityAutoInput) {
+                            Item(
+                                title = stringResource(id = R.string.pref_auto_input_accessibility_service_title),
+                                summary = accessibilityAutoInputServiceSummary(
+                                    context = context,
+                                    enabled = autoInputAccessibilityEnabled,
+                                ),
+                            ) {
+                                openAccessibilitySettings()
+                            }
                         }
                         SwitchItem(
                             title = stringResource(id = R.string.pref_enable_auto_input_code_title),
