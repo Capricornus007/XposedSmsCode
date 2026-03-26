@@ -790,6 +790,7 @@ class SmsHandlerHook : BaseHook() {
         return Integer.toHexString(value.hashCode())
     }
 
+    @Suppress("ReturnCount")
     private fun maybeBlockFromDispatchChain(
         methodName: String,
         param: MethodHookParam,

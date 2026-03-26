@@ -94,6 +94,7 @@ object SmsCodeUtils {
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun queryAllSmsCodeRules(context: Context): List<SmsCodeRule> {
         var rules: List<SmsCodeRule>
         try {
@@ -121,7 +122,7 @@ object SmsCodeUtils {
             } else {
                 throw IllegalStateException("Cursor is null for URI: $smsCodeRuleUri")
             }
-        } catch (throwable: Throwable) {
+        } catch (throwable: Exception) {
             rules = loadRulesFromFile(context)
             logProviderFailureFallback(rules, throwable)
         }
