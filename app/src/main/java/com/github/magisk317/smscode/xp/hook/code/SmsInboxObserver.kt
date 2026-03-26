@@ -3,11 +3,13 @@ package com.github.magisk317.smscode.xp.hook.code
 import android.content.Context
 import android.app.role.RoleManager
 import android.database.ContentObserver
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.provider.Telephony
 import android.os.Build
 import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.common.utils.SharedRuntimeGate
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.common.utils.StringUtils
 import io.github.magisk317.smscode.xposed.utils.XLog
@@ -45,7 +47,7 @@ internal class SmsInboxObserver(
     }
 
     private fun scanRecentInbox(triggerUri: String) {
-        val cutoff = System.currentTimeMillis() - RECENT_SMS_WINDOW_MS
+        val triggeredSmsId = parseTriggeredSmsId(triggerUri)
         val projection = arrayOf(
             Telephony.Sms._ID,
             Telephony.Sms.ADDRESS,
@@ -54,9 +56,19 @@ internal class SmsInboxObserver(
             Telephony.Sms.TYPE,
             Telephony.Sms.READ,
         )
-        val selection = "${Telephony.Sms.TYPE}=? AND ${Telephony.Sms.DATE}>?"
-        val selectionArgs = arrayOf(Telephony.Sms.MESSAGE_TYPE_INBOX.toString(), cutoff.toString())
-        val sortOrder = "${Telephony.Sms.DATE} DESC limit $MAX_RECENT_SMS_COUNT"
+        val cutoff = System.currentTimeMillis() - RECENT_SMS_WINDOW_MS
+        val selection: String
+        val selectionArgs: Array<String>
+        val sortOrder: String?
+        if (triggeredSmsId != null) {
+            selection = "${Telephony.Sms._ID}=? AND ${Telephony.Sms.TYPE}=?"
+            selectionArgs = arrayOf(triggeredSmsId.toString(), Telephony.Sms.MESSAGE_TYPE_INBOX.toString())
+            sortOrder = null
+        } else {
+            selection = "${Telephony.Sms.TYPE}=? AND ${Telephony.Sms.DATE}>?"
+            selectionArgs = arrayOf(Telephony.Sms.MESSAGE_TYPE_INBOX.toString(), cutoff.toString())
+            sortOrder = "${Telephony.Sms.DATE} DESC limit $MAX_RECENT_SMS_COUNT"
+        }
         runCatching {
             phoneContext.contentResolver.query(
                 Telephony.Sms.CONTENT_URI,
@@ -125,6 +137,18 @@ internal class SmsInboxObserver(
         }
         if (!PrefsReader.isEnabled(pluginContext)) {
             XLog.w("Diag observer skip: module disabled event_id=%s", eventId)
+            return
+        }
+        if (read) {
+            XLog.w(
+                "Diag observer skip: sms already read event_id=%s sms_id=%d uri=%s",
+                eventId,
+                smsId,
+                triggerUri,
+            )
+            return
+        }
+        if (!claimObservedSms(eventId, smsId, date, sender, body, code)) {
             return
         }
         logSmsRoleState(eventId)
@@ -240,6 +264,55 @@ internal class SmsInboxObserver(
         return "sms_observed_${ts.toString(EVENT_ID_RADIX)}_${smsId.toString(EVENT_ID_RADIX)}"
     }
 
+    private fun parseTriggeredSmsId(triggerUri: String): Long? {
+        if (triggerUri.isBlank()) return null
+        val uri = runCatching { Uri.parse(triggerUri) }.getOrNull() ?: return null
+        if (uri.scheme != "content") return null
+        if (uri.authority != "sms") return null
+        return uri.lastPathSegment?.toLongOrNull()
+    }
+
+    private fun claimObservedSms(
+        eventId: String,
+        smsId: Long,
+        date: Long,
+        sender: String,
+        body: String,
+        code: String,
+    ): Boolean {
+        val key = buildObservedSmsKey(smsId, date, sender, body, code)
+        val claim = SharedRuntimeGate.claimWithinWindow(
+            context = pluginContext,
+            fileName = SHARED_OBSERVED_SMS_FILE_NAME,
+            key = key,
+            windowMs = OBSERVED_SMS_DEDUP_WINDOW_MS,
+            maxEntries = MAX_TRACKED_SMS_IDS,
+        )
+        if (claim.claimed) {
+            return true
+        }
+        XLog.w(
+            "Diag observer dedup skip: event_id=%s key=%s ageMs=%d",
+            eventId,
+            key,
+            claim.ageMs ?: -1L,
+        )
+        return false
+    }
+
+    private fun buildObservedSmsKey(
+        smsId: Long,
+        date: Long,
+        sender: String,
+        body: String,
+        code: String,
+    ): String {
+        if (smsId > 0) {
+            return "id:$smsId|date:$date|code:$code"
+        }
+        return "fp:${senderHash(sender)}:${Integer.toHexString(body.hashCode())}|date:$date|code:$code"
+    }
+
     private fun markSeen(smsId: Long): Boolean = synchronized(recentSmsIds) {
         if (!recentSmsIds.add(smsId)) {
             return false
@@ -258,9 +331,11 @@ internal class SmsInboxObserver(
 
     companion object {
         private const val RECENT_SMS_WINDOW_MS = 10 * 60 * 1000L
+        private const val OBSERVED_SMS_DEDUP_WINDOW_MS = 30_000L
         private const val MAX_RECENT_SMS_COUNT = 32
         private const val MAX_TRACKED_SMS_IDS = 128
         private const val EVENT_ID_RADIX = 36
+        private const val SHARED_OBSERVED_SMS_FILE_NAME = "observed_sms_dedup"
         private val queryExecutor = Executors.newSingleThreadExecutor()
         private val recentSmsIds = Collections.synchronizedSet(LinkedHashSet<Long>())
     }
