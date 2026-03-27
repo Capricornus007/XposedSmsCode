@@ -41,6 +41,8 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
@@ -1175,7 +1177,7 @@ private fun SettingsDialogs(
             initialValue = normalizeNumericInput(autoInputDelay),
             onDismiss = { onShowAutoInputDialogChange(false) },
             validator = {
-                parseNonNegativeLong(it)?.let { null } ?: nonNegativeNumberError
+                if (parseNonNegativeLong(it) != null) null else nonNegativeNumberError
             },
         ) { value ->
             val normalized = normalizeNumericInput(value)
@@ -1196,7 +1198,7 @@ private fun SettingsDialogs(
             initialValue = normalizeNumericInput(autoInputInterval),
             onDismiss = { onShowAutoInputIntervalDialogChange(false) },
             validator = {
-                parseNonNegativeLong(it)?.let { null } ?: nonNegativeNumberError
+                if (parseNonNegativeLong(it) != null) null else nonNegativeNumberError
             },
         ) { value ->
             val normalized = normalizeNumericInput(value)
@@ -1604,14 +1606,14 @@ fun TextInputDialog(
     onDismissWithValue: ((String) -> Unit)? = null,
     onConfirm: (String) -> Unit,
 ) {
-    var text by remember { mutableStateOf(initialValue) }
-    var hadFocus by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var fieldValue by remember(title, initialValue) { mutableStateOf(TextFieldValue(initialValue)) }
+    var hadFocus by remember(title, initialValue) { mutableStateOf(false) }
+    val errorMessage = validator?.invoke(fieldValue.text)
     val cancelLabel = stringResource(id = R.string.cancel)
     val confirmLabel = stringResource(id = R.string.confirm)
     AlertDialog(
         onDismissRequest = {
-            onDismissWithValue?.invoke(text)
+            onDismissWithValue?.invoke(fieldValue.text)
             onDismiss()
         },
         modifier = modifier,
@@ -1628,8 +1630,10 @@ fun TextInputDialog(
                 if (resetValue != null) {
                     TextButton(
                         onClick = {
-                            text = resetValue
-                            errorMessage = validator?.invoke(resetValue)
+                            fieldValue = TextFieldValue(
+                                text = resetValue,
+                                selection = TextRange(resetValue.length),
+                            )
                         },
                     ) {
                         Text(text = stringResource(id = R.string.reset))
@@ -1639,28 +1643,25 @@ fun TextInputDialog(
         },
         text = {
                 OutlinedTextField(
-                    value = text,
+                    value = fieldValue,
                     onValueChange = {
-                        text = it
-                        if (validator != null) {
-                        errorMessage = validator(it)
-                    }
-                },
+                        fieldValue = it
+                    },
                 modifier = Modifier
                     .fillMaxWidth()
                     .onFocusChanged { state ->
                         if (state.isFocused) {
                             hadFocus = true
                         } else if (hadFocus) {
-                            onFocusLost?.invoke(text)
+                            onFocusLost?.invoke(fieldValue.text)
                         }
                     },
                 singleLine = singleLine,
                 maxLines = maxLines,
                 isError = errorMessage != null,
                 trailingIcon = {
-                    if (text.isNotEmpty()) {
-                        IconButton(onClick = { text = "" }) {
+                    if (fieldValue.text.isNotEmpty()) {
+                        IconButton(onClick = { fieldValue = TextFieldValue("") }) {
                             Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
                         }
                     }
@@ -1685,16 +1686,8 @@ fun TextInputDialog(
                 )
                 clickableItem(
                     onClick = {
-                        var hasError = false
-                        if (validator != null) {
-                            val error = validator(text)
-                            if (error != null) {
-                                errorMessage = error
-                                hasError = true
-                            }
-                        }
-                        if (!hasError) {
-                            onConfirm(text)
+                        if (errorMessage == null) {
+                            onConfirm(fieldValue.text)
                         }
                     },
                     label = confirmLabel,
@@ -1707,13 +1700,16 @@ fun TextInputDialog(
 }
 
 private fun normalizeNumericInput(raw: String): String {
-    return raw.trim().map { ch ->
-        when (ch) {
-            in '０'..'９' -> '0' + (ch - '０')
-            '－', '﹣', '—', '–' -> '-'
-            else -> ch
+    val normalized = StringBuilder(raw.length)
+    raw.forEach { ch ->
+        when {
+            ch.isWhitespace() || Character.getType(ch) == Character.FORMAT.toInt() -> Unit
+            ch.digitToIntOrNull() != null -> normalized.append(ch.digitToInt())
+            ch in setOf('-', '－', '﹣', '—', '–') && normalized.isEmpty() -> normalized.append('-')
+            else -> normalized.append(ch)
         }
-    }.joinToString("")
+    }
+    return normalized.toString()
 }
 
 private fun parseNonNegativeLong(raw: String): Long? {

@@ -118,11 +118,12 @@ fun LiteSettingsScreen() {
                 }
             }
             OutlinedTextField(
-                value = inputDelay,
+                value = normalizeNumericInput(inputDelay),
                 onValueChange = { value ->
-                    if (value.all { it.isDigit() }) {
+                    val normalized = normalizeNumericInput(value)
+                    if (normalized.isEmpty() || parseNonNegativeLongLite(normalized) != null) {
                         scope.launch {
-                            AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, value)
+                            AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, normalized)
                             AppPreferencesDataStore.syncToSharedPrefs(context)
                         }
                     }
@@ -132,11 +133,12 @@ fun LiteSettingsScreen() {
                 singleLine = true,
             )
             OutlinedTextField(
-                value = inputInterval,
+                value = normalizeNumericInput(inputInterval),
                 onValueChange = { value ->
-                    if (value.all { it.isDigit() }) {
+                    val normalized = normalizeNumericInput(value)
+                    if (normalized.isEmpty() || parseNonNegativeLongLite(normalized) != null) {
                         scope.launch {
-                            AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL, value)
+                            AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL, normalized)
                             AppPreferencesDataStore.syncToSharedPrefs(context)
                         }
                     }
@@ -154,6 +156,25 @@ fun LiteSettingsScreen() {
                 .navigationBarsPadding(),
         )
     }
+}
+
+private fun normalizeNumericInput(raw: String): String {
+    val normalized = StringBuilder(raw.length)
+    raw.forEach { ch ->
+        when {
+            ch.isWhitespace() || Character.getType(ch) == Character.FORMAT.toInt() -> Unit
+            ch.digitToIntOrNull() != null -> normalized.append(ch.digitToInt())
+            ch in setOf('-', '－', '﹣', '—', '–') && normalized.isEmpty() -> normalized.append('-')
+            else -> normalized.append(ch)
+        }
+    }
+    return normalized.toString()
+}
+
+private fun parseNonNegativeLongLite(raw: String): Long? {
+    return normalizeNumericInput(raw)
+        .toLongOrNull()
+        ?.takeIf { it >= 0L }
 }
 
 @Composable
