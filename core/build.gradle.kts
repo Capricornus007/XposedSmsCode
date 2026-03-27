@@ -73,6 +73,14 @@ android {
     }
 }
 
+androidComponents {
+    beforeVariants(selector().all()) { variantBuilder ->
+        if (variantBuilder.productFlavors.toMap()["distribution"] == "fdroid") {
+            variantBuilder.enable = false
+        }
+    }
+}
+
 dependencies {
     implementation(project(":storage"))
     implementation(project(":magisk-ui-kit"))

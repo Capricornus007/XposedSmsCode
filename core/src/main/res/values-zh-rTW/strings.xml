@@ -60,6 +60,7 @@
     <string name="pref_auto_input_accessibility_service_status_enabled">已開啟</string>
     <string name="pref_auto_input_accessibility_service_status_disabled">未開啟</string>
     <string name="pref_auto_input_accessibility_service_open_failed">無法開啟無障礙設定</string>
+    <string name="pref_number_non_negative_error">請輸入大於等於 0 的數字。</string>
     <string name="accessibility_auto_input_service_label">自動輸入輔助服務</string>
     <string name="accessibility_auto_input_service_description">優先尋找目前的驗證碼輸入框並直接填入，失敗後再回退到模擬按鍵輸入。</string>
     <string name="pref_enable_auto_enter_code_title">自動確認/回車</string>

@@ -90,6 +90,14 @@ android {
     }
 }
 
+androidComponents {
+    beforeVariants(selector().all()) { variantBuilder ->
+        if (variantBuilder.productFlavors.toMap()["distribution"] == "fdroid") {
+            variantBuilder.enable = false
+        }
+    }
+}
+
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
 }

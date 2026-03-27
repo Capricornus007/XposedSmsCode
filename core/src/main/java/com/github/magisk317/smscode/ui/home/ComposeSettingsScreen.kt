@@ -1169,14 +1169,19 @@ private fun SettingsDialogs(
 ) {
     val snackbarHostState = LocalSnackbarHostState.current
     if (showAutoInputDialog) {
+        val nonNegativeNumberError = stringResource(id = R.string.pref_number_non_negative_error)
         TextInputDialog(
             title = stringResource(id = R.string.pref_auto_input_code_delay_title),
-            initialValue = autoInputDelay,
+            initialValue = normalizeNumericInput(autoInputDelay),
             onDismiss = { onShowAutoInputDialogChange(false) },
+            validator = {
+                parseNonNegativeLong(it)?.let { null } ?: nonNegativeNumberError
+            },
         ) { value ->
-            onAutoInputDelayChange(value)
+            val normalized = normalizeNumericInput(value)
+            onAutoInputDelayChange(normalized)
             scope.launch {
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, value)
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, normalized)
                 AppPreferencesDataStore.syncToSharedPrefs(context)
                 onPendingSavedToast()
             }
@@ -1185,14 +1190,19 @@ private fun SettingsDialogs(
     }
 
     if (showAutoInputIntervalDialog) {
+        val nonNegativeNumberError = stringResource(id = R.string.pref_number_non_negative_error)
         TextInputDialog(
             title = stringResource(id = R.string.pref_auto_input_code_interval_title),
-            initialValue = autoInputInterval,
+            initialValue = normalizeNumericInput(autoInputInterval),
             onDismiss = { onShowAutoInputIntervalDialogChange(false) },
+            validator = {
+                parseNonNegativeLong(it)?.let { null } ?: nonNegativeNumberError
+            },
         ) { value ->
-            onAutoInputIntervalChange(value)
+            val normalized = normalizeNumericInput(value)
+            onAutoInputIntervalChange(normalized)
             scope.launch {
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL, value)
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL, normalized)
                 AppPreferencesDataStore.syncToSharedPrefs(context)
                 onPendingSavedToast()
             }
@@ -1694,6 +1704,22 @@ fun TextInputDialog(
         },
         dismissButton = {},
     )
+}
+
+private fun normalizeNumericInput(raw: String): String {
+    return raw.trim().map { ch ->
+        when (ch) {
+            in '０'..'９' -> '0' + (ch - '０')
+            '－', '﹣', '—', '–' -> '-'
+            else -> ch
+        }
+    }.joinToString("")
+}
+
+private fun parseNonNegativeLong(raw: String): Long? {
+    return normalizeNumericInput(raw)
+        .toLongOrNull()
+        ?.takeIf { it >= 0L }
 }
 
 @Composable
