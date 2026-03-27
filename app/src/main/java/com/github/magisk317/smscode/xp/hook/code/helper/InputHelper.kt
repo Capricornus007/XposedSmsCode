@@ -1,6 +1,6 @@
 package com.github.magisk317.smscode.xp.hook.code.helper
 
-import android.os.SystemClock
+import io.github.magisk317.smscode.verification.AutoInputBroadcastHelper
 import io.github.magisk317.smscode.xposed.utils.XLog
 
 object InputHelper {
@@ -11,25 +11,17 @@ object InputHelper {
         text: String?,
         autoEnter: Boolean = false,
         inputIntervalMs: Long = 0L,
+        attemptId: Long? = null,
     ) {
-        if (text == null) return
-        val attemptId = SystemClock.elapsedRealtimeNanos()
-        val intent = android.content.Intent(
-            io.github.magisk317.smscode.xposed.hook.system.SystemInputInjectorHook.resolveActionAutoInput(),
-        )
-        intent.putExtra("code", text)
-        intent.putExtra("autoEnter", autoEnter)
-        intent.putExtra("inputIntervalMs", inputIntervalMs)
-        intent.putExtra("attemptId", attemptId)
-        // Ordered broadcast lets the accessibility path consume the request first,
-        // while keeping the system-server injector as a lower-priority fallback.
-        context.sendOrderedBroadcast(intent, null)
-        XLog.i(
-            "Dispatched ACTION_AUTO_INPUT request: attemptId=%d code_len=%d autoEnter=%s inputIntervalMs=%d",
-            attemptId,
-            text.length,
-            autoEnter,
-            inputIntervalMs,
+        AutoInputBroadcastHelper.sendText(
+            context = context,
+            text = text,
+            autoEnter = autoEnter,
+            inputIntervalMs = inputIntervalMs,
+            attemptId = attemptId,
+            actionResolver = {
+                io.github.magisk317.smscode.xposed.hook.system.SystemInputInjectorHook.resolveActionAutoInput()
+            },
         )
     }
 

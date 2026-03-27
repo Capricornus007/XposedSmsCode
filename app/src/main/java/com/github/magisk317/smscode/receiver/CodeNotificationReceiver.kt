@@ -9,7 +9,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Build
-import android.text.TextUtils
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.github.magisk317.smscode.common.constant.NotificationConst
@@ -19,6 +18,8 @@ import com.github.magisk317.smscode.xp.hook.code.AutoCancelReceiver
 import com.github.magisk317.smscode.xp.hook.code.CodeNotificationBroadcastContract
 import com.github.magisk317.smscode.xp.hook.code.CopyCodeReceiver
 import com.github.magisk317.smscode.common.utils.NotificationUtils
+import io.github.magisk317.smscode.verification.CodeNotificationDeliveryHelper
+import io.github.magisk317.smscode.verification.CodeNotificationPayload
 import io.github.magisk317.smscode.xposed.utils.XLog
 
 class CodeNotificationReceiver : BroadcastReceiver() {
@@ -28,17 +29,18 @@ class CodeNotificationReceiver : BroadcastReceiver() {
             return
         }
 
-        val smsCode = intent.getStringExtra(CodeNotificationBroadcastContract.EXTRA_SMS_CODE).orEmpty()
+        val payload = CodeNotificationPayload.readPayload(intent)
+        val smsCode = payload.smsCode.orEmpty()
         if (smsCode.isBlank()) {
             XLog.w("CodeNotificationReceiver ignored blank smsCode")
             return
         }
 
         val expectedToken = PrefsReader.getIpcToken(context)
-        val receivedToken = intent.getStringExtra(CodeNotificationBroadcastContract.EXTRA_IPC_TOKEN)
+        val receivedToken = payload.token
         val sentFromUid = resolveSentFromUidCompat()
         val tokenMatched = expectedToken.isNotBlank() && receivedToken == expectedToken
-        val allowSystemBypass = expectedToken.isBlank() && shouldAllowSmsHookTokenBypass(sentFromUid)
+        val allowSystemBypass = expectedToken.isBlank() && CodeNotificationPayload.shouldAllowSmsHookTokenBypass(sentFromUid)
         if (!tokenMatched && !allowSystemBypass) {
             XLog.w(
                 "CodeNotificationReceiver rejected token. expectedEmpty=%s receivedEmpty=%s sentFromUid=%d",
@@ -50,25 +52,14 @@ class CodeNotificationReceiver : BroadcastReceiver() {
         }
 
         val appContext = context.applicationContext
-        val notificationId = intent.getIntExtra(
-            CodeNotificationBroadcastContract.EXTRA_NOTIFICATION_ID,
-            smsCode.hashCode(),
+        val notificationId = payload.notificationId
+        val autoCancelEnabled = payload.autoCancelEnabled
+        val retentionTimeMs = payload.retentionTimeMs
+        val title = CodeNotificationPayload.resolveTitle(
+            company = payload.company,
+            sender = payload.sender,
+            fallbackTitle = appContext.getString(R.string.app_name),
         )
-        val autoCancelEnabled = intent.getBooleanExtra(
-            CodeNotificationBroadcastContract.EXTRA_AUTO_CANCEL_ENABLED,
-            false,
-        )
-        val retentionTimeMs = intent.getLongExtra(
-            CodeNotificationBroadcastContract.EXTRA_RETENTION_TIME_MS,
-            0L,
-        ).coerceAtLeast(0L)
-        val company = intent.getStringExtra(CodeNotificationBroadcastContract.EXTRA_COMPANY)
-        val sender = intent.getStringExtra(CodeNotificationBroadcastContract.EXTRA_SENDER)
-        val title = if (TextUtils.isEmpty(company)) {
-            sender?.takeIf { it.isNotBlank() } ?: appContext.getString(R.string.app_name)
-        } else {
-            company
-        }
         val content = appContext.getString(R.string.code_notification_content, smsCode)
 
         NotificationUtils.createNotificationChannel(
@@ -83,26 +74,27 @@ class CodeNotificationReceiver : BroadcastReceiver() {
             appContext,
             notificationId,
             copyIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or pendingIntentImmutableFlag(),
+            PendingIntent.FLAG_UPDATE_CURRENT or CodeNotificationPayload.pendingIntentImmutableFlag(),
         )
 
-        val builder = NotificationCompat.Builder(
-            appContext,
-            NotificationConst.CHANNEL_ID_SMSCODE_NOTIFICATION,
+        val notification = CodeNotificationDeliveryHelper.buildCodeNotification(
+            context = appContext,
+            visualConfig = CodeNotificationDeliveryHelper.VisualConfig(
+                channelId = NotificationConst.CHANNEL_ID_SMSCODE_NOTIFICATION,
+                groupKey = NotificationConst.GROUP_KEY_SMSCODE_NOTIFICATION,
+                smallIconResId = R.drawable.ic_app_icon,
+                largeIconResId = R.drawable.ic_app_icon,
+                accentColorResId = R.color.ic_launcher_background,
+            ),
+            title = title,
+            smsCode = smsCode,
+            contentIntent = contentIntent,
+            contentTextProvider = { code ->
+                appContext.getString(R.string.code_notification_content, code)
+            },
+            autoCancelEnabled = autoCancelEnabled,
+            retentionTimeMs = retentionTimeMs,
         )
-            .setSmallIcon(R.drawable.ic_app_icon)
-            .setLargeIcon(BitmapFactory.decodeResource(appContext.resources, R.drawable.ic_app_icon))
-            .setWhen(System.currentTimeMillis())
-            .setContentTitle(title)
-            .setContentText(content)
-            .setContentIntent(contentIntent)
-            .setAutoCancel(true)
-            .setColor(ContextCompat.getColor(appContext, R.color.ic_launcher_background))
-            .setGroup(NotificationConst.GROUP_KEY_SMSCODE_NOTIFICATION)
-
-        if (autoCancelEnabled && retentionTimeMs > 0L) {
-            builder.setTimeoutAfter(retentionTimeMs)
-        }
 
         val manager = appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager?
         if (manager == null) {
@@ -122,7 +114,7 @@ class CodeNotificationReceiver : BroadcastReceiver() {
             )
         }
 
-        showNotification(manager, notificationId, builder.build())
+        showNotification(manager, notificationId, notification)
         XLog.i("CodeNotificationReceiver posted app-owned notification id=%d", notificationId)
 
         if (autoCancelEnabled && retentionTimeMs > 0L) {
@@ -167,7 +159,7 @@ class CodeNotificationReceiver : BroadcastReceiver() {
             context,
             notificationId,
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or pendingIntentImmutableFlag(),
+            PendingIntent.FLAG_UPDATE_CURRENT or CodeNotificationPayload.pendingIntentImmutableFlag(),
         )
         val triggerAt = System.currentTimeMillis() + retentionTimeMs
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !alarmManager.canScheduleExactAlarms()) {
@@ -181,28 +173,12 @@ class CodeNotificationReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun pendingIntentImmutableFlag(): Int {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            PendingIntent.FLAG_IMMUTABLE
-        } else {
-            0
-        }
-    }
-
     private fun resolveSentFromUidCompat(): Int? {
         if (Build.VERSION.SDK_INT < API_LEVEL_34) return null
         return runCatching { getSentFromUid() }.getOrNull()
     }
 
-    private fun shouldAllowSmsHookTokenBypass(sentFromUid: Int?): Boolean {
-        return sentFromUid == SYSTEM_UID ||
-            sentFromUid == PHONE_UID ||
-            (Build.VERSION.SDK_INT < API_LEVEL_34 && sentFromUid == null)
-    }
-
     private companion object {
         private const val API_LEVEL_34 = 34
-        private const val SYSTEM_UID = 1000
-        private const val PHONE_UID = 1001
     }
 }

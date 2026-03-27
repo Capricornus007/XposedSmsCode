@@ -2,18 +2,15 @@ package com.github.magisk317.smscode.xp.hook.code
 
 import android.content.Context
 import android.content.Intent
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
 import androidx.core.os.BundleCompat
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import io.github.magisk317.smscode.verification.CodeWorker as SharedCodeWorker
 import io.github.magisk317.smscode.verification.SmsCodePostParseCoordinator
 import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.xp.hook.code.action.impl.KillMeAction
 import com.github.magisk317.smscode.xp.hook.code.action.impl.SmsParseAction
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class CodeWorker(
@@ -22,96 +19,43 @@ class CodeWorker(
     private val mSmsIntent: Intent,
     private val eventId: String = "",
 ) {
-    private val mUIHandler: Handler = Handler(Looper.getMainLooper())
-    private val mScheduledExecutor = Executors.newSingleThreadScheduledExecutor()
-
     fun parse(): ParseResult? {
-        val settings = SmsCodePostParseCoordinator.loadSettings(SmsCodeVerificationPrefs(mPluginContext))
-        val plan = SmsCodePostParseCoordinator.createParsedSmsPlan(settings)
-        val moduleEnabled = PrefsReader.isEnabled(mPluginContext)
-        val verboseLog = PrefsReader.isVerboseLogMode(mPluginContext)
-        val killMe = PrefsReader.killMeEnabled(mPluginContext)
-        XLog.w(
-            "Diag settings: event_id=%s enabled=%s, verbose=%s, showNotif=%s, autoCancel=%s, " +
-                "retentionSec=%d, autoInput=%s, copy=%s, toast=%s, record=%s, " +
-                "block=%s, markRead=%s, delete=%s, dedup=%s",
-            eventId.ifBlank { "<none>" },
-            moduleEnabled,
-            verboseLog,
-            settings.showNotification,
-            settings.autoCancelNotification,
-            settings.notificationRetentionMs / 1000L,
-            settings.autoInputEnabled,
-            settings.copyToClipboardEnabled,
-            settings.showToast,
-            settings.recordSmsEnabled,
-            settings.blockSmsEnabled,
-            settings.markAsReadEnabled,
-            settings.deleteSmsEnabled,
-            settings.deduplicateSmsEnabled,
-        )
-
-        if (!moduleEnabled) {
-            XLog.w("Diag: module disabled in settings")
-            XLog.i("XposedSmsCode disabled, exiting")
-            return null
-        }
-        if (verboseLog) {
-            XLog.setLogLevel(Log.VERBOSE)
-        } else {
-            XLog.setLogLevel(BuildConfig.LOG_LEVEL)
-        }
-        XLog.w(
-            "Diag log mode: verboseSetting=%s, activeLevel=%d, defaultLevel=%d",
-            verboseLog,
-            XLog.getLogLevel(),
-            BuildConfig.LOG_LEVEL,
-        )
-
-        val smsParseAction = SmsParseAction(mPluginContext, mPhoneContext, null)
-        smsParseAction.setSmsIntent(mSmsIntent)
-        smsParseAction.setDeduplicateEnabled(settings.deduplicateSmsEnabled)
-        val smsParseFuture = mScheduledExecutor.schedule(smsParseAction, 0, TimeUnit.MILLISECONDS)
-
-        val smsMsg: SmsMsg
-        try {
-            val parseBundle = smsParseFuture.get()
-            if (parseBundle == null) {
-                mScheduledExecutor.shutdown()
-                return null
-            }
-
-            val duplicated = parseBundle.getBoolean(SmsParseAction.SMS_DUPLICATED, false)
-            if (duplicated) {
-                mScheduledExecutor.shutdown()
-                return buildParseResult(plan.blockSms)
-            }
-
-            smsMsg = BundleCompat.getParcelable(parseBundle, SmsParseAction.SMS_MSG, SmsMsg::class.java) ?: return null
-        } catch (e: Exception) {
-            XLog.e("Error occurs when get SmsParseAction call value", e)
-            return null
-        }
-
-        SmsCodeActionDispatcher.dispatchParsedSmsActions(
-            uiHandler = mUIHandler,
-            executor = mScheduledExecutor,
+        return SharedCodeWorker<VerificationSmsMsg, ParseResult>(
             pluginContext = mPluginContext,
             phoneContext = mPhoneContext,
-            smsMsg = smsMsg,
+            smsIntent = mSmsIntent,
             eventId = eventId,
-            plan = plan,
-        )
-
-        if (killMe) {
-            scheduleKillMe(smsMsg, plan.autoInputDelayMs)
-        }
-
-        mScheduledExecutor.shutdown()
-        return buildParseResult(plan.blockSms)
+            settingsLoader = { context -> SmsCodePostParseCoordinator.loadSettings(SmsCodeVerificationPrefs(context)) },
+            moduleEnabledReader = PrefsReader::isEnabled,
+            verboseLogReader = PrefsReader::isVerboseLogMode,
+            logLevelSetter = XLog::setLogLevel,
+            currentLogLevelReader = XLog::getLogLevel,
+            defaultLogLevel = BuildConfig.LOG_LEVEL,
+            parseRunner = ::runSmsParseAction,
+            parsedSmsDispatcher = { uiHandler, executor, pluginContext, phoneContext, smsMsg, eventId, plan ->
+                SmsCodeActionDispatcher.dispatchParsedSmsActions(
+                    uiHandler = uiHandler,
+                    executor = executor,
+                    pluginContext = pluginContext,
+                    phoneContext = phoneContext,
+                    smsMsg = smsMsg.raw,
+                    eventId = eventId,
+                    plan = plan,
+                )
+            },
+            afterDispatch = { executor, pluginContext, phoneContext, smsMsg, plan ->
+                if (PrefsReader.killMeEnabled(pluginContext)) {
+                    scheduleKillMe(executor, pluginContext, phoneContext, smsMsg.raw, plan.autoInputDelayMs)
+                }
+            },
+            parseResultFactory = ::buildParseResult,
+        ).parse()
     }
 
     private fun scheduleKillMe(
+        executor: java.util.concurrent.ScheduledExecutorService,
+        pluginContext: Context,
+        phoneContext: Context,
         smsMsg: SmsMsg,
         autoInputDelayMs: Long?,
     ) {
@@ -120,16 +64,36 @@ class CodeWorker(
             return
         }
         val killDelayMs = maxOf(autoInputDelayMs + 1500L, 2500L)
-        mScheduledExecutor.schedule(
-            KillMeAction(mPluginContext, mPhoneContext, smsMsg),
+        executor.schedule(
+            KillMeAction(pluginContext, phoneContext, smsMsg),
             killDelayMs,
             TimeUnit.MILLISECONDS,
         )
     }
 
+    private fun runSmsParseAction(
+        executor: java.util.concurrent.ScheduledExecutorService,
+        pluginContext: Context,
+        phoneContext: Context,
+        smsIntent: Intent,
+        deduplicateEnabled: Boolean,
+    ): SharedCodeWorker.ParseOutcome<VerificationSmsMsg>? {
+        val smsParseAction = SmsParseAction(pluginContext, phoneContext, null)
+        smsParseAction.setSmsIntent(smsIntent)
+        smsParseAction.setDeduplicateEnabled(deduplicateEnabled)
+        val parseBundle = executor.schedule(smsParseAction, 0, TimeUnit.MILLISECONDS).get() ?: return null
+        if (parseBundle.getBoolean(SmsParseAction.SMS_DUPLICATED, false)) {
+            return SharedCodeWorker.ParseOutcome<VerificationSmsMsg>(duplicated = true)
+        }
+        val smsMsg = BundleCompat.getParcelable(parseBundle, SmsParseAction.SMS_MSG, SmsMsg::class.java)
+            ?: return null
+        return SharedCodeWorker.ParseOutcome(
+            smsMsg = smsMsg.toVerificationMessage(),
+            duplicated = false,
+        )
+    }
+
     private fun buildParseResult(blockSms: Boolean): ParseResult {
-        val parseResult = ParseResult()
-        parseResult.isBlockSms = blockSms
-        return parseResult
+        return ParseResult().apply { isBlockSms = blockSms }
     }
 }

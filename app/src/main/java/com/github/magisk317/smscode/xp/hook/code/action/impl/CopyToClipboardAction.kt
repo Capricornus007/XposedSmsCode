@@ -4,29 +4,28 @@ import android.content.Context
 import android.os.Bundle
 import com.github.magisk317.smscode.common.utils.ClipboardUtils
 import com.github.magisk317.smscode.common.utils.PrefsReader
-import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import io.github.magisk317.smscode.verification.CopyToClipboardActionHelper
 import com.github.magisk317.smscode.xp.hook.code.action.RunnableAction
 
 /**
  * 将验证码复制到剪切板
  */
-class CopyToClipboardAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg) :
-    RunnableAction(pluginContext, phoneContext, smsMsg) {
+class CopyToClipboardAction(
+    pluginContext: Context,
+    phoneContext: Context,
+    smsMsg: SmsMsg,
+    private val enabled: Boolean? = null,
+) : RunnableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
-        if (PrefsReader.copyToClipboardEnabled(mPluginContext)) {
-            copyToClipboard()
+        if (enabled ?: PrefsReader.copyToClipboardEnabled(mPluginContext)) {
+            CopyToClipboardActionHelper.copyCode(
+                phoneContext = mPhoneContext,
+                smsCode = mSmsMsg.smsCode,
+                copyAction = ClipboardUtils::copyToClipboard,
+            )
         }
         return null
-    }
-
-    private fun copyToClipboard() {
-        try {
-            XLog.d("Attempting to copy code to clipboard with context: $mPhoneContext")
-            ClipboardUtils.copyToClipboard(mPhoneContext, mSmsMsg.smsCode)
-        } catch (e: Exception) {
-            XLog.e("Failed to copy to clipboard", e)
-        }
     }
 }

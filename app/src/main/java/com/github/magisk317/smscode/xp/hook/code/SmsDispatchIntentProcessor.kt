@@ -5,13 +5,13 @@ import android.content.Intent
 import com.github.magisk317.smscode.common.utils.SmsBlacklistUtils
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import io.github.magisk317.smscode.verification.BlacklistMatchResult
+import io.github.magisk317.smscode.verification.SmsDispatchIntentProcessor as SharedSmsDispatchIntentProcessor
 import io.github.magisk317.smscode.verification.SmsHandlerDispatchDecision
-import io.github.magisk317.smscode.xposed.utils.XLog
 
 internal class SmsDispatchIntentProcessor(
     private val pluginContext: Context,
     private val phoneContext: Context,
-    private val incomingSmsParser: (Intent) -> SmsMsg? = SmsMsg::fromIntent,
+    private val incomingSmsParser: (Intent) -> VerificationSmsMsg? = { SmsMsg.fromIntent(it).toVerificationMessage() },
     private val blacklistMatcher: (Context, String?, String?) -> BlacklistMatchResult = { context, sender, body ->
         val result = SmsBlacklistUtils.match(context, sender, body)
         BlacklistMatchResult(
@@ -25,6 +25,21 @@ internal class SmsDispatchIntentProcessor(
     private val codeParser: (Context, Context, Intent, String) -> ParseResult? = { resolvedPluginContext, resolvedPhoneContext, intent, eventId ->
         CodeWorker(resolvedPluginContext, resolvedPhoneContext, intent, eventId).parse()
     },
+    private val delegateFactory: (
+        Context,
+        Context,
+        (Intent) -> VerificationSmsMsg?,
+        (Context, String?, String?) -> BlacklistMatchResult,
+        (Context, Context, Intent, String) -> ParseResult?,
+    ) -> SharedSmsDispatchIntentProcessor<VerificationSmsMsg> = { resolvedPluginContext, resolvedPhoneContext, incomingParser, matcher, parser ->
+        SharedSmsDispatchIntentProcessor(
+            pluginContext = resolvedPluginContext,
+            phoneContext = resolvedPhoneContext,
+            incomingSmsParser = incomingParser,
+            blacklistMatcher = matcher,
+            codeParser = parser,
+        )
+    },
 ) {
     data class Outcome(
         val smsMsg: SmsMsg?,
@@ -34,38 +49,18 @@ internal class SmsDispatchIntentProcessor(
     )
 
     fun handle(intent: Intent, eventId: String): Outcome {
-        val smsMsg = incomingSmsParser(intent)
-        val blacklistResult = blacklistMatcher(pluginContext, smsMsg?.sender, smsMsg?.body)
-        if (blacklistResult.matched) {
-            XLog.w(
-                "Diag sms blacklist matched: event_id=%s type=%s, pattern=%s, delete=%s, block=%s",
-                eventId,
-                blacklistResult.matchType,
-                blacklistResult.pattern,
-                blacklistResult.actionDelete,
-                blacklistResult.actionBlock,
-            )
-        }
-
-        val parseResult = codeParser(pluginContext, phoneContext, intent, eventId)
-        if (parseResult == null) {
-            XLog.w("Diag parse result is null: event_id=%s no code matched or parse failed", eventId)
-        } else {
-            XLog.w("Diag parse result: event_id=%s blockSms=%s", eventId, parseResult.isBlockSms)
-        }
-
-        val decision = SmsHandlerDispatchDecision.evaluate(
-            blacklistMatched = blacklistResult.matched,
-            blacklistActionDelete = blacklistResult.actionDelete,
-            blacklistActionBlock = blacklistResult.actionBlock,
-            smsMsgAvailable = smsMsg != null,
-            parseResultBlockSms = parseResult?.isBlockSms,
-        )
+        val outcome = delegateFactory(
+            pluginContext,
+            phoneContext,
+            incomingSmsParser,
+            blacklistMatcher,
+            codeParser,
+        ).handle(intent, eventId)
         return Outcome(
-            smsMsg = smsMsg,
-            blacklistResult = blacklistResult,
-            parseResult = parseResult,
-            decision = decision,
+            smsMsg = outcome.smsMsg?.raw,
+            blacklistResult = outcome.blacklistResult,
+            parseResult = outcome.parseResult as? ParseResult,
+            decision = outcome.decision,
         )
     }
 }

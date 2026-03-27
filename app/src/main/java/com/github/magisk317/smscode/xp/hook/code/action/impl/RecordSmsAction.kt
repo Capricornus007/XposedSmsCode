@@ -7,12 +7,16 @@ import android.database.Cursor
 import android.os.Bundle
 import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.common.utils.SharedRuntimeGate
-import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.DBProvider
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.ui.record.CodeRecordRestoreManager
+import io.github.magisk317.smscode.verification.RecordSmsDedupHelper
+import io.github.magisk317.smscode.verification.RecordSmsActionHelper
+import io.github.magisk317.smscode.verification.RecordSmsInsertResultHelper
 import com.github.magisk317.smscode.xp.hook.code.action.CallableAction
+import com.github.magisk317.smscode.xp.hook.code.VerificationSmsMsg
+import com.github.magisk317.smscode.xp.hook.code.toVerificationMessage
 
 /**
  * 记录验证码短信
@@ -22,45 +26,29 @@ class RecordSmsAction(
     phoneContext: Context,
     smsMsg: SmsMsg,
     private val eventId: String = "",
+    private val enabled: Boolean? = null,
+    private val deduplicateEnabled: Boolean? = null,
 ) :
     CallableAction(pluginContext, phoneContext, smsMsg) {
 
     override fun action(): Bundle? {
-        if (PrefsReader.recordCodeSmsEnabled(mPluginContext)) {
-            recordSmsMsg(mSmsMsg)
-        }
-        return null
+        return RecordSmsActionHelper<VerificationSmsMsg>(
+            pluginContext = mPluginContext,
+            smsMsg = mSmsMsg.toVerificationMessage(),
+            eventId = eventId,
+            enabled = enabled ?: PrefsReader.recordCodeSmsEnabled(mPluginContext),
+            deduplicateEnabled = deduplicateEnabled ?: PrefsReader.deduplicateSms(mPluginContext),
+            withFileLock = { context, fileName, block ->
+                SharedRuntimeGate.withFileLock(context, fileName) { block() }
+            },
+            shouldSkipByDedup = { smsMsg, eventLabel -> shouldSkipByDedup(smsMsg.raw, eventLabel) },
+            primaryInserter = { smsMsg -> insertPrimary(smsMsg.raw) },
+            fallbackExporter = { smsMsg -> exportFallback(smsMsg.raw) },
+        ).run()
     }
 
-    private fun recordSmsMsg(smsMsg: SmsMsg) {
-        val eventLabel = eventId.ifBlank { "<none>" }
-        XLog.w(
-            "Diag record start: event_id=%s sender_hash=%s body_len=%d code_present=%s",
-            eventLabel,
-            senderHash(smsMsg.sender),
-            smsMsg.body?.length ?: 0,
-            !smsMsg.smsCode.isNullOrBlank(),
-        )
-        if (PrefsReader.deduplicateSms(mPluginContext)) {
-            val locked = SharedRuntimeGate.withFileLock(mPluginContext, SHARED_RECORD_DEDUP_FILE_NAME) {
-                if (shouldSkipByDedup(smsMsg, eventLabel)) {
-                    return@withFileLock false
-                }
-                insertSmsMsg(smsMsg, eventLabel)
-                true
-            }
-            if (locked != null) {
-                return
-            }
-            if (shouldSkipByDedup(smsMsg, eventLabel)) {
-                return
-            }
-        }
-        insertSmsMsg(smsMsg, eventLabel)
-    }
-
-    private fun insertSmsMsg(smsMsg: SmsMsg, eventLabel: String) {
-        try {
+    private fun insertPrimary(smsMsg: SmsMsg): RecordSmsActionHelper.InsertResult {
+        return RecordSmsInsertResultHelper.capture {
             val smsMsgUri = DBProvider.smsMsgContentUri(mPluginContext)
             val resolver = mPluginContext.contentResolver
 
@@ -79,7 +67,6 @@ class RecordSmsAction(
             }
 
             resolver.insert(smsMsgUri, values)
-            XLog.w("Diag record provider insert success: event_id=%s", eventLabel)
 
             val projections = arrayOf("_id")
             val order = "date ASC"
@@ -87,8 +74,7 @@ class RecordSmsAction(
             val selectionArgs = arrayOf(SmsMsg.MSG_TYPE_SMS.toString())
             val cursor: Cursor? = resolver.query(smsMsgUri, projections, selection, selectionArgs, order)
             if (cursor == null) {
-                XLog.w("Diag record retention query returned null: event_id=%s", eventLabel)
-                return
+                return RecordSmsInsertResultHelper.success(detail = "retention_query_null")
             }
 
             val count = cursor.count
@@ -112,70 +98,40 @@ class RecordSmsAction(
                 }
 
                 resolver.applyBatch(DBProvider.authority(mPluginContext), operations)
-                XLog.w(
-                    "Diag record retention cleanup success: event_id=%s removed=%d limit=%d",
-                    eventLabel,
-                    count - limit,
-                    limit,
+                cursor.close()
+                return RecordSmsInsertResultHelper.success(
+                    detail = "retention_removed=${count - limit},limit=$limit",
                 )
             }
             cursor.close()
-        } catch (t: Throwable) {
-            XLog.w(
-                "Diag record provider insert failed: event_id=%s err=%s",
-                eventLabel,
-                t.message ?: t.javaClass.simpleName,
-            )
-            if (CodeRecordRestoreManager.exportToFile(mPluginContext, smsMsg)) {
-                XLog.w("Diag record file fallback success: event_id=%s", eventLabel)
-            } else {
-                XLog.w("Diag record file fallback failed: event_id=%s", eventLabel)
-            }
+            RecordSmsInsertResultHelper.success()
         }
+    }
+
+    private fun exportFallback(smsMsg: SmsMsg): Boolean {
+        return CodeRecordRestoreManager.exportToFile(mPluginContext, smsMsg)
     }
 
     private fun shouldSkipByDedup(smsMsg: SmsMsg, eventLabel: String): Boolean {
-        val sender = smsMsg.sender
-        val body = smsMsg.body
-        if (sender.isNullOrBlank() || body.isNullOrBlank()) {
-            return false
-        }
-        val timestamp = if (smsMsg.date > 0) smsMsg.date else System.currentTimeMillis()
-        val from = (timestamp - DEDUP_WINDOW_MS).coerceAtLeast(0L)
-        val to = timestamp + DEDUP_WINDOW_MS
         val db = DBManager.get(mPluginContext)
-        val fingerprintDup = runCatching {
-            db.querySmsMsgByFingerprintInRange(sender, body, from, to) != null
-        }.getOrDefault(false)
-        if (fingerprintDup) {
-            XLog.w("Diag record dedup skip: reason=fingerprint_window event_id=%s", eventLabel)
-            return true
-        }
-
-        val code = smsMsg.smsCode
-        if (code.isNullOrBlank()) return false
-
-        val pkg = smsMsg.packageName
-        val company = smsMsg.company
-        val channelDup = runCatching {
-            (pkg?.isNotBlank() == true && db.querySmsMsgByCodeAndPackageInRange(code, pkg, from, to) != null) ||
-                (company?.isNotBlank() == true && db.querySmsMsgByCodeAndCompanyInRange(code, company, from, to) != null)
-        }.getOrDefault(false)
-        if (channelDup) {
-            XLog.w("Diag record dedup skip: reason=code_channel event_id=%s", eventLabel)
-            return true
-        }
-        return false
-    }
-
-    private fun senderHash(sender: String?): String {
-        val value = sender.orEmpty()
-        if (value.isBlank()) return "none"
-        return Integer.toHexString(value.hashCode())
-    }
-
-    companion object {
-        private const val SHARED_RECORD_DEDUP_FILE_NAME = "record_insert_gate"
-        private const val DEDUP_WINDOW_MS = 5_000L
+        return RecordSmsDedupHelper.shouldSkipByWindow(
+            smsMsg = smsMsg.toVerificationMessage(),
+            eventLabel = eventLabel,
+            hasFingerprintDuplicate = { sender, body, from, to ->
+                runCatching {
+                    db.querySmsMsgByFingerprintInRange(sender, body, from, to) != null
+                }.getOrDefault(false)
+            },
+            hasCodeDuplicateByPackage = { code, pkg, from, to ->
+                runCatching {
+                    db.querySmsMsgByCodeAndPackageInRange(code, pkg, from, to) != null
+                }.getOrDefault(false)
+            },
+            hasCodeDuplicateByCompany = { code, company, from, to ->
+                runCatching {
+                    db.querySmsMsgByCodeAndCompanyInRange(code, company, from, to) != null
+                }.getOrDefault(false)
+            },
+        )
     }
 }

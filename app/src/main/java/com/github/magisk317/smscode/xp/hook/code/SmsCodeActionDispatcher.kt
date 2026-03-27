@@ -3,6 +3,7 @@ package com.github.magisk317.smscode.xp.hook.code
 import android.content.Context
 import android.os.Handler
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import io.github.magisk317.smscode.verification.SmsCodeActionDispatcher as SharedSmsCodeActionDispatcher
 import io.github.magisk317.smscode.verification.SmsCodePostParseCoordinator
 import com.github.magisk317.smscode.xp.hook.code.action.impl.AutoInputAction
 import com.github.magisk317.smscode.xp.hook.code.action.impl.CopyToClipboardAction
@@ -23,46 +24,29 @@ internal object SmsCodeActionDispatcher {
         eventId: String,
         plan: SmsCodePostParseCoordinator.ParsedSmsPlan,
     ) {
-        dispatchUiActions(uiHandler, pluginContext, phoneContext, smsMsg, plan.uiPlan)
-
-        plan.autoInputDelayMs?.let { delayMs ->
-            scheduleAutoInput(
-                executor,
-                pluginContext,
-                phoneContext,
-                smsMsg,
-                delayMs,
-                plan.deduplicateSmsEnabled,
-            )
-        }
-
-        plan.notificationPlan?.let { notificationPlan ->
-            scheduleNotification(
-                executor,
-                pluginContext,
-                phoneContext,
-                smsMsg,
-                notificationPlan,
-            )
-        }
-
-        if (plan.shouldRecord) {
-            scheduleRecord(
-                executor,
-                pluginContext,
-                phoneContext,
-                smsMsg,
-                eventId,
-                plan.deduplicateSmsEnabled,
-            )
-        }
-
-        scheduleOperateSmsActions(
-            executor,
-            pluginContext,
-            phoneContext,
-            smsMsg,
-            plan.operateSmsDelays,
+        SharedSmsCodeActionDispatcher.dispatchParsedSmsActions(
+            uiHandler = uiHandler,
+            executor = executor,
+            pluginContext = pluginContext,
+            phoneContext = phoneContext,
+            smsMsg = smsMsg.toVerificationMessage(),
+            eventId = eventId,
+            plan = plan,
+            uiDispatcher = { handler, plugin, phone, message, uiPlan ->
+                dispatchUiActions(handler, plugin, phone, message.raw, uiPlan)
+            },
+            autoInputScheduler = { scheduledExecutor, plugin, phone, message, delayMs, deduplicateEnabled ->
+                scheduleAutoInput(scheduledExecutor, plugin, phone, message.raw, delayMs, deduplicateEnabled)
+            },
+            notificationScheduler = { scheduledExecutor, plugin, phone, message, notificationPlan ->
+                scheduleNotification(scheduledExecutor, plugin, phone, message.raw, notificationPlan)
+            },
+            recordScheduler = { scheduledExecutor, plugin, phone, message, recordEventId, deduplicateEnabled ->
+                scheduleRecord(scheduledExecutor, plugin, phone, message.raw, recordEventId, deduplicateEnabled)
+            },
+            operateSmsScheduler = { scheduledExecutor, plugin, phone, message, delays ->
+                scheduleOperateSmsActions(scheduledExecutor, plugin, phone, message.raw, delays)
+            },
         )
     }
 
@@ -73,23 +57,19 @@ internal object SmsCodeActionDispatcher {
         eventId: String,
         plan: SmsCodePostParseCoordinator.ObservedSmsPlan,
     ) {
-        if (plan.autoInputEnabled) {
-            runAutoInputNow(
-                pluginContext,
-                phoneContext,
-                smsMsg,
-                plan.deduplicateSmsEnabled,
-            )
-        }
-        if (plan.shouldRecord) {
-            runRecordNow(
-                pluginContext,
-                phoneContext,
-                smsMsg,
-                eventId,
-                plan.deduplicateSmsEnabled,
-            )
-        }
+        SharedSmsCodeActionDispatcher.dispatchObservedSmsActions(
+            pluginContext = pluginContext,
+            phoneContext = phoneContext,
+            smsMsg = smsMsg.toVerificationMessage(),
+            eventId = eventId,
+            plan = plan,
+            autoInputRunner = { plugin, phone, message, deduplicateEnabled ->
+                runAutoInputNow(plugin, phone, message.raw, deduplicateEnabled)
+            },
+            recordRunner = { plugin, phone, message, recordEventId, deduplicateEnabled ->
+                runRecordNow(plugin, phone, message.raw, recordEventId, deduplicateEnabled)
+            },
+        )
     }
 
     private fun dispatchUiActions(
@@ -99,12 +79,22 @@ internal object SmsCodeActionDispatcher {
         smsMsg: SmsMsg,
         uiPlan: SmsCodePostParseCoordinator.UiPlan,
     ) {
-        if (uiPlan.copyToClipboardEnabled) {
-            uiHandler.post(CopyToClipboardAction(pluginContext, phoneContext, smsMsg))
-        }
-        if (uiPlan.showToast) {
-            uiHandler.post(ToastAction(pluginContext, phoneContext, smsMsg))
-        }
+        uiHandler.post(
+            CopyToClipboardAction(
+                pluginContext = pluginContext,
+                phoneContext = phoneContext,
+                smsMsg = smsMsg,
+                enabled = uiPlan.copyToClipboardEnabled,
+            ),
+        )
+        uiHandler.post(
+            ToastAction(
+                pluginContext = pluginContext,
+                phoneContext = phoneContext,
+                smsMsg = smsMsg,
+                enabled = uiPlan.showToast,
+            ),
+        )
     }
 
     private fun runAutoInputNow(
@@ -113,7 +103,12 @@ internal object SmsCodeActionDispatcher {
         smsMsg: SmsMsg,
         deduplicateEnabled: Boolean,
     ) {
-        AutoInputAction(pluginContext, phoneContext, smsMsg).call()
+        AutoInputAction(
+            pluginContext = pluginContext,
+            phoneContext = phoneContext,
+            smsMsg = smsMsg,
+            deduplicateEnabled = deduplicateEnabled,
+        ).call()
     }
 
     private fun scheduleAutoInput(
@@ -125,7 +120,12 @@ internal object SmsCodeActionDispatcher {
         deduplicateEnabled: Boolean,
     ) {
         executor.schedule(
-            AutoInputAction(pluginContext, phoneContext, smsMsg),
+            AutoInputAction(
+                pluginContext = pluginContext,
+                phoneContext = phoneContext,
+                smsMsg = smsMsg,
+                deduplicateEnabled = deduplicateEnabled,
+            ),
             delayMs,
             TimeUnit.MILLISECONDS,
         )
@@ -138,7 +138,14 @@ internal object SmsCodeActionDispatcher {
         eventId: String,
         deduplicateEnabled: Boolean,
     ) {
-        RecordSmsAction(pluginContext, phoneContext, smsMsg, eventId).call()
+        RecordSmsAction(
+            pluginContext = pluginContext,
+            phoneContext = phoneContext,
+            smsMsg = smsMsg,
+            eventId = eventId,
+            enabled = true,
+            deduplicateEnabled = deduplicateEnabled,
+        ).call()
     }
 
     private fun scheduleRecord(
@@ -150,7 +157,14 @@ internal object SmsCodeActionDispatcher {
         deduplicateEnabled: Boolean,
     ) {
         executor.schedule(
-            RecordSmsAction(pluginContext, phoneContext, smsMsg, eventId),
+            RecordSmsAction(
+                pluginContext = pluginContext,
+                phoneContext = phoneContext,
+                smsMsg = smsMsg,
+                eventId = eventId,
+                enabled = true,
+                deduplicateEnabled = deduplicateEnabled,
+            ),
             0,
             TimeUnit.MILLISECONDS,
         )
@@ -164,7 +178,14 @@ internal object SmsCodeActionDispatcher {
         plan: SmsCodePostParseCoordinator.NotificationPlan,
     ) {
         executor.schedule(
-            NotifyAction(pluginContext, phoneContext, smsMsg),
+            NotifyAction(
+                pluginContext = pluginContext,
+                phoneContext = phoneContext,
+                smsMsg = smsMsg,
+                enabled = true,
+                autoCancelEnabled = plan.autoCancelDelayMs != null,
+                retentionTimeMs = plan.autoCancelDelayMs ?: 0L,
+            ),
             0,
             TimeUnit.MILLISECONDS,
         )
