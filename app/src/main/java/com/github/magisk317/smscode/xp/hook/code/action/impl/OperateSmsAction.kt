@@ -462,7 +462,6 @@ class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sm
             if (!defaultSmsPackage.isNullOrBlank()) {
                 packages.add(defaultSmsPackage)
             }
-            packages.add(GOOGLE_MESSAGES_PACKAGE_NAME)
 
             sendExternalProviderChange(packages)
             Handler(Looper.getMainLooper()).postDelayed(

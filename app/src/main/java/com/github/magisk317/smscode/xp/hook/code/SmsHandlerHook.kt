@@ -20,6 +20,7 @@ import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
 import com.github.magisk317.smscode.xp.helper.RelayConflictNoticeHelper
+import io.github.magisk317.smscode.verification.SmsIntentHookSupport as VerificationSmsIntentHookSupport
 import io.github.magisk317.smscode.xposed.helper.XposedWrapper
 import io.github.magisk317.smscode.xposed.hook.BaseHook
 import com.github.magisk317.smscode.xp.hook.code.action.impl.OperateSmsAction
@@ -45,6 +46,27 @@ class SmsHandlerHook : BaseHook() {
     private var mPhoneContext: Context? = null
     private var mPluginContext: Context? = null
     private var smsInboxObserver: SmsInboxObserver? = null
+    private val constructorInitializer = SmsHookConstructorInitializer(
+        runtimeInitializer = ::initializeRuntime,
+        notificationChannelInitializer = { initNotificationChannel() },
+        copyCodeRegistrar = { registerCopyCodeReceiver() },
+        heartbeatRecorder = ::recordHookHeartbeat,
+        suppressionLogger = ::logSuppressedOnce,
+        inboxObserverRegistrar = ::registerSmsInboxObserver,
+    )
+    private val dispatchIntentHandler = SmsDispatchIntentHandler(
+        runtimeResolver = ::recordHeartbeat,
+        suppressionLogger = ::logSuppressedOnce,
+        blacklistDeleteScheduler = ::scheduleBlacklistDelete,
+        inboundBlocker = { inboundSmsHandler, receiver, reason, eventId ->
+            deleteRawTableAndSendMessage(
+                inboundSmsHandler = inboundSmsHandler,
+                smsReceiver = receiver,
+                reason = reason,
+                eventId = eventId,
+            )
+        },
+    )
     @Volatile
     private var suppressionLogged = false
 
@@ -244,46 +266,7 @@ class SmsHandlerHook : BaseHook() {
 
     private fun afterConstructorHandler(param: MethodHookParam) {
         val context = param.args.getOrNull(1) as? Context ?: return
-        if (mPhoneContext == null) {
-            mPhoneContext = context
-            try {
-                mPluginContext = mPhoneContext?.createPackageContext(
-                    SMSCODE_PACKAGE,
-                    Context.CONTEXT_IGNORE_SECURITY,
-                )
-                if (mPluginContext != null) {
-                    val pluginContext = mPluginContext ?: return
-                    RelayConflictNoticeHelper.initNotificationChannel(pluginContext, context)
-                    val suppressByRelay = ModuleConflictArbiter.shouldSuppressByRelay(
-                        mPhoneContext,
-                        "SmsHandlerHook#constructor",
-                    )
-                    if (PrefsReader.showCodeNotification(pluginContext)) {
-                        initNotificationChannel()
-                        if (!suppressByRelay) {
-                            registerCopyCodeReceiver()
-                        }
-                    }
-                    ModuleActivationStore.markActivated(pluginContext)
-                    ActivationDiagnosticsStore.recordHookHeartbeat(
-                        context = pluginContext,
-                        packageName = ANDROID_PHONE_PACKAGE,
-                        processName = context.applicationInfo?.processName ?: ANDROID_PHONE_PACKAGE,
-                        source = "sms_handler_constructor",
-                        verboseLogging = PrefsReader.isVerboseLogMode(pluginContext),
-                    )
-                    if (suppressByRelay) {
-                        logSuppressedOnce("constructor")
-                    } else {
-                        registerSmsInboxObserver()
-                    }
-                } else {
-                    XLog.e("Plugin context is null after creation attempt")
-                }
-            } catch (e: Exception) {
-                XLog.e("Create plugin context failed: %s", e)
-            }
-        }
+        constructorInitializer.handle(context)
     }
 
     private fun initNotificationChannel() {
@@ -309,9 +292,9 @@ class SmsHandlerHook : BaseHook() {
         }
     }
 
-    private fun registerSmsInboxObserver() {
-        val pluginContext = mPluginContext ?: return
-        val phoneContext = mPhoneContext ?: return
+    private fun registerSmsInboxObserver(runtime: SmsHookRuntimeContext) {
+        val pluginContext = runtime.pluginContext
+        val phoneContext = runtime.phoneContext
         if (smsInboxObserver != null) return
         val observerKey = buildSharedProcessKey(
             prefix = "sms_observer",
@@ -332,6 +315,43 @@ class SmsHandlerHook : BaseHook() {
             return
         }
         smsInboxObserver = SmsInboxObserver(pluginContext, phoneContext).also { it.register() }
+    }
+
+    private fun initializeRuntime(phoneContext: Context): SmsHookRuntimeContext? {
+        if (mPhoneContext == null) {
+            mPhoneContext = phoneContext
+        }
+        val pluginContext = getPluginContext() ?: return null
+        return SmsHookRuntimeContext(
+            phoneContext = mPhoneContext ?: phoneContext,
+            pluginContext = pluginContext,
+        )
+    }
+
+    private fun currentRuntime(): SmsHookRuntimeContext? {
+        val phoneContext = mPhoneContext ?: return null
+        val pluginContext = getPluginContext() ?: return null
+        return SmsHookRuntimeContext(
+            phoneContext = phoneContext,
+            pluginContext = pluginContext,
+        )
+    }
+
+    private fun recordHeartbeat(source: String): SmsHookRuntimeContext? {
+        val runtime = currentRuntime() ?: return null
+        recordHookHeartbeat(source)
+        return runtime
+    }
+
+    private fun recordHookHeartbeat(source: String) {
+        val runtime = currentRuntime() ?: return
+        ActivationDiagnosticsStore.recordHookHeartbeat(
+            context = runtime.pluginContext,
+            packageName = ANDROID_PHONE_PACKAGE,
+            processName = runtime.phoneContext.applicationInfo?.processName ?: ANDROID_PHONE_PACKAGE,
+            source = source,
+            verboseLogging = PrefsReader.isVerboseLogMode(runtime.pluginContext),
+        )
     }
 
     private inner class DispatchIntentHook(private val mReceiverIndex: Int) : MethodHook() {
@@ -356,22 +376,22 @@ class SmsHandlerHook : BaseHook() {
             }
         }
 
-        if (!SmsIntentHookSupport.isSmsAction(action)) {
+        if (!VerificationSmsIntentHookSupport.isSmsAction(action)) {
             return
         }
-        val eventId = SmsIntentHookSupport.ensureEventId(intent)
-        val pluginContext = getPluginContext()
-        val phoneContext = mPhoneContext
-        if (pluginContext == null || phoneContext == null) {
-            XLog.e("Context is null, skip parsing. pluginContext: %s, phoneContext: %s", pluginContext, phoneContext)
-            return
-        }
-        if (SmsIntentHookSupport.markDispatchHandled(intent, action)) {
+        val eventId = VerificationSmsIntentHookSupport.ensureEventId(intent)
+        if (VerificationSmsIntentHookSupport.markDispatchHandled(intent, action)) {
             XLog.w(
                 "Diag SMS dispatch duplicate skip: event_id=%s action=%s source=intent_extra",
                 eventId,
                 action,
             )
+            return
+        }
+        val pluginContext = getPluginContext()
+        val phoneContext = mPhoneContext
+        if (pluginContext == null || phoneContext == null) {
+            XLog.e("Context is null, skip parsing. pluginContext: %s, phoneContext: %s", pluginContext, phoneContext)
             return
         }
         if (shouldSkipDispatchBySharedDedup(pluginContext, eventId, action)) {
@@ -385,79 +405,17 @@ class SmsHandlerHook : BaseHook() {
             pduCount,
             intent.extras != null,
         )
-        ActivationDiagnosticsStore.recordHookHeartbeat(
-            context = pluginContext,
-            packageName = ANDROID_PHONE_PACKAGE,
-            processName = phoneContext.applicationInfo?.processName ?: ANDROID_PHONE_PACKAGE,
-            source = "sms_handler_dispatch",
-            verboseLogging = PrefsReader.isVerboseLogMode(pluginContext),
+        val outcome = dispatchIntentHandler.handle(
+            intent = intent,
+            eventId = eventId,
+            inboundSmsHandler = param.thisObject,
+            receiver = param.args.getOrNull(receiverIndex),
         )
-        if (ModuleConflictArbiter.shouldSuppressByRelay(phoneContext, "SmsHandlerHook#dispatchIntent")) {
-            logSuppressedOnce("dispatchIntent")
-            RelayConflictNoticeHelper.notifyConflictOnSms(pluginContext, phoneContext, eventId)
+        if (outcome.inboundBlocked) {
+            param.result = null
+        }
+        if (outcome.shouldStopDispatch) {
             return
-        }
-        val smsMsg = runCatching { SmsMsg.fromIntent(intent) }.getOrNull()
-        val blacklistResult = SmsBlacklistUtils.match(pluginContext, smsMsg?.sender, smsMsg?.body)
-        if (blacklistResult.matched) {
-            XLog.w(
-                "Diag sms blacklist matched: event_id=%s type=%s, pattern=%s, delete=%s, block=%s",
-                eventId,
-                blacklistResult.matchType,
-                blacklistResult.pattern,
-                blacklistResult.actionDelete,
-                blacklistResult.actionBlock,
-            )
-            if (blacklistResult.actionDelete && !blacklistResult.actionBlock && smsMsg != null) {
-                scheduleBlacklistDelete(pluginContext, phoneContext, smsMsg)
-            }
-            if (blacklistResult.actionBlock) {
-                XLog.w("Diag sms block reason=%s event_id=%s", SmsBlockEvaluator.BLOCK_REASON_BLACKLIST, eventId)
-                param.args.getOrNull(receiverIndex)?.let { receiver ->
-                    val inbound = param.thisObject ?: return
-                    val blocked = deleteRawTableAndSendMessage(
-                        inboundSmsHandler = inbound,
-                        smsReceiver = receiver,
-                        reason = SmsBlockEvaluator.BLOCK_REASON_BLACKLIST,
-                        eventId = eventId,
-                    )
-                    if (blocked) {
-                        param.result = null
-                    }
-                }
-                return
-            }
-        }
-
-        val parseResult = CodeWorker(pluginContext, phoneContext, intent, eventId).parse()
-        if (parseResult == null) {
-            XLog.w("Diag parse result is null: event_id=%s no code matched or parse failed", eventId)
-        } else {
-            XLog.w("Diag parse result: event_id=%s blockSms=%s", eventId, parseResult.isBlockSms)
-        }
-        if (parseResult != null) {
-            if (parseResult.isBlockSms) {
-                XLog.w("Diag sms block reason=%s event_id=%s", SmsBlockEvaluator.BLOCK_REASON_PREF_BLOCK, eventId)
-                param.args.getOrNull(receiverIndex)?.let { receiver ->
-                    val inbound = param.thisObject ?: return
-                    val blocked = deleteRawTableAndSendMessage(
-                        inboundSmsHandler = inbound,
-                        smsReceiver = receiver,
-                        reason = SmsBlockEvaluator.BLOCK_REASON_PREF_BLOCK,
-                        eventId = eventId,
-                    )
-                    if (blocked) {
-                        param.result = null
-                    }
-                }
-            } else {
-                XLog.w(
-                    "Diag allow system inbox persist: event_id=%s sender_hash=%s body_len=%d",
-                    eventId,
-                    senderHash(smsMsg?.sender),
-                    smsMsg?.body?.length ?: 0,
-                )
-            }
         }
     }
 
@@ -798,14 +756,14 @@ class SmsHandlerHook : BaseHook() {
     ) {
         val intent = smsIntent ?: return
         val action = intent.action
-        if (!SmsIntentHookSupport.isSmsAction(action)) return
+        if (!VerificationSmsIntentHookSupport.isSmsAction(action)) return
         val pluginContext = getPluginContext() ?: return
         val phoneContext = mPhoneContext ?: return
         if (ModuleConflictArbiter.shouldSuppressByRelay(phoneContext, "SmsHandlerHook#$methodName")) {
             logSuppressedOnce("dispatchChain:$methodName")
             return
         }
-        val eventId = SmsIntentHookSupport.ensureEventId(intent)
+        val eventId = VerificationSmsIntentHookSupport.ensureEventId(intent)
         val evaluation = SmsBlockEvaluator.evaluate(pluginContext, intent, eventId, "dispatch_chain") ?: return
         if (evaluation.blacklistDeleteOnly && evaluation.smsMsg != null) {
             scheduleBlacklistDelete(pluginContext, phoneContext, evaluation.smsMsg)

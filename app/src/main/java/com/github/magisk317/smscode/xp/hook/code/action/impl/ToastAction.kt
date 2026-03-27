@@ -8,6 +8,7 @@ import android.os.Looper
 import android.widget.Toast
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.utils.PrefsReader
+import io.github.magisk317.smscode.verification.SmsMessageDedupKeys
 import com.github.magisk317.smscode.xp.hook.code.helper.InputHelper
 import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
@@ -34,7 +35,13 @@ class ToastAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg)
     private fun showCodeToast() {
         val smsCode = mSmsMsg.smsCode.orEmpty()
         val text = mPluginContext.getString(R.string.current_sms_code, smsCode)
-        val toastKey = buildToastKey(mSmsMsg)
+        val toastKey = SmsMessageDedupKeys.buildMessageKey(
+            sender = mSmsMsg.sender,
+            body = mSmsMsg.body,
+            code = mSmsMsg.smsCode,
+            packageName = mSmsMsg.packageName,
+            company = mSmsMsg.company,
+        )
         val ownerToken = acquireToastOwner(toastKey)
         if (ownerToken == null) {
             return
@@ -161,29 +168,5 @@ class ToastAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsMsg)
             }
         }
 
-        private fun buildToastKey(smsMsg: SmsMsg): String {
-            val sender = smsMsg.sender.orEmpty()
-            val body = smsMsg.body.orEmpty()
-            val code = smsMsg.smsCode.orEmpty()
-            if (sender.isBlank() && body.isBlank() && code.isBlank()) {
-                return ""
-            }
-
-            val parts = ArrayList<String>(4)
-            if (sender.isNotBlank() && body.isNotBlank()) {
-                parts += "fp:${hashValue(sender)}:${hashValue(body)}"
-            }
-            if (code.isNotBlank()) {
-                val channel = when {
-                    !smsMsg.packageName.isNullOrBlank() -> "pkg:${smsMsg.packageName}"
-                    !smsMsg.company.isNullOrBlank() -> "co:${smsMsg.company}"
-                    else -> "co:unknown"
-                }
-                parts += "code:${code}|$channel"
-            }
-            return parts.joinToString("|")
-        }
-
-        private fun hashValue(value: String): String = Integer.toHexString(value.hashCode())
     }
 }

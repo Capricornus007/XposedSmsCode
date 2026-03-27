@@ -6,6 +6,7 @@ import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.common.utils.SmsBlacklistUtils
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import io.github.magisk317.smscode.verification.SmsIntentHookSupport as VerificationSmsIntentHookSupport
 import io.github.magisk317.smscode.xposed.utils.XLog
 import kotlinx.coroutines.runBlocking
 
@@ -26,7 +27,7 @@ object SmsBlockEvaluator {
         source: String,
     ): Result? {
         val action = intent.action
-        if (!SmsIntentHookSupport.isSmsAction(action)) {
+        if (!VerificationSmsIntentHookSupport.isSmsAction(action)) {
             return null
         }
 

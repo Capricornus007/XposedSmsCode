@@ -12,6 +12,7 @@ import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.feature.store.EntityStoreManager
 import com.github.magisk317.smscode.feature.store.EntityType
+import io.github.magisk317.smscode.verification.SmsMessageDedupKeys
 import com.github.magisk317.smscode.xp.hook.code.action.CallableAction
 import com.github.magisk317.smscode.xp.hook.code.helper.InputHelper
 import java.util.*
@@ -93,7 +94,13 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
     }
 
     private fun shouldSkipByRecentAutoInput(smsMsg: SmsMsg): Boolean {
-        val key = buildAutoInputKey(smsMsg)
+        val key = SmsMessageDedupKeys.buildMessageKey(
+            sender = smsMsg.sender,
+            body = smsMsg.body,
+            code = smsMsg.smsCode,
+            packageName = smsMsg.packageName,
+            company = smsMsg.company,
+        )
         if (key.isBlank()) return false
         val sharedClaim = SharedRuntimeGate.claimWithinWindow(
             context = mPluginContext,
@@ -136,29 +143,6 @@ class AutoInputAction(pluginContext: Context, phoneContext: Context, smsMsg: Sms
         }
         return false
     }
-
-    private fun buildAutoInputKey(smsMsg: SmsMsg): String {
-        val sender = smsMsg.sender.orEmpty()
-        val body = smsMsg.body.orEmpty()
-        val code = smsMsg.smsCode.orEmpty()
-        if (sender.isBlank() && body.isBlank() && code.isBlank()) return ""
-
-        val parts = ArrayList<String>(4)
-        if (sender.isNotBlank() && body.isNotBlank()) {
-            parts += "fp:${hash(sender)}:${hash(body)}"
-        }
-        if (code.isNotBlank()) {
-            val channel = when {
-                !smsMsg.packageName.isNullOrBlank() -> "pkg:${smsMsg.packageName}"
-                !smsMsg.company.isNullOrBlank() -> "co:${smsMsg.company}"
-                else -> "co:unknown"
-            }
-            parts += "code:${code}|$channel"
-        }
-        return parts.joinToString("|")
-    }
-
-    private fun hash(value: String): String = Integer.toHexString(value.hashCode())
 
     private fun isPackageBlocked(packageName: String): Boolean {
         queryBlockedStateByProvider(packageName)?.let { return it }

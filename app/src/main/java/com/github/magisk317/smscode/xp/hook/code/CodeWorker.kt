@@ -8,9 +8,11 @@ import android.util.Log
 import androidx.core.os.BundleCompat
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.utils.PrefsReader
-import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import com.github.magisk317.smscode.xp.hook.code.action.impl.*
+import io.github.magisk317.smscode.verification.SmsCodePostParseCoordinator
+import io.github.magisk317.smscode.xposed.utils.XLog
+import com.github.magisk317.smscode.xp.hook.code.action.impl.KillMeAction
+import com.github.magisk317.smscode.xp.hook.code.action.impl.SmsParseAction
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -24,20 +26,11 @@ class CodeWorker(
     private val mScheduledExecutor = Executors.newSingleThreadScheduledExecutor()
 
     fun parse(): ParseResult? {
+        val settings = SmsCodePostParseCoordinator.loadSettings(SmsCodeVerificationPrefs(mPluginContext))
+        val plan = SmsCodePostParseCoordinator.createParsedSmsPlan(settings)
         val moduleEnabled = PrefsReader.isEnabled(mPluginContext)
         val verboseLog = PrefsReader.isVerboseLogMode(mPluginContext)
-        val showNotification = PrefsReader.showCodeNotification(mPluginContext)
-        val autoCancelNotification = PrefsReader.autoCancelCodeNotification(mPluginContext)
-        val retentionSec = PrefsReader.getNotificationRetentionTime(mPluginContext)
-        val autoInput = PrefsReader.autoInputCodeEnabled(mPluginContext)
-        val copyToClipboard = PrefsReader.copyToClipboardEnabled(mPluginContext)
-        val showToast = PrefsReader.shouldShowToast(mPluginContext)
-        val recordSms = PrefsReader.recordSmsCodeEnabled(mPluginContext)
-        val blockSms = PrefsReader.blockSmsEnabled(mPluginContext)
-        val markAsRead = PrefsReader.markAsReadEnabled(mPluginContext)
-        val deleteSms = PrefsReader.deleteSmsEnabled(mPluginContext)
         val killMe = PrefsReader.killMeEnabled(mPluginContext)
-        val deduplicateSms = PrefsReader.deduplicateSms(mPluginContext)
         XLog.w(
             "Diag settings: event_id=%s enabled=%s, verbose=%s, showNotif=%s, autoCancel=%s, " +
                 "retentionSec=%d, autoInput=%s, copy=%s, toast=%s, record=%s, " +
@@ -45,17 +38,17 @@ class CodeWorker(
             eventId.ifBlank { "<none>" },
             moduleEnabled,
             verboseLog,
-            showNotification,
-            autoCancelNotification,
-            retentionSec,
-            autoInput,
-            copyToClipboard,
-            showToast,
-            recordSms,
-            blockSms,
-            markAsRead,
-            deleteSms,
-            deduplicateSms,
+            settings.showNotification,
+            settings.autoCancelNotification,
+            settings.notificationRetentionMs / 1000L,
+            settings.autoInputEnabled,
+            settings.copyToClipboardEnabled,
+            settings.showToast,
+            settings.recordSmsEnabled,
+            settings.blockSmsEnabled,
+            settings.markAsReadEnabled,
+            settings.deleteSmsEnabled,
+            settings.deduplicateSmsEnabled,
         )
 
         if (!moduleEnabled) {
@@ -77,7 +70,7 @@ class CodeWorker(
 
         val smsParseAction = SmsParseAction(mPluginContext, mPhoneContext, null)
         smsParseAction.setSmsIntent(mSmsIntent)
-        smsParseAction.setDeduplicateEnabled(deduplicateSms)
+        smsParseAction.setDeduplicateEnabled(settings.deduplicateSmsEnabled)
         val smsParseFuture = mScheduledExecutor.schedule(smsParseAction, 0, TimeUnit.MILLISECONDS)
 
         val smsMsg: SmsMsg
@@ -91,7 +84,7 @@ class CodeWorker(
             val duplicated = parseBundle.getBoolean(SmsParseAction.SMS_DUPLICATED, false)
             if (duplicated) {
                 mScheduledExecutor.shutdown()
-                return buildParseResult(blockSms)
+                return buildParseResult(plan.blockSms)
             }
 
             smsMsg = BundleCompat.getParcelable(parseBundle, SmsParseAction.SMS_MSG, SmsMsg::class.java) ?: return null
@@ -100,69 +93,43 @@ class CodeWorker(
             return null
         }
 
-        // 复制到剪切板 Action
-        mUIHandler.post(CopyToClipboardAction(mPluginContext, mPhoneContext, smsMsg))
-
-        // 显示Toast Action
-        mUIHandler.post(ToastAction(mPluginContext, mPhoneContext, smsMsg))
-
-        val autoInputDelayMs = PrefsReader.getAutoInputCodeDelay(mPluginContext) * 1000L
-        // 自动输入 Action
-        if (autoInput) {
-            val autoInputAction = AutoInputAction(mPluginContext, mPhoneContext, smsMsg)
-            mScheduledExecutor.schedule(autoInputAction, autoInputDelayMs, TimeUnit.MILLISECONDS)
-        }
-
-        if (showNotification) {
-            // 显示通知 Action
-            val notifyAction = NotifyAction(mPluginContext, mPhoneContext, smsMsg)
-            mScheduledExecutor.schedule(notifyAction, 0, TimeUnit.MILLISECONDS)
-        }
-
-        // 记录验证码短信 Action（转发状态与拦截配置解耦）
-        val recordSmsAction = RecordSmsAction(mPluginContext, mPhoneContext, smsMsg, eventId)
-        mScheduledExecutor.schedule(recordSmsAction, 0, TimeUnit.MILLISECONDS)
-
-        // 操作验证码短信（标记为已读 或者 删除） Action
-        scheduleOperateSmsActions(smsMsg)
+        SmsCodeActionDispatcher.dispatchParsedSmsActions(
+            uiHandler = mUIHandler,
+            executor = mScheduledExecutor,
+            pluginContext = mPluginContext,
+            phoneContext = mPhoneContext,
+            smsMsg = smsMsg,
+            eventId = eventId,
+            plan = plan,
+        )
 
         if (killMe) {
-            if (autoInput) {
-                val killMeAction = KillMeAction(mPluginContext, mPhoneContext, smsMsg)
-                val killDelayMs = maxOf(autoInputDelayMs + 1500L, 2500L)
-                mScheduledExecutor.schedule(killMeAction, killDelayMs, TimeUnit.MILLISECONDS)
-            } else {
-                XLog.w("KillMe enabled but auto-input disabled, skip KillMeAction")
-            }
+            scheduleKillMe(smsMsg, plan.autoInputDelayMs)
         }
 
         mScheduledExecutor.shutdown()
-        return buildParseResult(blockSms)
+        return buildParseResult(plan.blockSms)
+    }
+
+    private fun scheduleKillMe(
+        smsMsg: SmsMsg,
+        autoInputDelayMs: Long?,
+    ) {
+        if (autoInputDelayMs == null) {
+            XLog.w("KillMe enabled but auto-input disabled, skip KillMeAction")
+            return
+        }
+        val killDelayMs = maxOf(autoInputDelayMs + 1500L, 2500L)
+        mScheduledExecutor.schedule(
+            KillMeAction(mPluginContext, mPhoneContext, smsMsg),
+            killDelayMs,
+            TimeUnit.MILLISECONDS,
+        )
     }
 
     private fun buildParseResult(blockSms: Boolean): ParseResult {
         val parseResult = ParseResult()
         parseResult.isBlockSms = blockSms
         return parseResult
-    }
-
-    private fun scheduleOperateSmsActions(smsMsg: SmsMsg) {
-        val delays = when {
-            PrefsReader.deleteSmsEnabled(mPluginContext) -> DELETE_SMS_DELAYS_MS
-            PrefsReader.markAsReadEnabled(mPluginContext) -> MARK_AS_READ_RETRY_DELAYS_MS
-            else -> emptyList()
-        }
-        delays.forEach { delayMs ->
-            mScheduledExecutor.schedule(
-                OperateSmsAction(mPluginContext, mPhoneContext, smsMsg),
-                delayMs,
-                TimeUnit.MILLISECONDS,
-            )
-        }
-    }
-
-    companion object {
-        private val MARK_AS_READ_RETRY_DELAYS_MS = listOf(300L, 1000L, 2000L)
-        private val DELETE_SMS_DELAYS_MS = listOf(300L)
     }
 }

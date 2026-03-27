@@ -9,7 +9,7 @@ import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
 import com.github.magisk317.smscode.xp.hook.code.CodeWorker
 import com.github.magisk317.smscode.xp.hook.code.SmsBlockEvaluator
-import com.github.magisk317.smscode.xp.hook.code.SmsIntentHookSupport
+import io.github.magisk317.smscode.verification.SmsIntentHookSupport
 import com.github.magisk317.smscode.xp.hook.code.action.impl.OperateSmsAction
 import io.github.magisk317.smscode.xposed.helper.XposedWrapper
 import io.github.magisk317.smscode.xposed.hook.BaseHook

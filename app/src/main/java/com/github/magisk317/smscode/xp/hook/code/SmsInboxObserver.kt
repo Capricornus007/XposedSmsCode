@@ -1,32 +1,32 @@
 package com.github.magisk317.smscode.xp.hook.code
 
 import android.content.Context
-import android.app.role.RoleManager
 import android.database.ContentObserver
-import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.provider.Telephony
-import android.os.Build
 import com.github.magisk317.smscode.common.utils.PrefsReader
-import com.github.magisk317.smscode.common.utils.SharedRuntimeGate
-import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.common.utils.StringUtils
+import io.github.magisk317.smscode.verification.SmsInboxSeenTracker
+import io.github.magisk317.smscode.verification.SmsRoleStateResolver
 import io.github.magisk317.smscode.xposed.utils.XLog
-import com.github.magisk317.smscode.data.db.DBManager
-import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
-import com.github.magisk317.smscode.xp.hook.code.action.impl.AutoInputAction
-import com.github.magisk317.smscode.xp.hook.code.action.impl.RecordSmsAction
-import java.util.Collections
-import java.util.LinkedHashSet
 import java.util.concurrent.Executors
-import kotlinx.coroutines.runBlocking
 
 internal class SmsInboxObserver(
     private val pluginContext: Context,
     private val phoneContext: Context,
 ) {
+    private val smsRoleStateResolver = SmsRoleStateResolver()
+    private val smsInboxScanner = ObservedInboxScanner(
+        pluginContext = pluginContext,
+        phoneContext = phoneContext,
+        smsIdTracker = SmsInboxSeenTracker(MAX_TRACKED_SMS_IDS),
+    )
+    private val observedSmsHandler = ObservedSmsHandler(
+        pluginContext = pluginContext,
+        phoneContext = phoneContext,
+        roleStateLogger = ::logSmsRoleState,
+    )
     private val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
         override fun onChange(selfChange: Boolean) {
             onChange(selfChange, null)
@@ -47,281 +47,45 @@ internal class SmsInboxObserver(
     }
 
     private fun scanRecentInbox(triggerUri: String) {
-        val triggeredSmsId = parseTriggeredSmsId(triggerUri)
-        val projection = arrayOf(
-            Telephony.Sms._ID,
-            Telephony.Sms.ADDRESS,
-            Telephony.Sms.BODY,
-            Telephony.Sms.DATE,
-            Telephony.Sms.TYPE,
-            Telephony.Sms.READ,
-        )
-        val cutoff = System.currentTimeMillis() - RECENT_SMS_WINDOW_MS
-        val selection: String
-        val selectionArgs: Array<String>
-        val sortOrder: String?
-        if (triggeredSmsId != null) {
-            selection = "${Telephony.Sms._ID}=? AND ${Telephony.Sms.TYPE}=?"
-            selectionArgs = arrayOf(triggeredSmsId.toString(), Telephony.Sms.MESSAGE_TYPE_INBOX.toString())
-            sortOrder = null
-        } else {
-            selection = "${Telephony.Sms.TYPE}=? AND ${Telephony.Sms.DATE}>?"
-            selectionArgs = arrayOf(Telephony.Sms.MESSAGE_TYPE_INBOX.toString(), cutoff.toString())
-            sortOrder = "${Telephony.Sms.DATE} DESC limit $MAX_RECENT_SMS_COUNT"
-        }
-        runCatching {
-            phoneContext.contentResolver.query(
-                Telephony.Sms.CONTENT_URI,
-                projection,
-                selection,
-                selectionArgs,
-                sortOrder,
-            )?.use { cursor ->
-                while (cursor.moveToNext()) {
-                    val smsId = cursor.getLong(cursor.getColumnIndexOrThrow(Telephony.Sms._ID))
-                    if (!markSeen(smsId)) continue
-                    val body = cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Sms.BODY)).orEmpty()
-                    val code = runBlocking { SmsCodeUtils.parseSmsCodeIfExists(pluginContext, body) }.orEmpty()
-                    if (code.isBlank()) continue
-                    val sender = cursor.getString(cursor.getColumnIndexOrThrow(Telephony.Sms.ADDRESS)).orEmpty()
-                    val date = cursor.getLong(cursor.getColumnIndexOrThrow(Telephony.Sms.DATE))
-                    val read = cursor.getInt(cursor.getColumnIndexOrThrow(Telephony.Sms.READ)) != 0
-                    XLog.w(
-                        "Diag SMS provider observed: sms_id=%d trigger_uri=%s sender_hash=%s date=%d read=%s code=%s body=%s",
-                        smsId,
-                        triggerUri.ifBlank { Telephony.Sms.CONTENT_URI.toString() },
-                        senderHash(sender),
-                        date,
-                        read,
-                        if (PrefsReader.isSensitiveDebugLogMode(pluginContext)) {
-                            StringUtils.escape(code)
-                        } else {
-                            StringUtils.summarizeCode(code)
-                        },
-                        if (PrefsReader.isSensitiveDebugLogMode(pluginContext)) {
-                            StringUtils.escape(body)
-                        } else {
-                            StringUtils.summarizeBody(body)
-                        },
-                    )
-                    logSmsRoleStateForSms(smsId, triggerUri)
-                    handleObservedCode(
-                        smsId = smsId,
-                        triggerUri = triggerUri.ifBlank { Telephony.Sms.CONTENT_URI.toString() },
-                        sender = sender,
-                        body = body,
-                        date = date,
-                        read = read,
-                        code = code,
-                    )
-                }
-            }
-        }.onFailure {
-            XLog.w("SmsInboxObserver scan failed: %s", it.message ?: it.javaClass.simpleName)
-        }
-    }
-
-    private fun handleObservedCode(
-        smsId: Long,
-        triggerUri: String,
-        sender: String,
-        body: String,
-        date: Long,
-        read: Boolean,
-        code: String,
-    ) {
-        val eventId = buildObservedEventId(smsId, date)
-        if (ModuleConflictArbiter.shouldSuppressByRelay(phoneContext, "SmsInboxObserver#handleObservedCode")) {
-            XLog.w("Diag observer conflict skip: event_id=%s sms_id=%d", eventId, smsId)
-            return
-        }
-        if (!PrefsReader.isEnabled(pluginContext)) {
-            XLog.w("Diag observer skip: module disabled event_id=%s", eventId)
-            return
-        }
-        if (read) {
+        smsInboxScanner.scan(
+            triggerUri = triggerUri,
+            recentSmsWindowMs = RECENT_SMS_WINDOW_MS,
+        ).forEach { record ->
+            val sensitiveDebugLog = PrefsReader.isSensitiveDebugLogMode(pluginContext)
             XLog.w(
-                "Diag observer skip: sms already read event_id=%s sms_id=%d uri=%s",
-                eventId,
-                smsId,
-                triggerUri,
+                "Diag SMS provider observed: sms_id=%d trigger_uri=%s sender_hash=%s date=%d read=%s code=%s body=%s",
+                record.smsId,
+                record.triggerUri,
+                senderHash(record.sender),
+                record.date,
+                record.read,
+                if (sensitiveDebugLog) StringUtils.escape(record.code) else StringUtils.summarizeCode(record.code),
+                if (sensitiveDebugLog) StringUtils.escape(record.body) else StringUtils.summarizeBody(record.body),
             )
-            return
+            logSmsRoleStateForSms(record.smsId, record.triggerUri)
+            observedSmsHandler.handle(record)
         }
-        if (!claimObservedSms(eventId, smsId, date, sender, body, code)) {
-            return
-        }
-        logSmsRoleState(eventId)
-        if (PrefsReader.deduplicateSms(pluginContext)) {
-            val timestamp = if (date > 0) date else System.currentTimeMillis()
-            val duplicated = runCatching {
-                DBManager.get(pluginContext).querySmsMsgByFingerprint(sender, body, timestamp) != null
-            }.getOrDefault(false)
-            if (duplicated) {
-                XLog.w("Diag observer duplicate skip: event_id=%s", eventId)
-                return
-            }
-        }
-
-        val (company, resolvedPackage) = resolveCompanyAndPackage(body)
-        val normalizedDate = if (date > 0) date else System.currentTimeMillis()
-        val smsMsg = SmsMsg(
-            sender = sender,
-            body = body,
-            date = normalizedDate,
-            company = company,
-            smsCode = code,
-            packageName = resolvedPackage,
-            msgType = SmsMsg.MSG_TYPE_SMS,
-        )
-
-        if (PrefsReader.autoInputCodeEnabled(pluginContext)) {
-            XLog.w(
-                "Diag observer auto-input: event_id=%s sender_hash=%s read=%s uri=%s",
-                eventId,
-                senderHash(sender),
-                read,
-                triggerUri,
-            )
-            AutoInputAction(pluginContext, phoneContext, smsMsg).call()
-        } else {
-            XLog.w("Diag observer auto-input disabled: event_id=%s", eventId)
-        }
-
-        if (PrefsReader.deduplicateSms(pluginContext)) {
-            XLog.w("Diag observer record skipped: dedup enabled event_id=%s", eventId)
-            return
-        }
-        // Keep record behavior consistent with regular flow when enabled.
-        RecordSmsAction(pluginContext, phoneContext, smsMsg, eventId).call()
     }
 
     private fun logSmsRoleState(eventId: String) {
-        val (defaultSms, roleHolders) = resolveSmsRoleState()
+        val roleState = smsRoleStateResolver.resolve(phoneContext)
         XLog.w(
             "Diag observer sms role: event_id=%s defaultSms=%s roleHolders=%s",
             eventId,
-            defaultSms ?: "<none>",
-            if (roleHolders.isEmpty()) "<none>" else roleHolders.joinToString(","),
+            roleState.defaultSms ?: "<none>",
+            if (roleState.roleHolders.isEmpty()) "<none>" else roleState.roleHolders.joinToString(","),
         )
     }
 
     private fun logSmsRoleStateForSms(smsId: Long, triggerUri: String) {
-        val (defaultSms, roleHolders) = resolveSmsRoleState()
+        val roleState = smsRoleStateResolver.resolve(phoneContext)
         XLog.w(
             "Diag observer sms role: sms_id=%d trigger_uri=%s defaultSms=%s roleHolders=%s",
             smsId,
             triggerUri.ifBlank { Telephony.Sms.CONTENT_URI.toString() },
-            defaultSms ?: "<none>",
-            if (roleHolders.isEmpty()) "<none>" else roleHolders.joinToString(","),
+            roleState.defaultSms ?: "<none>",
+            if (roleState.roleHolders.isEmpty()) "<none>" else roleState.roleHolders.joinToString(","),
         )
-    }
-
-    private fun resolveSmsRoleState(): Pair<String?, List<String>> {
-        val defaultSms = runCatching { Telephony.Sms.getDefaultSmsPackage(phoneContext) }.getOrNull()
-        val roleHolders: List<String> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            runCatching {
-                val roleManager = phoneContext.getSystemService(RoleManager::class.java)
-                if (roleManager == null) {
-                    emptyList()
-                } else {
-                    val method = roleManager.javaClass.getMethod("getRoleHolders", String::class.java)
-                    @Suppress("UNCHECKED_CAST")
-                    (method.invoke(roleManager, RoleManager.ROLE_SMS) as? List<*>)?.filterIsInstance<String>()
-                        .orEmpty()
-                }
-            }.getOrDefault(emptyList())
-        } else {
-            emptyList()
-        }
-        return defaultSms to roleHolders
-    }
-
-    private fun resolveCompanyAndPackage(body: String): Pair<String, String?> {
-        val companyCandidates = SmsCodeUtils.parseCompanyCandidates(body)
-            .map { it.trim().trim('【', '】', '[', ']') }
-            .filter { it.isNotBlank() }
-        var company = SmsCodeUtils.parseCompany(body)
-            .trim()
-            .trim('【', '】', '[', ']')
-        var resolvedPackage: String? = null
-        for (candidate in companyCandidates) {
-            val pkg = SmsCodeUtils.findPackageNameByLabel(phoneContext, candidate)
-            if (!pkg.isNullOrBlank()) {
-                company = candidate
-                resolvedPackage = pkg
-                break
-            }
-        }
-        if (resolvedPackage.isNullOrBlank()) {
-            resolvedPackage = SmsCodeUtils.findPackageNameByLabel(phoneContext, company)
-        }
-        return company to resolvedPackage
-    }
-
-    private fun buildObservedEventId(smsId: Long, date: Long): String {
-        val ts = if (date > 0) date else System.currentTimeMillis()
-        return "sms_observed_${ts.toString(EVENT_ID_RADIX)}_${smsId.toString(EVENT_ID_RADIX)}"
-    }
-
-    private fun parseTriggeredSmsId(triggerUri: String): Long? {
-        if (triggerUri.isBlank()) return null
-        val uri = runCatching { Uri.parse(triggerUri) }.getOrNull() ?: return null
-        if (uri.scheme != "content") return null
-        if (uri.authority != "sms") return null
-        return uri.lastPathSegment?.toLongOrNull()
-    }
-
-    private fun claimObservedSms(
-        eventId: String,
-        smsId: Long,
-        date: Long,
-        sender: String,
-        body: String,
-        code: String,
-    ): Boolean {
-        val key = buildObservedSmsKey(smsId, date, sender, body, code)
-        val claim = SharedRuntimeGate.claimWithinWindow(
-            context = pluginContext,
-            fileName = SHARED_OBSERVED_SMS_FILE_NAME,
-            key = key,
-            windowMs = OBSERVED_SMS_DEDUP_WINDOW_MS,
-            maxEntries = MAX_TRACKED_SMS_IDS,
-        )
-        if (claim.claimed) {
-            return true
-        }
-        XLog.w(
-            "Diag observer dedup skip: event_id=%s key=%s ageMs=%d",
-            eventId,
-            key,
-            claim.ageMs ?: -1L,
-        )
-        return false
-    }
-
-    private fun buildObservedSmsKey(
-        smsId: Long,
-        date: Long,
-        sender: String,
-        body: String,
-        code: String,
-    ): String {
-        if (smsId > 0) {
-            return "id:$smsId|date:$date|code:$code"
-        }
-        return "fp:${senderHash(sender)}:${Integer.toHexString(body.hashCode())}|date:$date|code:$code"
-    }
-
-    private fun markSeen(smsId: Long): Boolean = synchronized(recentSmsIds) {
-        if (!recentSmsIds.add(smsId)) {
-            return false
-        }
-        while (recentSmsIds.size > MAX_TRACKED_SMS_IDS) {
-            val first = recentSmsIds.firstOrNull() ?: break
-            recentSmsIds.remove(first)
-        }
-        true
     }
 
     private fun senderHash(sender: String): String {
@@ -331,12 +95,7 @@ internal class SmsInboxObserver(
 
     companion object {
         private const val RECENT_SMS_WINDOW_MS = 10 * 60 * 1000L
-        private const val OBSERVED_SMS_DEDUP_WINDOW_MS = 30_000L
-        private const val MAX_RECENT_SMS_COUNT = 32
         private const val MAX_TRACKED_SMS_IDS = 128
-        private const val EVENT_ID_RADIX = 36
-        private const val SHARED_OBSERVED_SMS_FILE_NAME = "observed_sms_dedup"
         private val queryExecutor = Executors.newSingleThreadExecutor()
-        private val recentSmsIds = Collections.synchronizedSet(LinkedHashSet<Long>())
     }
 }
