@@ -661,15 +661,30 @@ fun ComposeSettingsScreen(
                         accordionMode = accordionMode.value,
                     ) {
                         if (supportsAccessibilityAutoInput) {
-                            Item(
-                                title = stringResource(id = R.string.pref_auto_input_accessibility_service_title),
-                                summary = accessibilityAutoInputServiceSummary(
-                                    context = context,
-                                    enabled = autoInputAccessibilityEnabled,
-                                ),
-                            ) {
-                                openAccessibilitySettings()
-                            }
+                            ListItem(
+                                headlineContent = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_auto_input_accessibility_service_title),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                    )
+                                },
+                                supportingContent = {
+                                    Text(
+                                        text = stringResource(id = R.string.pref_auto_input_accessibility_service_summary),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                },
+                                trailingContent = {
+                                    Switch(
+                                        checked = autoInputAccessibilityEnabled,
+                                        onCheckedChange = { openAccessibilitySettings() },
+                                    )
+                                },
+                                modifier = Modifier.clickable {
+                                    openAccessibilitySettings()
+                                },
+                            )
                         }
                         SwitchItem(
                             title = stringResource(id = R.string.pref_enable_auto_input_code_title),
@@ -1398,21 +1413,6 @@ private fun isAutoInputAccessibilityServiceEnabled(context: android.content.Cont
     return enabledServices.split(':').any { candidate ->
         candidate.equals(expectedService, ignoreCase = true)
     }
-}
-
-@Composable
-private fun accessibilityAutoInputServiceSummary(
-    context: android.content.Context,
-    enabled: Boolean,
-): String {
-    val status = stringResource(
-        id = if (enabled) {
-            R.string.pref_auto_input_accessibility_service_status_enabled
-        } else {
-            R.string.pref_auto_input_accessibility_service_status_disabled
-        },
-    )
-    return context.getString(R.string.pref_auto_input_accessibility_service_summary, status)
 }
 
 @Composable
