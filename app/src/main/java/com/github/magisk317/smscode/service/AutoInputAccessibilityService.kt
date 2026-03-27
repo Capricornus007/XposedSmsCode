@@ -42,12 +42,17 @@ class AutoInputAccessibilityService : AccessibilityService() {
 
             val result = handleAutoInput(code, autoEnter)
             XLog.w(
-                "Accessibility auto input result: attemptId=%d success=%s strategy=%s reason=%s",
+                "Accessibility auto input result: attemptId=%d success=%s strategy=%s reason=%s windowPkg=%s",
                 attemptId ?: -1L,
                 result.success,
                 result.strategy,
                 result.reason,
+                result.windowPackage.ifBlank { "<none>" },
             )
+            publishOrderedAccessibilityResult(result)
+            if (result.success) {
+                publishTerminalAutoInputResult(attemptId, result)
+            }
             if (result.success && isOrderedBroadcast) {
                 abortBroadcast()
             }
@@ -95,9 +100,10 @@ class AutoInputAccessibilityService : AccessibilityService() {
         autoEnter: Boolean,
     ): AutoInputResult {
         val root = rootInActiveWindow ?: return AutoInputResult(false, "none", "no_active_window")
+        val windowPackage = root.packageName?.toString().orEmpty()
         XLog.w(
             "Accessibility active window: pkg=%s class=%s",
-            root.packageName?.toString().orEmpty().ifBlank { "<unknown>" },
+            windowPackage.ifBlank { "<unknown>" },
             root.className?.toString().orEmpty().ifBlank { "<unknown>" },
         )
 
@@ -105,27 +111,27 @@ class AutoInputAccessibilityService : AccessibilityService() {
         if (focusedNode != null) {
             val focusedResult = setNodeText(focusedNode, code, autoEnter)
             if (focusedResult.success) {
-                return focusedResult.copy(strategy = "focused_node")
+                return focusedResult.copy(strategy = "focused_node", windowPackage = windowPackage)
             }
             XLog.w("Accessibility focused-node input failed: reason=%s", focusedResult.reason)
         }
 
         val editableNodes = collectEditableNodes(root)
         if (editableNodes.isEmpty()) {
-            return AutoInputResult(false, "none", "no_editable_node")
+            return AutoInputResult(false, "none", "no_editable_node", windowPackage)
         }
 
         val groupedResult = fillEditableGroup(editableNodes, code, autoEnter)
         if (groupedResult.success) {
-            return groupedResult
+            return groupedResult.copy(windowPackage = windowPackage)
         }
 
         val singleResult = setNodeText(editableNodes.first(), code, autoEnter)
         if (singleResult.success) {
-            return singleResult.copy(strategy = "best_editable_node")
+            return singleResult.copy(strategy = "best_editable_node", windowPackage = windowPackage)
         }
 
-        return groupedResult
+        return groupedResult.copy(windowPackage = windowPackage)
     }
 
     private fun findFocusedEditableNode(root: AccessibilityNodeInfo): AccessibilityNodeInfo? {
@@ -269,10 +275,44 @@ class AutoInputAccessibilityService : AccessibilityService() {
         return node.text?.length ?: hintLength ?: 0
     }
 
+    private fun publishOrderedAccessibilityResult(result: AutoInputResult) {
+        if (!autoInputReceiver.isOrderedBroadcast) return
+        val extras = runCatching { autoInputReceiver.getResultExtras(true) }.getOrElse { Bundle() }
+        extras.putBoolean(SystemInputInjectorHook.EXTRA_ACCESSIBILITY_HANDLED, true)
+        extras.putBoolean(SystemInputInjectorHook.EXTRA_ACCESSIBILITY_SUCCESS, result.success)
+        extras.putString(SystemInputInjectorHook.EXTRA_ACCESSIBILITY_REASON, result.reason)
+        extras.putString(SystemInputInjectorHook.EXTRA_ACCESSIBILITY_STRATEGY, result.strategy)
+        extras.putString(SystemInputInjectorHook.EXTRA_ACCESSIBILITY_WINDOW_PACKAGE, result.windowPackage)
+        autoInputReceiver.setResultExtras(extras)
+    }
+
+    private fun publishTerminalAutoInputResult(
+        attemptId: Long?,
+        result: AutoInputResult,
+    ) {
+        val resolvedAttemptId = attemptId ?: return
+        val intent = Intent(SystemInputInjectorHook.resolveActionAutoInputResult()).apply {
+            setPackage(packageName)
+            putExtra("attemptId", resolvedAttemptId)
+            putExtra("success", result.success)
+            if (!result.success) {
+                putExtra("reason", result.reason)
+            }
+        }
+        runCatching { sendBroadcast(intent) }
+            .onFailure { error ->
+                XLog.w(
+                    "Accessibility auto input result broadcast failed: %s",
+                    error.message ?: error.javaClass.simpleName,
+                )
+            }
+    }
+
     private data class AutoInputResult(
         val success: Boolean,
         val strategy: String,
         val reason: String,
+        val windowPackage: String = "",
     )
 
     private companion object {
