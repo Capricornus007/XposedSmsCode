@@ -61,6 +61,10 @@ jobs:
         if: env.HAS_RELEASE_KEYSTORE == 'true'
         run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 --decode > app/release.jks
 
+      - name: Ensure Android 37 platform aliases
+        shell: bash
+        run: bash scripts/ensure_android_sdk_platform_alias.sh
+
       - name: Build APKs with Splits
         run: >
           ./gradlew
@@ -135,6 +139,10 @@ jobs:
       - name: Decode Keystore
         if: env.HAS_RELEASE_KEYSTORE == 'true'
         run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 --decode > app/release.jks
+
+      - name: Ensure Android 37 platform aliases
+        shell: bash
+        run: bash scripts/ensure_android_sdk_platform_alias.sh
 
       - name: Build App Bundle
         run: ./gradlew bundlePlayApi101Release
