@@ -14,7 +14,7 @@ import android.os.SystemClock
 import android.provider.Telephony
 import androidx.annotation.IntDef
 import androidx.core.content.ContextCompat
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.hook.code.action.CallableAction
@@ -39,7 +39,7 @@ class OperateSmsAction(pluginContext: Context, phoneContext: Context, smsMsg: Sm
         this.forcedOp = forcedOp
     }
 
-    @IntDef(OP_DELETE, OP_MARK_AS_READ)
+    @IntDef(FORCE_DELETE, OP_MARK_AS_READ)
     @Retention(AnnotationRetention.SOURCE)
     private annotation class SmsOp
 

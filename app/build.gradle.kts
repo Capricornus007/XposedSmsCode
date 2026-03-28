@@ -1,49 +1,18 @@
-import java.io.FileInputStream
-import java.util.Properties
-import java.util.TimeZone
-import java.util.Date
-import java.text.SimpleDateFormat
-
 plugins {
     alias(libs.plugins.android.application)
+    id("smscode.android.common")
+    id("smscode.app.signing")
+    id("smscode.app.packaging")
     id(libs.plugins.kotlin.parcelize.get().pluginId)
     alias(libs.plugins.ksp)
     id(libs.plugins.kotlin.compose.get().pluginId)
     id(libs.plugins.kotlin.serialization.get().pluginId)
 }
 
-val keystoreFilePath = System.getenv("KEYSTORE_FILE") ?: findProperty("tianma.keystore.path")?.toString() ?: "release.jks"
-val keyFile = file(keystoreFilePath)
-val propertyFile = file(findProperty("tianma.signature.path") ?: "signature.properties")
-
-val keyProps = Properties()
-if (propertyFile.exists()) {
-    FileInputStream(propertyFile).use { keyProps.load(it) }
-}
-
-val isSigningInfoAvailable = keyFile.exists() &&
-    (keyProps.getProperty("STORE_PASSWORD") != null || System.getenv("STORE_PASSWORD") != null)
-
-fun releaseTime(): String {
-    return SimpleDateFormat("yyMMdd").apply { timeZone = TimeZone.getDefault() }.format(Date())
-}
-
-fun buildTimestamp(): String {
-    val override = findProperty("buildTs")?.toString()?.trim().orEmpty()
-    if (override.isNotEmpty()) {
-        return override
-    }
-    return SimpleDateFormat("yyyyMMddHHmmss").apply { timeZone = TimeZone.getDefault() }.format(Date())
-}
-
 val versionNameStr = libs.versions.versionName.get()
 val versionCodeInt = libs.versions.versionCode.get().toInt()
-val compileSdkInt = libs.versions.compileSdk.get().toInt()
-val minSdkInt = libs.versions.minSdk.get().toInt()
-val targetSdkInt = libs.versions.targetSdk.get().toInt()
 val minSdkStr = libs.versions.minSdk.get()
 val targetSdkStr = libs.versions.targetSdk.get()
-val sdkExtensionInt = libs.versions.compileSdkExtension.get().toInt()
 val ndkVersionStr = libs.versions.ndk.get()
 val relayDownloadUrl = "https://github.com/magisk317/xinyi-relay"
 val allowConflictBypass = findProperty("allowConflictBypass")
@@ -51,56 +20,15 @@ val allowConflictBypass = findProperty("allowConflictBypass")
     ?.toBooleanStrictOrNull()
     ?: false
 
-fun releaseBaseName(versionName: String): String {
-    return "XposedSmsCode_v${versionName.replace("\\s+".toRegex(), "_")}_${releaseTime()}"
-}
-
-fun normalizeAbiForFileName(abi: String): String {
-    return abi.replace("-", "")
-}
-
-fun releaseApkName(versionName: String, buildType: String, abiSuffix: String, xposedApiFlavor: String): String {
-    return "${normalizeAbiForFileName(abiSuffix)}_${xposedApiFlavor}_${releaseBaseName(versionName)}_${buildType}.apk"
-}
-
-fun releaseAabName(versionName: String): String {
-    return "${releaseBaseName(versionName)}_release.aab"
-}
-
 android {
     namespace = "com.github.tianma8023.xposed.smscode"
-    compileSdk = compileSdkInt
-    compileSdkExtension = sdkExtensionInt
     ndkVersion = ndkVersionStr
 
-    flavorDimensions += listOf("distribution", "xposedApi")
     productFlavors {
-        create("play") {
-            dimension = "distribution"
-            buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "false")
-            buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "true")
-            buildConfigField("boolean", "ENABLE_ACCESSIBILITY_AUTO_INPUT", "false")
-        }
-        create("github") {
-            dimension = "distribution"
-            buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
-            buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "true")
-            buildConfigField("boolean", "ENABLE_ACCESSIBILITY_AUTO_INPUT", "true")
-        }
-        create("fdroid") {
-            dimension = "distribution"
-            buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
-            buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "false")
-            buildConfigField("boolean", "ENABLE_ACCESSIBILITY_AUTO_INPUT", "true")
-        }
-        create("legacy") {
-            dimension = "xposedApi"
-            buildConfigField("String", "XPOSED_API_FLAVOR", "\"legacy\"")
+        named("legacy") {
             proguardFile("proguard-legacy.pro")
         }
-        create("api101") {
-            dimension = "xposedApi"
-            buildConfigField("String", "XPOSED_API_FLAVOR", "\"api101\"")
+        named("api101") {
             proguardFile("proguard-api101.pro")
         }
     }
@@ -138,15 +66,6 @@ android {
         buildConfigField("String", "B_DOWNLOAD_URL", "\"$relayDownloadUrl\"")
     }
 
-    splits {
-        abi {
-            isEnable = hasProperty("buildSplits")
-            reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-            isUniversalApk = true
-        }
-    }
-
     buildFeatures {
         buildConfig = true
         compose = true
@@ -161,64 +80,6 @@ android {
         }
     }
 
-    signingConfigs {
-        create("release") {
-            storeFile = keyFile
-            storePassword = System.getenv("STORE_PASSWORD") ?: keyProps.getProperty("STORE_PASSWORD")
-            keyAlias = System.getenv("KEY_ALIAS") ?: keyProps.getProperty("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD") ?: keyProps.getProperty("KEY_PASSWORD")
-            enableV1Signing = true
-            enableV2Signing = true
-            enableV3Signing = true
-        }
-    }
-
-    buildTypes {
-        getByName("debug") {
-            buildConfigField("int", "LOG_LEVEL", "2")
-            buildConfigField("boolean", "LOG_TO_XPOSED", "true")
-            if (isSigningInfoAvailable) {
-                signingConfig = signingConfigs.getByName("release")
-            }
-        }
-        create("alpha") {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            isDebuggable = false
-
-            buildConfigField("int", "LOG_LEVEL", "2")
-            buildConfigField("boolean", "LOG_TO_XPOSED", "true")
-
-            if (isSigningInfoAvailable) {
-                signingConfig = signingConfigs.getByName("release")
-            }
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-common.pro")
-            ndk {
-                debugSymbolLevel = "FULL"
-            }
-        }
-        getByName("release") {
-            isMinifyEnabled = true
-            isShrinkResources = true
-
-            buildConfigField("int", "LOG_LEVEL", "4")
-            buildConfigField("boolean", "LOG_TO_XPOSED", "true")
-            if (isSigningInfoAvailable) {
-                signingConfig = signingConfigs.getByName("release")
-            } else {
-                signingConfig = signingConfigs.getByName("debug")
-            }
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-common.pro")
-            ndk {
-                debugSymbolLevel = "FULL"
-            }
-            lint {
-                disable += "MissingTranslation"
-                checkReleaseBuilds = false
-            }
-        }
-    }
-
     val javaVersion = JavaVersion.toVersion(libs.versions.javaBytecode.get())
     compileOptions {
         sourceCompatibility = javaVersion
@@ -230,75 +91,15 @@ android {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(javaVersion.toString()))
         }
     }
-
-    testOptions {
-    }
-}
-
-tasks.withType<Test>().configureEach {
-    useJUnitPlatform()
-}
-
-androidComponents {
-    beforeVariants(selector().all()) { variantBuilder ->
-        val flavors = variantBuilder.productFlavors.toMap()
-        val distribution = flavors["distribution"]
-        val xposedApiFlavor = flavors["xposedApi"]
-        variantBuilder.enable = when (distribution) {
-            "play" -> xposedApiFlavor == "api101"
-            "github" -> xposedApiFlavor == "legacy" || xposedApiFlavor == "api101"
-            else -> false
-        }
-    }
-
-    onVariants(selector().all()) { variant ->
-        val isDebug = variant.buildType == "debug"
-        val suffix = if (isDebug) buildTimestamp() else ""
-        val vName = if (isDebug) "$versionNameStr-$suffix" else versionNameStr
-        val flavorMap = variant.productFlavors.toMap()
-        val xposedApiFlavor = flavorMap["xposedApi"] ?: "api101"
-        
-        variant.outputs.forEach { output ->
-            if (isDebug) {
-                output.versionName.set(vName)
-            }
-            val abi = output.filters.find { it.filterType == com.android.build.api.variant.FilterConfiguration.FilterType.ABI }?.identifier ?: "universal"
-            try {
-                val outputFileName = output.javaClass.getMethod("getOutputFileName").invoke(output)
-                outputFileName.javaClass
-                    .getMethod("set", Any::class.java)
-                    .invoke(outputFileName, releaseApkName(vName, variant.buildType ?: "", abi, xposedApiFlavor))
-            } catch (e: Exception) {
-                // Ignore for now, build will fail if this is wrong
-            }
-        }
-    }
-}
-
-tasks.register("renamePlayReleaseAab") {
-    dependsOn("bundlePlayApi101Release")
-    val bundleFileProvider = layout.buildDirectory.file("outputs/bundle/playApi101Release/app-play-api101-release.aab")
-    val targetFileProvider = layout.buildDirectory.file("outputs/bundle/playApi101Release/${releaseAabName(versionNameStr)}")
-    doLast {
-        val bundleFile = bundleFileProvider.get().asFile
-        if (bundleFile.exists()) {
-            val target = targetFileProvider.get().asFile
-            bundleFile.copyTo(target, overwrite = true)
-        }
-    }
-}
-
-tasks.matching { it.name == "bundlePlayApi101Release" }.configureEach {
-    finalizedBy("renamePlayReleaseAab")
 }
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(project(":core"))
+    implementation(project(":runtime"))
     implementation(project(":smscode-core:smscode-domain"))
     implementation(project(":smscode-core:smscode-verification-core"))
     implementation(project(":smscode-core:smscode-xposed-core"))
-    implementation(project(":storage"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -308,7 +109,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     add("legacyCompileOnly", project(":xposed-stub"))
-    add("legacyCompileOnly", libs.libxposed.api)
     add("api101CompileOnly", libs.libxposed.api)
     add("api101Implementation", libs.libxposed.service)
 
@@ -355,4 +155,34 @@ dependencies {
     implementation(libs.koin.compose.viewmodel)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.collections.immutable)
+}
+
+val verifyNoLocalVerificationEngine by tasks.registering {
+    group = "verification"
+    description = "Ensure app does not reintroduce local verification engine infrastructure already shared in smscode-core."
+
+    val bannedFiles = listOf(
+        "src/main/java/com/github/magisk317/smscode/xp/hook/code/InboundSmsBlocker.kt",
+        "src/main/java/com/github/magisk317/smscode/xp/hook/code/InboundSmsMethodInvoker.kt",
+        "src/main/java/com/github/magisk317/smscode/xp/hook/code/SmsIntentHookSupport.kt",
+    )
+    val projectRoot = layout.projectDirectory.asFile
+
+    inputs.files(bannedFiles.map { layout.projectDirectory.file(it) })
+
+    doLast {
+        val violations = bannedFiles.filter { projectRoot.resolve(it).exists() }
+        if (violations.isNotEmpty()) {
+            error(
+                buildString {
+                    appendLine("App must not reintroduce local verification engine infrastructure:")
+                    violations.forEach { appendLine(it) }
+                },
+            )
+        }
+    }
+}
+
+tasks.named("check").configure {
+    dependsOn(verifyNoLocalVerificationEngine)
 }

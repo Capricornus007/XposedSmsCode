@@ -2,10 +2,9 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    id("smscode.android.common")
 }
 
-val compileSdkInt = libs.versions.compileSdk.get().toInt()
-val compileSdkExtensionInt = libs.versions.compileSdkExtension.get().toInt()
 val minSdkInt = libs.versions.minSdk.get().toInt()
 val allowConflictBypass = findProperty("allowConflictBypass")
     ?.toString()
@@ -14,38 +13,6 @@ val allowConflictBypass = findProperty("allowConflictBypass")
 
 android {
     namespace = "com.github.magisk317.smscode.core"
-    compileSdk = compileSdkInt
-    compileSdkExtension = compileSdkExtensionInt
-
-    flavorDimensions += listOf("distribution", "xposedApi")
-    productFlavors {
-        create("play") {
-            dimension = "distribution"
-            buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "false")
-            buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "true")
-            buildConfigField("boolean", "ENABLE_ACCESSIBILITY_AUTO_INPUT", "false")
-        }
-        create("github") {
-            dimension = "distribution"
-            buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
-            buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "true")
-            buildConfigField("boolean", "ENABLE_ACCESSIBILITY_AUTO_INPUT", "true")
-        }
-        create("fdroid") {
-            dimension = "distribution"
-            buildConfigField("boolean", "ENABLE_SMS_CHANNEL", "true")
-            buildConfigField("boolean", "ALLOW_HTTP_WEBHOOK", "false")
-            buildConfigField("boolean", "ENABLE_ACCESSIBILITY_AUTO_INPUT", "true")
-        }
-        create("legacy") {
-            dimension = "xposedApi"
-            buildConfigField("String", "XPOSED_API_FLAVOR", "\"legacy\"")
-        }
-        create("api101") {
-            dimension = "xposedApi"
-            buildConfigField("String", "XPOSED_API_FLAVOR", "\"api101\"")
-        }
-    }
 
     defaultConfig {
         minSdk = minSdkInt
@@ -60,41 +27,21 @@ android {
         buildConfig = true
     }
 
-    val javaVersion = JavaVersion.toVersion(libs.versions.javaBytecode.get())
-    compileOptions {
-        sourceCompatibility = javaVersion
-        targetCompatibility = javaVersion
-    }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(javaVersion.toString()))
-        }
-    }
-}
-
-androidComponents {
-    beforeVariants(selector().all()) { variantBuilder ->
-        if (variantBuilder.productFlavors.toMap()["distribution"] == "fdroid") {
-            variantBuilder.enable = false
-        }
+    lint {
+        disable.add("MissingTranslation")
+        disable.add("LocalContextGetResourceValueCall")
     }
 }
 
 dependencies {
-    implementation(project(":storage"))
+    implementation(project(":runtime"))
     implementation(project(":magisk-ui-kit"))
     implementation(project(":smscode-core:smscode-domain"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.browser)
-    implementation(libs.gson)
-    implementation(libs.androidx.room.runtime)
-    
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging.interceptor)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
@@ -109,7 +56,6 @@ dependencies {
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
     implementation(libs.koin.compose.viewmodel)
-    implementation(libs.androidx.datastore.preferences)
     implementation(libs.haze.android)
     implementation(libs.timber)
     implementation(libs.kotlinx.collections.immutable)
@@ -120,6 +66,47 @@ dependencies {
     testImplementation(libs.mockk)
 }
 
-tasks.withType<Test>().configureEach {
-    useJUnitPlatform()
+val verifyNoRuntimeStorageImplLeak by tasks.registering {
+    group = "verification"
+    description = "Ensure the core module does not directly depend on runtime storage/update implementation types."
+
+    val sourceRoot = layout.projectDirectory.dir("src/main/java")
+    val projectRoot = layout.projectDirectory.asFile
+    val bannedRegexes = listOf(
+        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.data\.db\.(AppDatabase|DBManager|DBProvider)\b"""),
+        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.data\.update\."""),
+        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.common\.utils\.PrefsReader\b"""),
+        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.common\.utils\.NotificationUtils\b"""),
+    )
+
+    inputs.dir(sourceRoot)
+
+    doLast {
+        val violations = sourceRoot
+            .asFileTree
+            .matching { include("**/*.kt") }
+            .files
+            .flatMap { source ->
+                source.readLines().mapIndexedNotNull { index, line ->
+                    if (bannedRegexes.any { regex -> regex.containsMatchIn(line) }) {
+                        "${source.relativeTo(projectRoot)}:${index + 1}: ${line.trim()}"
+                    } else {
+                        null
+                    }
+                }
+            }
+
+        if (violations.isNotEmpty()) {
+            error(
+                buildString {
+                    appendLine("Core must not directly depend on runtime storage/update implementation types:")
+                    violations.forEach { appendLine(it) }
+                },
+            )
+        }
+    }
+}
+
+tasks.named("check").configure {
+    dependsOn(verifyNoRuntimeStorageImplLeak)
 }

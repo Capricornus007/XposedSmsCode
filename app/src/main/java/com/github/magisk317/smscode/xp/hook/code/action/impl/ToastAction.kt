@@ -4,7 +4,7 @@ import android.content.Context
 import android.os.Bundle
 import android.widget.Toast
 import com.github.magisk317.smscode.core.R
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.xp.hook.code.helper.InputHelper
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import io.github.magisk317.smscode.verification.ToastActionHelper

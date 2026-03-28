@@ -1,3 +1,5 @@
+@file:Suppress("LocalContextGetResourceValueCall")
+
 package com.github.magisk317.smscode.ui.home
 
 import android.content.Intent
@@ -61,21 +63,19 @@ import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.constant.TransitionConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.common.utils.SPUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.StringUtils
 import com.github.magisk317.smscode.common.utils.Utils
-import com.github.magisk317.smscode.data.update.ApkSecurityVerifier
-import com.github.magisk317.smscode.data.update.GithubReleaseInfo
-import com.github.magisk317.smscode.data.update.GithubUpdateChecker
-import com.github.magisk317.smscode.data.update.UpgradeApkAsset
-import com.github.magisk317.smscode.data.update.UpgradeCheckResult
-import com.github.magisk317.smscode.data.update.UpgradeDownloader
-import com.github.magisk317.smscode.data.update.UpgradeInfo
-import com.github.magisk317.smscode.data.update.UpgradeInstaller
-import com.github.magisk317.smscode.data.update.UpdatePolicy
+import com.github.magisk317.smscode.runtime.RuntimeGithubReleaseInfo
+import com.github.magisk317.smscode.runtime.RuntimeStartupTarget
+import com.github.magisk317.smscode.runtime.RuntimeUpgradeApkAsset
+import com.github.magisk317.smscode.runtime.RuntimeUpgradeCheckResult
+import com.github.magisk317.smscode.runtime.RuntimeUpgradeInfo
+import com.github.magisk317.smscode.runtime.RuntimeUpdateFacade
+import com.github.magisk317.smscode.runtime.RuntimeUpgradeDownloadProgress
 import com.github.magisk317.smscode.ui.app.base.UpdateSystemBars
 import com.github.magisk317.smscode.ui.app.base.applyEdgeToEdge
 import com.github.magisk317.smscode.ui.app.base.rememberHazeStyle
@@ -140,7 +140,7 @@ class MainActivity : AppCompatActivity() {
                 downloadState = UpdateDownloadState.Downloading(progress = 0f, progressText = "0%")
                 downloadJob = scope.launch {
                     try {
-                        val downloadedFile = UpgradeDownloader.download(
+                        val downloadedFile = RuntimeUpdateFacade.download(
                             context = this@MainActivity,
                             versionCode = update.info.versionCode,
                             asset = update.asset,
@@ -152,7 +152,7 @@ class MainActivity : AppCompatActivity() {
                                 )
                             }
                         }
-                        val verifyResult = ApkSecurityVerifier.verifyDownloadedApk(
+                        val verifyResult = RuntimeUpdateFacade.verifyDownloadedApk(
                             context = this@MainActivity,
                             apkFile = downloadedFile,
                             expectedSha256 = update.asset.sha256,
@@ -584,11 +584,11 @@ class MainActivity : AppCompatActivity() {
                                     confirmButton = {
                                         FilledTonalButton(
                                             onClick = {
-                                                if (!UpgradeInstaller.canRequestPackageInstalls(this@MainActivity)) {
+                                                if (!RuntimeUpdateFacade.canRequestPackageInstalls(this@MainActivity)) {
                                                     unknownSourceApk = state.file
                                                     return@FilledTonalButton
                                                 }
-                                                val installResult = UpgradeInstaller.installApk(this@MainActivity, state.file)
+                                                val installResult = RuntimeUpdateFacade.installApk(this@MainActivity, state.file)
                                                 if (installResult.isSuccess) {
                                                     downloadState = UpdateDownloadState.Idle
                                                 } else {
@@ -622,7 +622,7 @@ class MainActivity : AppCompatActivity() {
                                 confirmButton = {
                                     FilledTonalButton(
                                         onClick = {
-                                            startActivity(UpgradeInstaller.buildUnknownSourceSettingsIntent(this@MainActivity))
+                                            startActivity(RuntimeUpdateFacade.buildUnknownSourceSettingsIntent(this@MainActivity))
                                             unknownSourceApk = null
                                         },
                                     ) {
@@ -718,13 +718,13 @@ class MainActivity : AppCompatActivity() {
                 false,
             )
             val onWifi = PackageUtils.isOnWifi(this@MainActivity)
-            if (!UpdatePolicy.shouldRunAutoCheck(enabled, wifiOnly, onWifi)) return@launch
+            if (!RuntimeUpdateFacade.shouldRunAutoCheck(enabled, wifiOnly, onWifi)) return@launch
 
-            when (UpdatePolicy.resolveStartupTarget(PackageUtils.isInstalledFromPlay(this@MainActivity))) {
-                UpdatePolicy.StartupTarget.PLAY -> {
-                requestPlayUpdateInternal(silentIfNoUpdate = true, fallbackOnQueryFailure = false)
+            when (RuntimeUpdateFacade.resolveStartupTarget(PackageUtils.isInstalledFromPlay(this@MainActivity))) {
+                RuntimeStartupTarget.PLAY -> {
+                    requestPlayUpdateInternal(silentIfNoUpdate = true, fallbackOnQueryFailure = false)
                 }
-                UpdatePolicy.StartupTarget.GITHUB -> {
+                RuntimeStartupTarget.GITHUB -> {
                     // Startup GitHub check is handled by checkStartupGithubUpdateIfNeeded()
                 }
             }
@@ -790,16 +790,23 @@ class MainActivity : AppCompatActivity() {
                 false,
             )
             val onWifi = PackageUtils.isOnWifi(this)
-            if (UpdatePolicy.shouldSkipGithubCheckOnStartup(installedFromPlay, enabled, wifiOnly, onWifi)) {
+            if (
+                RuntimeUpdateFacade.shouldSkipGithubCheckOnStartup(
+                    installedFromPlay = installedFromPlay,
+                    autoCheckEnabled = enabled,
+                    wifiOnly = wifiOnly,
+                    onWifi = onWifi,
+                )
+            ) {
                 return GithubUpdateQueryResult.NoUpdate
             }
         } else if (installedFromPlay) {
             return GithubUpdateQueryResult.NoUpdate
         }
 
-        val checkResult = GithubUpdateChecker.fetchUpgradeInfo()
+        val checkResult = RuntimeUpdateFacade.fetchUpgradeInfo()
         val updateState = when (checkResult) {
-            is UpgradeCheckResult.CheckFailed -> {
+            is RuntimeUpgradeCheckResult.CheckFailed -> {
                 return if (isAutoCheck) {
                     GithubUpdateQueryResult.NoUpdate
                 } else {
@@ -807,26 +814,26 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            UpgradeCheckResult.NoUpdate -> return GithubUpdateQueryResult.NoUpdate
-            is UpgradeCheckResult.LegacyLink -> {
-                if (!GithubUpdateChecker.isNewer(BuildConfig.VERSION_NAME, checkResult.release.versionName)) {
+            RuntimeUpgradeCheckResult.NoUpdate -> return GithubUpdateQueryResult.NoUpdate
+            is RuntimeUpgradeCheckResult.LegacyLink -> {
+                if (!RuntimeUpdateFacade.isNewer(BuildConfig.VERSION_NAME, checkResult.release.versionName)) {
                     return GithubUpdateQueryResult.NoUpdate
                 }
                 GithubUpdateUiState.Legacy(checkResult.release)
             }
 
-            is UpgradeCheckResult.Structured -> {
+            is RuntimeUpgradeCheckResult.Structured -> {
                 val info = checkResult.info
                 val newer = if (info.versionCode > 0L) {
-                    GithubUpdateChecker.isNewer(BuildConfig.VERSION_CODE.toLong(), info.versionCode)
+                    RuntimeUpdateFacade.isNewer(BuildConfig.VERSION_CODE.toLong(), info.versionCode)
                 } else {
-                    GithubUpdateChecker.isNewer(BuildConfig.VERSION_NAME, info.versionName)
+                    RuntimeUpdateFacade.isNewer(BuildConfig.VERSION_NAME, info.versionName)
                 }
                 if (!newer) {
                     return GithubUpdateQueryResult.NoUpdate
                 }
 
-                val selectedApk = GithubUpdateChecker.selectBestApkForDevice(
+                val selectedApk = RuntimeUpdateFacade.selectBestApkForDevice(
                     apks = info.apks,
                     requiredXposedApiFlavor = BuildConfig.XPOSED_API_FLAVOR,
                 )
@@ -839,7 +846,7 @@ class MainActivity : AppCompatActivity() {
                     )
                 } else {
                     GithubUpdateUiState.Legacy(
-                        GithubReleaseInfo(
+                        RuntimeGithubReleaseInfo(
                             versionName = info.versionName,
                             htmlUrl = info.htmlUrl.ifBlank { Const.PROJECT_GITHUB_LATEST_RELEASE_URL },
                         ),
@@ -858,7 +865,13 @@ class MainActivity : AppCompatActivity() {
                 is GithubUpdateUiState.Legacy -> updateState.release.versionName
                 is GithubUpdateUiState.Structured -> updateState.update.info.versionName
             }
-            if (UpdatePolicy.shouldSkipIgnoredVersion(respectIgnoredVersion, ignoredVersion, latestVersionName)) {
+            if (
+                RuntimeUpdateFacade.shouldSkipIgnoredVersion(
+                    respectIgnoredVersion = respectIgnoredVersion,
+                    ignoredVersion = ignoredVersion,
+                    latestVersion = latestVersionName,
+                )
+            ) {
                 return GithubUpdateQueryResult.NoUpdate
             }
         }
@@ -888,7 +901,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun formatDownloadProgress(progress: UpgradeDownloader.Progress): String {
+    private fun formatDownloadProgress(progress: RuntimeUpgradeDownloadProgress): String {
         val percent = (progress.percent * 100f).toInt().coerceIn(0, 100)
         val current = formatBytes(progress.bytesRead)
         val total = if (progress.totalBytes > 0L) formatBytes(progress.totalBytes) else "?"
@@ -914,12 +927,12 @@ class MainActivity : AppCompatActivity() {
 }
 
 private data class GithubStructuredUpdate(
-    val info: UpgradeInfo,
-    val asset: UpgradeApkAsset,
+    val info: RuntimeUpgradeInfo,
+    val asset: RuntimeUpgradeApkAsset,
 )
 
 private sealed class GithubUpdateUiState {
-    data class Legacy(val release: GithubReleaseInfo) : GithubUpdateUiState()
+    data class Legacy(val release: RuntimeGithubReleaseInfo) : GithubUpdateUiState()
     data class Structured(val update: GithubStructuredUpdate) : GithubUpdateUiState()
 }
 

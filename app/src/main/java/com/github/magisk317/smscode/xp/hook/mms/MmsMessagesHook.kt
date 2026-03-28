@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
 import com.github.magisk317.smscode.xp.hook.code.CodeWorker

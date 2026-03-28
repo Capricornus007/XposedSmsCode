@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.os.BundleCompat
 import com.github.tianma8023.xposed.smscode.BuildConfig
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import io.github.magisk317.smscode.verification.CodeWorker as SharedCodeWorker
 import io.github.magisk317.smscode.verification.SmsCodePostParseCoordinator

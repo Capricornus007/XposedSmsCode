@@ -2,11 +2,11 @@ package com.github.magisk317.smscode.xp.hook.code.action.impl
 
 import android.content.Context
 import android.content.Intent
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.common.utils.StringUtils
-import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import io.github.magisk317.smscode.verification.SmsParseAction as SharedSmsParseAction
 import com.github.magisk317.smscode.xp.hook.code.action.CallableAction
 import com.github.magisk317.smscode.xp.hook.code.VerificationSmsMsg
@@ -48,7 +48,7 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
             },
             duplicateChecker = { sender, body, timestamp ->
                 runCatching {
-                    DBManager.get(mPluginContext).querySmsMsgByFingerprint(sender, body, timestamp) != null
+                    RuntimeStorageFacade.dbManager(mPluginContext).querySmsMsgByFingerprint(sender, body, timestamp) != null
                 }.getOrDefault(false)
             },
             preparedSmsResolver = { pluginContext, phoneContext, smsMsg, _, timestamp ->

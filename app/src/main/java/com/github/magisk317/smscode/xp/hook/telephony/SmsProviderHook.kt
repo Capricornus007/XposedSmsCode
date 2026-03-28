@@ -7,7 +7,7 @@ import android.net.Uri
 import android.os.Binder
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import io.github.magisk317.smscode.xposed.utils.XLog
 import io.github.magisk317.smscode.xposed.hook.BaseHook
 import io.github.magisk317.smscode.xposed.helper.XposedWrapper

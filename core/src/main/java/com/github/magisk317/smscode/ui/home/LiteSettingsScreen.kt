@@ -1,3 +1,5 @@
+@file:Suppress("LocalContextGetResourceValueCall")
+
 package com.github.magisk317.smscode.ui.home
 
 import androidx.compose.foundation.layout.Arrangement

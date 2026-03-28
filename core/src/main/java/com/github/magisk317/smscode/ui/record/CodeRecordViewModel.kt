@@ -9,8 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.utils.JsonUtils
 import com.github.magisk317.smscode.common.utils.XLog
-import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -28,7 +28,7 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
 
     private val _loading = MutableStateFlow(false)
 
-    val uiState: StateFlow<CodeRecordUiState> = DBManager.get(application)
+    val uiState: StateFlow<CodeRecordUiState> = RuntimeStorageFacade.dbManager(application)
         .queryAllSmsMsgFlow()
         .combine(_loading) { smsList, loading ->
             CodeRecordUiState(smsList.toImmutableList(), loading)
@@ -48,7 +48,7 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
             _loading.value = true
             try {
                 withContext(Dispatchers.IO) {
-                    DBManager.get(getApplication()).queryAllSmsMsg()
+                    RuntimeStorageFacade.dbManager(getApplication()).queryAllSmsMsg()
                 }
             } finally {
                 _loading.value = false
@@ -59,7 +59,7 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
     fun removeSmsMsg(smsMsgList: List<SmsMsg>) {
         viewModelScope.launch {
             try {
-                DBManager.get(getApplication())
+                RuntimeStorageFacade.dbManager(getApplication())
                     .removeSmsMsgListSuspend(smsMsgList)
             } catch (ignored: Throwable) {
                 XLog.e("Error occurs when remove SMS records", ignored)
@@ -70,7 +70,7 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
     fun restoreSmsMsgList(smsMsgList: List<SmsMsg>) {
         viewModelScope.launch {
             try {
-                DBManager.get(getApplication())
+                RuntimeStorageFacade.dbManager(getApplication())
                     .insertSmsMsgListSuspend(smsMsgList)
             } catch (ignored: Throwable) {
                 XLog.e("Error occurs when restore SMS records", ignored)

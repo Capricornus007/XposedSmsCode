@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google()
         mavenCentral()
@@ -8,7 +9,7 @@ pluginManagement {
 
 include(
     ":app",
-    ":storage",
+    ":runtime",
     ":core",
     ":smscode-core:smscode-xposed-core",
     ":smscode-core:smscode-domain",

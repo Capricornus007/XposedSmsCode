@@ -19,12 +19,12 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import android.content.Intent
 import com.github.magisk317.smscode.core.R
-import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.feature.backup.BackupImportResult
 import com.github.magisk317.smscode.feature.backup.BackupManager
 import com.github.magisk317.smscode.feature.backup.BackupRule
 import com.github.magisk317.smscode.feature.backup.BackupSmsRecord
 import com.github.magisk317.smscode.feature.backup.ExportResult
+import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import com.github.magisk317.smscode.common.utils.XLog
 import io.github.magisk317.smscode.domain.model.SmsCodeMatchedRule
 import io.github.magisk317.smscode.domain.model.SmsCodeMatchedRuleSource
@@ -92,7 +92,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     private val _themeState = MutableStateFlow(ThemeState(0))
     val themeState: StateFlow<ThemeState> = _themeState.asStateFlow()
 
-    val smsRecordCount: StateFlow<Long> = DBManager.get(application)
+    val smsRecordCount: StateFlow<Long> = RuntimeStorageFacade.dbManager(application)
         .queryAllSmsMsgCountFlow()
         .stateIn(
             scope = viewModelScope,
@@ -298,7 +298,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 )
                 val rules = if (includeRules) {
                     withContext(Dispatchers.IO) {
-                        DBManager.get(context).queryAllSmsCodeRules()
+                        RuntimeStorageFacade.dbManager(context).queryAllSmsCodeRules()
                             .map { BackupRule(it.company, it.codeKeyword, it.codeRegex) }
                     }
                 } else {
@@ -307,7 +307,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
                 val records = if (includeRecords) {
                     withContext(Dispatchers.IO) {
-                        DBManager.get(context).queryAllSmsMsg()
+                        RuntimeStorageFacade.dbManager(context).queryAllSmsMsg()
                             .map {
                                 BackupSmsRecord(
                                     sender = it.sender,
@@ -441,7 +441,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private suspend fun restoreRules(context: Context, rules: List<BackupRule>) {
         if (rules.isEmpty()) return
-        val dbManager = DBManager.get(context)
+        val dbManager = RuntimeStorageFacade.dbManager(context)
         val entities = rules.map {
             com.github.magisk317.smscode.data.db.entity.SmsCodeRule(it.company, it.codeKeyword, it.codeRegex)
         }
@@ -449,7 +449,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     private suspend fun restoreRecords(context: Context, records: List<BackupSmsRecord>) {
-        val dbManager = DBManager.get(context)
+        val dbManager = RuntimeStorageFacade.dbManager(context)
         if (records.isEmpty()) {
             XLog.w("Restore records skipped: empty list")
             return

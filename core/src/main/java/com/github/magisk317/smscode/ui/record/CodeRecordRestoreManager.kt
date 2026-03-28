@@ -6,8 +6,8 @@ import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.JsonUtils
 import com.github.magisk317.smscode.common.utils.StorageUtils
 import com.github.magisk317.smscode.common.utils.XLog
-import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import java.io.*
 import java.nio.charset.StandardCharsets
 
@@ -50,7 +50,7 @@ object CodeRecordRestoreManager {
         }
 
         if (smsMsgList.isNotEmpty()) {
-            val dbManager = DBManager.get(context)
+            val dbManager = RuntimeStorageFacade.dbManager(context)
             dbManager.addSmsMsgList(smsMsgList)
             XLog.d("Import code records to database succeed")
 

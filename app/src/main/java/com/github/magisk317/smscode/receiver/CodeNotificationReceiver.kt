@@ -12,12 +12,12 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.github.magisk317.smscode.common.constant.NotificationConst
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.xp.hook.code.AutoCancelReceiver
 import com.github.magisk317.smscode.xp.hook.code.CodeNotificationBroadcastContract
 import com.github.magisk317.smscode.xp.hook.code.CopyCodeReceiver
-import com.github.magisk317.smscode.common.utils.NotificationUtils
+import com.github.magisk317.smscode.runtime.RuntimeNotificationFacade as NotificationUtils
 import io.github.magisk317.smscode.verification.CodeNotificationDeliveryHelper
 import io.github.magisk317.smscode.verification.CodeNotificationPayload
 import io.github.magisk317.smscode.xposed.utils.XLog

@@ -1,7 +1,9 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:Suppress("LocalContextGetResourceValueCall")
 
 package com.github.magisk317.smscode.ui.home
 
+import android.annotation.SuppressLint
 import android.Manifest
 import android.app.Activity
 import android.content.ComponentName
@@ -60,7 +62,7 @@ import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.LogBundleExporter
-import com.github.magisk317.smscode.common.utils.NotificationUtils
+import com.github.magisk317.smscode.runtime.RuntimeNotificationFacade as NotificationUtils
 import com.github.magisk317.smscode.common.utils.RuntimeLogStore
 import com.github.magisk317.smscode.common.utils.SPUtils
 import com.github.magisk317.smscode.common.utils.Utils
@@ -252,6 +254,7 @@ fun ComposeSettingsScreen(
             runCatching {
                 if ((dataFlags and Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION) != 0) {
                     val flagsToPersist = if (grantFlags != 0) grantFlags else Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    @SuppressLint("WrongConstant")
                     context.contentResolver.takePersistableUriPermission(pickedUri, flagsToPersist)
                 } else {
                     XLog.w(
@@ -870,7 +873,7 @@ fun ComposeSettingsScreen(
                             },
                             onToggle = { on ->
                                 RuntimeLogStore.setEnabled(on)
-                                XLog.setLogLevel(if (on) Log.VERBOSE else com.github.magisk317.smscode.storage.BuildConfig.LOG_LEVEL)
+                                XLog.setLogLevel(if (on) Log.VERBOSE else com.github.magisk317.smscode.runtime.BuildConfig.LOG_LEVEL)
                             },
                             onSaved = markPrefsSaved,
                         )

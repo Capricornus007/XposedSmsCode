@@ -13,7 +13,8 @@ import com.google.android.play.core.install.InstallStateUpdatedListener
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
-import com.github.magisk317.smscode.data.update.UpdateCoordinator
+import com.github.magisk317.smscode.runtime.RuntimePlayAction
+import com.github.magisk317.smscode.runtime.RuntimeUpdateFacade
 
 class FlavorPlayUpdateDelegate : PlayUpdateDelegate {
 
@@ -71,20 +72,20 @@ class FlavorPlayUpdateDelegate : PlayUpdateDelegate {
     ) {
         val manager = appUpdateManager ?: return
         manager.appUpdateInfo.addOnSuccessListener { info ->
-            val action = UpdateCoordinator.decidePlayAction(
+            val action = RuntimeUpdateFacade.decidePlayAction(
                 updateAvailable = info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE,
                 flexibleAllowed = info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE),
                 inProgress = info.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS,
                 silentIfNoUpdate = silentIfNoUpdate,
             )
             when (action) {
-                UpdateCoordinator.PlayAction.START_UPDATE_FLOW -> startUpdateFlow(manager, info, onFallbackToStore)
-                UpdateCoordinator.PlayAction.OPEN_STORE_OR_GITHUB -> onFallbackToStore()
-                UpdateCoordinator.PlayAction.NO_OP -> Unit
+                RuntimePlayAction.START_UPDATE_FLOW -> startUpdateFlow(manager, info, onFallbackToStore)
+                RuntimePlayAction.OPEN_STORE_OR_GITHUB -> onFallbackToStore()
+                RuntimePlayAction.NO_OP -> Unit
             }
         }.addOnFailureListener {
-            when (UpdateCoordinator.decidePlayFailureAction(fallbackOnQueryFailure)) {
-                UpdateCoordinator.PlayAction.OPEN_STORE_OR_GITHUB -> onFallbackToStore()
+            when (RuntimeUpdateFacade.decidePlayFailureAction(fallbackOnQueryFailure)) {
+                RuntimePlayAction.OPEN_STORE_OR_GITHUB -> onFallbackToStore()
                 else -> Unit
             }
         }

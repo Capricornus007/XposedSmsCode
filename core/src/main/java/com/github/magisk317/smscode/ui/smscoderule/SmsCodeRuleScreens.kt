@@ -1,3 +1,5 @@
+@file:Suppress("LocalContextGetResourceValueCall")
+
 package com.github.magisk317.smscode.ui.smscoderule
 
 import android.content.ClipData
@@ -49,8 +51,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.magisk317.smscode.core.R
-import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
+import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import io.github.magisk317.smscode.domain.model.BuiltinSmsCodeRuleSpec
 import io.github.magisk317.smscode.domain.model.BuiltinSmsCodeRules
 import java.util.regex.Pattern
@@ -83,7 +85,7 @@ fun SmsCodeRuleListScreen(
     onEditClick: (Long) -> Unit,
 ) {
     val context = LocalContext.current
-    val dbManager = remember(context) { DBManager.get(context) }
+    val dbManager = remember(context) { RuntimeStorageFacade.dbManager(context) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val removedLabel = stringResource(id = R.string.removed)
@@ -318,7 +320,7 @@ fun SmsCodeRuleEditorScreen(
 ) {
     val context = LocalContext.current
     val clipboard = LocalClipboard.current
-    val dbManager = remember(context) { DBManager.get(context) }
+    val dbManager = remember(context) { RuntimeStorageFacade.dbManager(context) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val builtinRule = remember(ruleId) { builtinRuleByEditorId(ruleId) }

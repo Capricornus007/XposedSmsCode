@@ -1,5 +1,7 @@
 package com.github.magisk317.smscode.common.utils
 
+import android.annotation.SuppressLint
+import android.Manifest
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
@@ -10,10 +12,11 @@ import android.net.NetworkCapabilities
 import android.net.Uri
 import android.os.Build
 import androidx.annotation.IntDef
+import androidx.core.content.ContextCompat
 import androidx.core.content.pm.PackageInfoCompat
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.core.R
-import com.github.magisk317.smscode.storage.BuildConfig
+import com.github.magisk317.smscode.runtime.BuildConfig
 
 /**
  * 包相关工具类
@@ -283,8 +286,17 @@ object PackageUtils {
         if (playStoreAvailable) UpdateDestination.PLAY else UpdateDestination.GITHUB
 
     @JvmStatic
+    @SuppressLint("MissingPermission")
     fun isOnWifi(context: Context): Boolean {
         return try {
+            if (
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.ACCESS_NETWORK_STATE,
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                return false
+            }
             val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return false
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 val network = cm.activeNetwork ?: return false

@@ -11,8 +11,8 @@ import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.NotificationConst
 import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
 import io.github.magisk317.smscode.xposed.utils.ModuleActivationStore
-import com.github.magisk317.smscode.common.utils.NotificationUtils
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimeNotificationFacade as NotificationUtils
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.common.utils.SmsBlacklistUtils
 import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg

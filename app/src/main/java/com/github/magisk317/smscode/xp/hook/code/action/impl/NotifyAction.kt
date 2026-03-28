@@ -10,8 +10,8 @@ import android.os.Bundle
 import com.github.magisk317.smscode.common.constant.CodeNotificationOwner
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.NotificationConst
-import com.github.magisk317.smscode.common.utils.NotificationUtils
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimeNotificationFacade as NotificationUtils
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.xp.hook.code.CodeNotificationBroadcastContract
 import io.github.magisk317.smscode.verification.CodeNotificationDeliveryHelper
 import io.github.magisk317.smscode.verification.CodeNotificationPayload

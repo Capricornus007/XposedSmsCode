@@ -14,7 +14,7 @@ import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import io.github.magisk317.smscode.xposed.utils.ModuleActivationStore
 import io.github.magisk317.smscode.xposed.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.RuntimeLogStore

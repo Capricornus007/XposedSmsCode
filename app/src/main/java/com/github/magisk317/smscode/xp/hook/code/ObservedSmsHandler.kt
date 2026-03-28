@@ -1,11 +1,11 @@
 package com.github.magisk317.smscode.xp.hook.code
 
 import android.content.Context
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.common.utils.SharedRuntimeGate
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
-import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import io.github.magisk317.smscode.verification.ObservedInboxScanRecord
 import io.github.magisk317.smscode.verification.ObservedSmsHandler as SharedObservedSmsHandler
 import io.github.magisk317.smscode.verification.SmsCodePostParseCoordinator
@@ -110,7 +110,7 @@ internal class ObservedSmsHandler(
         }
         val timestamp = if (date > 0) date else currentTimeMillis()
         return runCatching {
-            DBManager.get(pluginContext).querySmsMsgByFingerprint(sender, body, timestamp) != null
+            RuntimeStorageFacade.dbManager(pluginContext).querySmsMsgByFingerprint(sender, body, timestamp) != null
         }.getOrDefault(false)
     }
 

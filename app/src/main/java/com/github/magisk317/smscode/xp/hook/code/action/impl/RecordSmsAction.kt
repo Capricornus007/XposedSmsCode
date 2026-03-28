@@ -5,11 +5,11 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.os.Bundle
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.common.utils.SharedRuntimeGate
-import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.DBProvider
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import com.github.magisk317.smscode.ui.record.CodeRecordRestoreManager
 import io.github.magisk317.smscode.verification.RecordSmsDedupHelper
 import io.github.magisk317.smscode.verification.RecordSmsActionHelper
@@ -113,7 +113,7 @@ class RecordSmsAction(
     }
 
     private fun shouldSkipByDedup(smsMsg: SmsMsg, eventLabel: String): Boolean {
-        val db = DBManager.get(mPluginContext)
+        val db = RuntimeStorageFacade.dbManager(mPluginContext)
         return RecordSmsDedupHelper.shouldSkipByWindow(
             smsMsg = smsMsg.toVerificationMessage(),
             eventLabel = eventLabel,

@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.NotificationConst
-import com.github.magisk317.smscode.common.utils.NotificationUtils
+import com.github.magisk317.smscode.runtime.RuntimeNotificationFacade as NotificationUtils
 import com.github.magisk317.smscode.xp.hook.code.helper.InputHelper
 import io.github.magisk317.smscode.xposed.utils.XLog
 import java.util.LinkedHashSet

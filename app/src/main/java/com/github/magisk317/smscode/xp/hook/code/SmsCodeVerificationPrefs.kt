@@ -1,7 +1,7 @@
 package com.github.magisk317.smscode.xp.hook.code
 
 import android.content.Context
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import io.github.magisk317.smscode.verification.VerificationPrefs
 
 internal class SmsCodeVerificationPrefs(

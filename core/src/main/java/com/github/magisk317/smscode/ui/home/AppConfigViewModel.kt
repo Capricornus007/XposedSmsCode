@@ -7,10 +7,10 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.magisk317.smscode.common.utils.XLog
-import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.feature.store.EntityStoreManager
 import com.github.magisk317.smscode.feature.store.EntityType
+import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import com.github.magisk317.smscode.ui.block.AppInfoHelper
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -94,7 +94,7 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
                     val context = getApplication<Application>()
                     val pm = getApplication<Application>().packageManager
                     // Load app blocked configs from DB.
-                    val configs = DBManager.get(getApplication()).queryAllAppInfosSuspend()
+                    val configs = RuntimeStorageFacade.dbManager(getApplication()).queryAllAppInfosSuspend()
                     EntityStoreManager.storeEntitiesToFile(
                         context,
                         EntityType.APP_CONFIG,
@@ -273,7 +273,7 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
             try {
                 withContext(Dispatchers.IO) {
                     persistMutex.withLock {
-                        val dbManager = DBManager.get(getApplication())
+                        val dbManager = RuntimeStorageFacade.dbManager(getApplication())
                         if (target != null) {
                             if (hasEffectiveConfig(target)) {
                                 dbManager.upsertAppInfo(target)

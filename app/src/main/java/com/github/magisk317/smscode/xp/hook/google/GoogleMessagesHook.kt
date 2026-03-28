@@ -6,7 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Telephony
 import com.github.tianma8023.xposed.smscode.BuildConfig
-import com.github.magisk317.smscode.common.utils.PrefsReader
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import io.github.magisk317.smscode.domain.model.BuiltinSmsCodeRules
 import io.github.magisk317.smscode.xposed.utils.XLog
 import io.github.magisk317.smscode.xposed.helper.XposedWrapper
