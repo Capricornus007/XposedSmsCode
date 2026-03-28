@@ -85,7 +85,13 @@ class CodeWorker(
         if (parseBundle.getBoolean(SmsParseAction.SMS_DUPLICATED, false)) {
             return SharedCodeWorker.ParseOutcome<VerificationSmsMsg>(duplicated = true)
         }
-        val smsMsg = BundleCompat.getParcelable(parseBundle, SmsParseAction.SMS_MSG, SmsMsg::class.java)
+        val verificationSmsMsg = BundleCompat.getParcelable(
+            parseBundle,
+            SmsParseAction.SMS_MSG,
+            VerificationSmsMsg::class.java,
+        )
+        val smsMsg = verificationSmsMsg?.raw
+            ?: BundleCompat.getParcelable(parseBundle, SmsParseAction.SMS_MSG, SmsMsg::class.java)
             ?: return null
         return SharedCodeWorker.ParseOutcome(
             smsMsg = smsMsg.toVerificationMessage(),
