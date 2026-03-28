@@ -4,6 +4,19 @@
 
 ---
 
+## [v3.2.5] - 2026-03-28
+- 版本：`versionCode 110` / `versionName 3.2.5`。
+- 发布说明：Play 渠道继续提供 `api101`；GitHub 渠道同时提供 `api101` 与 `legacy`。两套 SDK 均已对齐 Android 17 适配，请按框架类型选择安装包。
+- `[api101/legacy]` 继续重构验证码主链路：共享 `smscode-core` verification pipeline，并将 `runtime` 从 `storage` 中拆出，统一 dispatch、observer、通知、自动输入与记录能力，减少 flavor 之间的实现漂移。
+- `[api101/legacy]` 修复验证码解析结果在 app 侧 `Bundle` 解包时丢失的问题，恢复部分场景下通知、记录与自动输入不触发的链路。
+- `[api101/legacy]` 改进无障碍自动输入重试、输入节流与前台包名判定，降低部分机型上的自动输入失败概率。
+- `[ui]` 设置页数值输入继续做规范化处理，并同步简化无障碍服务说明文案与设置项文案复制逻辑。
+- `[build/ci]` 对齐共享子模块基础设施、发布产物工作流与依赖强制维护脚本，降低后续发版维护成本。
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.2.4...v3.2.5
+
+---
+
 ## [v3.2.4] - 2026-03-26
 - 版本：`versionCode 109` / `versionName 3.2.4`。
 - 发布说明：Play 渠道继续提供 `api101`；GitHub 渠道同时提供 `api101` 与 `legacy`。下载前请先确认框架类型，避免下错包。
