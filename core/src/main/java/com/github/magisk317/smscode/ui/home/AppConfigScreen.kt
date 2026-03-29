@@ -153,6 +153,8 @@ fun AppConfigScreen(
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val pullToRefreshState = rememberPullToRefreshState()
+    val isMiuix = io.github.magisk317.uikit.theme.currentUiKitStyle() ==
+        io.github.magisk317.uikit.theme.UiKitStyle.Miuix
     val defaultTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 156.dp
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
 
@@ -207,7 +209,7 @@ fun AppConfigScreen(
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.action_sort_by_label)) },
                                     trailingIcon = {
-                                        RadioButton(
+                                        io.github.magisk317.uikit.preference.AppRadioButton(
                                             selected = currentSortOption == AppConfigViewModel.SortOption.LABEL,
                                             onClick = null,
                                         )
@@ -220,7 +222,7 @@ fun AppConfigScreen(
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.action_sort_by_selection)) },
                                     trailingIcon = {
-                                        RadioButton(
+                                        io.github.magisk317.uikit.preference.AppRadioButton(
                                             selected = currentSortOption == AppConfigViewModel.SortOption.SELECTION,
                                             onClick = null,
                                         )
@@ -233,7 +235,7 @@ fun AppConfigScreen(
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.action_sort_by_usage)) },
                                     trailingIcon = {
-                                        RadioButton(
+                                        io.github.magisk317.uikit.preference.AppRadioButton(
                                             selected = currentSortOption == AppConfigViewModel.SortOption.USAGE,
                                             onClick = null,
                                         )
@@ -247,7 +249,10 @@ fun AppConfigScreen(
                                 DropdownMenuItem(
                                     text = { Text(stringResource(R.string.action_hide_system_apps)) },
                                     trailingIcon = {
-                                        Checkbox(checked = hideSystemApps, onCheckedChange = null)
+                                        io.github.magisk317.uikit.preference.AppCheckbox(
+                                            checked = hideSystemApps,
+                                            onCheckedChange = null,
+                                        )
                                     },
                                     onClick = {
                                         viewModel.setHideSystemApps(!hideSystemApps)
@@ -297,6 +302,7 @@ fun AppConfigScreen(
                                 .hazeSource(state = hazeState)
                                 .nestedScroll(scrollBehavior.nestedScrollConnection),
                             state = listState,
+                            verticalArrangement = Arrangement.spacedBy(if (isMiuix) 12.dp else 0.dp),
                             contentPadding = PaddingValues(
                                 top = overlayTopPadding,
                                 bottom = overlayPadding.calculateBottomPadding(),
@@ -307,11 +313,13 @@ fun AppConfigScreen(
                                     app = app,
                                     onBlockedChange = { blocked -> viewModel.setBlocked(app.packageName, blocked) },
                                 )
-                                HorizontalDivider(
-                                    modifier = Modifier.padding(horizontal = 16.dp),
-                                    thickness = 0.5.dp,
-                                    color = MaterialTheme.colorScheme.outlineVariant,
-                                )
+                                if (!isMiuix) {
+                                    HorizontalDivider(
+                                        modifier = Modifier.padding(horizontal = 16.dp),
+                                        thickness = 0.5.dp,
+                                        color = MaterialTheme.colorScheme.outlineVariant,
+                                    )
+                                }
                             }
                         }
                     }
@@ -374,7 +382,7 @@ fun AppConfigItem(
             )
         },
         trailingContent = {
-            Switch(
+            io.github.magisk317.uikit.preference.AppSwitch(
                 checked = app.blocked,
                 onCheckedChange = onBlockedChange,
             )

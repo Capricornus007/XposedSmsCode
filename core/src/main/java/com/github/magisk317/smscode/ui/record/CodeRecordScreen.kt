@@ -66,7 +66,12 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import io.github.magisk317.uikit.preference.AppCheckbox
+import io.github.magisk317.uikit.surface.AppTopBar
 import io.github.magisk317.uikit.surface.WorkspaceEmptyState
+import io.github.magisk317.uikit.surface.WorkspaceListItem
+import io.github.magisk317.uikit.theme.UiKitStyle
+import io.github.magisk317.uikit.theme.currentUiKitStyle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
@@ -463,13 +468,11 @@ fun CodeRecordScreen(
                     forceInvalidateOnPreDraw = true
                 },
         ) {
-            TopAppBar(
-                title = {
-                    if (isSelectionMode) {
-                        Text(stringResource(R.string.selected_count, selectedIds.size))
-                    } else {
-                        Text(stringResource(R.string.pref_code_records_title))
-                    }
+            AppTopBar(
+                title = if (isSelectionMode) {
+                    context.getString(R.string.selected_count, selectedIds.size)
+                } else {
+                    context.getString(R.string.pref_code_records_title)
                 },
                 navigationIcon = {
                     if (isSelectionMode) {
@@ -528,10 +531,8 @@ fun CodeRecordScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent,
-                ),
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent,
                 scrollBehavior = scrollBehavior,
                 windowInsets = WindowInsets.statusBars,
             )
@@ -775,6 +776,7 @@ private fun RecordSplitColumn(
     listContentPadding: PaddingValues = PaddingValues(0.dp),
 ) {
     val listState = rememberLazyListState()
+    val isMiuix = currentUiKitStyle() == UiKitStyle.Miuix
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
@@ -824,6 +826,7 @@ private fun RecordSplitColumn(
                         .fillMaxSize()
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                     state = listState,
+                    verticalArrangement = Arrangement.spacedBy(if (isMiuix) 12.dp else 0.dp),
                     contentPadding = listContentPadding,
                 ) {
                     items(list, key = { it.id ?: 0 }) { smsMsg ->
@@ -883,7 +886,9 @@ private fun RecordSplitColumn(
                                 },
                             )
                         }
-                        HorizontalDivider()
+                        if (!isMiuix) {
+                            HorizontalDivider()
+                        }
                     }
                 }
             }
@@ -904,124 +909,118 @@ fun CodeRecordItem(
 ) {
     val dateFormatter = remember { SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()) }
     val context = LocalContext.current
+    val itemBackground = if (isSelected) {
+        MaterialTheme.colorScheme.primaryContainer
+    } else {
+        Color.Transparent
+    }
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick,
-            )
-            .background(
-                if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-            )
-            .padding(vertical = 12.dp, horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (isSelectionMode) {
-            Checkbox(
-                checked = isSelected,
-                onCheckedChange = { onClick() },
-                modifier = Modifier.padding(end = 16.dp),
-            )
-        }
-
-        // Left Side: Icon + App Name
-        val fallbackLabel = (smsMsg.company ?: smsMsg.sender ?: stringResource(R.string.unknown))
-            .trim()
-            .trim('【', '】', '[', ']')
-        val appLabel = remember(smsMsg.packageName) {
-            val pkg = smsMsg.packageName
-            if (pkg.isNullOrBlank()) {
-                null
-            } else {
-                runCatching {
-                    val pm = context.packageManager
-                    val appInfo = pm.getApplicationInfo(pkg, 0)
-                    pm.getApplicationLabel(appInfo).toString()
-                }.getOrNull()
-            }
-        }
-        val displayLabel = appLabel ?: fallbackLabel
-        val iconLabel = if (smsMsg.packageName.isNullOrBlank()) {
-            fallbackLabel.replace(Regex("[【】\\[\\]]"), "").trim()
-        } else {
+    val fallbackLabel = (smsMsg.company ?: smsMsg.sender ?: stringResource(R.string.unknown))
+        .trim()
+        .trim('【', '】', '[', ']')
+    val appLabel = remember(smsMsg.packageName) {
+        val pkg = smsMsg.packageName
+        if (pkg.isNullOrBlank()) {
             null
+        } else {
+            runCatching {
+                val pm = context.packageManager
+                val appInfo = pm.getApplicationInfo(pkg, 0)
+                pm.getApplicationLabel(appInfo).toString()
+            }.getOrNull()
         }
+    }
+    val displayLabel = appLabel ?: fallbackLabel
+    val iconLabel = if (smsMsg.packageName.isNullOrBlank()) {
+        fallbackLabel.replace(Regex("[【】\\[\\]]"), "").trim()
+    } else {
+        null
+    }
+    val hasCode = !smsMsg.smsCode.isNullOrBlank()
+    val codeOrSender = smsMsg.smsCode?.takeIf { it.isNotBlank() }
+        ?: smsMsg.sender?.takeIf { it.isNotBlank() }
+        ?: fallbackLabel
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .width(92.dp)
-                .padding(end = 16.dp),
-        ) {
-            AppIconImage(
-                packageName = smsMsg.packageName,
-                label = iconLabel,
-                contentDescription = stringResource(R.string.sms_icon_description),
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = displayLabel,
-                style = MaterialTheme.typography.labelMedium,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .basicMarquee(),
-            )
-        }
-
-        // Right Side
-        Column(modifier = Modifier.weight(1f)) {
-            val hasCode = !smsMsg.smsCode.isNullOrBlank()
-            val codeOrSender = smsMsg.smsCode?.takeIf { it.isNotBlank() }
-                ?: smsMsg.sender?.takeIf { it.isNotBlank() }
-                ?: fallbackLabel
-            // Top Row: Code + Time
+    WorkspaceListItem(
+        modifier = modifier.fillMaxWidth(),
+        containerColor = itemBackground,
+        onClick = onClick,
+        onLongClick = if (isSelectionMode) null else onLongClick,
+        leadingContent = {
             Row(
-                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    text = codeOrSender,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = if (hasCode) TextOverflow.Ellipsis else TextOverflow.Clip,
-                    modifier = if (hasCode) {
-                        Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp)
-                    } else {
-                        // Keep a fixed 10-char-like viewport for phone number marquee.
-                        Modifier
-                            .width(120.dp)
-                            .basicMarquee()
-                    },
-                )
-                if (!hasCode) {
-                    Spacer(modifier = Modifier.weight(1f))
+                if (isSelectionMode) {
+                    AppCheckbox(
+                        checked = isSelected,
+                        onCheckedChange = { onClick() },
+                        modifier = Modifier.padding(end = 12.dp),
+                    )
                 }
-                Text(
-                    text = dateFormatter.format(Date(smsMsg.date)),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.width(92.dp),
+                ) {
+                    AppIconImage(
+                        packageName = smsMsg.packageName,
+                        label = iconLabel,
+                        contentDescription = stringResource(R.string.sms_icon_description),
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = displayLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .basicMarquee(),
+                    )
+                }
             }
-            Spacer(modifier = Modifier.height(4.dp))
-            val body = smsMsg.body
-            if (!body.isNullOrEmpty()) {
-                Text(
-                    text = body,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.clickable { onDetailClick() },
-                )
+        },
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = codeOrSender,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                maxLines = 1,
+                overflow = if (hasCode) TextOverflow.Ellipsis else TextOverflow.Clip,
+                modifier = if (hasCode) {
+                    Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                } else {
+                    Modifier
+                        .width(120.dp)
+                        .basicMarquee()
+                },
+            )
+            if (!hasCode) {
+                Spacer(modifier = Modifier.weight(1f))
             }
+            Text(
+                text = dateFormatter.format(Date(smsMsg.date)),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        val body = smsMsg.body
+        if (!body.isNullOrEmpty()) {
+            Text(
+                text = body,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.clickable { onDetailClick() },
+            )
         }
     }
 }

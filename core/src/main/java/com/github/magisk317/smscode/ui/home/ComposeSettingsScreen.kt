@@ -673,29 +673,12 @@ fun ComposeSettingsScreen(
                         accordionMode = accordionMode.value,
                     ) {
                         if (supportsAccessibilityAutoInput) {
-                            ListItem(
-                                headlineContent = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_auto_input_accessibility_service_title),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                    )
-                                },
-                                supportingContent = {
-                                    Text(
-                                        text = stringResource(id = R.string.pref_auto_input_accessibility_service_summary),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                },
-                                trailingContent = {
-                                    Switch(
-                                        checked = autoInputAccessibilityEnabled,
-                                        onCheckedChange = { openAccessibilitySettings() },
-                                    )
-                                },
-                                modifier = Modifier.clickable {
-                                    openAccessibilitySettings()
-                                },
+                            io.github.magisk317.uikit.preference.ActionSwitchItem(
+                                title = stringResource(id = R.string.pref_auto_input_accessibility_service_title),
+                                summary = stringResource(id = R.string.pref_auto_input_accessibility_service_summary),
+                                checked = autoInputAccessibilityEnabled,
+                                onClick = { openAccessibilitySettings() },
+                                onCheckedChange = { openAccessibilitySettings() },
                             )
                         }
                         SwitchItem(
@@ -739,59 +722,31 @@ fun ComposeSettingsScreen(
                             defaultValue = true,
                             onSaved = markPrefsSaved,
                         )
-                        ListItem(
-                            headlineContent = {
-                                Text(
-                                    text = stringResource(id = R.string.pref_show_code_notification_title),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                )
-                            },
-                            supportingContent = {
-                                Text(
-                                    text = stringResource(id = R.string.pref_show_code_notification_summary),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            },
-                            trailingContent = {
-                                Switch(
-                                    checked = showCodeNotificationEnabled.value,
-                                    onCheckedChange = { enabled ->
-                                        if (!enabled) {
-                                            showCodeNotificationEnabled.value = false
-                                            scope.launch {
-                                                AppPreferencesDataStore.setBoolean(
-                                                    context,
-                                                    PrefConst.KEY_SHOW_CODE_NOTIFICATION,
-                                                    false,
-                                                )
-                                                AppPreferencesDataStore.syncToSharedPrefs(context)
-                                                markPrefsSaved()
-                                            }
-                                        } else {
-                                            pendingEnableNotification = true
-                                            showNotificationOwnerDialog = true
-                                        }
-                                    },
-                                )
-                            },
-                            modifier = Modifier.clickable {
-                                if (showCodeNotificationEnabled.value) {
-                                    showCodeNotificationEnabled.value = false
-                                    scope.launch {
-                                        AppPreferencesDataStore.setBoolean(
-                                            context,
-                                            PrefConst.KEY_SHOW_CODE_NOTIFICATION,
-                                            false,
-                                        )
-                                        AppPreferencesDataStore.syncToSharedPrefs(context)
-                                        markPrefsSaved()
-                                    }
-                                } else {
-                                    pendingEnableNotification = true
-                                    showNotificationOwnerDialog = true
+                        val handleCodeNotificationToggle: (Boolean) -> Unit = { enabled ->
+                            if (!enabled) {
+                                showCodeNotificationEnabled.value = false
+                                scope.launch {
+                                    AppPreferencesDataStore.setBoolean(
+                                        context,
+                                        PrefConst.KEY_SHOW_CODE_NOTIFICATION,
+                                        false,
+                                    )
+                                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                                    markPrefsSaved()
                                 }
+                            } else {
+                                pendingEnableNotification = true
+                                showNotificationOwnerDialog = true
+                            }
+                        }
+                        io.github.magisk317.uikit.preference.ActionSwitchItem(
+                            title = stringResource(id = R.string.pref_show_code_notification_title),
+                            summary = stringResource(id = R.string.pref_show_code_notification_summary),
+                            checked = showCodeNotificationEnabled.value,
+                            onClick = {
+                                handleCodeNotificationToggle(!showCodeNotificationEnabled.value)
                             },
+                            onCheckedChange = handleCodeNotificationToggle,
                         )
                         Item(
                             title = stringResource(id = R.string.pref_code_notification_owner_title),
@@ -1507,34 +1462,26 @@ fun SwitchItem(
         onToggle?.invoke(checked)
     }
 
-    ListItem(
-        headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
-        supportingContent = if (summary.isNotEmpty()) {
-            {
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        } else {
-            null
-        },
-        trailingContent = {
-            Switch(
-                checked = checkedState.value,
-                onCheckedChange = { toggle(it) },
-                enabled = enabled,
-            )
-        },
-        modifier = modifier.clickable(enabled = enabled) {
-            if (onItemClick != null) {
-                onItemClick()
-            } else {
-                toggle(!checkedState.value)
-            }
-        },
-    )
+    if (onItemClick != null) {
+        io.github.magisk317.uikit.preference.ActionSwitchItem(
+            title = title,
+            summary = summary,
+            checked = checkedState.value,
+            enabled = enabled,
+            modifier = modifier,
+            onClick = onItemClick,
+            onCheckedChange = { toggle(it) },
+        )
+    } else {
+        io.github.magisk317.uikit.preference.StateSwitchItem(
+            title = title,
+            summary = summary,
+            checked = checkedState.value,
+            enabled = enabled,
+            modifier = modifier,
+            onCheckedChange = { toggle(it) },
+        )
+    }
 }
 
 @Composable
@@ -1590,7 +1537,7 @@ private fun NotificationOwnerOption(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(selected = selected, onClick = onClick)
+        io.github.magisk317.uikit.preference.AppRadioButton(selected = selected, onClick = onClick)
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
@@ -1774,7 +1721,10 @@ fun RetentionDialog(
                             .padding(vertical = Const.PADDING_MEDIUM.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(selected = value == selectedValue, onClick = { onConfirm(value) })
+                        io.github.magisk317.uikit.preference.AppRadioButton(
+                            selected = value == selectedValue,
+                            onClick = { onConfirm(value) },
+                        )
                         Text(text = entry, modifier = Modifier.padding(start = Const.SPACING_MEDIUM.dp))
                     }
                 }
@@ -1824,7 +1774,10 @@ fun ThemeChooserDialog(currentMode: Int, onDismiss: () -> Unit, onThemeSelected:
                             },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(selected = mode == currentMode, onClick = null)
+                        io.github.magisk317.uikit.preference.AppRadioButton(
+                            selected = mode == currentMode,
+                            onClick = null,
+                        )
                         Text(text = label, modifier = Modifier.padding(start = 16.dp))
                     }
                 }
@@ -1856,7 +1809,10 @@ fun UiKitStyleChooserDialog(
                             .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(selected = style == currentStyle, onClick = null)
+                        io.github.magisk317.uikit.preference.AppRadioButton(
+                            selected = style == currentStyle,
+                            onClick = null,
+                        )
                         Text(text = label, modifier = Modifier.padding(start = 16.dp))
                     }
                 }
@@ -1900,7 +1856,7 @@ fun LanguageChooserDialog(onDismiss: () -> Unit, onLanguageSelected: (String) ->
                             .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(
+                        io.github.magisk317.uikit.preference.AppRadioButton(
                             selected = selected,
                             onClick = { onLanguageSelected(tag) },
                         )
@@ -2072,28 +2028,40 @@ private fun BackupDialog(onDismiss: () -> Unit, onConfirm: (BackupSelectionFlags
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig },
                 ) {
-                    Checkbox(checked = checkConfig, onCheckedChange = { checkConfig = it })
+                    io.github.magisk317.uikit.preference.AppCheckbox(
+                        checked = checkConfig,
+                        onCheckedChange = { checkConfig = it },
+                    )
                     Text(stringResource(id = R.string.item_config))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkRules = !checkRules },
                 ) {
-                    Checkbox(checked = checkRules, onCheckedChange = { checkRules = it })
+                    io.github.magisk317.uikit.preference.AppCheckbox(
+                        checked = checkRules,
+                        onCheckedChange = { checkRules = it },
+                    )
                     Text(stringResource(id = R.string.item_rules))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkRecords = !checkRecords },
                 ) {
-                    Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
+                    io.github.magisk317.uikit.preference.AppCheckbox(
+                        checked = checkRecords,
+                        onCheckedChange = { checkRecords = it },
+                    )
                     Text(stringResource(id = R.string.item_records))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkDatabase = !checkDatabase },
                 ) {
-                    Checkbox(checked = checkDatabase, onCheckedChange = { checkDatabase = it })
+                    io.github.magisk317.uikit.preference.AppCheckbox(
+                        checked = checkDatabase,
+                        onCheckedChange = { checkDatabase = it },
+                    )
                     Text(stringResource(id = R.string.item_database_with_note))
                 }
             }
@@ -2151,28 +2119,40 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (BackupSelect
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig },
                 ) {
-                    Checkbox(checked = checkConfig, onCheckedChange = { checkConfig = it })
+                    io.github.magisk317.uikit.preference.AppCheckbox(
+                        checked = checkConfig,
+                        onCheckedChange = { checkConfig = it },
+                    )
                     Text(stringResource(id = R.string.item_config))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkRules = !checkRules },
                 ) {
-                    Checkbox(checked = checkRules, onCheckedChange = { checkRules = it })
+                    io.github.magisk317.uikit.preference.AppCheckbox(
+                        checked = checkRules,
+                        onCheckedChange = { checkRules = it },
+                    )
                     Text(stringResource(id = R.string.item_rules))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkRecords = !checkRecords },
                 ) {
-                    Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
+                    io.github.magisk317.uikit.preference.AppCheckbox(
+                        checked = checkRecords,
+                        onCheckedChange = { checkRecords = it },
+                    )
                     Text(stringResource(id = R.string.item_records))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkDatabase = !checkDatabase },
                 ) {
-                    Checkbox(checked = checkDatabase, onCheckedChange = { checkDatabase = it })
+                    io.github.magisk317.uikit.preference.AppCheckbox(
+                        checked = checkDatabase,
+                        onCheckedChange = { checkDatabase = it },
+                    )
                     Text(stringResource(id = R.string.item_database_with_note))
                 }
                 Text(
