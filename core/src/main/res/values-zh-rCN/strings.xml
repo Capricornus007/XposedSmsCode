@@ -23,6 +23,9 @@
     <string name="pref_show_launcher_icon_failed">切换桌面图标显示状态失败</string>
     <string name="pref_choose_theme_title">主题</string>
     <string name="pref_choose_theme_summary">跟随系统、浅色、深色或纯黑</string>
+    <string name="pref_ui_kit_style_title">界面风格</string>
+    <string name="ui_kit_style_expressive">Expressive</string>
+    <string name="ui_kit_style_miuix">Miuix</string>
     <string name="theme_follow_system">自动 (跟随系统)</string>
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>

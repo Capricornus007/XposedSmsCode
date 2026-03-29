@@ -28,6 +28,7 @@ import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import com.github.magisk317.smscode.common.utils.XLog
 import io.github.magisk317.smscode.domain.model.SmsCodeMatchedRule
 import io.github.magisk317.smscode.domain.model.SmsCodeMatchedRuleSource
+import io.github.magisk317.uikit.theme.UiKitStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -87,9 +88,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     )
     val eventsFlow = _eventsFlow.asSharedFlow()
 
-    data class ThemeState(val mode: Int, val centerX: Float = -1f, val centerY: Float = -1f)
+    data class ThemeState(
+        val mode: Int,
+        val uiKitStyle: Int = UiKitStyle.Expressive.value,
+        val centerX: Float = -1f,
+        val centerY: Float = -1f,
+    )
 
-    private val _themeState = MutableStateFlow(ThemeState(0))
+    private val _themeState = MutableStateFlow(ThemeState(0, UiKitStyle.Expressive.value))
     val themeState: StateFlow<ThemeState> = _themeState.asStateFlow()
 
     val smsRecordCount: StateFlow<Long> = RuntimeStorageFacade.dbManager(application)
@@ -103,7 +109,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     init {
         viewModelScope.launch {
             val mode = SPUtils.getThemeMode(getApplication())
-            _themeState.value = ThemeState(mode)
+            val uiKitStyle = SPUtils.getUiKitStyle(getApplication())
+            _themeState.value = ThemeState(mode = mode, uiKitStyle = uiKitStyle)
         }
         viewModelScope.launch {
             AppPreferencesDataStore.syncToSharedPrefs(getApplication())
@@ -113,7 +120,14 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun setThemeMode(mode: Int, x: Float = -1f, y: Float = -1f) {
         viewModelScope.launch {
             SPUtils.setThemeMode(getApplication(), mode)
-            _themeState.value = ThemeState(mode, x, y)
+            _themeState.value = _themeState.value.copy(mode = mode, centerX = x, centerY = y)
+        }
+    }
+
+    fun setUiKitStyle(style: Int) {
+        viewModelScope.launch {
+            SPUtils.setUiKitStyle(getApplication(), style)
+            _themeState.value = _themeState.value.copy(uiKitStyle = style)
         }
     }
 

@@ -217,6 +217,14 @@ object AppPreferencesDataStore {
             PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
             getBoolean(context, PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY, false),
         )
+        editor.putInt(
+            PrefConst.KEY_CHOOSE_THEME,
+            getInt(context, PrefConst.KEY_CHOOSE_THEME, 0),
+        )
+        editor.putInt(
+            PrefConst.KEY_UI_KIT_STYLE,
+            getInt(context, PrefConst.KEY_UI_KIT_STYLE, 0),
+        )
         editor.putBoolean(
             PrefConst.KEY_ENABLE_AUTO_ENTER_CODE,
             getBoolean(context, PrefConst.KEY_ENABLE_AUTO_ENTER_CODE, false),

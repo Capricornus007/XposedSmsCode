@@ -40,6 +40,7 @@ object PrefRestoreTypeRegistry {
 
     val INT_KEYS: Set<String> = setOf(
         PrefConst.KEY_CHOOSE_THEME,
+        PrefConst.KEY_UI_KIT_STYLE,
         PrefConst.KEY_HAZE_BLUR_RADIUS,
         "local_version_code",
     )

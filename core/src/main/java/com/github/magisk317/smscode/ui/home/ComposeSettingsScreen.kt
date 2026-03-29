@@ -78,6 +78,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import io.github.magisk317.uikit.theme.UiKitStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -106,6 +107,7 @@ fun ComposeSettingsScreen(
 
     val themeState by settingsViewModel.themeState.collectAsStateWithLifecycle()
     val themeMode = themeState.mode
+    val uiKitStyle = themeState.uiKitStyle
 
     var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
     var autoInputInterval by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL_DEFAULT) }
@@ -123,6 +125,7 @@ fun ComposeSettingsScreen(
     var showSmsTestDialog by remember { mutableStateOf(false) }
     var smsTestInput by remember { mutableStateOf("") }
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showUiKitStyleDialog by remember { mutableStateOf(false) }
     var showDonateDialog by remember { mutableStateOf(false) }
     var showAlipayChoiceDialog by remember { mutableStateOf(false) }
     var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
@@ -617,6 +620,10 @@ fun ComposeSettingsScreen(
                             summary = stringResource(id = R.string.pref_choose_theme_summary),
                         ) { showThemeDialog = true }
                         Item(
+                            title = stringResource(id = R.string.pref_ui_kit_style_title),
+                            summary = uiKitStyleLabel(uiKitStyle),
+                        ) { showUiKitStyleDialog = true }
+                        Item(
                             title = stringResource(id = R.string.pref_language_title),
                             summary = stringResource(id = R.string.pref_language_summary),
                         ) { showLanguageDialog = true }
@@ -946,6 +953,7 @@ fun ComposeSettingsScreen(
         context = context,
         scope = scope,
         themeMode = themeMode,
+        uiKitStyle = uiKitStyle,
         autoInputDelay = autoInputDelay,
         autoInputInterval = autoInputInterval,
         retentionTime = retentionTime,
@@ -957,6 +965,7 @@ fun ComposeSettingsScreen(
         showSmsTestDialog = showSmsTestDialog,
         showKeywordsDialog = showKeywordsDialog,
         showThemeDialog = showThemeDialog,
+        showUiKitStyleDialog = showUiKitStyleDialog,
         showDonateDialog = showDonateDialog,
         showAlipayChoiceDialog = showAlipayChoiceDialog,
         showQRCodeDialog = showQRCodeDialog,
@@ -976,6 +985,7 @@ fun ComposeSettingsScreen(
         onShowSmsTestDialogChange = { showSmsTestDialog = it },
         onShowKeywordsDialogChange = { showKeywordsDialog = it },
         onShowThemeDialogChange = { showThemeDialog = it },
+        onShowUiKitStyleDialogChange = { showUiKitStyleDialog = it },
         onShowDonateDialogChange = { showDonateDialog = it },
         onShowAlipayChoiceDialogChange = { showAlipayChoiceDialog = it },
         onShowQrCodeDialogChange = { showQRCodeDialog = it },
@@ -989,6 +999,7 @@ fun ComposeSettingsScreen(
         settingsViewModel = settingsViewModel,
         onExit = onExit,
         onSetTheme = { mode, x, y -> settingsViewModel.setThemeMode(mode, x, y) },
+        onSetUiKitStyle = { style -> settingsViewModel.setUiKitStyle(style) },
     )
 
     if (showLanguageDialog) {
@@ -1128,6 +1139,7 @@ private fun SettingsDialogs(
     context: android.content.Context,
     scope: kotlinx.coroutines.CoroutineScope,
     themeMode: Int,
+    uiKitStyle: Int,
     autoInputDelay: String,
     autoInputInterval: String,
     retentionTime: String,
@@ -1139,6 +1151,7 @@ private fun SettingsDialogs(
     showSmsTestDialog: Boolean,
     showKeywordsDialog: Boolean,
     showThemeDialog: Boolean,
+    showUiKitStyleDialog: Boolean,
     showDonateDialog: Boolean,
     showAlipayChoiceDialog: Boolean,
     showQRCodeDialog: Pair<Int, String>?,
@@ -1158,6 +1171,7 @@ private fun SettingsDialogs(
     onShowSmsTestDialogChange: (Boolean) -> Unit,
     onShowKeywordsDialogChange: (Boolean) -> Unit,
     onShowThemeDialogChange: (Boolean) -> Unit,
+    onShowUiKitStyleDialogChange: (Boolean) -> Unit,
     onShowDonateDialogChange: (Boolean) -> Unit,
     onShowAlipayChoiceDialogChange: (Boolean) -> Unit,
     onShowQrCodeDialogChange: (Pair<Int, String>?) -> Unit,
@@ -1171,6 +1185,7 @@ private fun SettingsDialogs(
     settingsViewModel: SettingsViewModel,
     onExit: () -> Unit,
     onSetTheme: (Int, Float, Float) -> Unit,
+    onSetUiKitStyle: (Int) -> Unit,
 ) {
     val snackbarHostState = LocalSnackbarHostState.current
     if (showAutoInputDialog) {
@@ -1271,6 +1286,17 @@ private fun SettingsDialogs(
             onThemeSelected = { mode, x, y ->
                 onSetTheme(mode, x, y)
                 onShowThemeDialogChange(false)
+            },
+        )
+    }
+
+    if (showUiKitStyleDialog) {
+        UiKitStyleChooserDialog(
+            currentStyle = uiKitStyle,
+            onDismiss = { onShowUiKitStyleDialogChange(false) },
+            onStyleSelected = {
+                onSetUiKitStyle(it)
+                onShowUiKitStyleDialogChange(false)
             },
         )
     }
@@ -1804,6 +1830,46 @@ fun ThemeChooserDialog(currentMode: Int, onDismiss: () -> Unit, onThemeSelected:
                 }
             }
         }
+    }
+}
+
+@Composable
+fun UiKitStyleChooserDialog(
+    currentStyle: Int,
+    onDismiss: () -> Unit,
+    onStyleSelected: (Int) -> Unit,
+) {
+    val styles = listOf(
+        stringResource(id = R.string.ui_kit_style_expressive) to UiKitStyle.Expressive.value,
+        stringResource(id = R.string.ui_kit_style_miuix) to UiKitStyle.Miuix.value,
+    )
+    BasicAlertDialog(
+        onDismissRequest = onDismiss,
+    ) {
+        SingleChoiceDialogSurface(title = stringResource(id = R.string.pref_ui_kit_style_title)) {
+            Column {
+                styles.forEach { (label, style) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onStyleSelected(style) }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = style == currentStyle, onClick = null)
+                        Text(text = label, modifier = Modifier.padding(start = 16.dp))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun uiKitStyleLabel(style: Int): String {
+    return when (UiKitStyle.fromValue(style)) {
+        UiKitStyle.Miuix -> stringResource(id = R.string.ui_kit_style_miuix)
+        UiKitStyle.Expressive -> stringResource(id = R.string.ui_kit_style_expressive)
     }
 }
 

@@ -59,4 +59,11 @@ object SPUtils {
     suspend fun setThemeMode(context: Context, mode: Int) {
         AppPreferencesDataStore.setInt(context, PrefConst.KEY_CHOOSE_THEME, mode)
     }
+
+    suspend fun getUiKitStyle(context: Context): Int =
+        AppPreferencesDataStore.getInt(context, PrefConst.KEY_UI_KIT_STYLE, 0)
+
+    suspend fun setUiKitStyle(context: Context, style: Int) {
+        AppPreferencesDataStore.setInt(context, PrefConst.KEY_UI_KIT_STYLE, style)
+    }
 }
