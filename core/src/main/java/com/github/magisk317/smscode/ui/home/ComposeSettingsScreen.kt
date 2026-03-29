@@ -880,12 +880,10 @@ fun ComposeSettingsScreen(
             modifier = Modifier
                 .align(Alignment.TopCenter),
         ) {
-            TopAppBar(
-                title = { Text(text = stringResource(id = R.string.pref_general_title)) },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent,
-                ),
+            io.github.magisk317.uikit.surface.AppTopBar(
+                title = stringResource(id = R.string.pref_general_title),
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent,
                 scrollBehavior = scrollBehavior,
                 windowInsets = WindowInsets.statusBars,
                 modifier = Modifier
@@ -1587,7 +1585,7 @@ fun TextInputDialog(
     val errorMessage = validator?.invoke(fieldValue.text)
     val cancelLabel = stringResource(id = R.string.cancel)
     val confirmLabel = stringResource(id = R.string.confirm)
-    AlertDialog(
+    io.github.magisk317.uikit.surface.AppAlertDialog(
         onDismissRequest = {
             onDismissWithValue?.invoke(fieldValue.text)
             onDismiss()
@@ -1604,25 +1602,25 @@ fun TextInputDialog(
                     modifier = Modifier.weight(1f),
                 )
                 if (resetValue != null) {
-                    TextButton(
+                    io.github.magisk317.uikit.surface.AppTextButton(
+                        text = stringResource(id = R.string.reset),
                         onClick = {
                             fieldValue = TextFieldValue(
                                 text = resetValue,
                                 selection = TextRange(resetValue.length),
                             )
                         },
-                    ) {
-                        Text(text = stringResource(id = R.string.reset))
-                    }
+                    )
                 }
             }
         },
         text = {
-                OutlinedTextField(
-                    value = fieldValue,
-                    onValueChange = {
-                        fieldValue = it
-                    },
+            io.github.magisk317.uikit.surface.AppTextField(
+                value = fieldValue,
+                onValueChange = {
+                    fieldValue = it
+                },
+                label = title,
                 modifier = Modifier
                     .fillMaxWidth()
                     .onFocusChanged { state ->
@@ -1634,7 +1632,6 @@ fun TextInputDialog(
                     },
                 singleLine = singleLine,
                 maxLines = maxLines,
-                isError = errorMessage != null,
                 trailingIcon = {
                     if (fieldValue.text.isNotEmpty()) {
                         IconButton(onClick = { fieldValue = TextFieldValue("") }) {
@@ -1874,56 +1871,57 @@ private fun SingleChoiceDialogSurface(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 6.dp,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            content()
-        }
-    }
+    io.github.magisk317.uikit.surface.AppDialogSurface(
+        title = title,
+        modifier = modifier,
+        content = content,
+    )
 }
 
 @Composable
 fun DonateDialog(onDismiss: () -> Unit, onAlipay: () -> Unit, onWechat: () -> Unit) {
-    AlertDialog(
+    io.github.magisk317.uikit.surface.AppAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.dialog_donate_title)) },
         text = { Text(stringResource(id = R.string.dialog_donate_content)) },
         confirmButton = {
-            FilledTonalButton(onClick = onAlipay) { Text(stringResource(id = R.string.dialog_donate_alipay)) }
-            OutlinedButton(onClick = onWechat) { Text(stringResource(id = R.string.dialog_donate_wechat)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                io.github.magisk317.uikit.surface.AppPrimaryButton(
+                    text = stringResource(id = R.string.dialog_donate_alipay),
+                    onClick = onAlipay,
+                )
+                io.github.magisk317.uikit.surface.AppSecondaryButton(
+                    text = stringResource(id = R.string.dialog_donate_wechat),
+                    onClick = onWechat,
+                )
+            }
         },
     )
 }
 
 @Composable
 fun AlipayChoiceDialog(onDismiss: () -> Unit, onQRCode: () -> Unit, onToken: () -> Unit) {
-    AlertDialog(
+    io.github.magisk317.uikit.surface.AppAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.dialog_donate_alipay)) },
         confirmButton = {
-            FilledTonalButton(onClick = onQRCode) { Text(stringResource(id = R.string.dialog_donate_alipay_qrcode)) }
-            OutlinedButton(onClick = onToken) { Text(stringResource(id = R.string.dialog_donate_alipay_token)) }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                io.github.magisk317.uikit.surface.AppPrimaryButton(
+                    text = stringResource(id = R.string.dialog_donate_alipay_qrcode),
+                    onClick = onQRCode,
+                )
+                io.github.magisk317.uikit.surface.AppSecondaryButton(
+                    text = stringResource(id = R.string.dialog_donate_alipay_token),
+                    onClick = onToken,
+                )
+            }
         },
     )
 }
 
 @Composable
 fun QRCodeDialog(resId: Int, type: String, onDismiss: () -> Unit, onSave: () -> Unit) {
-    AlertDialog(
+    io.github.magisk317.uikit.surface.AppAlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
@@ -1952,10 +1950,16 @@ fun QRCodeDialog(resId: Int, type: String, onDismiss: () -> Unit, onSave: () -> 
             }
         },
         confirmButton = {
-            FilledTonalButton(onClick = onSave) { Text(stringResource(id = R.string.save_to_gallery)) }
+            io.github.magisk317.uikit.surface.AppPrimaryButton(
+                text = stringResource(id = R.string.save_to_gallery),
+                onClick = onSave,
+            )
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) }
+            io.github.magisk317.uikit.surface.AppSecondaryButton(
+                text = stringResource(id = R.string.cancel),
+                onClick = onDismiss,
+            )
         },
     )
 }
@@ -1969,7 +1973,7 @@ fun PrivacyPolicyDialog(
     dismissOnBackPress: Boolean = true,
     dismissOnClickOutside: Boolean = true,
 ) {
-    AlertDialog(
+    io.github.magisk317.uikit.surface.AppAlertDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
             dismissOnBackPress = dismissOnBackPress,
@@ -1980,23 +1984,25 @@ fun PrivacyPolicyDialog(
             Column {
                 Text(stringResource(id = R.string.privacy_dialog_content))
                 Spacer(modifier = Modifier.height(16.dp))
-                OutlinedButton(
-                    onClick = onViewPolicy,
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                ) {
-                    Text(stringResource(id = R.string.privacy_policy_button))
+                Box(modifier = Modifier.align(Alignment.CenterHorizontally)) {
+                    io.github.magisk317.uikit.surface.AppSecondaryButton(
+                        text = stringResource(id = R.string.privacy_policy_button),
+                        onClick = onViewPolicy,
+                    )
                 }
             }
         },
         confirmButton = {
-            FilledTonalButton(onClick = onConfirm) {
-                Text(stringResource(id = R.string.privacy_dialog_confirm))
-            }
+            io.github.magisk317.uikit.surface.AppPrimaryButton(
+                text = stringResource(id = R.string.privacy_dialog_confirm),
+                onClick = onConfirm,
+            )
         },
         dismissButton = {
-            OutlinedButton(onClick = onCancel) {
-                Text(stringResource(id = R.string.privacy_dialog_cancel))
-            }
+            io.github.magisk317.uikit.surface.AppSecondaryButton(
+                text = stringResource(id = R.string.privacy_dialog_cancel),
+                onClick = onCancel,
+            )
         },
     )
 }
@@ -2018,7 +2024,7 @@ private fun BackupDialog(onDismiss: () -> Unit, onConfirm: (BackupSelectionFlags
     val cancelLabel = stringResource(id = R.string.cancel)
     val confirmLabel = stringResource(id = R.string.confirm)
 
-    AlertDialog(
+    io.github.magisk317.uikit.surface.AppAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.dialog_backup_title)) },
         text = {
@@ -2109,7 +2115,7 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (BackupSelect
     val cancelLabel = stringResource(id = R.string.cancel)
     val confirmLabel = stringResource(id = R.string.confirm)
 
-    AlertDialog(
+    io.github.magisk317.uikit.surface.AppAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.dialog_restore_title)) },
         text = {
@@ -2230,7 +2236,7 @@ fun SliderDialog(
     var sliderValue by remember { mutableFloatStateOf(value) }
     val cancelLabel = stringResource(id = R.string.cancel)
     val confirmLabel = stringResource(id = R.string.confirm)
-    AlertDialog(
+    io.github.magisk317.uikit.surface.AppAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = title) },
         text = {

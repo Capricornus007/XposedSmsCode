@@ -27,6 +27,8 @@ import com.github.magisk317.smscode.ui.app.base.rememberHazeStyle
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import io.github.magisk317.uikit.surface.AppTopBar
+import io.github.magisk317.uikit.surface.SummarySectionCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -78,15 +80,19 @@ fun PrivacyPolicyPage(onDismiss: () -> Unit) {
                 .padding(horizontal = 16.dp)
                 .padding(top = topPadding + 8.dp, bottom = bottomPadding + 16.dp),
         ) {
-            Text(
-                text = policyText,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            SummarySectionCard {
+                Box(modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
+                    Text(
+                        text = policyText,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
 
-        TopAppBar(
-            title = { Text(stringResource(id = R.string.pref_privacy_policy_title)) },
+        AppTopBar(
+            title = stringResource(id = R.string.pref_privacy_policy_title),
             navigationIcon = {
                 IconButton(onClick = onDismiss) {
                     Icon(
@@ -95,10 +101,8 @@ fun PrivacyPolicyPage(onDismiss: () -> Unit) {
                     )
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                scrolledContainerColor = Color.Transparent,
-            ),
+            containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
             windowInsets = WindowInsets.statusBars,
             modifier = Modifier.hazeEffect(hazeState, hazeStyle) {
                 forceInvalidateOnPreDraw = true

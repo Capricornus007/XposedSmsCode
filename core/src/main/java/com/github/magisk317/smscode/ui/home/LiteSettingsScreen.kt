@@ -29,6 +29,9 @@ import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.ui.common.DismissibleSnackbarHost
+import io.github.magisk317.uikit.preference.StateSwitchItem
+import io.github.magisk317.uikit.surface.AppTextField
+import io.github.magisk317.uikit.surface.DetailSectionCard
 import kotlinx.coroutines.launch
 
 @Composable
@@ -83,72 +86,93 @@ fun LiteSettingsScreen() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            Text(
-                text = "验证码精简版设置",
-                style = MaterialTheme.typography.titleLarge,
-            )
-            Text(
-                text = "仅保留验证码解析与自动填充相关能力。",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            LiteSwitchItem("显示验证码提示", showToast) {
-                scope.launch {
-                    AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_SHOW_TOAST, it)
-                    AppPreferencesDataStore.syncToSharedPrefs(context)
-                    notifySaved()
-                }
-            }
-            LiteSwitchItem("复制验证码到剪贴板", copyToClipboard) {
-                scope.launch {
-                    AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_COPY_TO_CLIPBOARD, it)
-                    AppPreferencesDataStore.syncToSharedPrefs(context)
-                    notifySaved()
-                }
-            }
-            LiteSwitchItem("自动输入验证码", autoInput) {
-                scope.launch {
-                    AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, it)
-                    AppPreferencesDataStore.syncToSharedPrefs(context)
-                    notifySaved()
-                }
-            }
-            LiteSwitchItem("自动提交验证码", autoEnter) {
-                scope.launch {
-                    AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_ENABLE_AUTO_ENTER_CODE, it)
-                    AppPreferencesDataStore.syncToSharedPrefs(context)
-                    notifySaved()
-                }
-            }
-            OutlinedTextField(
-                value = normalizeNumericInput(inputDelay),
-                onValueChange = { value ->
-                    val normalized = normalizeNumericInput(value)
-                    if (normalized.isEmpty() || parseNonNegativeLongLite(normalized) != null) {
+            DetailSectionCard(
+                title = "验证码精简版设置",
+                summary = "仅保留验证码解析与自动填充相关能力。",
+            ) {
+                StateSwitchItem(
+                    title = "显示验证码提示",
+                    summary = "",
+                    checked = showToast,
+                    onCheckedChange = {
                         scope.launch {
-                            AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, normalized)
+                            AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_SHOW_TOAST, it)
                             AppPreferencesDataStore.syncToSharedPrefs(context)
+                            notifySaved()
                         }
-                    }
-                },
-                label = { Text("自动输入延迟(毫秒)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-            OutlinedTextField(
-                value = normalizeNumericInput(inputInterval),
-                onValueChange = { value ->
-                    val normalized = normalizeNumericInput(value)
-                    if (normalized.isEmpty() || parseNonNegativeLongLite(normalized) != null) {
+                    },
+                )
+                StateSwitchItem(
+                    title = "复制验证码到剪贴板",
+                    summary = "",
+                    checked = copyToClipboard,
+                    onCheckedChange = {
                         scope.launch {
-                            AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL, normalized)
+                            AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_COPY_TO_CLIPBOARD, it)
                             AppPreferencesDataStore.syncToSharedPrefs(context)
+                            notifySaved()
                         }
-                    }
-                },
-                label = { Text("自动输入间隔(毫秒)") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
+                    },
+                )
+                StateSwitchItem(
+                    title = "自动输入验证码",
+                    summary = "",
+                    checked = autoInput,
+                    onCheckedChange = {
+                        scope.launch {
+                            AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, it)
+                            AppPreferencesDataStore.syncToSharedPrefs(context)
+                            notifySaved()
+                        }
+                    },
+                )
+                StateSwitchItem(
+                    title = "自动提交验证码",
+                    summary = "",
+                    checked = autoEnter,
+                    onCheckedChange = {
+                        scope.launch {
+                            AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_ENABLE_AUTO_ENTER_CODE, it)
+                            AppPreferencesDataStore.syncToSharedPrefs(context)
+                            notifySaved()
+                        }
+                    },
+                )
+                Box(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                    AppTextField(
+                        value = normalizeNumericInput(inputDelay),
+                        onValueChange = { value ->
+                            val normalized = normalizeNumericInput(value)
+                            if (normalized.isEmpty() || parseNonNegativeLongLite(normalized) != null) {
+                                scope.launch {
+                                    AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, normalized)
+                                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                                }
+                            }
+                        },
+                        label = "自动输入延迟(毫秒)",
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                }
+                Box(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                    AppTextField(
+                        value = normalizeNumericInput(inputInterval),
+                        onValueChange = { value ->
+                            val normalized = normalizeNumericInput(value)
+                            if (normalized.isEmpty() || parseNonNegativeLongLite(normalized) != null) {
+                                scope.launch {
+                                    AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL, normalized)
+                                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                                }
+                            }
+                        },
+                        label = "自动输入间隔(毫秒)",
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                    )
+                }
+            }
         }
 
         DismissibleSnackbarHost(
@@ -177,19 +201,4 @@ private fun parseNonNegativeLongLite(raw: String): Long? {
     return normalizeNumericInput(raw)
         .toLongOrNull()
         ?.takeIf { it >= 0L }
-}
-
-@Composable
-private fun LiteSwitchItem(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    androidx.compose.foundation.layout.Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(text = title, style = MaterialTheme.typography.bodyLarge)
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
-    }
 }

@@ -34,6 +34,8 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
+import io.github.magisk317.uikit.surface.AppTopBar
+import io.github.magisk317.uikit.surface.DetailSectionCard
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -133,21 +135,13 @@ fun FaqScreen(hazeState: HazeState, hazeStyle: HazeStyle, refreshTrigger: Int = 
                 ) {
                     itemsIndexed(questions.toList()) { index, question ->
                         if (question != "empty" && index < answers.size && answers[index] != "empty") {
-                            Card(
+                            DetailSectionCard(
+                                title = question,
                                 modifier = Modifier.fillMaxWidth(),
-                                shape = MaterialTheme.shapes.large,
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                ),
                             ) {
-                                Column(modifier = Modifier.padding(16.dp)) {
-                                    Text(
-                                        text = question,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary,
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                Box(
+                                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 14.dp),
+                                ) {
                                     Text(
                                         text = answers[index],
                                         style = MaterialTheme.typography.bodyMedium,
@@ -165,18 +159,16 @@ fun FaqScreen(hazeState: HazeState, hazeStyle: HazeStyle, refreshTrigger: Int = 
             modifier = Modifier
                 .align(Alignment.TopCenter),
         ) {
-            TopAppBar(
-                title = { Text(stringResource(R.string.action_home_faq_title)) },
+            AppTopBar(
+                title = stringResource(R.string.action_home_faq_title),
                 scrollBehavior = scrollBehavior,
                 windowInsets = WindowInsets.statusBars,
                 modifier = Modifier
                     .hazeEffect(hazeState, hazeStyle) {
                         forceInvalidateOnPreDraw = true
                     },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.Transparent,
-                    scrolledContainerColor = Color.Transparent,
-                ),
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent,
             )
         }
     }

@@ -39,6 +39,7 @@ import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.Utils
 import com.github.magisk317.smscode.ui.common.LocalSnackbarHostState
 import io.github.magisk317.uikit.surface.AppTopBar
+import io.github.magisk317.uikit.surface.StatusHeroCard
 import io.github.magisk317.uikit.surface.SummaryRow
 import io.github.magisk317.uikit.surface.SummarySectionCard
 import dev.chrisbanes.haze.HazeState
@@ -338,72 +339,14 @@ fun StatusCard(
     diagnostics: List<Pair<String, String>>,
     onClick: (() -> Unit)? = null,
 ) {
-    val containerColor = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.errorContainer
-    val contentColor = if (isEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onErrorContainer
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor,
-            contentColor = contentColor,
-        ),
-        onClick = { onClick?.invoke() },
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Icon(
-                    imageVector = if (isEnabled) Icons.Default.CheckCircle else Icons.Default.Warning,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                )
-                Column {
-                    Text(
-                        text = if (isEnabled) stringResource(id = R.string.status_working) else stringResource(id = R.string.status_not_active),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    if (!isEnabled) {
-                        Text(
-                            text = stringResource(id = R.string.status_tip),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
-            }
-            if (showDiagnostics && diagnostics.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .padding(top = 18.dp)
-                        .fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    diagnostics.forEach { (label, value) ->
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
-                        ) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = contentColor.copy(alpha = 0.8f),
-                            )
-                            Text(
-                                text = value,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium,
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    StatusHeroCard(
+        title = if (isEnabled) stringResource(id = R.string.status_working) else stringResource(id = R.string.status_not_active),
+        summary = if (isEnabled) null else stringResource(id = R.string.status_tip),
+        icon = if (isEnabled) Icons.Default.CheckCircle else Icons.Default.Warning,
+        highlighted = isEnabled,
+        diagnostics = if (showDiagnostics) diagnostics else emptyList(),
+        onClick = onClick,
+    )
 }
 
 private fun buildStatusDiagnostics(

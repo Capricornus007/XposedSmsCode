@@ -55,6 +55,14 @@ import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import io.github.magisk317.smscode.domain.model.BuiltinSmsCodeRuleSpec
 import io.github.magisk317.smscode.domain.model.BuiltinSmsCodeRules
+import io.github.magisk317.uikit.surface.AppFloatingActionButton
+import io.github.magisk317.uikit.surface.AppPrimaryButton
+import io.github.magisk317.uikit.surface.AppSecondaryButton
+import io.github.magisk317.uikit.surface.AppTextField
+import io.github.magisk317.uikit.surface.AppTextButton
+import io.github.magisk317.uikit.surface.AppTopBar
+import io.github.magisk317.uikit.surface.DetailSectionCard
+import io.github.magisk317.uikit.surface.SectionHeading
 import java.util.regex.Pattern
 import kotlinx.coroutines.launch
 
@@ -98,8 +106,8 @@ fun SmsCodeRuleListScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(id = R.string.rule_list)) },
+            AppTopBar(
+                title = stringResource(id = R.string.rule_list),
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
@@ -114,14 +122,14 @@ fun SmsCodeRuleListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            AppFloatingActionButton(
                 modifier = Modifier
                     .navigationBarsPadding()
                     .padding(bottom = 56.dp),
                 onClick = onAddClick,
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(id = R.string.create_rule))
-            }
+                imageVector = Icons.Filled.Add,
+                contentDescription = stringResource(id = R.string.create_rule),
+            )
         },
     ) { paddingValues ->
         LazyColumn(
@@ -196,20 +204,7 @@ private fun RuleSectionHeader(
     title: String,
     summary: String,
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-        )
-        Text(
-            text = summary,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
+    SectionHeading(title = title, summary = summary)
 }
 
 @Composable
@@ -225,35 +220,30 @@ private fun BuiltinSmsCodeRuleCard(
         BuiltinSmsCodeRules.RULE_ID_DIGITS -> stringResource(id = R.string.builtin_rule_digits_title)
         else -> builtinBadge
     }
-    OutlinedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+    DetailSectionCard(
+        title = title,
+        summary = builtinBadge,
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(horizontal = 18.dp, vertical = 14.dp),
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(
-                text = builtinBadge,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = keywordSetting,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                text = rule.codeRegex,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = keywordSetting,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    text = rule.codeRegex,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }
@@ -266,30 +256,24 @@ private fun SmsCodeRuleCard(
     onDelete: () -> Unit,
 ) {
     val userBadge = stringResource(id = R.string.user_rule_badge_format, ordinal)
-    OutlinedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onEdit),
+    DetailSectionCard(
+        title = rule.company?.takeIf { it.isNotBlank() } ?: rule.codeKeyword,
+        summary = userBadge,
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onEdit)
+                .padding(horizontal = 18.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            rule.company?.takeIf { it.isNotBlank() }?.let { company ->
+            if (!rule.company.isNullOrBlank()) {
                 Text(
-                    text = company,
-                    style = MaterialTheme.typography.titleMedium,
+                    text = rule.codeKeyword,
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
-            Text(
-                text = userBadge,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = rule.codeKeyword,
-                style = MaterialTheme.typography.bodyLarge,
-            )
             Text(
                 text = rule.codeRegex,
                 style = MaterialTheme.typography.bodySmall,
@@ -301,12 +285,8 @@ private fun SmsCodeRuleCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End,
             ) {
-                TextButton(onClick = onEdit) {
-                    Text(stringResource(id = R.string.edit))
-                }
-                TextButton(onClick = onDelete) {
-                    Text(stringResource(id = R.string.remove), color = MaterialTheme.colorScheme.error)
-                }
+                AppTextButton(text = stringResource(id = R.string.edit), onClick = onEdit)
+                AppTextButton(text = stringResource(id = R.string.remove), onClick = onDelete)
             }
         }
     }
@@ -433,14 +413,10 @@ fun SmsCodeRuleEditorScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        if (isBuiltinRule) builtinTitle else {
-                            stringResource(
-                                id = if (ruleId == 0L) R.string.create_rule else R.string.edit_rule,
-                            )
-                        },
+            AppTopBar(
+                title = if (isBuiltinRule) builtinTitle else {
+                    stringResource(
+                        id = if (ruleId == 0L) R.string.create_rule else R.string.edit_rule,
                     )
                 },
                 navigationIcon = {
@@ -450,12 +426,11 @@ fun SmsCodeRuleEditorScreen(
                 },
                 actions = {
                     if (!isBuiltinRule) {
-                        TextButton(
+                        AppTextButton(
+                            text = confirmLabel,
                             enabled = !loading,
                             onClick = ::saveRule,
-                        ) {
-                            Text(confirmLabel)
-                        }
+                        )
                     }
                 },
             )
@@ -474,11 +449,11 @@ fun SmsCodeRuleEditorScreen(
                 .padding(horizontal = 16.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            OutlinedTextField(
+            AppTextField(
                 value = company,
                 onValueChange = { company = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text(companyLabel) },
+                label = companyLabel,
                 placeholder = { Text(stringResource(id = R.string.rule_company_placeholder)) },
                 supportingText = { Text(if (isBuiltinRule) builtinSummary else rulesSummary) },
                 readOnly = isBuiltinRule,
@@ -494,11 +469,11 @@ fun SmsCodeRuleEditorScreen(
                 },
                 singleLine = true,
             )
-            OutlinedTextField(
+            AppTextField(
                 value = keyword,
                 onValueChange = { keyword = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text(keywordLabel) },
+                label = keywordLabel,
                 readOnly = isBuiltinRule,
                 enabled = !loading,
                 trailingIcon = if (isBuiltinRule && keyword.isNotBlank()) {
@@ -512,11 +487,11 @@ fun SmsCodeRuleEditorScreen(
                 },
                 singleLine = true,
             )
-            OutlinedTextField(
+            AppTextField(
                 value = regex,
                 onValueChange = { regex = it },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text(regexLabel) },
+                label = regexLabel,
                 readOnly = isBuiltinRule,
                 enabled = !loading,
                 trailingIcon = if (isBuiltinRule && regex.isNotBlank()) {

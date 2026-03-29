@@ -336,25 +336,27 @@ fun AppConfigScreen(
     }
 
     if (showUsagePermissionDialog) {
-        AlertDialog(
+        io.github.magisk317.uikit.surface.AppAlertDialog(
             onDismissRequest = { showUsagePermissionDialog = false },
             title = { Text(stringResource(R.string.action_sort_by_usage)) },
             text = { Text(stringResource(R.string.usage_permission_prompt)) },
             confirmButton = {
-                Button(onClick = {
-                    showUsagePermissionDialog = false
-                    try {
-                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
-                    } catch (_: Exception) {
-                    }
-                }) {
-                    Text(stringResource(R.string.confirm))
-                }
+                io.github.magisk317.uikit.surface.AppPrimaryButton(
+                    text = stringResource(R.string.confirm),
+                    onClick = {
+                        showUsagePermissionDialog = false
+                        try {
+                            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                        } catch (_: Exception) {
+                        }
+                    },
+                )
             },
             dismissButton = {
-                TextButton(onClick = { showUsagePermissionDialog = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
+                io.github.magisk317.uikit.surface.AppSecondaryButton(
+                    text = stringResource(R.string.cancel),
+                    onClick = { showUsagePermissionDialog = false },
+                )
             },
         )
     }
