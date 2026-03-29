@@ -21,6 +21,8 @@
 
 An Xposed module which can recognize, parse SMS code and copy it to clipboard when a new message arrives. It can also input SMS code automatically.
 
+If you also need to forward verification codes, SMS content, or app notifications to Telegram, Webhook, email, or other channels, you may also want to check out the newer project [Xinyi Relay](https://github.com/magisk317/xinyi-relay). It is more focused on message relay and verification-code workflows; if your main need is SMS code recognition and auto-fill, this project is still the better fit.
+
 [中文版说明](./README.md)
 
 # Screenshots
