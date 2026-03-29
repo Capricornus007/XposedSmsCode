@@ -38,6 +38,9 @@ import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.Utils
 import com.github.magisk317.smscode.ui.common.LocalSnackbarHostState
+import io.github.magisk317.uikit.surface.AppTopBar
+import io.github.magisk317.uikit.surface.SummaryRow
+import io.github.magisk317.uikit.surface.SummarySectionCard
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
@@ -272,8 +275,8 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
             }
         }
 
-        TopAppBar(
-            title = { Text(text = stringResource(id = R.string.app_name)) },
+        AppTopBar(
+            title = stringResource(id = R.string.app_name),
             scrollBehavior = scrollBehavior,
             windowInsets = WindowInsets.statusBars,
             modifier = Modifier
@@ -281,10 +284,8 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
                 .hazeEffect(hazeState, hazeStyle) {
                     forceInvalidateOnPreDraw = true
                 },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                scrolledContainerColor = Color.Transparent,
-            ),
+            containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
         )
     }
 
@@ -461,46 +462,18 @@ private fun OverviewInfoCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    ElevatedCard(
+    SummarySectionCard(
         modifier = modifier,
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 12.dp),
-            content = content,
-        )
-    }
+        content = content,
+    )
 }
 
 @Composable
 fun InfoItem(icon: ImageVector, label: String, value: String, onClick: (() -> Unit)? = null) {
-    ListItem(
-        leadingContent = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-        headlineContent = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        },
-        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+    SummaryRow(
+        icon = icon,
+        label = label,
+        value = value,
+        onClick = onClick,
     )
 }

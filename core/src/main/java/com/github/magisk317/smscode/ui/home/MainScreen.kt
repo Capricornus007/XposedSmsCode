@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
@@ -21,12 +20,6 @@ import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.NavigationRail
-import androidx.compose.material3.NavigationRailItem
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -63,6 +56,9 @@ import com.github.magisk317.smscode.ui.record.CodeRecordScreen
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
+import io.github.magisk317.uikit.surface.AppBottomNavigationBar
+import io.github.magisk317.uikit.surface.AppNavigationItemSpec
+import io.github.magisk317.uikit.surface.AppNavigationRail
 import org.koin.compose.viewmodel.koinViewModel
 
 @Immutable
@@ -155,6 +151,15 @@ fun MainScreen(
         }
     }
 
+    val navigationItems = tabs.mapIndexed { index, tab ->
+        AppNavigationItemSpec(
+            label = tab.label,
+            icon = tab.icon,
+            selected = index == selectedIndex,
+            onClick = { handleTabClick(tab, index == selectedIndex) },
+        )
+    }
+
     LaunchedEffect(initialTab) {
         when (initialTab) {
             is OverviewRoute -> navController.navigate(OverviewRoute)
@@ -178,7 +183,9 @@ fun MainScreen(
             modifier = Modifier.fillMaxSize(),
         ) {
             if (!isCompact) {
-                NavigationRail(
+                AppNavigationRail(
+                    items = navigationItems,
+                    modifier = Modifier.fillMaxHeight(),
                     header = {
                         Icon(
                             imageVector = Icons.Default.Sms,
@@ -186,19 +193,8 @@ fun MainScreen(
                             modifier = Modifier.padding(vertical = 12.dp),
                         )
                     },
-                    modifier = Modifier.fillMaxHeight(),
-                ) {
-                    tabs.forEach { tab ->
-                        val selected = tabs.indexOf(tab) == selectedIndex
-                        NavigationRailItem(
-                            icon = { Icon(tab.icon, contentDescription = tab.label) },
-                            label = { Text(tab.label) },
-                            selected = selected,
-                            alwaysShowLabel = false,
-                            onClick = { handleTabClick(tab, selected) },
-                        )
-                    }
-                }
+                    alwaysShowLabel = false,
+                )
             }
 
             Box(modifier = Modifier.weight(1f)) {
@@ -294,24 +290,11 @@ fun MainScreen(
                     }
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.35f)),
             ) {
-                NavigationBar(
+                AppBottomNavigationBar(
+                    items = navigationItems,
                     containerColor = Color.Transparent,
-                    tonalElevation = 0.dp,
-                ) {
-                    tabs.forEach { tab ->
-                        val selected = tabs.indexOf(tab) == selectedIndex
-                        NavigationBarItem(
-                            icon = { Icon(tab.icon, contentDescription = tab.label) },
-                            label = { Text(tab.label) },
-                            selected = selected,
-                            colors = NavigationBarItemDefaults.colors(
-                                indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f),
-                            ),
-                            alwaysShowLabel = false,
-                            onClick = { handleTabClick(tab, selected) },
-                        )
-                    }
-                }
+                    alwaysShowLabel = false,
+                )
             }
         }
     }
