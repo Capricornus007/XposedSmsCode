@@ -198,68 +198,8 @@ fun AppConfigScreen(
                         null
                     },
                     actions = {
-                        Box {
-                            IconButton(onClick = { showSettingsMenu = true }) {
-                                Icon(Icons.Default.Tune, contentDescription = null)
-                            }
-                            DropdownMenu(
-                                expanded = showSettingsMenu,
-                                onDismissRequest = { showSettingsMenu = false },
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_sort_by_label)) },
-                                    trailingIcon = {
-                                        io.github.magisk317.uikit.preference.AppRadioButton(
-                                            selected = currentSortOption == AppConfigViewModel.SortOption.LABEL,
-                                            onClick = null,
-                                        )
-                                    },
-                                    onClick = {
-                                        viewModel.setSortOption(AppConfigViewModel.SortOption.LABEL)
-                                        showSettingsMenu = false
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_sort_by_selection)) },
-                                    trailingIcon = {
-                                        io.github.magisk317.uikit.preference.AppRadioButton(
-                                            selected = currentSortOption == AppConfigViewModel.SortOption.SELECTION,
-                                            onClick = null,
-                                        )
-                                    },
-                                    onClick = {
-                                        viewModel.setSortOption(AppConfigViewModel.SortOption.SELECTION)
-                                        showSettingsMenu = false
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_sort_by_usage)) },
-                                    trailingIcon = {
-                                        io.github.magisk317.uikit.preference.AppRadioButton(
-                                            selected = currentSortOption == AppConfigViewModel.SortOption.USAGE,
-                                            onClick = null,
-                                        )
-                                    },
-                                    onClick = {
-                                        viewModel.setSortOption(AppConfigViewModel.SortOption.USAGE)
-                                        showSettingsMenu = false
-                                    },
-                                )
-                                HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_hide_system_apps)) },
-                                    trailingIcon = {
-                                        io.github.magisk317.uikit.preference.AppCheckbox(
-                                            checked = hideSystemApps,
-                                            onCheckedChange = null,
-                                        )
-                                    },
-                                    onClick = {
-                                        viewModel.setHideSystemApps(!hideSystemApps)
-                                        showSettingsMenu = false
-                                    },
-                                )
-                            }
+                        IconButton(onClick = { showSettingsMenu = true }) {
+                            Icon(Icons.Default.Tune, contentDescription = null)
                         }
                     },
                     scrollBehavior = scrollBehavior,
@@ -333,6 +273,67 @@ fun AppConfigScreen(
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding(),
         )
+
+        io.github.magisk317.uikit.surface.AppBottomSheet(
+            show = showSettingsMenu,
+            onDismissRequest = { showSettingsMenu = false },
+            title = stringResource(R.string.app_config_settings),
+        ) {
+            io.github.magisk317.uikit.preference.Item(
+                title = stringResource(R.string.action_sort_by_label),
+                summary = "",
+                trailingContent = {
+                    io.github.magisk317.uikit.preference.AppRadioButton(
+                        selected = currentSortOption == AppConfigViewModel.SortOption.LABEL,
+                        onClick = null,
+                    )
+                },
+                onClick = {
+                    viewModel.setSortOption(AppConfigViewModel.SortOption.LABEL)
+                    showSettingsMenu = false
+                },
+            )
+            io.github.magisk317.uikit.preference.Item(
+                title = stringResource(R.string.action_sort_by_selection),
+                summary = "",
+                trailingContent = {
+                    io.github.magisk317.uikit.preference.AppRadioButton(
+                        selected = currentSortOption == AppConfigViewModel.SortOption.SELECTION,
+                        onClick = null,
+                    )
+                },
+                onClick = {
+                    viewModel.setSortOption(AppConfigViewModel.SortOption.SELECTION)
+                    showSettingsMenu = false
+                },
+            )
+            io.github.magisk317.uikit.preference.Item(
+                title = stringResource(R.string.action_sort_by_usage),
+                summary = "",
+                trailingContent = {
+                    io.github.magisk317.uikit.preference.AppRadioButton(
+                        selected = currentSortOption == AppConfigViewModel.SortOption.USAGE,
+                        onClick = null,
+                    )
+                },
+                onClick = {
+                    viewModel.setSortOption(AppConfigViewModel.SortOption.USAGE)
+                    showSettingsMenu = false
+                },
+            )
+            io.github.magisk317.uikit.preference.ActionSwitchItem(
+                title = stringResource(R.string.action_hide_system_apps),
+                summary = "",
+                checked = hideSystemApps,
+                onClick = {
+                    viewModel.setHideSystemApps(!hideSystemApps)
+                    showSettingsMenu = false
+                },
+                onCheckedChange = {
+                    viewModel.setHideSystemApps(it)
+                },
+            )
+        }
     }
 
     if (showUsagePermissionDialog) {

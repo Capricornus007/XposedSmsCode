@@ -1502,7 +1502,7 @@ private fun NotificationOwnerDialog(
         CodeNotificationOwner.PHONE -> CodeNotificationOwner.PHONE
         else -> CodeNotificationOwner.APP
     }
-    BasicAlertDialog(
+    io.github.magisk317.uikit.surface.AppBasicDialog(
         onDismissRequest = onDismiss,
     ) {
         SingleChoiceDialogSurface(title = stringResource(id = R.string.pref_code_notification_owner_title)) {
@@ -1703,7 +1703,7 @@ fun RetentionDialog(
 ) {
     val entries = stringArrayResource(id = entriesId)
     val values = stringArrayResource(id = valuesId)
-    BasicAlertDialog(
+    io.github.magisk317.uikit.surface.AppBasicDialog(
         onDismissRequest = onDismiss,
         modifier = modifier,
     ) {
@@ -1738,7 +1738,7 @@ fun ThemeChooserDialog(currentMode: Int, onDismiss: () -> Unit, onThemeSelected:
         stringResource(id = R.string.theme_dark) to 2,
         stringResource(id = R.string.theme_black) to 3,
     )
-    BasicAlertDialog(
+    io.github.magisk317.uikit.surface.AppBasicDialog(
         onDismissRequest = onDismiss,
     ) {
         SingleChoiceDialogSurface(title = stringResource(id = R.string.pref_choose_theme_title)) {
@@ -1793,7 +1793,7 @@ fun UiKitStyleChooserDialog(
         stringResource(id = R.string.ui_kit_style_expressive) to UiKitStyle.Expressive.value,
         stringResource(id = R.string.ui_kit_style_miuix) to UiKitStyle.Miuix.value,
     )
-    BasicAlertDialog(
+    io.github.magisk317.uikit.surface.AppBasicDialog(
         onDismissRequest = onDismiss,
     ) {
         SingleChoiceDialogSurface(title = stringResource(id = R.string.pref_ui_kit_style_title)) {
@@ -1839,7 +1839,7 @@ fun LanguageChooserDialog(onDismiss: () -> Unit, onLanguageSelected: (String) ->
         stringResource(id = R.string.language_zh_tw) to "zh-TW",
     )
 
-    BasicAlertDialog(
+    io.github.magisk317.uikit.surface.AppBasicDialog(
         onDismissRequest = onDismiss,
     ) {
         SingleChoiceDialogSurface(title = stringResource(id = R.string.pref_language_title)) {

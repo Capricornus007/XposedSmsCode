@@ -669,61 +669,27 @@ private fun RecordDetailOverlay(
                         },
                     )
                     HorizontalDivider()
-                    ButtonGroup(
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        overflowIndicator = { menuState ->
-                            ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
-                        },
                     ) {
-                        customItem(
-                            buttonGroupContent = {
-                                io.github.magisk317.uikit.surface.AppSecondaryButton(
-                                    text = stringResource(copyTextRes),
-                                    modifier = Modifier.weight(1f),
-                                    onClick = {
-                                        if (content.isNotEmpty()) {
-                                            val message = context.getString(copyToastRes)
-                                            onCopy(copyLabel, content, message)
-                                        }
-                                        onDismiss()
-                                    },
-                                )
-                            },
-                            menuContent = { menuState ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(copyTextRes)) },
-                                    onClick = {
-                                        if (content.isNotEmpty()) {
-                                            val message = context.getString(copyToastRes)
-                                            onCopy(copyLabel, content, message)
-                                        }
-                                        menuState.dismiss()
-                                        onDismiss()
-                                    },
-                                )
+                        io.github.magisk317.uikit.surface.AppSecondaryButton(
+                            text = stringResource(copyTextRes),
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                if (content.isNotEmpty()) {
+                                    val message = context.getString(copyToastRes)
+                                    onCopy(copyLabel, content, message)
+                                }
+                                onDismiss()
                             },
                         )
-                        customItem(
-                            buttonGroupContent = {
-                                io.github.magisk317.uikit.surface.AppPrimaryButton(
-                                    text = stringResource(deleteTextRes),
-                                    modifier = Modifier.weight(1f),
-                                    onClick = {
-                                        onDelete()
-                                        onDismiss()
-                                    },
-                                )
-                            },
-                            menuContent = { menuState ->
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(deleteTextRes)) },
-                                    onClick = {
-                                        onDelete()
-                                        menuState.dismiss()
-                                        onDismiss()
-                                    },
-                                )
+                        io.github.magisk317.uikit.surface.AppPrimaryButton(
+                            text = stringResource(deleteTextRes),
+                            modifier = Modifier.weight(1f),
+                            onClick = {
+                                onDelete()
+                                onDismiss()
                             },
                         )
                     }

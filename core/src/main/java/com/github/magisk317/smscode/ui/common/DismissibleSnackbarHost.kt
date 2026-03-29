@@ -29,9 +29,10 @@ private fun DefaultDismissibleSnackbar(
     androidx.compose.material3.Snackbar(
         action = {
             data.visuals.actionLabel?.let { label ->
-                androidx.compose.material3.TextButton(onClick = { data.performAction() }) {
-                    androidx.compose.material3.Text(label)
-                }
+                io.github.magisk317.uikit.surface.AppTextButton(
+                    text = label,
+                    onClick = { data.performAction() },
+                )
             }
         },
         dismissAction = if (data.visuals.withDismissAction) {
