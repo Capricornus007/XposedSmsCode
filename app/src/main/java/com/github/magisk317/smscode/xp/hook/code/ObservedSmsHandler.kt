@@ -11,10 +11,12 @@ import io.github.magisk317.smscode.verification.ObservedSmsHandler as SharedObse
 import io.github.magisk317.smscode.verification.SmsCodePostParseCoordinator
 import io.github.magisk317.smscode.verification.SmsInboxObserverDecision
 import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
+import java.util.concurrent.ScheduledExecutorService
 
 internal class ObservedSmsHandler(
     private val pluginContext: Context,
     private val phoneContext: Context,
+    private val actionExecutor: ScheduledExecutorService? = null,
     private val settingsLoader: (Context) -> SmsCodePostParseCoordinator.Settings = { context ->
         SmsCodePostParseCoordinator.loadSettings(SmsCodeVerificationPrefs(context))
     },
@@ -56,6 +58,7 @@ internal class ObservedSmsHandler(
         SmsCodePostParseCoordinator.ObservedSmsPlan,
     ) -> Unit = { resolvedPluginContext, resolvedPhoneContext, smsMsg, eventId, plan ->
         SmsCodeActionDispatcher.dispatchObservedSmsActions(
+            executor = actionExecutor,
             pluginContext = resolvedPluginContext,
             phoneContext = resolvedPhoneContext,
             smsMsg = smsMsg.raw,

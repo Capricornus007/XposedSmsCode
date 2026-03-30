@@ -26,6 +26,7 @@ class AutoInputAction(
     phoneContext: Context,
     smsMsg: SmsMsg,
     private val deduplicateEnabled: Boolean? = null,
+    private val dispatchDelayMs: Long = 0L,
 ) :
     CallableAction(pluginContext, phoneContext, smsMsg) {
 
@@ -35,6 +36,7 @@ class AutoInputAction(
             phoneContext = mPhoneContext,
             smsMsg = mSmsMsg.toVerificationMessage(),
             deduplicateEnabled = deduplicateEnabled,
+            dispatchDelayMs = dispatchDelayMs,
             deduplicateReader = PrefsReader::deduplicateSms,
             sharedGateClaimer = { context, fileName, key, windowMs, maxEntries ->
                 SharedRuntimeGate.claimWithinWindow(
