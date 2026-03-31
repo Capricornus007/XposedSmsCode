@@ -20,10 +20,18 @@ import java.util.regex.Pattern
 class GoogleMessagesHook : BaseHook() {
     override fun onLoadPackage(lpparam: LoadParam) {
         if (lpparam.packageName != GOOGLE_MESSAGES_PACKAGE_NAME) return
-        bugleClassLoader = lpparam.classLoader
+        val classLoader = lpparam.classLoader ?: run {
+            XLog.w(
+                "GoogleMessagesHook skip: classLoader is null for pkg=%s process=%s",
+                lpparam.packageName,
+                lpparam.processName,
+            )
+            return
+        }
+        bugleClassLoader = classLoader
         XLog.i("GoogleMessagesHook initializing")
-        hookReceiver(lpparam.classLoader, TELEPHONY_CHANGE_RECEIVER_CLASS)
-        hookReceiver(lpparam.classLoader, SMS_DELIVER_RECEIVER_CLASS)
+        hookReceiver(classLoader, TELEPHONY_CHANGE_RECEIVER_CLASS)
+        hookReceiver(classLoader, SMS_DELIVER_RECEIVER_CLASS)
     }
 
     private fun hookReceiver(classLoader: ClassLoader, receiverClassName: String) {

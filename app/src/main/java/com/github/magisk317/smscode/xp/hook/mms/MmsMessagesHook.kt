@@ -23,10 +23,18 @@ import java.util.concurrent.Executors
 class MmsMessagesHook : BaseHook() {
     override fun onLoadPackage(lpparam: LoadParam) {
         if (lpparam.packageName != MMS_PACKAGE_NAME) return
+        val classLoader = lpparam.classLoader ?: run {
+            XLog.w(
+                "MmsMessagesHook skip: classLoader is null for pkg=%s process=%s",
+                lpparam.packageName,
+                lpparam.processName,
+            )
+            return
+        }
         XLog.i("MmsMessagesHook initializing")
         var totalHooks = 0
-        RECEIVER_CLASS_NAMES.forEach { totalHooks += hookReceiver(lpparam.classLoader, it) }
-        SERVICE_CLASS_NAMES.forEach { totalHooks += hookIntentMethods(lpparam.classLoader, it) }
+        RECEIVER_CLASS_NAMES.forEach { totalHooks += hookReceiver(classLoader, it) }
+        SERVICE_CLASS_NAMES.forEach { totalHooks += hookIntentMethods(classLoader, it) }
         if (totalHooks == 0) {
             XLog.w("MmsMessagesHook found no usable receiver/service entrypoints in %s", MMS_PACKAGE_NAME)
         } else {

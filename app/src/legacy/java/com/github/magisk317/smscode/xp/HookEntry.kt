@@ -62,9 +62,22 @@ class HookEntry :
                 loadParam.processName,
             )
         }
+        dispatchLoad(loadParam)
+    }
+
+    private fun dispatchLoad(loadParam: LoadParam) {
         for (hook in hookList) {
-            if (hook.hookOnLoadPackage()) {
+            if (!hook.hookOnLoadPackage()) continue
+            runCatching {
                 hook.onLoadPackage(loadParam)
+            }.onFailure { throwable ->
+                XLog.e(
+                    "HookEntry: %s failed for pkg=%s process=%s",
+                    hook.javaClass.simpleName,
+                    loadParam.packageName,
+                    loadParam.processName,
+                    throwable,
+                )
             }
         }
     }

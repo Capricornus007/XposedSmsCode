@@ -4,12 +4,14 @@ import android.content.Context
 import android.os.SystemClock
 import android.util.Log
 import com.github.magisk317.smscode.runtime.BuildConfig
-import com.github.magisk317.smscode.common.utils.ModuleUtils
 import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 data class ActivationDiagnosticsSnapshot(
     val lastServiceBindAtMs: Long = 0L,
@@ -19,6 +21,12 @@ data class ActivationDiagnosticsSnapshot(
     val lastHookPackage: String = "",
     val lastHookProcess: String = "",
     val lastHookSource: String = "",
+)
+
+data class ActivationStatusState(
+    val isEnabled: Boolean = false,
+    val runtimeConnected: Boolean = false,
+    val diagnostics: ActivationDiagnosticsSnapshot = ActivationDiagnosticsSnapshot(),
 )
 
 object ActivationDiagnosticsStore {
@@ -33,23 +41,33 @@ object ActivationDiagnosticsStore {
     private const val KEY_LAST_HOOK_SOURCE = "last_hook_source"
 
     private val lock = Any()
+    private val statusState = MutableStateFlow(ActivationStatusState())
 
     fun snapshot(context: Context): ActivationDiagnosticsSnapshot = synchronized(lock) {
-        readSnapshotLocked(context)
+        val snapshot = readSnapshotLocked(context)
+        publishStatusLocked(context, snapshot)
+        snapshot
     }
 
     fun hasHookHeartbeatThisBoot(context: Context): Boolean {
         val current = snapshot(context)
-        return current.lastHookAtMs >= currentBootStartAtMs()
+        return hasHookHeartbeatThisBoot(current)
     }
 
-    fun isRuntimeConnected(): Boolean = ModuleUtils.isRuntimeActivated()
+    fun isRuntimeConnected(): Boolean = com.github.magisk317.smscode.common.utils.ModuleUtils.isRuntimeActivated()
 
     fun isModuleActivated(context: Context): Boolean {
-        if (BuildConfig.XPOSED_API_FLAVOR == XPOSED_API_FLAVOR_LEGACY) {
-            return ModuleUtils.isModuleActivated(context) || hasHookHeartbeatThisBoot(context)
+        return synchronized(lock) {
+            publishStatusLocked(context)
+            statusState.value.isEnabled
         }
-        return isRuntimeConnected() || hasHookHeartbeatThisBoot(context)
+    }
+
+    fun observeStatus(context: Context): StateFlow<ActivationStatusState> {
+        synchronized(lock) {
+            publishStatusLocked(context)
+        }
+        return statusState.asStateFlow()
     }
 
     fun recordServiceBind(
@@ -64,7 +82,10 @@ object ActivationDiagnosticsStore {
                 lastServiceBindAtMs = System.currentTimeMillis(),
                 lastServiceFrameworkName = frameworkName,
                 lastServiceFrameworkVersion = frameworkVersion,
-            ).also { writeSnapshotLocked(context, it) }
+            ).also {
+                writeSnapshotLocked(context, it)
+                publishStatusLocked(context, it)
+            }
         }
         logSnapshotIfVerbose(
             context = context,
@@ -79,6 +100,9 @@ object ActivationDiagnosticsStore {
         context: Context,
         verboseLogging: Boolean,
     ) {
+        synchronized(lock) {
+            publishStatusLocked(context)
+        }
         logSnapshotIfVerbose(
             context = context,
             verboseLogging = verboseLogging,
@@ -102,7 +126,10 @@ object ActivationDiagnosticsStore {
                 lastHookPackage = packageName,
                 lastHookProcess = processName,
                 lastHookSource = source,
-            ).also { writeSnapshotLocked(context, it) }
+            ).also {
+                writeSnapshotLocked(context, it)
+                publishStatusLocked(context, it)
+            }
         }
         logSnapshotIfVerbose(
             context = context,
@@ -150,8 +177,8 @@ object ActivationDiagnosticsStore {
             append(" hookSource=")
             append(snapshot.lastHookSource.ifBlank { "<none>" })
         }
-        RuntimeLogStore.initialize(context, enableDetailedLogs = true)
-        RuntimeLogStore.append(
+        com.github.magisk317.smscode.common.utils.RuntimeLogStore.initialize(context, enableDetailedLogs = true)
+        com.github.magisk317.smscode.common.utils.RuntimeLogStore.append(
             priority = Log.INFO,
             tag = BuildConfig.LOG_TAG,
             message = message,
@@ -163,6 +190,37 @@ object ActivationDiagnosticsStore {
 
     private fun currentBootStartAtMs(): Long {
         return (System.currentTimeMillis() - SystemClock.elapsedRealtime()).coerceAtLeast(0L)
+    }
+
+    private fun hasHookHeartbeatThisBoot(snapshot: ActivationDiagnosticsSnapshot): Boolean {
+        return snapshot.lastHookAtMs >= currentBootStartAtMs()
+    }
+
+    private fun computeStatusLocked(
+        context: Context,
+        snapshot: ActivationDiagnosticsSnapshot,
+    ): ActivationStatusState {
+        val runtimeConnected = isRuntimeConnected()
+        val isEnabled = if (BuildConfig.XPOSED_API_FLAVOR == XPOSED_API_FLAVOR_LEGACY) {
+            com.github.magisk317.smscode.common.utils.ModuleUtils.isModuleActivated(context) || hasHookHeartbeatThisBoot(snapshot)
+        } else {
+            runtimeConnected || hasHookHeartbeatThisBoot(snapshot)
+        }
+        return ActivationStatusState(
+            isEnabled = isEnabled,
+            runtimeConnected = runtimeConnected,
+            diagnostics = snapshot,
+        )
+    }
+
+    private fun publishStatusLocked(
+        context: Context,
+        snapshot: ActivationDiagnosticsSnapshot = readSnapshotLocked(context),
+    ) {
+        val next = computeStatusLocked(context, snapshot)
+        if (statusState.value != next) {
+            statusState.value = next
+        }
     }
 
     private fun readSnapshotLocked(context: Context): ActivationDiagnosticsSnapshot {
@@ -210,7 +268,7 @@ object ActivationDiagnosticsStore {
     }
 
     private fun getStoreFile(context: Context): File {
-        return File(StorageUtils.getExternalFilesDir(context), FILE_NAME)
+        return File(com.github.magisk317.smscode.common.utils.StorageUtils.getExternalFilesDir(context), FILE_NAME)
     }
 
     private fun formatTime(timestampMs: Long): String {

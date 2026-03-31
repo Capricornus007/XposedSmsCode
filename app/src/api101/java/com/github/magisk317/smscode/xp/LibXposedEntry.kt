@@ -92,8 +92,17 @@ class LibXposedEntry : XposedModule {
             )
         }
         for (hook in hookList) {
-            if (hook.hookOnLoadPackage()) {
+            if (!hook.hookOnLoadPackage()) continue
+            runCatching {
                 hook.onLoadPackage(loadParam)
+            }.onFailure { throwable ->
+                XLog.e(
+                    "LibXposedEntry: %s failed for pkg=%s process=%s",
+                    hook.javaClass.simpleName,
+                    loadParam.packageName,
+                    loadParam.processName,
+                    throwable,
+                )
             }
         }
     }

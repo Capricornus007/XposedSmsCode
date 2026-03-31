@@ -31,8 +31,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.Const
+import com.github.magisk317.smscode.common.utils.ActivationStatusState
 import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsSnapshot
 import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.PackageUtils
@@ -80,20 +82,10 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
         }
     }
 
-    val isEnabled = ActivationDiagnosticsStore.isModuleActivated(context)
-    val runtimeConnected = ActivationDiagnosticsStore.isRuntimeConnected()
-
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    val activationDiagnostics by produceState(
-        initialValue = ActivationDiagnosticsStore.snapshot(context),
-        context,
-    ) {
-        while (true) {
-            value = ActivationDiagnosticsStore.snapshot(context)
-            delay(1500L)
-        }
-    }
+    val activationStatus by ActivationDiagnosticsStore.observeStatus(context)
+        .collectAsStateWithLifecycle(initialValue = ActivationStatusState())
     val frameworkInfoState by produceState<Pair<String, String>?>(
         initialValue = null,
     ) {
@@ -149,12 +141,12 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
         ) {
             item {
                 StatusCard(
-                    isEnabled = isEnabled,
+                    isEnabled = activationStatus.isEnabled,
                     showDiagnostics = showStatusDiagnostics,
                     diagnostics = buildStatusDiagnostics(
                         context = context,
-                        snapshot = activationDiagnostics,
-                        runtimeConnected = runtimeConnected,
+                        snapshot = activationStatus.diagnostics,
+                        runtimeConnected = activationStatus.runtimeConnected,
                     ),
                     onClick = {
                         val now = SystemClock.uptimeMillis()

@@ -24,7 +24,15 @@ class SmsProviderHook : BaseHook() {
 
     override fun onLoadPackage(lpparam: LoadParam) {
         if (lpparam.packageName != TELEPHONY_PROVIDER_PACKAGE) return
-        hookProviderMethods(lpparam.classLoader)
+        val classLoader = lpparam.classLoader ?: run {
+            XLog.w(
+                "SmsProviderHook skip: classLoader is null for pkg=%s process=%s",
+                lpparam.packageName,
+                lpparam.processName,
+            )
+            return
+        }
+        hookProviderMethods(classLoader)
     }
 
     private fun hookProviderMethods(classLoader: ClassLoader) {

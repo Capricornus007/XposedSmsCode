@@ -71,6 +71,14 @@ class SmsHandlerHook : BaseHook() {
 
     override fun onLoadPackage(lpparam: LoadParam) {
         if (ANDROID_PHONE_PACKAGE == lpparam.packageName) {
+            val classLoader = lpparam.classLoader ?: run {
+                XLog.w(
+                    "SmsHandlerHook skip: classLoader is null for pkg=%s process=%s",
+                    lpparam.packageName,
+                    lpparam.processName,
+                )
+                return
+            }
             val sharedHookKey = buildSharedProcessKey(
                 prefix = "hook_init",
                 packageName = lpparam.packageName,
@@ -96,14 +104,14 @@ class SmsHandlerHook : BaseHook() {
                     "SmsHandlerHook already initialized, skip duplicate load: pkg=%s process=%s loader=%s",
                     lpparam.packageName,
                     lpparam.processName,
-                    Integer.toHexString(System.identityHashCode(lpparam.classLoader)),
+                    Integer.toHexString(System.identityHashCode(classLoader)),
                 )
                 return
             }
             XLog.i("SmsCode initializing")
             printDeviceInfo()
             try {
-                hookSmsHandler(lpparam.classLoader)
+                hookSmsHandler(classLoader)
             } catch (e: Throwable) {
                 XLog.e("Failed to hook SmsHandler", e)
             }
