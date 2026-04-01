@@ -33,8 +33,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.magisk317.smscode.core.R
-import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.utils.ActivationStatusState
+import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsSnapshot
 import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.PackageUtils
@@ -44,6 +44,8 @@ import io.github.magisk317.uikit.surface.AppTopBar
 import io.github.magisk317.uikit.surface.StatusHeroCard
 import io.github.magisk317.uikit.surface.SummaryRow
 import io.github.magisk317.uikit.surface.SummarySectionCard
+import io.github.magisk317.uikit.theme.UiKitStyle
+import io.github.magisk317.uikit.theme.currentUiKitStyle
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
@@ -60,6 +62,15 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
+    when (currentUiKitStyle()) {
+        UiKitStyle.Miuix -> OverviewScreenMiuix(hazeState = hazeState, hazeStyle = hazeStyle)
+        UiKitStyle.Expressive -> OverviewScreenMaterial(hazeState = hazeState, hazeStyle = hazeStyle)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun OverviewScreenShared(hazeState: HazeState, hazeStyle: HazeStyle) {
     val context = LocalContext.current
     val activityOwner = context as? ComponentActivity
     val settingsViewModel = if (activityOwner != null) {

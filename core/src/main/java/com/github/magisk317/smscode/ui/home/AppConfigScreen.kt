@@ -65,6 +65,8 @@ import dev.chrisbanes.haze.hazeSource
 import io.github.magisk317.uikit.surface.OverlayHeaderScaffold
 import io.github.magisk317.uikit.surface.WorkspaceTopBarSearchOverlay
 import io.github.magisk317.uikit.surface.WorkspaceListItem
+import io.github.magisk317.uikit.theme.UiKitStyle
+import io.github.magisk317.uikit.theme.currentUiKitStyle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.koin.compose.viewmodel.koinViewModel
@@ -74,6 +76,34 @@ private const val APP_LIST_PREFETCH_DISTANCE = 12
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppConfigScreen(
+    hazeState: HazeState,
+    hazeStyle: HazeStyle,
+    onBack: (() -> Unit)? = null,
+    refreshTrigger: Int = 0,
+    viewModel: AppConfigViewModel = koinViewModel(),
+) {
+    when (currentUiKitStyle()) {
+        UiKitStyle.Miuix -> AppConfigScreenMiuix(
+            hazeState = hazeState,
+            hazeStyle = hazeStyle,
+            onBack = onBack,
+            refreshTrigger = refreshTrigger,
+            viewModel = viewModel,
+        )
+
+        UiKitStyle.Expressive -> AppConfigScreenMaterial(
+            hazeState = hazeState,
+            hazeStyle = hazeStyle,
+            onBack = onBack,
+            refreshTrigger = refreshTrigger,
+            viewModel = viewModel,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+internal fun AppConfigScreenShared(
     hazeState: HazeState,
     hazeStyle: HazeStyle,
     onBack: (() -> Unit)? = null,

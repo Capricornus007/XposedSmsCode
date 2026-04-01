@@ -63,6 +63,8 @@ import io.github.magisk317.uikit.surface.AppTextButton
 import io.github.magisk317.uikit.surface.AppTopBar
 import io.github.magisk317.uikit.surface.DetailSectionCard
 import io.github.magisk317.uikit.surface.SectionHeading
+import io.github.magisk317.uikit.theme.UiKitStyle
+import io.github.magisk317.uikit.theme.currentUiKitStyle
 import java.util.regex.Pattern
 import kotlinx.coroutines.launch
 
@@ -88,6 +90,28 @@ private fun builtinRuleByEditorId(ruleId: Long): BuiltinSmsCodeRuleSpec? = when 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SmsCodeRuleListScreen(
+    onBack: () -> Unit,
+    onAddClick: () -> Unit,
+    onEditClick: (Long) -> Unit,
+) {
+    when (currentUiKitStyle()) {
+        UiKitStyle.Miuix -> SmsCodeRuleListScreenMiuix(
+            onBack = onBack,
+            onAddClick = onAddClick,
+            onEditClick = onEditClick,
+        )
+
+        UiKitStyle.Expressive -> SmsCodeRuleListScreenMaterial(
+            onBack = onBack,
+            onAddClick = onAddClick,
+            onEditClick = onEditClick,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun SmsCodeRuleListScreenShared(
     onBack: () -> Unit,
     onAddClick: () -> Unit,
     onEditClick: (Long) -> Unit,
@@ -295,6 +319,25 @@ private fun SmsCodeRuleCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SmsCodeRuleEditorScreen(
+    ruleId: Long,
+    onBack: () -> Unit,
+) {
+    when (currentUiKitStyle()) {
+        UiKitStyle.Miuix -> SmsCodeRuleEditorScreenMiuix(
+            ruleId = ruleId,
+            onBack = onBack,
+        )
+
+        UiKitStyle.Expressive -> SmsCodeRuleEditorScreenMaterial(
+            ruleId = ruleId,
+            onBack = onBack,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun SmsCodeRuleEditorScreenShared(
     ruleId: Long,
     onBack: () -> Unit,
 ) {

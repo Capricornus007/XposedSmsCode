@@ -91,6 +91,35 @@ fun CodeRecordScreen(
     refreshTrigger: Int = 0,
     viewModel: CodeRecordViewModel = koinViewModel(),
 ) {
+    when (currentUiKitStyle()) {
+        UiKitStyle.Miuix -> CodeRecordScreenMiuix(
+            hazeState = hazeState,
+            hazeStyle = hazeStyle,
+            onBack = onBack,
+            refreshTrigger = refreshTrigger,
+            viewModel = viewModel,
+        )
+
+        UiKitStyle.Expressive -> CodeRecordScreenMaterial(
+            hazeState = hazeState,
+            hazeStyle = hazeStyle,
+            onBack = onBack,
+            refreshTrigger = refreshTrigger,
+            viewModel = viewModel,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Suppress("CyclomaticComplexMethod")
+@Composable
+internal fun CodeRecordScreenShared(
+    hazeState: HazeState,
+    hazeStyle: HazeStyle,
+    onBack: (() -> Unit)? = null,
+    refreshTrigger: Int = 0,
+    viewModel: CodeRecordViewModel = koinViewModel(),
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val smsList = uiState.smsList
     val isLoading = uiState.isLoading

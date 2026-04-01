@@ -79,6 +79,7 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import io.github.magisk317.uikit.theme.UiKitStyle
+import io.github.magisk317.uikit.theme.currentUiKitStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -89,6 +90,35 @@ import org.koin.compose.viewmodel.koinViewModel
 @Suppress("CyclomaticComplexMethod")
 @Composable
 fun ComposeSettingsScreen(
+    hazeState: HazeState,
+    hazeStyle: HazeStyle,
+    viewModel: SettingsViewModel? = null,
+    refreshTrigger: Int = 0,
+    onExit: () -> Unit = {},
+) {
+    when (currentUiKitStyle()) {
+        UiKitStyle.Miuix -> ComposeSettingsScreenMiuix(
+            hazeState = hazeState,
+            hazeStyle = hazeStyle,
+            viewModel = viewModel,
+            refreshTrigger = refreshTrigger,
+            onExit = onExit,
+        )
+
+        UiKitStyle.Expressive -> ComposeSettingsScreenMaterial(
+            hazeState = hazeState,
+            hazeStyle = hazeStyle,
+            viewModel = viewModel,
+            refreshTrigger = refreshTrigger,
+            onExit = onExit,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Suppress("CyclomaticComplexMethod")
+@Composable
+internal fun ComposeSettingsScreenShared(
     hazeState: HazeState,
     hazeStyle: HazeStyle,
     viewModel: SettingsViewModel? = null,
@@ -108,6 +138,7 @@ fun ComposeSettingsScreen(
     val themeState by settingsViewModel.themeState.collectAsStateWithLifecycle()
     val themeMode = themeState.mode
     val uiKitStyle = themeState.uiKitStyle
+    val enableUiKitStyleSwitch = BuildConfig.ENABLE_UI_KIT_STYLE_SWITCH
 
     var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
     var autoInputInterval by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL_DEFAULT) }
@@ -619,10 +650,12 @@ fun ComposeSettingsScreen(
                             title = stringResource(id = R.string.pref_choose_theme_title),
                             summary = stringResource(id = R.string.pref_choose_theme_summary),
                         ) { showThemeDialog = true }
-                        Item(
-                            title = stringResource(id = R.string.pref_ui_kit_style_title),
-                            summary = uiKitStyleLabel(uiKitStyle),
-                        ) { showUiKitStyleDialog = true }
+                        if (enableUiKitStyleSwitch) {
+                            Item(
+                                title = stringResource(id = R.string.pref_ui_kit_style_title),
+                                summary = uiKitStyleLabel(uiKitStyle),
+                            ) { showUiKitStyleDialog = true }
+                        }
                         Item(
                             title = stringResource(id = R.string.pref_language_title),
                             summary = stringResource(id = R.string.pref_language_summary),
@@ -1243,7 +1276,7 @@ private fun SettingsDialogs(
         )
     }
 
-    if (showUiKitStyleDialog) {
+    if (BuildConfig.ENABLE_UI_KIT_STYLE_SWITCH && showUiKitStyleDialog) {
         UiKitStyleChooserDialog(
             currentStyle = uiKitStyle,
             onDismiss = { onShowUiKitStyleDialogChange(false) },
