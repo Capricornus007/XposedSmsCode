@@ -28,12 +28,24 @@ jobs:
             scripts/check_release_guard.sh
           fi
 
-  build-apk:
-    name: Build APKs
+  build-github-apk:
+    name: Build GitHub APK (${{ matrix.flavor_id }})
     needs: [validate-release]
     runs-on: ubuntu-latest
-    outputs:
-      has_github_native_symbols: ${{ steps.github_symbols.outputs.exists }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - flavor_id: github-api101
+            assemble_task: assembleGithubApi101Release
+            artifact_name: apks-github-api101
+            symbols_artifact_name: native-symbols-github-api101
+            symbols_glob: app/build/outputs/native-debug-symbols/githubApi101Release/native-debug-symbols.zip
+          - flavor_id: github-legacy
+            assemble_task: assembleGithubLegacyRelease
+            artifact_name: apks-github-legacy
+            symbols_artifact_name: native-symbols-github-legacy
+            symbols_glob: app/build/outputs/native-debug-symbols/githubLegacyRelease/native-debug-symbols.zip
     env:
       HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
     steps:
@@ -65,11 +77,10 @@ jobs:
         shell: bash
         run: bash scripts/ensure_android_sdk_platform_alias.sh
 
-      - name: Build APKs with Splits
+      - name: Build GitHub APK with Splits
         run: >
           ./gradlew
-          assembleGithubApi101Release
-          assembleGithubLegacyRelease
+          ${{ matrix.assemble_task }}
           -PbuildSplits
         env:
           KEYSTORE_FILE: release.jks
@@ -80,7 +91,7 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v7
         with:
-          name: apks
+          name: ${{ matrix.artifact_name }}
           path: app/build/outputs/apk/**/release/*.apk
 
       - name: Detect GitHub Native Symbols
@@ -88,7 +99,7 @@ jobs:
         shell: bash
         run: |
           shopt -s nullglob
-          files=(app/build/outputs/native-debug-symbols/github*Release/native-debug-symbols.zip)
+          files=(${{ matrix.symbols_glob }})
           if (( ${#files[@]} == 0 )); then
             echo "exists=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -104,7 +115,7 @@ jobs:
         if: steps.github_symbols.outputs.exists == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: native-symbols-github
+          name: ${{ matrix.symbols_artifact_name }}
           path: ${{ steps.github_symbols.outputs.paths }}
 
   build-aab:
@@ -181,7 +192,7 @@ jobs:
 
   release:
     name: Create Release
-    needs: [build-apk, build-aab]
+    needs: [build-github-apk, build-aab]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -196,7 +207,8 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          name: apks
+          pattern: apks-github-*
+          merge-multiple: true
           path: artifacts/apks
 
       - uses: actions/download-artifact@v8
@@ -377,7 +389,8 @@ jobs:
       - name: Download APK Artifacts
         uses: actions/download-artifact@v8
         with:
-          name: apks
+          pattern: apks-github-*
+          merge-multiple: true
           path: artifacts/apks
 
       - name: Extract Version Name from Tag
