@@ -104,10 +104,15 @@ sync_fastlane_metadata
 "$ROOT_DIR/scripts/check_release_guard.sh" "$TAG_NAME"
 run_pre_push_checks
 
-if ! git -C "$ROOT_DIR" diff --quiet || ! git -C "$ROOT_DIR" diff --cached --quiet; then
-  echo "ERROR: working tree is not clean. Commit/stash changes before tagging." >&2
-  exit 1
-fi
+require_clean_worktree() {
+  if [[ -n "$(git -C "$ROOT_DIR" status --porcelain)" ]]; then
+    echo "ERROR: working tree is not clean. Commit/stash/remove changes before tagging." >&2
+    git -C "$ROOT_DIR" status --short >&2
+    exit 1
+  fi
+}
+
+require_clean_worktree
 
 sync_branch_with_remote() {
   local remote_ref="$REMOTE_NAME/$current_branch"
@@ -161,10 +166,7 @@ if (( BRANCH_SYNC_CHANGED != 0 )); then
   "$ROOT_DIR/scripts/check_release_guard.sh" "$TAG_NAME"
   run_pre_push_checks
 
-  if ! git -C "$ROOT_DIR" diff --quiet || ! git -C "$ROOT_DIR" diff --cached --quiet; then
-    echo "ERROR: working tree is not clean after remote sync. Commit/stash changes before tagging." >&2
-    exit 1
-  fi
+  require_clean_worktree
 fi
 
 delete_local_tag_if_exists() {
