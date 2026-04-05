@@ -6,7 +6,6 @@ import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.xp.hook.code.SmsHandlerHook
 import com.github.magisk317.smscode.xp.hook.google.GoogleMessagesHook
 import com.github.magisk317.smscode.xp.hook.mms.MmsMessagesHook
-import com.github.magisk317.smscode.xp.hook.me.ModuleUtilsHook
 import com.github.magisk317.smscode.xp.hook.telephony.SmsProviderHook
 import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
@@ -39,7 +38,6 @@ class LibXposedEntry : XposedModule {
         SmsHandlerHook(),
         MmsMessagesHook(),
         GoogleMessagesHook(),
-        ModuleUtilsHook(),
         PermissionGranterHook(),
         SystemInputInjectorHook(),
         SmsProviderHook(),
