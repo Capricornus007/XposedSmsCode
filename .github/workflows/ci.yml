@@ -34,7 +34,7 @@ jobs:
         run: bash scripts/ensure_android_sdk_platform_alias.sh
       - name: Build & Test
         run: >
-          ./gradlew --warning-mode all
+          bash scripts/with_workspace_gradle_lock.sh --warning-mode all
           assembleGithubApi101Debug
           assembleGithubLegacyDebug
           testGithubApi101DebugUnitTest

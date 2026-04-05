@@ -27,7 +27,7 @@ if [[ -n "$SIBLING_REPO" ]]; then
     compare_submodule_sha "smscode-core"
 fi
 
-./gradlew \
+bash scripts/with_workspace_gradle_lock.sh \
   :smscode-core:smscode-domain:testDebugUnitTest \
   :magisk-ui-kit:validateDebugScreenshotTest \
   :core:testGithubApi101DebugUnitTest \
