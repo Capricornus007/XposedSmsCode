@@ -57,6 +57,7 @@ import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.constant.TransitionConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
+import com.github.magisk317.smscode.common.utils.FrameworkCompatibilityMonitor
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.common.utils.SPUtils
@@ -87,9 +88,11 @@ import io.github.magisk317.uikit.surface.AppPrimaryButton
 import io.github.magisk317.uikit.surface.AppSecondaryButton
 import io.github.magisk317.uikit.surface.AppTextButton
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 import org.koin.androidx.compose.koinViewModel
 import java.io.File
@@ -128,7 +131,7 @@ class MainActivity : AppCompatActivity() {
             val appSnackbarHostState = remember { SnackbarHostState() }
             var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
             var showPrivacyPolicyPage by remember { mutableStateOf(false) }
-            var showRelayConflictDialog by remember { mutableStateOf(false) }
+            var blockingStartupDialog by remember { mutableStateOf<BlockingStartupDialog?>(null) }
             var githubUpdateUiState by remember { mutableStateOf<GithubUpdateUiState?>(null) }
             var downloadState by remember { mutableStateOf<UpdateDownloadState>(UpdateDownloadState.Idle) }
             var unknownSourceApk by remember { mutableStateOf<File?>(null) }
@@ -214,10 +217,15 @@ class MainActivity : AppCompatActivity() {
                     XLog.w(
                         "Relay conflict guard bypassed by build flag allowConflictBypass=true",
                     )
+                } else if (TransitionConst.isRelayInstalled(context)) {
+                    blockingStartupDialog = BlockingStartupDialog.RelayConflict
                     return@LaunchedEffect
                 }
-                if (TransitionConst.isRelayInstalled(context)) {
-                    showRelayConflictDialog = true
+                val frameworkIssue = withContext(Dispatchers.IO) {
+                    FrameworkCompatibilityMonitor.inspect(context)
+                }
+                if (frameworkIssue != null) {
+                    blockingStartupDialog = BlockingStartupDialog.FrameworkIncompatibility(frameworkIssue)
                 }
             }
             LaunchedEffect(Unit) {
@@ -389,7 +397,7 @@ class MainActivity : AppCompatActivity() {
                             hazeStyle = hazeStyle,
                         )
 
-                        if (showPrivacyPolicyDialog) {
+                        if (blockingStartupDialog == null && showPrivacyPolicyDialog) {
                             PrivacyPolicyDialog(
                                 onDismiss = {},
                                 onConfirm = {
@@ -410,7 +418,7 @@ class MainActivity : AppCompatActivity() {
                             )
                         }
 
-                        if (showPrivacyPolicyPage) {
+                        if (blockingStartupDialog == null && showPrivacyPolicyPage) {
                             PrivacyPolicyPage(
                                 onDismiss = {
                                     showPrivacyPolicyPage = false
@@ -423,12 +431,16 @@ class MainActivity : AppCompatActivity() {
                             )
                         }
 
-                        if (showRelayConflictDialog) {
-                            AppAlertDialog(
-                                onDismissRequest = {},
-                                title = { Text(getString(R.string.relay_conflict_dialog_title)) },
-                                text = {
-                                    Text(
+                        blockingStartupDialog?.let { dialog ->
+                            ExitOnlyConflictDialog(
+                                title = when (dialog) {
+                                    BlockingStartupDialog.RelayConflict ->
+                                        getString(R.string.relay_conflict_dialog_title)
+                                    is BlockingStartupDialog.FrameworkIncompatibility ->
+                                        getString(R.string.framework_incompatibility_title)
+                                },
+                                text = when (dialog) {
+                                    BlockingStartupDialog.RelayConflict -> {
                                         buildAnnotatedString {
                                             append(getString(R.string.relay_conflict_dialog_prefix))
                                             withStyle(
@@ -454,22 +466,37 @@ class MainActivity : AppCompatActivity() {
                                                 append(getString(R.string.app_name))
                                             }
                                             append(getString(R.string.relay_conflict_dialog_suffix))
-                                        },
-                                    )
+                                        }
+                                    }
+                                    is BlockingStartupDialog.FrameworkIncompatibility -> {
+                                        val issue = dialog.issue
+                                        buildAnnotatedString {
+                                            append(
+                                                when (issue.issueType) {
+                                                    FrameworkCompatibilityMonitor.FrameworkIssueType.KNOWN_INCOMPATIBLE_FRAMEWORK ->
+                                                        getString(
+                                                            R.string.framework_incompatibility_known_framework_message,
+                                                            issue.frameworkInfo?.displayLabel
+                                                                ?: getString(R.string.unknown),
+                                                        )
+
+                                                    FrameworkCompatibilityMonitor.FrameworkIssueType.HOOKER_ANNOTATION_INCOMPATIBLE ->
+                                                        getString(R.string.framework_incompatibility_hooker_annotation_message)
+                                                },
+                                            )
+                                        }
+                                    }
                                 },
-                                confirmButton = {
-                                    AppPrimaryButton(
-                                        text = getString(R.string.relay_conflict_dialog_exit),
-                                        onClick = {
-                                            showRelayConflictDialog = false
-                                            finish()
-                                        },
-                                    )
+                                confirmText = getString(R.string.relay_conflict_dialog_exit),
+                                onExit = {
+                                    blockingStartupDialog = null
+                                    finish()
                                 },
                             )
                         }
 
-                        githubUpdateUiState?.let { updateState ->
+                        if (blockingStartupDialog == null) {
+                            githubUpdateUiState?.let { updateState ->
                             AppAlertDialog(
                                 onDismissRequest = { githubUpdateUiState = null },
                                 title = { Text(getString(R.string.github_update_dialog_title)) },
@@ -530,6 +557,7 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 },
                             )
+                        }
                         }
 
                         when (val state = downloadState) {
@@ -930,6 +958,33 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+}
+
+private sealed interface BlockingStartupDialog {
+    data object RelayConflict : BlockingStartupDialog
+    data class FrameworkIncompatibility(
+        val issue: FrameworkCompatibilityMonitor.FrameworkIssue,
+    ) : BlockingStartupDialog
+}
+
+@Composable
+private fun ExitOnlyConflictDialog(
+    title: String,
+    text: androidx.compose.ui.text.AnnotatedString,
+    confirmText: String,
+    onExit: () -> Unit,
+) {
+    AppAlertDialog(
+        onDismissRequest = {},
+        title = { Text(title) },
+        text = { Text(text) },
+        confirmButton = {
+            AppPrimaryButton(
+                text = confirmText,
+                onClick = onExit,
+            )
+        },
+    )
 }
 
 private data class GithubStructuredUpdate(
