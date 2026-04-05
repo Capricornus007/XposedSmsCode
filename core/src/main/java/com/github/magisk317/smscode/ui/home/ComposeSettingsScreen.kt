@@ -58,8 +58,8 @@ import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.CodeNotificationOwner
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
+import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
-import com.github.magisk317.smscode.common.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.LogBundleExporter
 import com.github.magisk317.smscode.runtime.RuntimeNotificationFacade as NotificationUtils
@@ -164,7 +164,7 @@ internal fun ComposeSettingsScreenShared(
     var showPrivacyPolicyPage by remember { mutableStateOf(false) }
     var showKeywordsDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
-    var isActivated by remember { mutableStateOf(ModuleUtils.isModuleActivated(context)) }
+    var isActivated by remember { mutableStateOf(ActivationDiagnosticsStore.isModuleActivated(context)) }
     val supportsAccessibilityAutoInput = BuildConfig.ENABLE_ACCESSIBILITY_AUTO_INPUT
     var autoInputAccessibilityEnabled by remember {
         mutableStateOf(
@@ -348,7 +348,7 @@ internal fun ComposeSettingsScreenShared(
 
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
-            isActivated = ModuleUtils.isModuleActivated(context)
+            isActivated = ActivationDiagnosticsStore.isModuleActivated(context)
             autoInputAccessibilityEnabled =
                 supportsAccessibilityAutoInput && isAutoInputAccessibilityServiceEnabled(context)
             if (
@@ -364,7 +364,7 @@ internal fun ComposeSettingsScreenShared(
                 )
             }
             delay(1000L)
-            isActivated = ModuleUtils.isModuleActivated(context)
+            isActivated = ActivationDiagnosticsStore.isModuleActivated(context)
             autoInputAccessibilityEnabled =
                 supportsAccessibilityAutoInput && isAutoInputAccessibilityServiceEnabled(context)
         }
