@@ -1,6 +1,6 @@
 package com.github.magisk317.smscode.feature.backup
 
-import com.github.magisk317.smscode.common.utils.JsonUtils
+import io.github.magisk317.smscode.runtime.common.utils.JsonUtils
 import java.io.Closeable
 import java.io.File
 import java.io.FileOutputStream

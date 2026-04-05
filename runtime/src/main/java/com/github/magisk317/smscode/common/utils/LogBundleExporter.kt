@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
 import com.github.magisk317.smscode.common.utils.XLog
+import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit

@@ -1,5 +1,8 @@
 package com.github.magisk317.smscode.common.utils
 
+import io.github.magisk317.smscode.runtime.common.utils.FrameworkCompatibilityMonitor
+import io.github.magisk317.smscode.runtime.common.utils.FrameworkInfo
+import io.github.magisk317.smscode.runtime.common.utils.FrameworkInfoResolver
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull

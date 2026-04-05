@@ -6,7 +6,7 @@ import android.content.Context
 import android.database.Cursor
 import android.os.Bundle
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
-import com.github.magisk317.smscode.common.utils.SharedRuntimeGate
+import io.github.magisk317.smscode.runtime.common.utils.SharedRuntimeGate
 import com.github.magisk317.smscode.data.db.DBProvider
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.runtime.RuntimeStorageFacade

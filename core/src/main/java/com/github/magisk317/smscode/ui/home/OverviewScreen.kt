@@ -37,7 +37,6 @@ import com.github.magisk317.smscode.common.utils.ActivationStatusState
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsSnapshot
 import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
-import com.github.magisk317.smscode.common.utils.FrameworkInfoResolver
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.Utils
 import com.github.magisk317.smscode.ui.common.LocalSnackbarHostState
@@ -98,15 +97,15 @@ internal fun OverviewScreenShared(hazeState: HazeState, hazeStyle: HazeStyle) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val activationStatus by ActivationDiagnosticsStore.observeStatus(context)
         .collectAsStateWithLifecycle(initialValue = ActivationStatusState())
-    val frameworkInfoState by produceState<com.github.magisk317.smscode.common.utils.FrameworkInfo?>(
+    val frameworkInfoState by produceState<Pair<String, String>?>(
         initialValue = null,
     ) {
         value = withContext(Dispatchers.IO) {
-            FrameworkInfoResolver.resolve(context)
+            PackageUtils.getLsposedModuleInfo(context)
         }
     }
-    val frameworkType = frameworkInfoState?.displayName ?: stringResource(id = R.string.unknown)
-    val frameworkVersion = frameworkInfoState?.displayVersion ?: run {
+    val frameworkType = frameworkInfoState?.first ?: stringResource(id = R.string.unknown)
+    val frameworkVersion = frameworkInfoState?.second ?: run {
         val lsposedVersion = PackageUtils.getPackageVersion(context, Const.LSPOSED_MANAGER_PACKAGE_NAME)
         when {
             lsposedVersion != null && lsposedVersion.first.isNotBlank() ->

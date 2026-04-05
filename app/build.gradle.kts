@@ -104,6 +104,7 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":runtime"))
     implementation(project(":smscode-core:smscode-domain"))
+    implementation(project(":smscode-core:smscode-runtime-common"))
     implementation(project(":smscode-core:smscode-verification-core"))
     implementation(project(":smscode-core:smscode-xposed-core"))
 

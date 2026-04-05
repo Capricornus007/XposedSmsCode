@@ -268,7 +268,7 @@ object ActivationDiagnosticsStore {
     }
 
     private fun getStoreFile(context: Context): File {
-        return File(com.github.magisk317.smscode.common.utils.StorageUtils.getExternalFilesDir(context), FILE_NAME)
+        return File(io.github.magisk317.smscode.runtime.common.utils.StorageUtils.getExternalFilesDir(context), FILE_NAME)
     }
 
     private fun formatTime(timestampMs: Long): String {

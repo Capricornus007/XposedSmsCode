@@ -1,6 +1,6 @@
 package com.github.magisk317.smscode.serialization
 
-import com.github.magisk317.smscode.common.utils.JsonUtils
+import io.github.magisk317.smscode.runtime.common.utils.JsonUtils
 import com.github.magisk317.smscode.feature.backup.BackupConst
 import com.github.magisk317.smscode.feature.backup.BackupPayload
 import com.github.magisk317.smscode.feature.backup.BackupRule

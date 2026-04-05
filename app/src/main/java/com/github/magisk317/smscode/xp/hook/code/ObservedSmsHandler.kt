@@ -2,7 +2,7 @@ package com.github.magisk317.smscode.xp.hook.code
 
 import android.content.Context
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
-import com.github.magisk317.smscode.common.utils.SharedRuntimeGate
+import io.github.magisk317.smscode.runtime.common.utils.SharedRuntimeGate
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.runtime.RuntimeStorageFacade

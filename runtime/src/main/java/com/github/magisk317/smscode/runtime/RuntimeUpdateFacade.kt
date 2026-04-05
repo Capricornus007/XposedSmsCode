@@ -7,7 +7,7 @@ import com.github.magisk317.smscode.data.update.GithubUpdateChecker
 import com.github.magisk317.smscode.data.update.UpdateCoordinator
 import com.github.magisk317.smscode.data.update.UpgradeDownloader
 import com.github.magisk317.smscode.data.update.UpgradeInstaller
-import com.github.magisk317.smscode.data.update.UpdatePolicy
+import io.github.magisk317.smscode.runtime.common.update.UpdatePolicy
 import java.io.File
 
 object RuntimeUpdateFacade {

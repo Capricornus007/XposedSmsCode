@@ -28,7 +28,7 @@ import io.github.magisk317.smscode.xposed.hookapi.MethodHook
 import io.github.magisk317.smscode.xposed.hookapi.HookBridge
 import io.github.magisk317.smscode.xposed.hookapi.LoadParam
 import io.github.magisk317.smscode.xposed.hookapi.MethodHookParam
-import com.github.magisk317.smscode.common.utils.StorageUtils
+import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
 import java.io.File
 import java.io.RandomAccessFile
 import java.lang.reflect.Method

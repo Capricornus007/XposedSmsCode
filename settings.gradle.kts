@@ -13,6 +13,7 @@ include(
     ":core",
     ":smscode-core:smscode-xposed-core",
     ":smscode-core:smscode-domain",
+    ":smscode-core:smscode-runtime-common",
     ":smscode-core:smscode-verification-core",
     ":xposed-stub",
     ":magisk-ui-kit",

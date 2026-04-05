@@ -6,7 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import com.github.magisk317.smscode.common.utils.ClipboardUtils
+import io.github.magisk317.smscode.runtime.common.utils.ClipboardUtils
 import com.github.magisk317.smscode.core.R
 import com.github.tianma8023.xposed.smscode.BuildConfig
 

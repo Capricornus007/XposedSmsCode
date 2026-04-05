@@ -3,8 +3,8 @@ package com.github.magisk317.smscode.ui.record
 import android.annotation.SuppressLint
 import android.content.Context
 import com.github.magisk317.smscode.common.constant.PrefConst
-import com.github.magisk317.smscode.common.utils.JsonUtils
-import com.github.magisk317.smscode.common.utils.StorageUtils
+import io.github.magisk317.smscode.runtime.common.utils.JsonUtils
+import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.runtime.RuntimeStorageFacade

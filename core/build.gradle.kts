@@ -42,6 +42,7 @@ dependencies {
     implementation(project(":runtime"))
     implementation(project(":magisk-ui-kit"))
     implementation(project(":smscode-core:smscode-domain"))
+    implementation(project(":smscode-core:smscode-runtime-common"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

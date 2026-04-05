@@ -1,5 +1,6 @@
 package com.github.magisk317.smscode.data.update
 
+import io.github.magisk317.smscode.runtime.common.update.UpdatePolicy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue

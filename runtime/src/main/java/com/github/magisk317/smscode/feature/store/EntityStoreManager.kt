@@ -1,8 +1,8 @@
 package com.github.magisk317.smscode.feature.store
 
 import android.content.Context
-import com.github.magisk317.smscode.common.utils.JsonUtils
-import com.github.magisk317.smscode.common.utils.StorageUtils
+import io.github.magisk317.smscode.runtime.common.utils.JsonUtils
+import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
 import io.github.magisk317.smscode.xposed.utils.XLog
 import java.io.File
 import java.io.FileInputStream

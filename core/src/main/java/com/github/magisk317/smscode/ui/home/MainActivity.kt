@@ -57,12 +57,12 @@ import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.constant.TransitionConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
-import com.github.magisk317.smscode.common.utils.FrameworkCompatibilityMonitor
+import io.github.magisk317.smscode.runtime.common.utils.FrameworkCompatibilityMonitor
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.common.utils.SPUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
-import com.github.magisk317.smscode.common.utils.StringUtils
+import io.github.magisk317.smscode.runtime.common.utils.StringUtils
 import com.github.magisk317.smscode.common.utils.Utils
 import com.github.magisk317.smscode.runtime.RuntimeGithubReleaseInfo
 import com.github.magisk317.smscode.runtime.RuntimeStartupTarget
@@ -222,7 +222,7 @@ class MainActivity : AppCompatActivity() {
                     return@LaunchedEffect
                 }
                 val frameworkIssue = withContext(Dispatchers.IO) {
-                    FrameworkCompatibilityMonitor.inspect(context)
+                    PackageUtils.inspectFrameworkIssue(context)
                 }
                 if (frameworkIssue != null) {
                     blockingStartupDialog = BlockingStartupDialog.FrameworkIncompatibility(frameworkIssue)

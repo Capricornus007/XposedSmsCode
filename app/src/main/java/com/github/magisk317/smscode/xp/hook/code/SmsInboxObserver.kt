@@ -6,7 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Telephony
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
-import com.github.magisk317.smscode.common.utils.StringUtils
+import io.github.magisk317.smscode.runtime.common.utils.StringUtils
 import io.github.magisk317.smscode.verification.SmsInboxSeenTracker
 import io.github.magisk317.smscode.verification.SmsRoleStateResolver
 import io.github.magisk317.smscode.xposed.utils.XLog

@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
-import com.github.magisk317.smscode.common.utils.StringUtils
+import io.github.magisk317.smscode.runtime.common.utils.StringUtils
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import io.github.magisk317.smscode.verification.SmsParseAction as SharedSmsParseAction
