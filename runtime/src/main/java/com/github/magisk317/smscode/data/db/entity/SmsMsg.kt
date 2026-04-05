@@ -5,7 +5,7 @@ import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.github.magisk317.smscode.common.utils.SmsMessageUtils
+import io.github.magisk317.smscode.domain.utils.SmsMessageUtils
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

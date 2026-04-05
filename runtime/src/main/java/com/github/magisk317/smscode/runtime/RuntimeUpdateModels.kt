@@ -1,11 +1,11 @@
 package com.github.magisk317.smscode.runtime
 
-import com.github.magisk317.smscode.data.update.GithubReleaseInfo
-import com.github.magisk317.smscode.data.update.UpgradeApkAsset
-import com.github.magisk317.smscode.data.update.UpgradeCheckResult
 import com.github.magisk317.smscode.data.update.UpgradeDownloader
-import com.github.magisk317.smscode.data.update.UpgradeInfo
-import com.github.magisk317.smscode.data.update.VersionLog
+import io.github.magisk317.smscode.runtime.common.update.GithubReleaseInfo
+import io.github.magisk317.smscode.runtime.common.update.UpgradeApkAsset
+import io.github.magisk317.smscode.runtime.common.update.UpgradeCheckResult
+import io.github.magisk317.smscode.runtime.common.update.UpgradeInfo
+import io.github.magisk317.smscode.runtime.common.update.VersionLog
 
 data class RuntimeVersionLog(
     val name: String = "",
@@ -115,7 +115,7 @@ internal fun UpgradeInfo.toRuntime(): RuntimeUpgradeInfo {
 internal fun UpgradeCheckResult.toRuntime(): RuntimeUpgradeCheckResult {
     return when (this) {
         is UpgradeCheckResult.Structured -> RuntimeUpgradeCheckResult.Structured(info.toRuntime())
-        is UpgradeCheckResult.LegacyLink -> RuntimeUpgradeCheckResult.LegacyLink(release.toRuntime())
+        is UpgradeCheckResult.ReleaseLink -> RuntimeUpgradeCheckResult.LegacyLink(release.toRuntime())
         UpgradeCheckResult.NoUpdate -> RuntimeUpgradeCheckResult.NoUpdate
         is UpgradeCheckResult.CheckFailed -> RuntimeUpgradeCheckResult.CheckFailed(message)
     }

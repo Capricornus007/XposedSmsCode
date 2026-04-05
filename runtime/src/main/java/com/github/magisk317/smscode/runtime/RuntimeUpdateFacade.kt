@@ -4,10 +4,10 @@ import android.content.Context
 import android.content.Intent
 import com.github.magisk317.smscode.data.update.ApkSecurityVerifier
 import com.github.magisk317.smscode.data.update.GithubUpdateChecker
-import com.github.magisk317.smscode.data.update.UpdateCoordinator
 import com.github.magisk317.smscode.data.update.UpgradeDownloader
 import com.github.magisk317.smscode.data.update.UpgradeInstaller
 import io.github.magisk317.smscode.runtime.common.update.UpdatePolicy
+import io.github.magisk317.smscode.runtime.common.update.UpdateCoordinator
 import java.io.File
 
 object RuntimeUpdateFacade {

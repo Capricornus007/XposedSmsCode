@@ -1,5 +1,7 @@
 package com.github.magisk317.smscode.common.constant
 
+import io.github.magisk317.smscode.domain.constant.SmsCodeConst
+
 /**
  * Preference相关的常量
  */

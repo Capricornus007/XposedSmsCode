@@ -2,7 +2,8 @@ package com.github.magisk317.smscode.common.utils
 
 import android.content.Context
 import io.github.magisk317.smscode.domain.model.SmsBlacklistConfig
-import io.github.magisk317.smscode.domain.utils.SmsBlacklistUtils as SharedSmsBlacklistUtils
+import io.github.magisk317.smscode.runtime.common.sms.RuntimeSmsBlacklistAdapter
+import io.github.magisk317.smscode.runtime.common.sms.SmsBlacklistConfigProvider
 
 object SmsBlacklistUtils {
 
@@ -14,10 +15,9 @@ object SmsBlacklistUtils {
         val actionBlock: Boolean = false,
     )
 
-    @JvmStatic
-    fun match(context: Context, sender: String?, body: String?): MatchResult {
-        val sharedResult = SharedSmsBlacklistUtils.match(
-            config = SmsBlacklistConfig(
+    private val adapter = RuntimeSmsBlacklistAdapter(
+        configProvider = SmsBlacklistConfigProvider { context ->
+            SmsBlacklistConfig(
                 enabled = PrefsReader.smsBlacklistEnabled(context),
                 actionDelete = PrefsReader.smsBlacklistActionDelete(context),
                 actionBlock = PrefsReader.smsBlacklistActionBlock(context),
@@ -25,10 +25,13 @@ object SmsBlacklistUtils {
                 prefixes = PrefsReader.smsBlacklistPrefixes(context),
                 content = PrefsReader.smsBlacklistContent(context),
                 regex = PrefsReader.smsBlacklistRegex(context),
-            ),
-            sender = sender,
-            body = body,
-        )
+            )
+        },
+    )
+
+    @JvmStatic
+    fun match(context: Context, sender: String?, body: String?): MatchResult {
+        val sharedResult = adapter.match(context, sender, body)
         return MatchResult(
             matched = sharedResult.matched,
             matchType = sharedResult.matchType,

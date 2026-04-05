@@ -5,45 +5,46 @@ import com.github.magisk317.smscode.data.db.DBProvider
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.feature.store.EntityStoreManager
 import com.github.magisk317.smscode.feature.store.EntityType
-import io.github.magisk317.smscode.domain.model.AppLabelResolver
 import io.github.magisk317.smscode.domain.model.SmsCodeParseResult
 import io.github.magisk317.smscode.domain.model.SmsCodeRuleSpec
-import com.github.magisk317.smscode.common.utils.XLog
+import io.github.magisk317.smscode.runtime.common.sms.RuntimeSmsCodeAdapter
+import io.github.magisk317.smscode.runtime.common.sms.SmsCodeRuleProvider
+import io.github.magisk317.smscode.runtime.common.sms.SmsKeywordProvider
+import io.github.magisk317.smscode.runtime.common.sms.SmsPackageLabelResolver
 
 object SmsCodeUtils {
     private const val COLUMN_COMPANY = "company"
     private const val COLUMN_KEYWORD = "code_keyword"
     private const val COLUMN_REGEX = "code_regex"
 
-    private suspend fun loadCodeKeywordsBySP(context: Context): String? = PrefsReader.getSMSCodeKeywords(context)
+    private val adapter = RuntimeSmsCodeAdapter(
+        keywordProvider = SmsKeywordProvider { context, override ->
+            override ?: PrefsReader.getSMSCodeKeywords(context).orEmpty()
+        },
+        ruleProvider = SmsCodeRuleProvider { context ->
+            queryAllSmsCodeRules(context).map { it.toSpec() }
+        },
+        labelResolver = SmsPackageLabelResolver { context, label ->
+            resolvePackageNameByLabel(context, label)
+        },
+    )
 
     suspend fun parseSmsCodeIfExists(context: Context, content: String): String {
-        return parseSmsCodeResultIfExists(context, content).code
+        return adapter.parseSmsCodeIfExists(context, content)
     }
 
     suspend fun parseSmsCodeResultIfExists(context: Context, content: String): SmsCodeParseResult {
-        return io.github.magisk317.smscode.domain.utils.SmsCodeUtils.parseSmsCodeResultIfExists(
-            content = content,
-            keywordsRegex = loadCodeKeywordsBySP(context).orEmpty(),
-            rules = queryAllSmsCodeRules(context).map { it.toSpec() },
-        )
+        return adapter.parseSmsCodeResultIfExists(context, content)
     }
 
     @JvmStatic
-    fun parseCompany(content: String): String =
-        io.github.magisk317.smscode.domain.utils.SmsCodeUtils.parseCompany(content)
+    fun parseCompany(content: String): String = adapter.parseCompany(content)
 
     @JvmStatic
-    fun parseCompanyCandidates(content: String): List<String> =
-        io.github.magisk317.smscode.domain.utils.SmsCodeUtils.parseCompanyCandidates(content)
+    fun parseCompanyCandidates(content: String): List<String> = adapter.parseCompanyCandidates(content)
 
     fun findPackageNameByLabel(context: Context, label: String?): String? {
-        return io.github.magisk317.smscode.domain.utils.SmsCodeUtils.findPackageNameByLabel(
-            label = label,
-            resolver = AppLabelResolver { target ->
-                resolvePackageNameByLabel(context, target)
-            },
-        )
+        return adapter.findPackageNameByLabel(context, label)
     }
 
     private fun resolvePackageNameByLabel(context: Context, label: String): String? {
