@@ -79,7 +79,6 @@ internal fun OverviewScreenShared(hazeState: HazeState, hazeStyle: HazeStyle) {
         koinViewModel()
     }
     var showDonateDialog by remember { mutableStateOf(false) }
-    var showAlipayChoiceDialog by remember { mutableStateOf(false) }
     var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var statusTapCount by remember { mutableStateOf(0) }
     var statusTapStartedAtMs by remember { mutableStateOf(0L) }
@@ -298,26 +297,11 @@ internal fun OverviewScreenShared(hazeState: HazeState, hazeStyle: HazeStyle) {
             onDismiss = { showDonateDialog = false },
             onAlipay = {
                 showDonateDialog = false
-                showAlipayChoiceDialog = true
+                showQRCodeDialog = Pair(R.drawable.alipay, "alipay")
             },
             onWechat = {
                 showDonateDialog = false
                 showQRCodeDialog = Pair(R.drawable.wx, "wechat")
-            },
-        )
-    }
-
-    if (showAlipayChoiceDialog) {
-        AlipayChoiceDialog(
-            onDismiss = { showAlipayChoiceDialog = false },
-            onQRCode = {
-                showAlipayChoiceDialog = false
-                showQRCodeDialog = Pair(R.drawable.alipay, "alipay")
-            },
-            onToken = {
-                showAlipayChoiceDialog = false
-                showMessage(PackageUtils.copyAlipayPocketToken(context))
-                PackageUtils.startAlipayActivity(context)?.let(::showMessage)
             },
         )
     }

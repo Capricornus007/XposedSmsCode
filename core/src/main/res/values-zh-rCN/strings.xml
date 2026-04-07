@@ -362,15 +362,13 @@
 
 
 
-    <string name="alipay_red_packet_code_copied">红包口令已复制，快去白嫖吧: %s</string>
     <string name="dialog_donate_title">买杯咖啡吧 T_T</string>
     <string name="dialog_donate_summary">感谢开发者</string>
     <string name="dialog_donate_content">开发者已经饿得快写不动代码了，求各位老板大发慈悲赏口饭吃吧！不管是微信还是支付宝，哪怕是一分钱也是对我的巨大救赎 ✿✿ヽ(°▽°)ノ✿</string>
     <string name="dialog_donate_wechat">咖啡 (微信)</string>
     <string name="dialog_donate_alipay">咖啡 (支付宝)</string>
 
-    <string name="dialog_donate_alipay_token">复制口令</string>
-    <string name="dialog_donate_alipay_qrcode">保存收款码</string>
+    <string name="dialog_donate_alipay_qrcode">查看收款码</string>
 
     <string name="save_to_gallery_success">图片已保存到相册，正在打开 %s...</string>
     <string name="save_to_gallery_failed">保存失败，请检查文件权限</string>

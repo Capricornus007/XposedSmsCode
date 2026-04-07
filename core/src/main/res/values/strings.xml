@@ -361,15 +361,13 @@
 
 
 
-    <string name="alipay_red_packet_code_copied">Red packet token copied, go get it: %s</string>
     <string name="dialog_donate_title">Buy me a coffee T_T</string>
     <string name="dialog_donate_summary">Thanks to the developer</string>
     <string name="dialog_donate_content">I\'m starving and can barely code. Please show some mercy and buy me a coffee! Whether it\'s WeChat or Alipay, even a penny is a huge rescue for me ✿✿ヽ(°▽°)ノ✿</string>
     <string name="dialog_donate_wechat">Coffee (WeChat)</string>
     <string name="dialog_donate_alipay">Coffee (Alipay)</string>
 
-    <string name="dialog_donate_alipay_token">Copy Token</string>
-    <string name="dialog_donate_alipay_qrcode">Save QR Code</string>
+    <string name="dialog_donate_alipay_qrcode">View QR Code</string>
 
     <string name="save_to_gallery_success">Image saved to gallery, opening %s...</string>
     <string name="pref_sync_toast">Settings saved</string>
