@@ -131,6 +131,13 @@ class DBManager private constructor(context: Context) {
         msgType: Int = SmsMsg.MSG_TYPE_SMS,
     ): SmsMsg? = mSmsMsgDao.getByCodeAndPackageInRange(smsCode, packageName, msgType, dateFrom, dateTo)
 
+    fun querySmsMsgByCodeInRange(
+        smsCode: String?,
+        dateFrom: Long,
+        dateTo: Long,
+        msgType: Int = SmsMsg.MSG_TYPE_SMS,
+    ): List<SmsMsg> = mSmsMsgDao.getByCodeInRange(smsCode, msgType, dateFrom, dateTo)
+
     fun updateSmsMsg(smsMsg: SmsMsg): Int {
         val id = smsMsg.id ?: return 0
         if (mSmsMsgDao.getById(id) == null) {

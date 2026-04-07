@@ -11,6 +11,7 @@ import com.github.magisk317.smscode.data.db.DBProvider
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import com.github.magisk317.smscode.ui.record.CodeRecordRestoreManager
+import io.github.magisk317.smscode.domain.utils.CodeRecordSimilarityUtils
 import io.github.magisk317.smscode.verification.RecordSmsDedupHelper
 import io.github.magisk317.smscode.verification.RecordSmsActionHelper
 import io.github.magisk317.smscode.verification.RecordSmsInsertResultHelper
@@ -120,6 +121,35 @@ class RecordSmsAction(
             hasFingerprintDuplicate = { sender, body, from, to ->
                 runCatching {
                     db.querySmsMsgByFingerprintInRange(sender, body, from, to) != null
+                }.getOrDefault(false)
+            },
+            hasCodeDuplicateInWindow = { code, from, to ->
+                runCatching {
+                    db.querySmsMsgByCodeInRange(code, from, to)
+                        .sortedByDescending { existing ->
+                            CodeRecordSimilarityUtils.crossSourceMatchScore(
+                                existingCode = existing.smsCode,
+                                existingBody = existing.body,
+                                existingCompany = existing.company,
+                                existingSender = existing.sender,
+                                incomingCode = smsMsg.smsCode,
+                                incomingBody = smsMsg.body,
+                                incomingCompany = smsMsg.company,
+                                incomingSender = smsMsg.sender,
+                            )
+                        }
+                        .any { existing ->
+                            CodeRecordSimilarityUtils.crossSourceMatchScore(
+                                existingCode = existing.smsCode,
+                                existingBody = existing.body,
+                                existingCompany = existing.company,
+                                existingSender = existing.sender,
+                                incomingCode = smsMsg.smsCode,
+                                incomingBody = smsMsg.body,
+                                incomingCompany = smsMsg.company,
+                                incomingSender = smsMsg.sender,
+                            ) > 0
+                        }
                 }.getOrDefault(false)
             },
             hasCodeDuplicateByPackage = { code, pkg, from, to ->

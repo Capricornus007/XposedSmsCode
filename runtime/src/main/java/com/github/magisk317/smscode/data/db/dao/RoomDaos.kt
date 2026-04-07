@@ -96,6 +96,19 @@ interface SmsMsgDao {
         dateTo: Long,
     ): SmsMsg?
 
+    @Query(
+        "SELECT * FROM sms_msg " +
+            "WHERE sms_code IS :smsCode " +
+            "AND msg_type = :msgType AND date BETWEEN :dateFrom AND :dateTo " +
+            "ORDER BY date DESC",
+    )
+    fun getByCodeInRange(
+        smsCode: String?,
+        msgType: Int,
+        dateFrom: Long,
+        dateTo: Long,
+    ): List<SmsMsg>
+
     @Query("SELECT * FROM sms_msg ORDER BY date DESC")
     fun getAllFlow(): Flow<List<SmsMsg>>
 

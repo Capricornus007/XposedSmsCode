@@ -10,6 +10,7 @@ import android.net.Uri
 import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import io.github.magisk317.smscode.runtime.common.record.SmsMsgCursorContract
 
 class DBProvider : ContentProvider() {
     private var mDbManager: DBManager? = null
@@ -136,22 +137,7 @@ class DBProvider : ContentProvider() {
             "date desc", null, "" -> filteredRows.sortedByDescending { it.date }
             else -> filteredRows
         }
-        val columns = projection ?: arrayOf(
-            "_id",
-            "sender",
-            "body",
-            "date",
-            "company",
-            "sms_code",
-            "package_name",
-            "notify_channel_id",
-            "msg_type",
-            "call_type",
-            "forward_status",
-            "forward_target",
-            "forward_message",
-            "forward_time",
-        )
+        val columns = projection ?: SmsMsgCursorContract.defaultColumns
         val cursor = MatrixCursor(columns)
         rows.forEach { msg ->
             cursor.addRow(buildRow(columns) { column -> valueFromSmsMsg(msg, column) })
@@ -209,22 +195,7 @@ class DBProvider : ContentProvider() {
 
     private fun querySmsMsgById(projection: Array<String>?, uri: Uri): Cursor {
         val id = uri.lastPathSegment?.toLongOrNull() ?: throw IllegalArgumentException("Invalid URI: $uri")
-        val columns = projection ?: arrayOf(
-            "_id",
-            "sender",
-            "body",
-            "date",
-            "company",
-            "sms_code",
-            "package_name",
-            "notify_channel_id",
-            "msg_type",
-            "call_type",
-            "forward_status",
-            "forward_target",
-            "forward_message",
-            "forward_time",
-        )
+        val columns = projection ?: SmsMsgCursorContract.defaultColumns
         val cursor = MatrixCursor(columns)
         val msg = mDbManager!!.querySmsMsgById(id)
         if (msg != null) {
@@ -295,23 +266,7 @@ class DBProvider : ContentProvider() {
         }
 
     private fun valueFromSmsMsg(msg: SmsMsg, column: String): Any? =
-        when (column) {
-            "_id", "id" -> msg.id
-            "sender" -> msg.sender
-            "body" -> msg.body
-            "date" -> msg.date
-            "company" -> msg.company
-            "sms_code" -> msg.smsCode
-            "package_name" -> msg.packageName
-            "notify_channel_id" -> msg.notifyChannelId
-            "msg_type" -> msg.msgType
-            "call_type" -> msg.callType
-            "forward_status" -> msg.forwardStatus
-            "forward_target" -> msg.forwardTarget
-            "forward_message" -> msg.forwardMessage
-            "forward_time" -> msg.forwardTime
-            else -> null
-        }
+        SmsMsgCursorContract.valueFromRecord(msg, column)
 
     private fun valueFromAppInfo(app: AppInfo, column: String): Any? =
         when (column) {

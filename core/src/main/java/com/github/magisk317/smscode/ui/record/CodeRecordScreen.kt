@@ -51,6 +51,7 @@ import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import io.github.magisk317.smscode.domain.utils.CodeRecordSimilarityUtils
 import com.github.magisk317.smscode.ui.common.AppIconImage
 import com.github.magisk317.smscode.ui.common.LoadingIndicatorTokens
 import com.github.magisk317.smscode.ui.common.LocalSnackbarHostState
@@ -80,6 +81,7 @@ import java.util.*
 
 private const val RECORD_ENABLE_KEY = PrefConst.KEY_ENABLE_CODE_RECORDS_CODE
 private const val RECORD_HISTORY_LIMIT_KEY = PrefConst.KEY_HISTORY_LIMIT_CODE
+private const val CODE_RECORD_DEDUP_WINDOW_MS = CodeRecordSimilarityUtils.DEFAULT_WINDOW_MS
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Suppress("CyclomaticComplexMethod")
@@ -380,7 +382,9 @@ internal fun CodeRecordScreenShared(
     val pullToRefreshState = rememberPullToRefreshState()
     val density = LocalDensity.current
 
-    val codeSmsList = smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() }
+    val codeSmsList = deduplicateCodeRecords(
+        smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() },
+    )
     val activeSmsList = codeSmsList
     val activeTitle = context.getString(R.string.records_column_code_title)
     val activeEmptyHint = context.getString(R.string.records_column_code_empty)
@@ -581,6 +585,24 @@ internal fun CodeRecordScreenShared(
         }
         }
     }
+}
+
+private fun deduplicateCodeRecords(records: List<SmsMsg>): List<SmsMsg> {
+    return CodeRecordSimilarityUtils.deduplicateRecords(
+        records = records,
+        projection = { record ->
+            CodeRecordSimilarityUtils.Projection(
+                code = record.smsCode,
+                body = record.body,
+                company = record.company,
+                sender = record.sender,
+                packageName = record.packageName,
+                date = record.date,
+            )
+        },
+        systemPackages = setOf("com.android.mms"),
+        windowMs = CODE_RECORD_DEDUP_WINDOW_MS,
+    )
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
