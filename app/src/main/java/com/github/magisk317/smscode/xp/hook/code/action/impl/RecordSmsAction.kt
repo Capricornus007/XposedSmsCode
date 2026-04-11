@@ -52,11 +52,13 @@ class RecordSmsAction(
         return RecordSmsInsertResultHelper.capture {
             val smsMsgUri = DBProvider.smsMsgContentUri(mPluginContext)
             val resolver = mPluginContext.contentResolver
+            val processedTime = smsMsg.processedTime.takeIf { it > 0L } ?: System.currentTimeMillis()
 
             val values = ContentValues().apply {
                 put("body", smsMsg.body)
                 put("company", smsMsg.company)
                 put("date", smsMsg.date)
+                put("processed_time", processedTime)
                 put("sender", smsMsg.sender)
                 put("sms_code", smsMsg.smsCode)
                 put("package_name", smsMsg.packageName)

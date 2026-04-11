@@ -32,7 +32,7 @@ import io.github.magisk317.smscode.xposed.utils.XLog
     ForwardFilterRule::class,
     Sender::class,
     Rule::class
-], version = 18, exportSchema = false)
+], version = 19, exportSchema = false)
 @TypeConverters(ConvertersDate::class, ConvertersSenderList::class)
 abstract class AppDatabase : RoomDatabase() {
 
@@ -356,6 +356,16 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        private val MIGRATION_18_19 = object : androidx.room.migration.Migration(18, 19) {
+            override fun migrate(db: androidx.sqlite.db.SupportSQLiteDatabase) {
+                execSqlSafely(
+                    db = db,
+                    sql = "ALTER TABLE sms_msg ADD COLUMN processed_time INTEGER NOT NULL DEFAULT 0",
+                    migration = "18_19",
+                )
+            }
+        }
+
         private fun execSqlSafely(
             db: androidx.sqlite.db.SupportSQLiteDatabase,
             sql: String,
@@ -393,6 +403,7 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_15_16,
                     MIGRATION_16_17,
                     MIGRATION_17_18,
+                    MIGRATION_18_19,
                 )
                 .enableMultiInstanceInvalidation()
                 .build().also { instance = it }

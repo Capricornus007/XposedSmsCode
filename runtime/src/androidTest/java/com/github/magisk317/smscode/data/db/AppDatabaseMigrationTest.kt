@@ -29,7 +29,7 @@ class AppDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate_3_to_18_success() {
+    fun migrate_3_to_19_success() {
         createVersion3Database()
 
         val db = openMigratedDatabase()
@@ -37,7 +37,7 @@ class AppDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate_1_to_18_success() {
+    fun migrate_1_to_19_success() {
         createVersion1Database()
 
         val db = openMigratedDatabase()
@@ -45,7 +45,7 @@ class AppDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate_6_to_18_success() {
+    fun migrate_6_to_19_success() {
         createVersion6Database()
 
         val db = openMigratedDatabase()
@@ -53,7 +53,7 @@ class AppDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate_15_to_18_success() {
+    fun migrate_15_to_19_success() {
         createVersion15Database()
 
         val db = openMigratedDatabase()
@@ -61,7 +61,7 @@ class AppDatabaseMigrationTest {
     }
 
     @Test
-    fun migrate_17_to_18_success() {
+    fun migrate_17_to_19_success() {
         createVersion17Database()
 
         val db = openMigratedDatabase()
@@ -71,7 +71,7 @@ class AppDatabaseMigrationTest {
     @Test
     fun database_instance_builds_without_migration_conflict() {
         val db = openMigratedDatabase()
-        assertEquals(18, queryUserVersion(db))
+        assertEquals(19, queryUserVersion(db))
     }
 
     private fun openMigratedDatabase(): SupportSQLiteDatabase {
@@ -80,11 +80,12 @@ class AppDatabaseMigrationTest {
     }
 
     private fun assertFinalSchema(db: SupportSQLiteDatabase) {
-        assertEquals(18, queryUserVersion(db))
+        assertEquals(19, queryUserVersion(db))
 
         assertColumnExists(db, table = "sms_msg", column = "msg_type")
         assertColumnExists(db, table = "sms_msg", column = "call_type")
         assertColumnExists(db, table = "sms_msg", column = "notify_channel_id")
+        assertColumnExists(db, table = "sms_msg", column = "processed_time")
 
         assertColumnExists(db, table = "Sender", column = "receive_non_code")
         assertColumnExists(db, table = "Sender", column = "receive_app_notify")

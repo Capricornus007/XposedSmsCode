@@ -110,7 +110,8 @@
     <string name="some_items_removed">Removed %d record(s)</string>
     <string name="message_details">Message Details</string>
     <string name="detail_sender">Sender</string>
-    <string name="detail_time">Time</string>
+    <string name="detail_original_time">Original time</string>
+    <string name="detail_processed_time">Processed time</string>
     <string name="detail_content">Content</string>
     <string name="detail_click_copy_hint">(Tap content to copy)</string>
     <string name="prompt_field_copied">%1$s copied</string>

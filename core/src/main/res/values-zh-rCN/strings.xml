@@ -111,7 +111,8 @@
     <string name="some_items_removed">删除了 %d 条记录</string>
     <string name="message_details">短信详情</string>
     <string name="detail_sender">发件人</string>
-    <string name="detail_time">时间</string>
+    <string name="detail_original_time">短信原始时间</string>
+    <string name="detail_processed_time">模块处理时间</string>
     <string name="detail_content">内容</string>
     <string name="detail_click_copy_hint">（点击复制内容）</string>
     <string name="prompt_field_copied">%1$s已复制</string>

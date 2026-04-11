@@ -45,6 +45,7 @@ class DBProvider : ContentProvider() {
                     sender = values?.getAsString("sender"),
                     body = values?.getAsString("body"),
                     date = values?.getAsLong("date") ?: 0L,
+                    processedTime = values?.getAsLong("processed_time") ?: System.currentTimeMillis(),
                     company = values?.getAsString("company"),
                     smsCode = values?.getAsString("sms_code"),
                     packageName = values?.getAsString("package_name"),
@@ -316,6 +317,11 @@ class DBProvider : ContentProvider() {
             sender = values?.getAsString("sender") ?: existing.sender,
             body = values?.getAsString("body") ?: existing.body,
             date = values?.getAsLong("date") ?: existing.date,
+            processedTime = if (values?.containsKey("processed_time") == true) {
+                values.getAsLong("processed_time") ?: 0L
+            } else {
+                existing.processedTime
+            },
             company = values?.getAsString("company") ?: existing.company,
             smsCode = values?.getAsString("sms_code") ?: existing.smsCode,
             packageName = values?.getAsString("package_name") ?: existing.packageName,
