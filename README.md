@@ -41,7 +41,7 @@
 
 # 注意
 - **此模块适用于偏原生的系统，其他第三方定制Rom可能不适用。**
-- **兼容性：最低 Android 7.0（API 24），目标 Android 16（API 36）。**
+- **兼容性：最低 Android 7.0（API 24），目标 Android 16（API 37）。**
 - **支持 LSPosed / Xposed API 82+（具体取决于系统与框架实现）。**
 - **代码库：100% Kotlin + Jetpack Compose + Room + Coroutines**
 - **遇到问题请先阅读模块中的"常见问题"**

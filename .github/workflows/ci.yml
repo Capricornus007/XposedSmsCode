@@ -29,9 +29,6 @@ jobs:
         with:
           validate-wrappers: false
           allow-snapshot-wrappers: true
-      - name: Ensure Android 37 platform aliases
-        shell: bash
-        run: bash scripts/ensure_android_sdk_platform_alias.sh
       - name: Build & Test
         run: >
           bash scripts/with_workspace_gradle_lock.sh --warning-mode all

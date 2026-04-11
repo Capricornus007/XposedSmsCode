@@ -40,7 +40,7 @@ Welcome any feedbacks.
 
 # Attention
 - **This module is designed for AOSP-like systems; it may not function correctly on heavily customized ROMs.**
-- **Compatibility: Minimum Android 7.0 (API 24), target Android 16 (API 36).**
+- **Compatibility: Minimum Android 7.0 (API 24), target Android 16 (API 37).**
 - **Supports LSPosed / Xposed API 82+ (depends on ROM and framework implementation).**
 - **Tech Stack: 100% Kotlin + Jetpack Compose + Room + Coroutines**
 - **Please read the FAQ in the app first if you encounter any problems.**
