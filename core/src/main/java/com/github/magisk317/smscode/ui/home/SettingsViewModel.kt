@@ -19,11 +19,12 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import android.content.Intent
 import com.github.magisk317.smscode.core.R
-import com.github.magisk317.smscode.feature.backup.BackupImportResult
-import com.github.magisk317.smscode.feature.backup.BackupManager
-import com.github.magisk317.smscode.feature.backup.BackupRule
-import com.github.magisk317.smscode.feature.backup.BackupSmsRecord
-import com.github.magisk317.smscode.feature.backup.ExportResult
+import com.github.magisk317.smscode.runtime.RuntimeBackupExportResult
+import com.github.magisk317.smscode.runtime.RuntimeBackupFacade
+import com.github.magisk317.smscode.runtime.RuntimeBackupImportResult
+import com.github.magisk317.smscode.runtime.RuntimeBackupImportStatus
+import com.github.magisk317.smscode.runtime.RuntimeBackupRule
+import com.github.magisk317.smscode.runtime.RuntimeBackupSmsRecord
 import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import com.github.magisk317.smscode.common.utils.XLog
 import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
@@ -59,7 +60,7 @@ sealed class SettingsEvent {
     data object StartGithubUpdateCheck : SettingsEvent()
     data class ShowSnackbar(val message: String) : SettingsEvent()
     data class BackupResultEvent(val success: Boolean) : SettingsEvent()
-    data class RestoreResultEvent(val result: BackupImportResult) : SettingsEvent()
+    data class RestoreResultEvent(val result: RuntimeBackupImportResult) : SettingsEvent()
     data class ImportDialogConfirm(val uri: android.net.Uri) : SettingsEvent()
 }
 
@@ -311,7 +312,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 val rules = if (includeRules) {
                     withContext(Dispatchers.IO) {
                         RuntimeStorageFacade.dbManager(context).queryAllSmsCodeRules()
-                            .map { BackupRule(it.company, it.codeKeyword, it.codeRegex) }
+                            .map { RuntimeBackupRule(it.company, it.codeKeyword, it.codeRegex) }
                     }
                 } else {
                     emptyList()
@@ -321,7 +322,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     withContext(Dispatchers.IO) {
                         RuntimeStorageFacade.dbManager(context).queryAllSmsMsg()
                             .map {
-                                BackupSmsRecord(
+                                RuntimeBackupSmsRecord(
                                     sender = it.sender,
                                     body = it.body,
                                     date = it.date,
@@ -368,7 +369,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     prefs?.size ?: 0,
                 )
                 val result = withContext(Dispatchers.IO) {
-                    BackupManager.exportBackup(
+                    RuntimeBackupFacade.exportBackup(
                         context = context,
                         uri = uri,
                         ruleList = rules,
@@ -379,7 +380,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     )
                 }
                 XLog.i("Backup finished: result=%s", result.name)
-                _eventsFlow.tryEmit(SettingsEvent.BackupResultEvent(result == ExportResult.SUCCESS))
+                _eventsFlow.tryEmit(SettingsEvent.BackupResultEvent(result == RuntimeBackupExportResult.SUCCESS))
             } catch (e: Exception) {
                 XLog.e("Backup failed", e)
                 _eventsFlow.tryEmit(SettingsEvent.BackupResultEvent(false))
@@ -406,7 +407,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     restoreDatabase,
                 )
                 val importResult = withContext(Dispatchers.IO) {
-                    BackupManager.importRuleList(context, uri, BuildConfig.VERSION_NAME)
+                    RuntimeBackupFacade.importRuleList(context, uri, BuildConfig.VERSION_NAME)
                 }
                 XLog.i(
                     "Restore import result=%s rules=%d records=%d prefs=%d warning=%s",
@@ -417,10 +418,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                     importResult.warning?.name ?: "none",
                 )
 
-                if (importResult.result == com.github.magisk317.smscode.feature.backup.ImportResult.SUCCESS) {
+                if (importResult.result == RuntimeBackupImportStatus.SUCCESS) {
                     withContext(Dispatchers.IO) {
                         if (restoreDatabase) {
-                            val restored = BackupManager.restoreDatabaseFromBackup(context, uri)
+                            val restored = RuntimeBackupFacade.restoreDatabaseFromBackup(context, uri)
                             if (!restored) {
                                 throw IllegalStateException("Restore database failed: backup zip has no database files")
                             }
@@ -441,18 +442,18 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                 }
                 _eventsFlow.tryEmit(SettingsEvent.RestoreResultEvent(importResult))
             } catch (e: Exception) {
-                XLog.e("Restore failed", e)
-                // Return failed event
-                _eventsFlow.tryEmit(
-                    SettingsEvent.RestoreResultEvent(
-                        BackupImportResult(com.github.magisk317.smscode.feature.backup.ImportResult.READ_FAILED),
-                    ),
-                )
+                    XLog.e("Restore failed", e)
+                    // Return failed event
+                    _eventsFlow.tryEmit(
+                        SettingsEvent.RestoreResultEvent(
+                            RuntimeBackupImportResult(RuntimeBackupImportStatus.READ_FAILED),
+                        ),
+                    )
             }
         }
     }
 
-    private suspend fun restoreRules(context: Context, rules: List<BackupRule>) {
+    private suspend fun restoreRules(context: Context, rules: List<RuntimeBackupRule>) {
         if (rules.isEmpty()) return
         val dbManager = RuntimeStorageFacade.dbManager(context)
         val entities = rules.map {
@@ -461,7 +462,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         dbManager.addSmsCodeRules(entities)
     }
 
-    private suspend fun restoreRecords(context: Context, records: List<BackupSmsRecord>) {
+    private suspend fun restoreRecords(context: Context, records: List<RuntimeBackupSmsRecord>) {
         val dbManager = RuntimeStorageFacade.dbManager(context)
         if (records.isEmpty()) {
             XLog.w("Restore records skipped: empty list")

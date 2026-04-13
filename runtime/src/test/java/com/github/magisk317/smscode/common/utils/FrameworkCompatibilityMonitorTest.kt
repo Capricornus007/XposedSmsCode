@@ -73,10 +73,10 @@ class FrameworkCompatibilityMonitorTest {
     fun detectIssue_returnsNullWhenNothingMatches() {
         val issue = FrameworkCompatibilityMonitor.detectIssue(
             frameworkInfo = FrameworkInfo(
-                name = "LSPosed",
-                version = "1.9.3 (7000)",
+                name = "LSPosed IT (GitHub@magisk317)",
+                version = "2.0.1-it (7649)",
                 moduleId = "zygisk_lsposed",
-                author = "LSPosed",
+                author = "LSPosed Developers",
                 source = FrameworkInfo.Source.MODULE_PROP,
             ),
             latestLogMessage = null,
@@ -84,5 +84,26 @@ class FrameworkCompatibilityMonitorTest {
         )
 
         assertNull(issue)
+    }
+
+    @Test
+    fun detectIssue_blocksJingMatrixFrameworkWhenNotOfficialLsposed() {
+        val issue = FrameworkCompatibilityMonitor.detectIssue(
+            frameworkInfo = FrameworkInfo(
+                name = "DreamLand",
+                version = "2.0",
+                moduleId = "dreamland_jingmatrix",
+                author = "JingMatrix",
+                source = FrameworkInfo.Source.MODULE_PROP,
+            ),
+            latestLogMessage = null,
+            detectedAt = 101L,
+        )
+
+        assertNotNull(issue)
+        assertEquals(
+            FrameworkCompatibilityMonitor.FrameworkIssueType.KNOWN_INCOMPATIBLE_FRAMEWORK,
+            issue?.issueType,
+        )
     }
 }

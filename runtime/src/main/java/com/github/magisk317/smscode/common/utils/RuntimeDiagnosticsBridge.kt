@@ -36,7 +36,17 @@ internal object RuntimeDiagnosticsBridge {
         inputs: ActivationStatusInputs,
     ): Boolean {
         return if (BuildConfig.XPOSED_API_FLAVOR == "legacy") {
-            ModuleUtils.isModuleActivated(context) || inputs.hasHookHeartbeat
+            runCatching {
+                ModuleUtils.isModuleActivated(context)
+            }.onFailure { throwable ->
+                XLog.w(
+                    "Activation status check failed, fallback to diagnostics state: %s",
+                    throwable.message ?: throwable.javaClass.simpleName,
+                    throwable,
+                )
+            }.getOrElse {
+                inputs.runtimeConnected || inputs.hasHookHeartbeat || inputs.hasLegacyActivationMarker
+            } || inputs.hasHookHeartbeat
         } else {
             inputs.runtimeConnected || inputs.hasHookHeartbeat
         }

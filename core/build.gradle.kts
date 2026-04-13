@@ -82,6 +82,8 @@ val verifyNoRuntimeStorageImplLeak by tasks.registering {
         Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.data\.update\."""),
         Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.common\.utils\.PrefsReader\b"""),
         Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.common\.utils\.NotificationUtils\b"""),
+        Regex("""\bcom\.github\.magisk317\.smscode\.feature\.backup\."""),
+        Regex("""\bcom\.github\.magisk317\.smscode\.feature\.store\."""),
     )
 
     inputs.dir(sourceRoot)
@@ -104,7 +106,7 @@ val verifyNoRuntimeStorageImplLeak by tasks.registering {
         if (violations.isNotEmpty()) {
             error(
                 buildString {
-                    appendLine("Core must not directly depend on runtime storage/update implementation types:")
+                    appendLine("Core must not directly depend on runtime storage/update implementation types or runtime feature internals:")
                     violations.forEach { appendLine(it) }
                 },
             )

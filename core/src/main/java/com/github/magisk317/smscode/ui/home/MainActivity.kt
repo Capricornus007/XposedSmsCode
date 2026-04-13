@@ -132,6 +132,7 @@ class MainActivity : AppCompatActivity() {
             var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
             var showPrivacyPolicyPage by remember { mutableStateOf(false) }
             var blockingStartupDialog by remember { mutableStateOf<BlockingStartupDialog?>(null) }
+            var startupBlockingCheckComplete by remember { mutableStateOf(false) }
             var githubUpdateUiState by remember { mutableStateOf<GithubUpdateUiState?>(null) }
             var downloadState by remember { mutableStateOf<UpdateDownloadState>(UpdateDownloadState.Idle) }
             var unknownSourceApk by remember { mutableStateOf<File?>(null) }
@@ -213,19 +214,24 @@ class MainActivity : AppCompatActivity() {
                 }
             }
             LaunchedEffect(Unit) {
-                if (BuildConfig.ALLOW_CONFLICT_BYPASS) {
-                    XLog.w(
-                        "Relay conflict guard bypassed by build flag allowConflictBypass=true",
-                    )
-                } else if (TransitionConst.isRelayInstalled(context)) {
-                    blockingStartupDialog = BlockingStartupDialog.RelayConflict
-                    return@LaunchedEffect
-                }
-                val frameworkIssue = withContext(Dispatchers.IO) {
-                    PackageUtils.inspectFrameworkIssue(context)
-                }
-                if (frameworkIssue != null) {
-                    blockingStartupDialog = BlockingStartupDialog.FrameworkIncompatibility(frameworkIssue)
+                startupBlockingCheckComplete = false
+                try {
+                    if (BuildConfig.ALLOW_CONFLICT_BYPASS) {
+                        XLog.w(
+                            "Relay conflict guard bypassed by build flag allowConflictBypass=true",
+                        )
+                    } else if (TransitionConst.isRelayInstalled(context)) {
+                        blockingStartupDialog = BlockingStartupDialog.RelayConflict
+                        return@LaunchedEffect
+                    }
+                    val frameworkIssue = withContext(Dispatchers.IO) {
+                        PackageUtils.inspectFrameworkIssue(context)
+                    }
+                    if (frameworkIssue != null) {
+                        blockingStartupDialog = BlockingStartupDialog.FrameworkIncompatibility(frameworkIssue)
+                    }
+                } finally {
+                    startupBlockingCheckComplete = true
                 }
             }
             LaunchedEffect(Unit) {
@@ -373,6 +379,7 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     Box(modifier = Modifier.fillMaxSize()) {
+                        val shouldShowRegularUi = startupBlockingCheckComplete && blockingStartupDialog == null
                         val hazeBlurRadius by AppPreferencesDataStore.getIntFlow(
                             context,
                             PrefConst.KEY_HAZE_BLUR_RADIUS,
@@ -387,17 +394,19 @@ class MainActivity : AppCompatActivity() {
 
                         val hazeState = remember { HazeState() }
                         val hazeStyle = rememberHazeStyle(blurRadius = hazeBlurRadius.dp, tintAlpha = hazeTintAlpha)
-                        SmsCodeNavHost(
-                            navController = navController,
-                            onBack = { finish() },
-                            initialTab = requestedTab,
-                            onInitialTabConsumed = { requestedTab = null },
-                            modifier = Modifier,
-                            hazeState = hazeState,
-                            hazeStyle = hazeStyle,
-                        )
+                        if (shouldShowRegularUi) {
+                            SmsCodeNavHost(
+                                navController = navController,
+                                onBack = { finish() },
+                                initialTab = requestedTab,
+                                onInitialTabConsumed = { requestedTab = null },
+                                modifier = Modifier,
+                                hazeState = hazeState,
+                                hazeStyle = hazeStyle,
+                            )
+                        }
 
-                        if (blockingStartupDialog == null && showPrivacyPolicyDialog) {
+                        if (shouldShowRegularUi && showPrivacyPolicyDialog) {
                             PrivacyPolicyDialog(
                                 onDismiss = {},
                                 onConfirm = {
@@ -418,7 +427,7 @@ class MainActivity : AppCompatActivity() {
                             )
                         }
 
-                        if (blockingStartupDialog == null && showPrivacyPolicyPage) {
+                        if (shouldShowRegularUi && showPrivacyPolicyPage) {
                             PrivacyPolicyPage(
                                 onDismiss = {
                                     showPrivacyPolicyPage = false
@@ -495,7 +504,7 @@ class MainActivity : AppCompatActivity() {
                             )
                         }
 
-                        if (blockingStartupDialog == null) {
+                        if (shouldShowRegularUi) {
                             githubUpdateUiState?.let { updateState ->
                             AppAlertDialog(
                                 onDismissRequest = { githubUpdateUiState = null },

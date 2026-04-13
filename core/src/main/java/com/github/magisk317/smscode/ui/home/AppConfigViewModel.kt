@@ -1,5 +1,6 @@
 package com.github.magisk317.smscode.ui.home
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
@@ -8,9 +9,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.AppInfo
-import com.github.magisk317.smscode.feature.store.EntityStoreManager
-import com.github.magisk317.smscode.feature.store.EntityType
 import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
+import com.github.magisk317.smscode.runtime.RuntimeStoreFacade
 import com.github.magisk317.smscode.ui.block.AppInfoHelper
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -95,12 +95,7 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
                     val pm = getApplication<Application>().packageManager
                     // Load app blocked configs from DB.
                     val configs = RuntimeStorageFacade.dbManager(getApplication()).queryAllAppInfosSuspend()
-                    EntityStoreManager.storeEntitiesToFile(
-                        context,
-                        EntityType.APP_CONFIG,
-                        configs.filter(::hasEffectiveConfig),
-                        AppInfo::class.java,
-                    )
+                    RuntimeStoreFacade.persistAppConfigs(context, configs.filter(::hasEffectiveConfig))
 
                     val installedApps = pm.getInstalledApplications(PackageManager.MATCH_ALL)
                     val configMap = configs.associateBy { it.packageName }
@@ -140,8 +135,13 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    @SuppressLint("MissingPermission")
     private fun refreshUsageStats() {
         try {
+            if (!hasUsageStatsPermission()) {
+                usageStatsMap.clear()
+                return
+            }
             val context = getApplication<Application>()
             val usageStatsManager = context.getSystemService(android.app.usage.UsageStatsManager::class.java)
             val endTime = System.currentTimeMillis()
@@ -281,12 +281,7 @@ class AppConfigViewModel(application: Application) : AndroidViewModel(applicatio
                                 dbManager.removeAppInfosByPackage(listOf(target.packageName))
                             }
                         }
-                        EntityStoreManager.storeEntitiesToFile(
-                            getApplication(),
-                            EntityType.APP_CONFIG,
-                            changedConfigs,
-                            AppInfo::class.java,
-                        )
+                        RuntimeStoreFacade.persistAppConfigs(getApplication(), changedConfigs)
                     }
                 }
             } catch (t: Throwable) {

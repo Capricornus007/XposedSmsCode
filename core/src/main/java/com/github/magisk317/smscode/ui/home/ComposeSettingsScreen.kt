@@ -62,6 +62,8 @@ import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.LogBundleExporter
+import com.github.magisk317.smscode.runtime.RuntimeBackupFacade
+import com.github.magisk317.smscode.runtime.RuntimeBackupImportStatus
 import com.github.magisk317.smscode.runtime.RuntimeNotificationFacade as NotificationUtils
 import com.github.magisk317.smscode.common.utils.RuntimeLogStore
 import com.github.magisk317.smscode.common.utils.SPUtils
@@ -838,7 +840,7 @@ internal fun ComposeSettingsScreenShared(
                             title = stringResource(id = R.string.pref_restore_title),
                             summary = stringResource(id = R.string.pref_restore_summary),
                         ) {
-                            val intent = com.github.magisk317.smscode.feature.backup.BackupManager.getImportRuleListSAFIntent(context)
+                            val intent = RuntimeBackupFacade.getImportRuleListSAFIntent(context)
                             restoreLauncher.launch(intent)
                         }
                         SwitchItem(
@@ -1086,16 +1088,16 @@ private fun handleSettingsEvent(
 
         is SettingsEvent.RestoreResultEvent -> {
             val msg = when (event.result.result) {
-                com.github.magisk317.smscode.feature.backup.ImportResult.SUCCESS -> R.string.restore_success
-                com.github.magisk317.smscode.feature.backup.ImportResult.VERSION_TOO_NEW -> R.string.import_failed_version_too_new
-                com.github.magisk317.smscode.feature.backup.ImportResult.VERSION_TOO_OLD -> R.string.import_failed_version_too_old
+                RuntimeBackupImportStatus.SUCCESS -> R.string.restore_success
+                RuntimeBackupImportStatus.VERSION_TOO_NEW -> R.string.import_failed_version_too_new
+                RuntimeBackupImportStatus.VERSION_TOO_OLD -> R.string.import_failed_version_too_old
                 else -> R.string.restore_failed
             }
             scope.launch {
                 snackbarHostState.showSnackbar(context.getString(msg))
             }
 
-            if (event.result.result == com.github.magisk317.smscode.feature.backup.ImportResult.SUCCESS) {
+            if (event.result.result == RuntimeBackupImportStatus.SUCCESS) {
                 scope.launch {
                     delay(1200L)
                     if (activity != null) {
@@ -1338,7 +1340,7 @@ private fun SettingsDialogs(
             onConfirm = { flags ->
                 onBackupFlagsChange(flags)
                 onShowBackupDialogChange(false)
-                val intent = com.github.magisk317.smscode.feature.backup.BackupManager.getExportRuleListSAFIntent(
+                val intent = RuntimeBackupFacade.getExportRuleListSAFIntent(
                     context,
                     includeDatabase = flags.includeDatabase,
                 )
