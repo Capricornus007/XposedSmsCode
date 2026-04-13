@@ -4,6 +4,19 @@
 
 ---
 
+## [v3.2.7] - 2026-04-11
+- 版本：`versionCode 112` / `versionName 3.2.7`。
+- 发布说明：Play 渠道继续提供 `api101`；GitHub 渠道同时提供 `api101` 与 `legacy`。下载前请先确认框架类型，避免安装错误变体。
+- `[core/runtime]` 新增 `RuntimeBackupFacade` 与 `RuntimeStoreFacade`，备份恢复、发布导入导出入口与应用配置持久化改经 facade 暴露，继续减少 `core` 对 runtime 内部 feature 实现的直接感知。
+- `[quality]` 修复应用列表按使用时长排序时的权限门控问题，避免 `UsageStats` 访问在未授权场景下触发 lint blocker；`core/runtime/app` 三个模块的 `check` 现已重新保持通过。
+- `[records]` 验证码记录补齐 `processedTime` 贯穿链路，记录插入、数据库迁移与记录页展示进一步对齐，便于后续导出、恢复与排序保持一致。
+- `[activation/framework]` 启动阶段增加已知不兼容框架拦截，首页/设置页进一步依赖激活诊断信息驱动状态展示，减少“模块已恢复工作但界面仍停留旧状态”的误判。
+- `[build/ci]` CI、tag 发版工作流与 `release_tag.sh` 对齐到新的质量门：发包前会先跑 `:core:check`、`:runtime:check`、`:app:check`，同时同步 release guard 与 Fastlane 元数据流程。
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.2.6...v3.2.7
+
+---
+
 ## [v3.2.6] - 2026-04-02
 - 版本：`versionCode 111` / `versionName 3.2.6`。
 - 发布说明：Play 渠道继续提供 `api101`；GitHub 渠道同时提供 `api101` 与 `legacy`。下载前请先确认框架类型，避免安装错误变体。

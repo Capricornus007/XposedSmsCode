@@ -19,10 +19,11 @@ run_pre_push_checks() {
   (
     cd "$ROOT_DIR"
     bash scripts/with_workspace_gradle_lock.sh --warning-mode all \
+      :core:check \
+      :runtime:check \
+      :app:check \
       assembleGithubApi101Debug \
       assembleGithubLegacyDebug \
-      testGithubApi101DebugUnitTest \
-      testGithubLegacyDebugUnitTest \
       :app:koverVerifyGithubApi101Debug \
       :app:koverHtmlReportGithubApi101Debug \
       -PbuildSplits
@@ -37,7 +38,7 @@ run_pre_push_checks() {
   local sarif_files=(
     "$ROOT_DIR/app/build/reports/detekt/detekt.sarif"
     "$ROOT_DIR/core/build/reports/detekt/detekt.sarif"
-    "$ROOT_DIR/storage/build/reports/detekt/detekt.sarif"
+    "$ROOT_DIR/runtime/build/reports/detekt/detekt.sarif"
   )
   local found_report=0
   local total_findings=0
