@@ -1,4 +1,4 @@
-name: Shared Submodule Compat
+name: Shared Module Compat
 permissions:
   contents: read
 
@@ -33,12 +33,6 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      - uses: actions/checkout@v6
-        with:
-          repository: magisk317/xinyi-relay
-          path: sibling-xinyi-relay
-          submodules: recursive
-          fetch-depth: 0
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -48,5 +42,5 @@ jobs:
         with:
           validate-wrappers: false
           allow-snapshot-wrappers: true
-      - name: Verify shared submodule compatibility
-        run: bash scripts/verify_shared_submodule_compat.sh "$GITHUB_WORKSPACE/sibling-xinyi-relay"
+      - name: Verify shared module compatibility
+        run: bash scripts/verify_shared_submodule_compat.sh
