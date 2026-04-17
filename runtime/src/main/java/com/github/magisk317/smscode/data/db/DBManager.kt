@@ -10,6 +10,7 @@ import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.runBlocking
 
 /**
  * Database Manager for Room (Migrated from GreenDao)
@@ -35,9 +36,9 @@ class DBManager private constructor(context: Context) {
         mSmsCodeRuleDao.insert(smsCodeRule)
     }
 
-    fun addSmsCodeRule(smsCodeRule: SmsCodeRule): Long = mSmsCodeRuleDao.insert(smsCodeRule)
+    fun addSmsCodeRule(smsCodeRule: SmsCodeRule): Long = runBlocking { mSmsCodeRuleDao.insert(smsCodeRule) }
 
-    fun addSmsCodeRules(smsCodeRules: List<SmsCodeRule>) {
+    fun addSmsCodeRules(smsCodeRules: List<SmsCodeRule>) = runBlocking {
         mSmsCodeRuleDao.insertAll(smsCodeRules)
     }
 
@@ -47,13 +48,13 @@ class DBManager private constructor(context: Context) {
             smsCodeRules
         }
 
-    fun updateSmsCodeRule(smsCodeRule: SmsCodeRule) {
+    fun updateSmsCodeRule(smsCodeRule: SmsCodeRule) = runBlocking {
         mSmsCodeRuleDao.update(smsCodeRule)
     }
 
-    fun queryAllSmsCodeRules(): List<SmsCodeRule> = mSmsCodeRuleDao.getAll()
+    fun queryAllSmsCodeRules(): List<SmsCodeRule> = runBlocking { mSmsCodeRuleDao.getAll() }
 
-    fun querySmsCodeRuleById(id: Long): SmsCodeRule? = mSmsCodeRuleDao.getById(id)
+    fun querySmsCodeRuleById(id: Long): SmsCodeRule? = runBlocking { mSmsCodeRuleDao.getById(id) }
 
     suspend fun queryAllSmsCodeRulesSuspend(): List<SmsCodeRule> = withContext(Dispatchers.IO) {
         mSmsCodeRuleDao.getAll()
@@ -67,11 +68,11 @@ class DBManager private constructor(context: Context) {
     fun queryAllSmsCodeRulesFlow(): Flow<List<SmsCodeRule>> = mSmsCodeRuleDao.getAllFlow()
 
     fun querySmsCodeRules(criteria: SmsCodeRule): List<SmsCodeRule> =
-        mSmsCodeRuleDao.queryRules(criteria.company, criteria.codeKeyword, criteria.codeRegex)
+        runBlocking { mSmsCodeRuleDao.queryRules(criteria.company, criteria.codeKeyword, criteria.codeRegex) }
 
     fun isExists(codeRule: SmsCodeRule): Boolean = querySmsCodeRules(codeRule).isNotEmpty()
 
-    fun removeSmsCodeRule(smsCodeRule: SmsCodeRule) {
+    fun removeSmsCodeRule(smsCodeRule: SmsCodeRule) = runBlocking {
         mSmsCodeRuleDao.delete(smsCodeRule)
     }
 
@@ -80,7 +81,7 @@ class DBManager private constructor(context: Context) {
         smsCodeRule
     }
 
-    fun removeAllSmsCodeRules() {
+    fun removeAllSmsCodeRules() = runBlocking {
         mSmsCodeRuleDao.clearAll()
     }
 
@@ -90,22 +91,22 @@ class DBManager private constructor(context: Context) {
         }
     }
 
-    fun addSmsMsg(smsMsg: SmsMsg): Long = mSmsMsgDao.insert(smsMsg)
+    fun addSmsMsg(smsMsg: SmsMsg): Long = runBlocking { mSmsMsgDao.insert(smsMsg) }
 
-    fun addSmsMsgList(smsMsgList: List<SmsMsg>) {
+    fun addSmsMsgList(smsMsgList: List<SmsMsg>) = runBlocking {
         mSmsMsgDao.insertAll(smsMsgList)
     }
 
-    fun queryAllSmsMsg(): List<SmsMsg> = mSmsMsgDao.getAll()
+    fun queryAllSmsMsg(): List<SmsMsg> = runBlocking { mSmsMsgDao.getAll() }
 
-    fun querySmsMsgById(id: Long): SmsMsg? = mSmsMsgDao.getById(id)
+    fun querySmsMsgById(id: Long): SmsMsg? = runBlocking { mSmsMsgDao.getById(id) }
 
     fun querySmsMsgByFingerprint(
         sender: String?,
         body: String?,
         date: Long,
         msgType: Int = SmsMsg.MSG_TYPE_SMS,
-    ): SmsMsg? = mSmsMsgDao.getByFingerprint(sender, body, date, msgType)
+    ): SmsMsg? = runBlocking { mSmsMsgDao.getByFingerprint(sender, body, date, msgType) }
 
     fun querySmsMsgByFingerprintInRange(
         sender: String?,
@@ -113,7 +114,7 @@ class DBManager private constructor(context: Context) {
         dateFrom: Long,
         dateTo: Long,
         msgType: Int = SmsMsg.MSG_TYPE_SMS,
-    ): SmsMsg? = mSmsMsgDao.getByFingerprintInRange(sender, body, msgType, dateFrom, dateTo)
+    ): SmsMsg? = runBlocking { mSmsMsgDao.getByFingerprintInRange(sender, body, msgType, dateFrom, dateTo) }
 
     fun querySmsMsgByCodeAndCompanyInRange(
         smsCode: String?,
@@ -121,7 +122,7 @@ class DBManager private constructor(context: Context) {
         dateFrom: Long,
         dateTo: Long,
         msgType: Int = SmsMsg.MSG_TYPE_SMS,
-    ): SmsMsg? = mSmsMsgDao.getByCodeAndCompanyInRange(smsCode, company, msgType, dateFrom, dateTo)
+    ): SmsMsg? = runBlocking { mSmsMsgDao.getByCodeAndCompanyInRange(smsCode, company, msgType, dateFrom, dateTo) }
 
     fun querySmsMsgByCodeAndPackageInRange(
         smsCode: String?,
@@ -129,21 +130,21 @@ class DBManager private constructor(context: Context) {
         dateFrom: Long,
         dateTo: Long,
         msgType: Int = SmsMsg.MSG_TYPE_SMS,
-    ): SmsMsg? = mSmsMsgDao.getByCodeAndPackageInRange(smsCode, packageName, msgType, dateFrom, dateTo)
+    ): SmsMsg? = runBlocking { mSmsMsgDao.getByCodeAndPackageInRange(smsCode, packageName, msgType, dateFrom, dateTo) }
 
     fun querySmsMsgByCodeInRange(
         smsCode: String?,
         dateFrom: Long,
         dateTo: Long,
         msgType: Int = SmsMsg.MSG_TYPE_SMS,
-    ): List<SmsMsg> = mSmsMsgDao.getByCodeInRange(smsCode, msgType, dateFrom, dateTo)
+    ): List<SmsMsg> = runBlocking { mSmsMsgDao.getByCodeInRange(smsCode, msgType, dateFrom, dateTo) }
 
     fun updateSmsMsg(smsMsg: SmsMsg): Int {
         val id = smsMsg.id ?: return 0
         if (mSmsMsgDao.getById(id) == null) {
             return 0
         }
-        mSmsMsgDao.update(smsMsg)
+        runBlocking { mSmsMsgDao.update(smsMsg) }
         return 1
     }
 
@@ -151,13 +152,13 @@ class DBManager private constructor(context: Context) {
 
     fun queryAllSmsMsgCountFlow(): Flow<Long> = mSmsMsgDao.countFlow()
 
-    fun removeSmsMsgList(smsMsgList: List<SmsMsg>) {
+    fun removeSmsMsgList(smsMsgList: List<SmsMsg>) = runBlocking {
         mSmsMsgDao.deleteInTx(smsMsgList)
     }
 
     fun removeSmsMsgById(id: Long): Int {
         val item = mSmsMsgDao.getById(id) ?: return 0
-        mSmsMsgDao.delete(item)
+        runBlocking { mSmsMsgDao.delete(item) }
         return 1
     }
 
@@ -173,20 +174,20 @@ class DBManager private constructor(context: Context) {
         }
     }
 
-    fun queryAllAppInfos(): List<AppInfo> = mAppInfoDao.getAll()
+    fun queryAllAppInfos(): List<AppInfo> = runBlocking { mAppInfoDao.getAll() }
 
-    fun queryAppInfoByPackageName(packageName: String): AppInfo? = mAppInfoDao.getByPackageName(packageName)
+    fun queryAppInfoByPackageName(packageName: String): AppInfo? = runBlocking { mAppInfoDao.getByPackageName(packageName) }
 
-    fun upsertAppInfo(appInfo: AppInfo): Int {
+    fun upsertAppInfo(appInfo: AppInfo): Int = runBlocking {
         mAppInfoDao.insert(appInfo)
-        return 1
+        1
     }
 
     fun removeAppInfosByPackage(packageNames: List<String>): Int {
         if (packageNames.isEmpty()) {
             return 0
         }
-        return mAppInfoDao.deleteByPackageNames(packageNames)
+        return runBlocking { mAppInfoDao.deleteByPackageNames(packageNames) }
     }
 
     suspend fun queryAllAppInfosSuspend(): List<AppInfo> = withContext(Dispatchers.IO) { mAppInfoDao.getAll() }
