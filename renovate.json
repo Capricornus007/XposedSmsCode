@@ -25,7 +25,9 @@
         },
         {
             "matchPackageNames": [
-                "int:LOG_LEVEL"
+                "int:LOG_LEVEL",
+                "int:MODULE_VERSION",
+                "int:VERSION_CODE"
             ],
             "enabled": false
         }
