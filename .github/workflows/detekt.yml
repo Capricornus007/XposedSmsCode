@@ -33,7 +33,6 @@ jobs:
   scan:
     name: Scan
     runs-on: ubuntu-latest
-    if: github.actor != 'dependabot[bot]'
     permissions:
       security-events: write
       contents: read
@@ -66,14 +65,20 @@ jobs:
         run: |
           if [ -f app/build/reports/detekt/detekt.sarif ]; then echo "app=true" >> $GITHUB_OUTPUT; fi
           if [ -f core/build/reports/detekt/detekt.sarif ]; then echo "core=true" >> $GITHUB_OUTPUT; fi
-          if [ -f storage/build/reports/detekt/detekt.sarif ]; then echo "storage=true" >> $GITHUB_OUTPUT; fi
+          if [ -f runtime/build/reports/detekt/detekt.sarif ]; then echo "runtime=true" >> $GITHUB_OUTPUT; fi
 
       - name: Merge SARIF files
         if: always()
         run: |
           mkdir -p merged-sarif
-          # Merge all SARIF files into one
+          # Merge all available SARIF files into one. If app SARIF is missing, use a fallback or skip gracefully.
+          if [ ! -f app/build/reports/detekt/detekt.sarif ] && [ ! -f runtime/build/reports/detekt/detekt.sarif ] && [ ! -f core/build/reports/detekt/detekt.sarif ]; then
+            echo "No Detekt SARIF reports found to merge."
+            exit 0
+          fi
+
           jq -s '
+            if length == 0 then empty else
             {
               "$schema": .[0]."$schema",
               "version": .[0].version,
@@ -84,10 +89,16 @@ jobs:
                 }
               ]
             }
-          ' app/build/reports/detekt/detekt.sarif \
-            $([ -f storage/build/reports/detekt/detekt.sarif ] && echo "storage/build/reports/detekt/detekt.sarif" || echo "/dev/null") \
-            $([ -f core/build/reports/detekt/detekt.sarif ] && echo "core/build/reports/detekt/detekt.sarif" || echo "/dev/null") \
-            > merged-sarif/detekt.sarif 2>/dev/null || cp app/build/reports/detekt/detekt.sarif merged-sarif/detekt.sarif
+            end
+          ' $([ -f app/build/reports/detekt/detekt.sarif ] && echo "app/build/reports/detekt/detekt.sarif") \
+            $([ -f runtime/build/reports/detekt/detekt.sarif ] && echo "runtime/build/reports/detekt/detekt.sarif") \
+            $([ -f core/build/reports/detekt/detekt.sarif ] && echo "core/build/reports/detekt/detekt.sarif") \
+            > merged-sarif/detekt.sarif 2>/dev/null || {
+              # Fallback if jq fails or files are missing
+              [ -f app/build/reports/detekt/detekt.sarif ] && cp app/build/reports/detekt/detekt.sarif merged-sarif/detekt.sarif || \
+              [ -f runtime/build/reports/detekt/detekt.sarif ] && cp runtime/build/reports/detekt/detekt.sarif merged-sarif/detekt.sarif || \
+              [ -f core/build/reports/detekt/detekt.sarif ] && cp core/build/reports/detekt/detekt.sarif merged-sarif/detekt.sarif
+            }
 
       - name: Upload merged SARIF results
         uses: github/codeql-action/upload-sarif@v4
