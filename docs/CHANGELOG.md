@@ -4,6 +4,17 @@
 
 ---
 
+## [v3.2.8] - 2026-04-24
+- 版本：`versionCode 113` / `versionName 3.2.8`。
+- `[runtime/db]` 将 Room DAO 接口重构为 `suspend` 函数，并在 `DBManager` 中通过 `runBlocking` 安全调用，优化主线程性能并确保数据库操作符合 Room 并发规范。
+- `[deps]` 升级核心依赖库：Kotlin `2.3.21`、Navigation `2.9.8`、Compose BOM `2026.04.01`。
+- `[ci]` 优化 CI 工作流，移除对外部相邻仓库的冗余检查逻辑，提升构建流水线运行效率。
+- `[submodules]` 同步 `smscode-core` 子模块指针，解决 `mokkery` 引用冲突，保持 API 抽象层与实现层的一致性。
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.2.7...v3.2.8
+
+---
+
 ## [v3.2.7] - 2026-04-11
 - 版本：`versionCode 112` / `versionName 3.2.7`。
 - 发布说明：Play 渠道继续提供 `api101`；GitHub 渠道同时提供 `api101` 与 `legacy`。下载前请先确认框架类型，避免安装错误变体。
