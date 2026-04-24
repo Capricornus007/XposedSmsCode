@@ -4,6 +4,12 @@
 
 ---
 
+## [v3.2.9] - Incoming
+- 版本：`versionCode 114` / `versionName 3.2.9`。
+- 正在开发中...
+
+---
+
 ## [v3.2.8] - 2026-04-24
 - 版本：`versionCode 113` / `versionName 3.2.8`。
 - `[runtime/db]` 将 Room DAO 接口重构为 `suspend` 函数，并在 `DBManager` 中通过 `runBlocking` 安全调用，优化主线程性能并确保数据库操作符合 Room 并发规范。
