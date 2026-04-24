@@ -139,13 +139,13 @@ class DBManager private constructor(context: Context) {
         msgType: Int = SmsMsg.MSG_TYPE_SMS,
     ): List<SmsMsg> = runBlocking { mSmsMsgDao.getByCodeInRange(smsCode, msgType, dateFrom, dateTo) }
 
-    fun updateSmsMsg(smsMsg: SmsMsg): Int {
-        val id = smsMsg.id ?: return 0
+    fun updateSmsMsg(smsMsg: SmsMsg): Int = runBlocking {
+        val id = smsMsg.id ?: return@runBlocking 0
         if (mSmsMsgDao.getById(id) == null) {
-            return 0
+            return@runBlocking 0
         }
-        runBlocking { mSmsMsgDao.update(smsMsg) }
-        return 1
+        mSmsMsgDao.update(smsMsg)
+        1
     }
 
     fun queryAllSmsMsgFlow(): Flow<List<SmsMsg>> = mSmsMsgDao.getAllFlow()
@@ -156,10 +156,10 @@ class DBManager private constructor(context: Context) {
         mSmsMsgDao.deleteInTx(smsMsgList)
     }
 
-    fun removeSmsMsgById(id: Long): Int {
-        val item = mSmsMsgDao.getById(id) ?: return 0
-        runBlocking { mSmsMsgDao.delete(item) }
-        return 1
+    fun removeSmsMsgById(id: Long): Int = runBlocking {
+        val item = mSmsMsgDao.getById(id) ?: return@runBlocking 0
+        mSmsMsgDao.delete(item)
+        1
     }
 
     suspend fun removeSmsMsgListSuspend(smsMsgList: List<SmsMsg>) {
@@ -203,7 +203,7 @@ class DBManager private constructor(context: Context) {
     }
 
     // Legacy generic methods for AppBlockViewModel compatibility
-    fun <T> deleteAll(entityClass: Class<T>) {
+    fun <T> deleteAll(entityClass: Class<T>) = runBlocking {
         if (entityClass == AppInfo::class.java) {
             mAppInfoDao.clearAll()
         } else if (entityClass == SmsCodeRule::class.java) {
@@ -219,7 +219,7 @@ class DBManager private constructor(context: Context) {
         }
     }
 
-    fun <T> insertOrReplaceInTx(entityClass: Class<T>, entities: List<T>) {
+    fun <T> insertOrReplaceInTx(entityClass: Class<T>, entities: List<T>) = runBlocking {
         if (entityClass == AppInfo::class.java) {
             mAppInfoDao.insertAll(castEntities(entities, AppInfo::class.java))
         } else if (entityClass == SmsCodeRule::class.java) {
