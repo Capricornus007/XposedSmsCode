@@ -12,9 +12,15 @@ permissions:
 
 jobs:
   dependency-force:
+    name: Attempt dependency remediation
     runs-on: ubuntu-latest
+    continue-on-error: true
+    concurrency:
+      group: dependency-force-manager-${{ github.ref }}
+      cancel-in-progress: false
     env:
       DEPENDENCY_FORCE_CONFIGS: githubApi101DebugRuntimeClasspath,githubLegacyDebugRuntimeClasspath,playApi101DebugRuntimeClasspath
+      DEPENDENCY_FORCE_HISTORICAL_ALERT_COOLDOWN_HOURS: 168
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -58,17 +64,36 @@ jobs:
           python3 scripts/manage_dependency_forces.py resolve-natural \
             --forced-json /tmp/forced.json \
             --output /tmp/natural.json \
+            --include-build-environment \
             "${args[@]}"
 
       - name: Restore original build file
         run: git checkout -- build.gradle.kts
 
+      - name: Fetch Dependabot alerts
+        id: alerts
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT != '' && secrets.GH_PAT || github.token }}
+        run: |
+          # Dependabot's alerts endpoint returns all states when the state filter
+          # is omitted. Using `state=all` is not reliable on this endpoint.
+          gh api \
+            --paginate \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/dependabot/alerts?per_page=100" \
+            | jq -s '[.[][]]' \
+            > /tmp/dependabot-alerts.json
+
       - name: Determine removable forces
         id: removable
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT != '' && secrets.GH_PAT || github.token }}
         run: |
           python3 scripts/manage_dependency_forces.py determine-removable \
             --forced-json /tmp/forced.json \
             --natural-json /tmp/natural.json \
+            --alerts-json /tmp/dependabot-alerts.json \
+            --historical-alert-cooldown-hours "$DEPENDENCY_FORCE_HISTORICAL_ALERT_COOLDOWN_HOURS" \
             --output /tmp/removable.json
           count=$(python3 - <<'PY'
           import json
@@ -78,22 +103,17 @@ jobs:
           )
           echo "count=$count" >> "$GITHUB_OUTPUT"
 
-      - name: Fetch Dependabot alerts
-        id: alerts
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT != '' && secrets.GH_PAT || github.token }}
-        run: |
-          curl -sS \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GH_TOKEN" \
-            "https://api.github.com/repos/${GITHUB_REPOSITORY}/dependabot/alerts?state=open&per_page=100" \
-            > /tmp/dependabot-alerts.json
-
       - name: Resolve natural versions for security dependencies
         run: |
+          args=()
+          IFS=',' read -ra configs <<< "$DEPENDENCY_FORCE_CONFIGS"
+          for config in "${configs[@]}"; do
+            args+=(--config "$config")
+          done
           python3 scripts/manage_dependency_forces.py resolve-alert-natural \
             --alerts-json /tmp/dependabot-alerts.json \
-            --output /tmp/security-natural.json
+            --output /tmp/security-natural.json \
+            "${args[@]}"
 
       - name: Apply updates (remove + add security forces)
         id: apply
@@ -119,6 +139,7 @@ jobs:
         run: bash scripts/refresh_gradle_lockfiles.sh
 
       - name: Create PR with dependency force updates
+        id: cpr
         uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GH_PAT != '' && secrets.GH_PAT || github.token }}
@@ -127,8 +148,23 @@ jobs:
           delete-branch: true
           title: "build: update forced dependencies"
           commit-message: "build: update forced dependencies"
+          labels: |
+            dependencies
+            java
           body: |
             Automated dependency force maintenance:
             - Removed force rules when natural resolution already matches forced versions.
             - Added or updated force rules for dependencies with open security alerts (Dependabot).
             - Refreshed committed Gradle dependency lockfiles after dependency graph changes.
+
+      - name: Write remediation summary
+        if: always()
+        run: |
+          {
+            echo "## Dependency remediation"
+            echo ""
+            echo "- Trigger: ${{ github.event_name }}"
+            echo "- Base ref: ${{ github.base_ref || github.ref_name }}"
+            echo "- Auto PR operation: ${{ steps.cpr.outputs.pull-request-operation || 'none' }}"
+            echo "- Auto PR number: ${{ steps.cpr.outputs.pull-request-number || 'none' }}"
+          } >> "$GITHUB_STEP_SUMMARY"
