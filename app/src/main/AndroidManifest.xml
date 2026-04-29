@@ -110,11 +110,6 @@
             android:exported="true" />
 
         <provider
-            android:name="com.github.magisk317.smscode.data.prefs.PrefsProvider"
-            android:authorities="${applicationId}.pref.provider"
-            android:exported="true" />
-
-        <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.files"
             android:exported="false"
@@ -135,6 +130,14 @@
         <receiver
             android:name="com.github.magisk317.smscode.receiver.CodeNotificationReceiver"
             android:exported="true" />
+
+        <receiver
+            android:name="com.github.magisk317.smscode.receiver.KillSelfControlReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.github.magisk317.smscode.ACTION_KILL_SELF" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

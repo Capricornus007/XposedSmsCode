@@ -38,6 +38,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
@@ -318,7 +319,7 @@ internal fun CodeRecordScreenShared(
                 historyLimitCode = value
                 scope.launch {
                     AppPreferencesDataStore.setString(context, RECORD_HISTORY_LIMIT_KEY, value)
-                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                    HookPreferenceMirror.publish(context)
                 }
             }
             showHistoryLimitDialog = false
@@ -340,7 +341,7 @@ internal fun CodeRecordScreenShared(
                 historyLimitCode = value
                 scope.launch {
                     AppPreferencesDataStore.setString(context, RECORD_HISTORY_LIMIT_KEY, value)
-                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                    HookPreferenceMirror.publish(context)
                 }
             }
             showHistoryLimitInput = false

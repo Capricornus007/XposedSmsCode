@@ -115,7 +115,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
             _themeState.value = ThemeState(mode = mode, uiKitStyle = uiKitStyle)
         }
         viewModelScope.launch {
-            AppPreferencesDataStore.syncToSharedPrefs(getApplication())
+            HookPreferenceMirror.publish(getApplication())
         }
     }
 
@@ -274,7 +274,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setInternalFilesWritable() {
         StorageUtils.setFileWorldWritable(StorageUtils.getFilesDir(getApplication()), 1)
-        AppPreferencesDataStore.ensureReadable(getApplication())
+        viewModelScope.launch {
+            HookPreferenceMirror.publish(getApplication())
+        }
     }
 
     fun requestPreferredUpdate() {

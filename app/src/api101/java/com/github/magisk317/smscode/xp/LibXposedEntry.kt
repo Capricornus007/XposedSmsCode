@@ -51,7 +51,9 @@ class LibXposedEntry : XposedModule {
         }
         installCoreRuntime()
         HookEnv.init(LibXposedHookApi(this))
-        PrefsReader.setRemotePrefsProvider { runCatching { getRemotePreferences(REMOTE_PREFS_GROUP) }.getOrNull() }
+        val remotePrefsProvider = { runCatching { getRemotePreferences(REMOTE_PREFS_GROUP) }.getOrNull() }
+        PrefsReader.setRemotePrefsProvider(remotePrefsProvider)
+        CorePrefsBridge.installRemote(remotePrefsProvider)
         processName = if (param.isSystemServer) "android" else param.processName
 
         for (hook in hookList) {

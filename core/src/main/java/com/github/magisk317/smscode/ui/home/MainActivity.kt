@@ -38,6 +38,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
+import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -554,7 +555,7 @@ class MainActivity : AppCompatActivity() {
                                                         PrefConst.KEY_GITHUB_IGNORED_VERSION,
                                                         versionName,
                                                     )
-                                                    AppPreferencesDataStore.syncToSharedPrefs(this@MainActivity)
+                                                    HookPreferenceMirror.publish(this@MainActivity)
                                                 }
                                                 githubUpdateUiState = null
                                             },

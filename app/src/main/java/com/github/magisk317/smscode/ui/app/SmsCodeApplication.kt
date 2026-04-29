@@ -14,6 +14,7 @@ import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
+import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import io.github.magisk317.smscode.xposed.utils.ModuleActivationStore
 import io.github.magisk317.smscode.xposed.utils.ModuleUtils
@@ -73,9 +74,7 @@ class SmsCodeApplication : Application() {
 
     private fun syncPreferences() {
         applicationScope.launch {
-            AppPreferencesDataStore.syncToSharedPrefs(this@SmsCodeApplication)
-            AppPreferencesDataStore.syncToRemotePrefs(this@SmsCodeApplication)
-            AppPreferencesDataStore.ensureReadable(this@SmsCodeApplication)
+            HookPreferenceMirror.publish(this@SmsCodeApplication)
             val verboseLog = AppPreferencesDataStore.getBoolean(
                 this@SmsCodeApplication,
                 PrefConst.KEY_VERBOSE_LOG_MODE,
@@ -178,7 +177,7 @@ class SmsCodeApplication : Application() {
                 AppPreferencesDataStore.setString(this@SmsCodeApplication, PrefConst.KEY_IPC_TOKEN, newToken)
                 Timber.i("Generated new IPC Security Token via DataStore")
             }
-            AppPreferencesDataStore.ensureReadable(this@SmsCodeApplication)
+            HookPreferenceMirror.publish(this@SmsCodeApplication)
         }
     }
 

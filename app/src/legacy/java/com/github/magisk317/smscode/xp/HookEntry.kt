@@ -34,6 +34,7 @@ class HookEntry :
     override fun initZygote(startupParam: IXposedHookZygoteInit.StartupParam) {
         installCoreRuntime()
         HookEnv.init(LegacyHookApi())
+        CorePrefsBridge.installLegacyCompat()
         for (hook in hookList) {
             if (hook.hookInitZygote()) {
                 hook.initZygote(ZygoteParam())
@@ -51,6 +52,7 @@ class HookEntry :
     override fun handleLoadPackage(lpparam: XC_LoadPackage.LoadPackageParam) {
         installCoreRuntime()
         HookEnv.init(LegacyHookApi())
+        CorePrefsBridge.installLegacyCompat()
         val loadParam = LoadParam(lpparam.packageName, lpparam.processName, lpparam.classLoader)
         XLog.d("HookEntry: Loaded package: ${loadParam.packageName} process: ${loadParam.processName}")
         if ("android" == loadParam.packageName || "system" == loadParam.packageName) {

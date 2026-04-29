@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
+import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import com.github.magisk317.smscode.ui.common.DismissibleSnackbarHost
 import io.github.magisk317.uikit.preference.StateSwitchItem
 import io.github.magisk317.uikit.surface.AppTextField
@@ -97,7 +98,7 @@ fun LiteSettingsScreen() {
                     onCheckedChange = {
                         scope.launch {
                             AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_SHOW_TOAST, it)
-                            AppPreferencesDataStore.syncToSharedPrefs(context)
+                            HookPreferenceMirror.publish(context)
                             notifySaved()
                         }
                     },
@@ -109,7 +110,7 @@ fun LiteSettingsScreen() {
                     onCheckedChange = {
                         scope.launch {
                             AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_COPY_TO_CLIPBOARD, it)
-                            AppPreferencesDataStore.syncToSharedPrefs(context)
+                            HookPreferenceMirror.publish(context)
                             notifySaved()
                         }
                     },
@@ -121,7 +122,7 @@ fun LiteSettingsScreen() {
                     onCheckedChange = {
                         scope.launch {
                             AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, it)
-                            AppPreferencesDataStore.syncToSharedPrefs(context)
+                            HookPreferenceMirror.publish(context)
                             notifySaved()
                         }
                     },
@@ -133,7 +134,7 @@ fun LiteSettingsScreen() {
                     onCheckedChange = {
                         scope.launch {
                             AppPreferencesDataStore.setBoolean(context, PrefConst.KEY_ENABLE_AUTO_ENTER_CODE, it)
-                            AppPreferencesDataStore.syncToSharedPrefs(context)
+                            HookPreferenceMirror.publish(context)
                             notifySaved()
                         }
                     },
@@ -146,7 +147,7 @@ fun LiteSettingsScreen() {
                             if (normalized.isEmpty() || parseNonNegativeLongLite(normalized) != null) {
                                 scope.launch {
                                     AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, normalized)
-                                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                                    HookPreferenceMirror.publish(context)
                                 }
                             }
                         },
@@ -163,7 +164,7 @@ fun LiteSettingsScreen() {
                             if (normalized.isEmpty() || parseNonNegativeLongLite(normalized) != null) {
                                 scope.launch {
                                     AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL, normalized)
-                                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                                    HookPreferenceMirror.publish(context)
                                 }
                             }
                         },

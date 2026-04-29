@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
+import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
@@ -230,7 +231,7 @@ internal fun ComposeSettingsScreenShared(
                 PrefConst.KEY_SHOW_LAUNCHER_ICON,
                 launcherVisible,
             )
-            AppPreferencesDataStore.syncToSharedPrefs(context)
+            HookPreferenceMirror.publish(context)
         }
         settingsViewModel.setInternalFilesWritable()
         settingsDataLoaded = true
@@ -341,7 +342,7 @@ internal fun ComposeSettingsScreenShared(
                 true,
             )
         }
-        AppPreferencesDataStore.syncToSharedPrefs(context)
+        HookPreferenceMirror.publish(context)
         scope.launch {
             snackbarHostState.showSnackbar(context.getString(R.string.pref_sync_toast))
         }
@@ -636,7 +637,7 @@ internal fun ComposeSettingsScreenShared(
                                             PrefConst.KEY_SHOW_LAUNCHER_ICON,
                                             !visible,
                                         )
-                                        AppPreferencesDataStore.syncToSharedPrefs(context)
+                                        HookPreferenceMirror.publish(context)
                                     }
                                     scope.launch {
                                         snackbarHostState.showSnackbar(
@@ -765,7 +766,7 @@ internal fun ComposeSettingsScreenShared(
                                         PrefConst.KEY_SHOW_CODE_NOTIFICATION,
                                         false,
                                     )
-                                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                                    HookPreferenceMirror.publish(context)
                                     markPrefsSaved()
                                 }
                             } else {
@@ -1014,7 +1015,7 @@ internal fun ComposeSettingsScreenShared(
                 blurRadius.intValue = newVal
                 scope.launch {
                     AppPreferencesDataStore.setInt(context, PrefConst.KEY_HAZE_BLUR_RADIUS, newVal)
-                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                    HookPreferenceMirror.publish(context)
                     markPrefsSaved()
                 }
                 showBlurRadiusDialog = false
@@ -1056,7 +1057,7 @@ internal fun ComposeSettingsScreenShared(
                 tintAlpha.floatValue = it
                 scope.launch {
                     AppPreferencesDataStore.setFloat(context, PrefConst.KEY_HAZE_TINT_ALPHA, it)
-                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                    HookPreferenceMirror.publish(context)
                     markPrefsSaved()
                 }
                 showTintAlphaDialog = false
@@ -1184,7 +1185,7 @@ private fun SettingsDialogs(
             onAutoInputDelayChange(normalized)
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, normalized)
-                AppPreferencesDataStore.syncToSharedPrefs(context)
+                HookPreferenceMirror.publish(context)
                 onPendingSavedToast()
             }
             onShowAutoInputDialogChange(false)
@@ -1205,7 +1206,7 @@ private fun SettingsDialogs(
             onAutoInputIntervalChange(normalized)
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL, normalized)
-                AppPreferencesDataStore.syncToSharedPrefs(context)
+                HookPreferenceMirror.publish(context)
                 onPendingSavedToast()
             }
             onShowAutoInputIntervalDialogChange(false)
@@ -1220,7 +1221,7 @@ private fun SettingsDialogs(
             onRetentionTimeChange(value)
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, value)
-                AppPreferencesDataStore.syncToSharedPrefs(context)
+                HookPreferenceMirror.publish(context)
                 onPendingSavedToast()
             }
             onShowRetentionDialogChange(false)
@@ -1254,7 +1255,7 @@ private fun SettingsDialogs(
             onSmsKeywordsChange(updated)
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_SMSCODE_KEYWORDS, updated)
-                AppPreferencesDataStore.syncToSharedPrefs(context)
+                HookPreferenceMirror.publish(context)
                 onPendingSavedToast()
             }
             onShowKeywordsDialogChange(false)
@@ -1462,7 +1463,7 @@ fun SwitchItem(
         checkedState.value = checked
         scope.launch {
             AppPreferencesDataStore.setBoolean(context, key, checked)
-            AppPreferencesDataStore.syncToSharedPrefs(context)
+            HookPreferenceMirror.publish(context)
             if (onSaved != null) {
                 onSaved()
             } else {

@@ -1,6 +1,7 @@
 package com.github.magisk317.smscode.ui.app
 
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
+import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import io.github.libxposed.service.XposedService
 import io.github.libxposed.service.XposedServiceHelper
 import kotlinx.coroutines.CoroutineScope
@@ -18,7 +19,7 @@ internal object FlavorXposedServiceBridge {
                             frameworkVersion = service.frameworkVersion,
                         )
                         applicationScope.launch {
-                            AppPreferencesDataStore.syncToRemotePrefs(application)
+                            HookPreferenceMirror.publish(application)
                         }
                     }
 

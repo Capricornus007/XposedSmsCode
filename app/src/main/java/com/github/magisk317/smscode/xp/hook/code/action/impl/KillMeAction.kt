@@ -1,8 +1,9 @@
 package com.github.magisk317.smscode.xp.hook.code.action.impl
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
-import com.github.magisk317.smscode.data.prefs.PrefsProvider
+import com.github.magisk317.smscode.receiver.KillSelfControlReceiver
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
@@ -32,18 +33,17 @@ class KillMeAction(
 
     private fun requestSelfKillPrimary(): Boolean {
         return try {
-            val extras = Bundle().apply { putLong(PrefsProvider.EXTRA_DELAY_MS, 80L) }
-            val result = mPluginContext.contentResolver.call(
-                PrefsProvider.buildBoolUri(mPluginContext),
-                PrefsProvider.METHOD_KILL_SELF,
-                null,
-                extras,
-            )
-            val ok = result?.getBoolean(PrefsProvider.EXTRA_OK, false) ?: false
-            if (ok) {
-                XLog.w("KillMeAction primary requested via PrefsProvider")
+            val token = PrefsReader.getIpcToken(mPluginContext)
+            if (token.isBlank()) return false
+            val intent = Intent(KillSelfControlReceiver.ACTION_KILL_SELF).apply {
+                setClassName(mPluginContext.packageName, KillSelfControlReceiver::class.java.name)
+                addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+                putExtra(KillSelfControlReceiver.EXTRA_DELAY_MS, 80L)
+                putExtra(KillSelfControlReceiver.EXTRA_IPC_TOKEN, token)
             }
-            ok
+            mPluginContext.sendBroadcast(intent)
+            XLog.w("KillMeAction primary requested via KillSelfControlReceiver")
+            true
         } catch (e: Throwable) {
             XLog.w("KillMeAction primary failed: %s", e.message ?: e.javaClass.simpleName)
             false

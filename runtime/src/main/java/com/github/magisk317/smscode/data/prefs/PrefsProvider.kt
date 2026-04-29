@@ -8,7 +8,6 @@ import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
 import android.os.Binder
-import android.os.Build
 import android.os.Bundle
 import android.os.Process
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
@@ -85,39 +84,7 @@ class PrefsProvider : ContentProvider() {
             XLog.w("PrefsProvider: deny call method=%s uid=%d", method, Binder.getCallingUid())
             return null
         }
-        return when (method) {
-            METHOD_KILL_SELF -> {
-                val delayMs = extras?.getLong(EXTRA_DELAY_MS, 80L) ?: 80L
-                val processName = currentProcessName(ctx)
-                XLog.w(
-                    "PrefsProvider: kill self requested, delay=%dms callerUid=%d pid=%d process=%s",
-                    delayMs,
-                    Binder.getCallingUid(),
-                    Process.myPid(),
-                    processName,
-                )
-                Thread {
-                    try {
-                        Thread.sleep(delayMs)
-                    } catch (_: InterruptedException) {
-                        // ignore
-                    }
-                    XLog.w(
-                        "PrefsProvider: kill self now, callerUid=%d pid=%d process=%s",
-                        Binder.getCallingUid(),
-                        Process.myPid(),
-                        processName,
-                    )
-                    try {
-                        Process.killProcess(Process.myPid())
-                    } finally {
-                        runCatching { System.exit(0) }
-                    }
-                }.start()
-                Bundle().apply { putBoolean(EXTRA_OK, true) }
-            }
-            else -> super.call(method, arg, extras)
-        }
+        return super.call(method, arg, extras)
     }
 
     private fun isCallerAllowed(ctx: Context): Boolean {
@@ -144,17 +111,6 @@ class PrefsProvider : ContentProvider() {
         return false
     }
 
-    private fun currentProcessName(ctx: Context): String {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            return runCatching { android.app.Application.getProcessName() }
-                .getOrNull()
-                .orEmpty()
-                .ifBlank { ctx.applicationInfo?.processName.orEmpty() }
-                .ifBlank { ctx.packageName }
-        }
-        return ctx.applicationInfo?.processName ?: ctx.packageName
-    }
-
     private fun isSystemApp(context: Context, packageName: String): Boolean = try {
         val pm = context.packageManager
         val info = pm.getApplicationInfo(packageName, 0)
@@ -178,9 +134,6 @@ class PrefsProvider : ContentProvider() {
         private const val TYPE_STRING = 2
         private const val TYPE_INT = 3
         private const val COLUMN_VALUE = "value"
-        const val METHOD_KILL_SELF = "kill_self"
-        const val EXTRA_DELAY_MS = "delay_ms"
-        const val EXTRA_OK = "ok"
 
         fun authority(context: Context): String = "${context.packageName}.pref.provider"
 

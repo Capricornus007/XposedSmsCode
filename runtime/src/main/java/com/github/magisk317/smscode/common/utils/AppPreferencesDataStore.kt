@@ -248,9 +248,6 @@ object AppPreferencesDataStore {
         getInstance(context).edit { prefs ->
             prefs[backupCompatTipShownKey] = shown
         }
-        getSharedPrefs(context).edit().putBoolean(PrefConst.KEY_BACKUP_COMPAT_TIP_SHOWN, shown).apply()
-        ensureDataStoreReadable(context)
-        ensureSharedPrefsReadable(context)
     }
 
     suspend fun getBoolean(context: Context, key: String, defaultValue: Boolean): Boolean {
@@ -269,10 +266,6 @@ object AppPreferencesDataStore {
         getInstance(context).edit { prefs ->
             prefs[prefKey] = safeValue
         }
-        getSharedPrefs(context).edit().putBoolean(key, safeValue).apply()
-        ensureDataStoreReadable(context)
-        ensureSharedPrefsReadable(context)
-        syncToRemotePrefs(context)
     }
 
     suspend fun getString(context: Context, key: String, defaultValue: String): String {
@@ -287,10 +280,6 @@ object AppPreferencesDataStore {
         getInstance(context).edit { prefs ->
             prefs[prefKey] = value
         }
-        getSharedPrefs(context).edit().putString(key, value).apply()
-        ensureDataStoreReadable(context)
-        ensureSharedPrefsReadable(context)
-        syncToRemotePrefs(context)
     }
 
     suspend fun getInt(context: Context, key: String, defaultValue: Int): Int {
@@ -305,10 +294,6 @@ object AppPreferencesDataStore {
         getInstance(context).edit { prefs ->
             prefs[prefKey] = value
         }
-        getSharedPrefs(context).edit().putInt(key, value).apply()
-        ensureDataStoreReadable(context)
-        ensureSharedPrefsReadable(context)
-        syncToRemotePrefs(context)
     }
 
     suspend fun getFloat(context: Context, key: String, defaultValue: Float): Float {
@@ -323,10 +308,6 @@ object AppPreferencesDataStore {
         getInstance(context).edit { prefs ->
             prefs[prefKey] = value
         }
-        getSharedPrefs(context).edit().putFloat(key, value).apply()
-        ensureDataStoreReadable(context)
-        ensureSharedPrefsReadable(context)
-        syncToRemotePrefs(context)
     }
 
     suspend fun getBooleanCompat(context: Context, key: String, defaultValue: Boolean): Boolean {
