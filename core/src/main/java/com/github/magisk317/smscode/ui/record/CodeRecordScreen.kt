@@ -52,7 +52,7 @@ import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import io.github.magisk317.smscode.domain.utils.CodeRecordSimilarityUtils
+import io.github.magisk317.smscode.rule.utils.CodeRecordSimilarityUtils
 import com.github.magisk317.smscode.ui.common.AppIconImage
 import com.github.magisk317.smscode.ui.common.LoadingIndicatorTokens
 import com.github.magisk317.smscode.ui.common.LocalSnackbarHostState
