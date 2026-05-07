@@ -11,7 +11,7 @@ buildscript {
     configurations.all {
         resolutionStrategy {
             // BEGIN AUTO FORCED DEPENDENCIES (managed by workflow)
-            force("io.netty:netty-codec:4.1.125.Final")
+            force("io.netty:netty-codec:4.1.133.Final")
             force("io.netty:netty-codec-http:4.1.133.Final")
             force("io.netty:netty-codec-http2:4.1.133.Final")
             force("io.netty:netty-common:4.1.118.Final")
@@ -118,7 +118,7 @@ subprojects {
         resolutionStrategy {
             force(catalog.apache.httpclient)
             // BEGIN AUTO FORCED DEPENDENCIES (managed by workflow)
-            force("io.netty:netty-codec:4.1.125.Final")
+            force("io.netty:netty-codec:4.1.133.Final")
             force("io.netty:netty-codec-http:4.1.133.Final")
             force("io.netty:netty-codec-http2:4.1.133.Final")
             force("io.netty:netty-common:4.1.118.Final")
