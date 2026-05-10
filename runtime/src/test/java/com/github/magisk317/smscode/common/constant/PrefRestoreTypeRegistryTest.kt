@@ -18,6 +18,11 @@ class PrefRestoreTypeRegistryTest {
     }
 
     @Test
+    fun typeOf_runtimeLogRetentionDays_isInt() {
+        assertEquals(PrefValueType.INT, PrefRestoreTypeRegistry.typeOf(PrefConst.KEY_RUNTIME_LOG_RETENTION_DAYS))
+    }
+
+    @Test
     fun typeOf_unknownKey_defaultsToString() {
         assertEquals(PrefValueType.STRING, PrefRestoreTypeRegistry.typeOf("unknown_pref_key"))
     }

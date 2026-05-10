@@ -95,6 +95,14 @@ object AppPreferencesDataStore {
             getBoolean(context, PrefConst.KEY_SETTINGS_ACCORDION_MODE, true),
         )
         editor.putBoolean(PrefConst.KEY_VERBOSE_LOG_MODE, getBoolean(context, PrefConst.KEY_VERBOSE_LOG_MODE, false))
+        editor.putInt(
+            PrefConst.KEY_RUNTIME_LOG_RETENTION_DAYS,
+            getInt(
+                context,
+                PrefConst.KEY_RUNTIME_LOG_RETENTION_DAYS,
+                PrefConst.RUNTIME_LOG_RETENTION_DAYS_DEFAULT,
+            ).coerceAtLeast(PrefConst.RUNTIME_LOG_RETENTION_DAYS_MIN),
+        )
         editor.putBoolean(
             PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE,
             getBoolean(context, PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE, false),

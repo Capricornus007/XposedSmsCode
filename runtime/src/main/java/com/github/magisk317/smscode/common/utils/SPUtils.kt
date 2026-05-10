@@ -8,6 +8,7 @@ object SPUtils {
     // 本地的版本号
     private const val LOCAL_VERSION_CODE = "local_version_code"
     private const val LOCAL_VERSION_CODE_DEFAULT = 16
+    private const val UI_KIT_STYLE_MATERIAL = 0
 
     /**
      * 获取本地记录的版本号
@@ -60,8 +61,7 @@ object SPUtils {
         AppPreferencesDataStore.setInt(context, PrefConst.KEY_CHOOSE_THEME, mode)
     }
 
-    suspend fun getUiKitStyle(context: Context): Int =
-        AppPreferencesDataStore.getInt(context, PrefConst.KEY_UI_KIT_STYLE, 0)
+    suspend fun getUiKitStyle(context: Context): Int = UI_KIT_STYLE_MATERIAL
 
     suspend fun setUiKitStyle(context: Context, style: Int) {
         AppPreferencesDataStore.setInt(context, PrefConst.KEY_UI_KIT_STYLE, style)

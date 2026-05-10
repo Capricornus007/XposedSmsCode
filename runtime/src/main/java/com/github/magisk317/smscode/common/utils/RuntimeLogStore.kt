@@ -3,9 +3,15 @@ package com.github.magisk317.smscode.common.utils
 import android.content.Context
 import java.io.File
 import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogEntry as SharedRuntimeLogEntry
+import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogFileContent as SharedRuntimeLogFileContent
+import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogFileInfo as SharedRuntimeLogFileInfo
+import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogFileSummary as SharedRuntimeLogFileSummary
 import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogStore as SharedRuntimeLogStore
 
 typealias RuntimeLogEntry = SharedRuntimeLogEntry
+typealias RuntimeLogFileContent = SharedRuntimeLogFileContent
+typealias RuntimeLogFileInfo = SharedRuntimeLogFileInfo
+typealias RuntimeLogFileSummary = SharedRuntimeLogFileSummary
 
 object RuntimeLogStore {
     const val ROUTE_SMS_HOOK = SharedRuntimeLogStore.ROUTE_SMS_HOOK
@@ -32,6 +38,16 @@ object RuntimeLogStore {
         return SharedRuntimeLogStore.isEnabled()
     }
 
+    fun setRetentionDays(days: Int) {
+        RuntimeDiagnosticsBridge.ensureInstalled()
+        SharedRuntimeLogStore.setRetentionDays(days)
+    }
+
+    @Deprecated("Use setRetentionDays; runtime logs now rotate by day.")
+    fun setMaxFileSizeMb(sizeMb: Int) {
+        setRetentionDays(sizeMb)
+    }
+
     fun append(priority: Int, tag: String, message: String, force: Boolean = false) {
         RuntimeDiagnosticsBridge.ensureInstalled()
         SharedRuntimeLogStore.append(priority, tag, message, force, ROUTE_APP)
@@ -55,5 +71,20 @@ object RuntimeLogStore {
     fun exportToFile(context: Context, minutes: Int?, keyword: String?, limit: Int = 1200): File? {
         RuntimeDiagnosticsBridge.ensureInstalled()
         return SharedRuntimeLogStore.exportToFile(context, minutes, keyword, limit)
+    }
+
+    fun summarizeFiles(): RuntimeLogFileSummary {
+        RuntimeDiagnosticsBridge.ensureInstalled()
+        return SharedRuntimeLogStore.summarizeFiles()
+    }
+
+    fun readLogFile(name: String, maxLines: Int = 2000): RuntimeLogFileContent? {
+        RuntimeDiagnosticsBridge.ensureInstalled()
+        return SharedRuntimeLogStore.readLogFile(name, maxLines)
+    }
+
+    fun deleteLegacyTextLogFiles(context: Context? = null): Int {
+        RuntimeDiagnosticsBridge.ensureInstalled()
+        return SharedRuntimeLogStore.deleteLegacyTextLogFiles(context)
     }
 }
