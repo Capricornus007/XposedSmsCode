@@ -6,7 +6,9 @@
 
 ## [v3.2.9] - Incoming
 - 版本：`versionCode 114` / `versionName 3.2.9`。
-- 正在开发中...
+- `[rules]` 接入外置 `smscode-rules` 官方规则目录：APK 内置离线快照，运行时支持远程刷新、本地缓存与只读展示。
+- `[rules]` 验证码解析规则改为“用户自定义规则优先、官方规则按优先级、内置通用兜底”的分层合并模型；用户规则导入导出继续保持旧格式。
+- `[build]` 新增 `smscode-rules` 内容型子模块并打包 generated assets，同时移除兼容门禁里已不存在的 `magisk-ui-kit` screenshot 验证任务。
 
 ---
 

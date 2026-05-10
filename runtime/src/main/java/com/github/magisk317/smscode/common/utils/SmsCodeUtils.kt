@@ -7,6 +7,10 @@ import com.github.magisk317.smscode.feature.store.EntityStoreManager
 import com.github.magisk317.smscode.feature.store.EntityType
 import io.github.magisk317.smscode.domain.model.SmsCodeParseResult
 import io.github.magisk317.smscode.domain.model.SmsCodeRuleSpec
+import io.github.magisk317.smscode.runtime.common.rules.SmsCodeRuleCatalogRefreshResult
+import io.github.magisk317.smscode.runtime.common.rules.SmsCodeRuleCatalogRepository
+import io.github.magisk317.smscode.runtime.common.rules.SmsCodeRuleCatalogSnapshot
+import io.github.magisk317.smscode.runtime.common.rules.SmsCodeRuleMerger
 import io.github.magisk317.smscode.runtime.common.sms.RuntimeSmsCodeAdapter
 import io.github.magisk317.smscode.runtime.common.sms.SmsCodeRuleProvider
 import io.github.magisk317.smscode.runtime.common.sms.SmsKeywordProvider
@@ -22,7 +26,7 @@ object SmsCodeUtils {
             override ?: PrefsReader.getSMSCodeKeywords(context).orEmpty()
         },
         ruleProvider = SmsCodeRuleProvider { context ->
-            queryAllSmsCodeRules(context).map { it.toSpec() }
+            loadMergedRuleSpecs(context)
         },
         labelResolver = SmsPackageLabelResolver { context, label ->
             resolvePackageNameByLabel(context, label)
@@ -45,6 +49,19 @@ object SmsCodeUtils {
 
     fun findPackageNameByLabel(context: Context, label: String?): String? {
         return adapter.findPackageNameByLabel(context, label)
+    }
+
+    suspend fun loadOfficialRuleSnapshot(context: Context): SmsCodeRuleCatalogSnapshot {
+        return catalogRepository(context).loadOfficialRules().also(::logRejectedOfficialRules)
+    }
+
+    suspend fun refreshOfficialRules(context: Context): SmsCodeRuleCatalogRefreshResult {
+        return catalogRepository(context).refreshOfficialRules().also { result ->
+            result.snapshot?.let(::logRejectedOfficialRules)
+            if (!result.success) {
+                XLog.w("Refresh official SmsCode rules failed: %s", result.errorMessage ?: "unknown")
+            }
+        }
     }
 
     private fun resolvePackageNameByLabel(context: Context, label: String): String? {
@@ -136,4 +153,31 @@ object SmsCodeUtils {
             codeKeyword = codeKeyword,
             codeRegex = codeRegex,
         )
+
+    private suspend fun loadMergedRuleSpecs(context: Context): List<SmsCodeRuleSpec> {
+        val userRules = queryAllSmsCodeRules(context).map { it.toSpec() }
+        val officialSnapshot = loadOfficialRuleSnapshot(context)
+        return SmsCodeRuleMerger.merge(
+            userRules = userRules,
+            officialRules = officialSnapshot.rules,
+        )
+    }
+
+    private fun catalogRepository(context: Context): SmsCodeRuleCatalogRepository {
+        val appContext = context.applicationContext ?: context
+        return SmsCodeRuleCatalogRepository(
+            context = appContext,
+            userAgent = "XposedSmsCode/SmsCodeRules",
+        )
+    }
+
+    private fun logRejectedOfficialRules(snapshot: SmsCodeRuleCatalogSnapshot) {
+        if (snapshot.rejectedRules.isEmpty()) return
+        XLog.w(
+            "Official SmsCode rules rejected: source=%s count=%d first=%s",
+            snapshot.sourceKind.name,
+            snapshot.rejectedRules.size,
+            snapshot.rejectedRules.first(),
+        )
+    }
 }

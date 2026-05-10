@@ -53,7 +53,7 @@ Welcome any feedbacks.
 - Delete verification SMS when it's extracted successfully (experimental).
 - Block verification SMS if it's extracted successfully.
 - Custom keywords about verification code message (regular expressions allowed).
-- Support the SMS code match rules customization, importation and exportation.
+- Support official read-only SMS code rules plus custom match rules with user-rule import/export.
 - Auto-input SMS code.
 - **Compatible with Android 7+ and continuously optimized for newer Android versions**
 - **Material Design 3 (MD3) + Material You Dynamic Color**

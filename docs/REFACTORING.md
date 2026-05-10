@@ -34,11 +34,17 @@
 - `verification-core` 放共享编排与 helper
 - `xposed-core` 放共享 hook infra / system input / fallback policy
 
+### `smscode-rules`
+- 内容型子模块，提供官方验证码规则快照与远程目录结构
+- 仅通过 generated assets 打入 APK，不作为 Gradle/Kotlin 代码模块参与编译
+- 官方规则只读展示，用户自定义规则仍由本地 DB、备份、导入导出链路承载
+
 ## 依赖方向
 
 - `app -> core, runtime, smscode-core:*`
 - `core -> runtime, magisk-ui-kit, smscode-core:domain`
 - `runtime -> smscode-core:domain, smscode-core:xposed-core`
+- `smscode-rules` 不参与 Kotlin 依赖图，只作为 APK assets 输入
 
 约束：
 - `core` 不得直接依赖 runtime 的 DB/update 实现类

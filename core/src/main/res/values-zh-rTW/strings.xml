@@ -7,6 +7,7 @@
 
     <string name="confirm">確定</string>
     <string name="cancel">取消</string>
+    <string name="action_refresh">刷新</string>
 
 
     <!-- general end -->
@@ -267,6 +268,12 @@
     <string name="create_rule">新建規則</string>
     <string name="edit_rule">編輯規則</string>
     <string name="rule_list_empty_prompt">暫無規則，點擊 + 添加。</string>
+    <string name="official_code_rules_title">官方驗證碼規則</string>
+    <string name="official_code_rules_summary">已從 smscode-rules 載入 %1$d 條規則（%2$s），可刷新拉取最新規則。</string>
+    <string name="official_code_rules_empty_prompt">暫未載入官方規則，點擊刷新拉取規則目錄。</string>
+    <string name="official_code_rules_refresh_success">官方規則已刷新。</string>
+    <string name="official_code_rules_refresh_failed">刷新失敗，繼續使用快取或內建規則。</string>
+    <string name="official_rule_badge_format">官方規則%1$d</string>
     <string name="rule_company_placeholder">例如: 驗證碼</string>
     <string name="builtin_code_rules_title">內建規則（唯讀）</string>
     <string name="builtin_code_rules_summary">預設解析規則會展示在這裡供參考。它們會使用「關鍵字」設定作為錨點，並繼續套用近關鍵字優先、去空白重試與日期時間排除。</string>

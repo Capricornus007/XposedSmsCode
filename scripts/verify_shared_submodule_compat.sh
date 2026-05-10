@@ -7,7 +7,6 @@ cd "$ROOT_DIR"
 
 bash scripts/with_workspace_gradle_lock.sh \
   :smscode-core:smscode-domain:testDebugUnitTest \
-  :magisk-ui-kit:validateDebugScreenshotTest \
   :core:testGithubApi101DebugUnitTest \
   :core:compileGithubApi101DebugKotlin \
   :app:check
