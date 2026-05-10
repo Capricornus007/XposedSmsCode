@@ -39,10 +39,10 @@ class AutoInputAction(
             dispatchDelayMs = dispatchDelayMs,
             deduplicateReader = PrefsReader::deduplicateSms,
             sharedGateClaimer = { context, fileName, key, windowMs, maxEntries ->
-                SharedRuntimeGate.claimWithinWindow(
+                SharedRuntimeGate.claimAllWithinWindow(
                     context = context,
                     fileName = fileName,
-                    key = key,
+                    keys = key,
                     windowMs = windowMs,
                     maxEntries = maxEntries,
                 ).toShared()
