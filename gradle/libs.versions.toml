@@ -52,7 +52,6 @@ timber = "5.0.1"
 libxposed-api = "101.0.1"
 libxposed-service = "101.0.0"
 miuix = "0.8.8"
-screenshot-validation = "0.0.1-alpha14"
 
 
 [libraries]
@@ -111,7 +110,6 @@ timber = { module = "com.jakewharton.timber:timber", version.ref = "timber" }
 libxposed-api = { module = "io.github.libxposed:api", version.ref = "libxposed-api" }
 libxposed-service = { module = "io.github.libxposed:service", version.ref = "libxposed-service" }
 miuix = { module = "top.yukonga.miuix.kmp:miuix", version.ref = "miuix" }
-screenshot-validation = { module = "com.android.tools.screenshot:screenshot-validation-api", version.ref = "screenshot-validation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
