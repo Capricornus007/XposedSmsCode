@@ -29,7 +29,9 @@ jobs:
       )
     steps:
       - name: Enable auto-merge for dependency PRs
-        run: gh pr merge --auto --merge --delete-branch "$PR_URL"
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{ secrets.GH_PAT != '' && secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          test -n "$GH_TOKEN"
+          gh pr merge --auto --merge --delete-branch "$PR_URL"
