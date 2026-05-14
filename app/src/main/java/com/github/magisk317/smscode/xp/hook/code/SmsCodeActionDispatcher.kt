@@ -26,6 +26,7 @@ internal object SmsCodeActionDispatcher {
         smsMsg: SmsMsg,
         eventId: String,
         plan: SmsCodePostParseCoordinator.ParsedSmsPlan,
+        attemptId: Long? = null,
     ) {
         SharedSmsCodeActionDispatcher.dispatchParsedSmsActions(
             uiHandler = uiHandler,
@@ -38,8 +39,8 @@ internal object SmsCodeActionDispatcher {
             uiDispatcher = { handler, plugin, phone, message, uiPlan ->
                 dispatchUiActions(handler, plugin, phone, message.raw, uiPlan)
             },
-            autoInputScheduler = { scheduledExecutor, plugin, phone, message, delayMs, deduplicateEnabled ->
-                scheduleAutoInput(scheduledExecutor, plugin, phone, message.raw, delayMs, deduplicateEnabled)
+            autoInputScheduler = { scheduledExecutor, plugin, phone, message, delayMs, deduplicateEnabled, _ ->
+                scheduleAutoInput(scheduledExecutor, plugin, phone, message.raw, delayMs, deduplicateEnabled, attemptId)
             },
             notificationScheduler = { scheduledExecutor, plugin, phone, message, notificationPlan ->
                 scheduleNotification(scheduledExecutor, plugin, phone, message.raw, notificationPlan)
@@ -60,8 +61,8 @@ internal object SmsCodeActionDispatcher {
         smsMsg: SmsMsg,
         eventId: String,
         plan: SmsCodePostParseCoordinator.ObservedSmsPlan,
-        autoInputRunner: (Context, Context, SmsMsg, Boolean) -> Unit = ::runAutoInputNow,
-        autoInputScheduler: (ScheduledExecutorService, Context, Context, SmsMsg, Long, Boolean) -> Unit = ::scheduleAutoInput,
+        autoInputRunner: (Context, Context, SmsMsg, Boolean, Long?) -> Unit = ::runAutoInputNow,
+        autoInputScheduler: (ScheduledExecutorService, Context, Context, SmsMsg, Long, Boolean, Long?) -> Unit = ::scheduleAutoInput,
         recordRunner: (Context, Context, SmsMsg, String, Boolean) -> Unit = ::runRecordNow,
     ) {
         SharedSmsCodeActionDispatcher.dispatchObservedSmsActions(
@@ -71,11 +72,11 @@ internal object SmsCodeActionDispatcher {
             smsMsg = smsMsg.toVerificationMessage(),
             eventId = eventId,
             plan = plan,
-            autoInputRunner = { plugin, phone, message, deduplicateEnabled ->
-                autoInputRunner(plugin, phone, message.raw, deduplicateEnabled)
+            autoInputRunner = { plugin, phone, message, deduplicateEnabled, attemptId ->
+                autoInputRunner(plugin, phone, message.raw, deduplicateEnabled, attemptId)
             },
-            autoInputScheduler = { scheduledExecutor, plugin, phone, message, delayMs, deduplicateEnabled ->
-                autoInputScheduler(scheduledExecutor, plugin, phone, message.raw, delayMs, deduplicateEnabled)
+            autoInputScheduler = { scheduledExecutor, plugin, phone, message, delayMs, deduplicateEnabled, attemptId ->
+                autoInputScheduler(scheduledExecutor, plugin, phone, message.raw, delayMs, deduplicateEnabled, attemptId)
             },
             recordRunner = { plugin, phone, message, recordEventId, deduplicateEnabled ->
                 recordRunner(plugin, phone, message.raw, recordEventId, deduplicateEnabled)
@@ -113,6 +114,7 @@ internal object SmsCodeActionDispatcher {
         phoneContext: Context,
         smsMsg: SmsMsg,
         deduplicateEnabled: Boolean,
+        attemptId: Long? = null,
     ) {
         if (!claimAutoInputDispatch(pluginContext, smsMsg, delayMs = 0L)) {
             return
@@ -123,6 +125,7 @@ internal object SmsCodeActionDispatcher {
             smsMsg = smsMsg,
             deduplicateEnabled = deduplicateEnabled,
             dispatchDelayMs = 0L,
+            attemptId = attemptId,
         ).call()
     }
 
@@ -133,6 +136,7 @@ internal object SmsCodeActionDispatcher {
         smsMsg: SmsMsg,
         delayMs: Long,
         deduplicateEnabled: Boolean,
+        attemptId: Long? = null,
     ) {
         if (!claimAutoInputDispatch(pluginContext, smsMsg, delayMs)) {
             return
@@ -144,6 +148,7 @@ internal object SmsCodeActionDispatcher {
                 smsMsg = smsMsg,
                 deduplicateEnabled = deduplicateEnabled,
                 dispatchDelayMs = delayMs,
+                attemptId = attemptId,
             ),
             delayMs,
             TimeUnit.MILLISECONDS,

@@ -27,6 +27,7 @@ class AutoInputAction(
     smsMsg: SmsMsg,
     private val deduplicateEnabled: Boolean? = null,
     private val dispatchDelayMs: Long = 0L,
+    private val attemptId: Long? = null,
 ) :
     CallableAction(pluginContext, phoneContext, smsMsg) {
 
@@ -51,7 +52,7 @@ class AutoInputAction(
             autoEnterReader = PrefsReader::autoEnterCodeEnabled,
             inputIntervalReader = PrefsReader::getAutoInputCodeIntervalMs,
             inputSender = { context, code, autoEnter, inputIntervalMs, _ ->
-                InputHelper.sendText(context, code, autoEnter, inputIntervalMs)
+                InputHelper.sendText(context, code, autoEnter, inputIntervalMs, attemptId)
             },
         ).run()
         return null

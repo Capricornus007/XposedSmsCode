@@ -316,6 +316,6 @@ class AutoInputAccessibilityService : AccessibilityService() {
     )
 
     private companion object {
-        private const val RECEIVER_PRIORITY_ACCESSIBILITY = 1000
+        private const val RECEIVER_PRIORITY_ACCESSIBILITY = -500
     }
 }
