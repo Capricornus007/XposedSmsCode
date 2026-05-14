@@ -28,7 +28,6 @@ android {
         buildConfigField("String", "APPLICATION_ID", "\"com.github.tianma8023.xposed.smscode\"")
         buildConfigField("boolean", "IS_LITE_BUILD", "true")
         buildConfigField("String", "B_DOWNLOAD_URL", "\"$relayDownloadUrl\"")
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
 
@@ -92,10 +91,6 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.mokkery.runtime.jvm)
-
-    androidTestImplementation(libs.androidx.test.core.ktx)
-    androidTestImplementation(libs.androidx.test.runner)
-    androidTestImplementation(libs.androidx.test.ext.junit)
 }
 
 val verifyNoComposeUiLeak by tasks.registering {
