@@ -52,7 +52,23 @@ jobs:
         run: |
           snapshot="${{ steps.dependency-graph.outputs.dependency-graph-file }}"
           test -n "${snapshot}"
-          gh api \
-            --method POST \
-            "/repos/${GITHUB_REPOSITORY}/dependency-graph/snapshots" \
-            --input "${snapshot}"
+
+          max_retries=3
+          attempt=0
+          while [ $((++attempt)) -le "$max_retries" ]; do
+            if gh api \
+              --method POST \
+              "/repos/${GITHUB_REPOSITORY}/dependency-graph/snapshots" \
+              --input "${snapshot}"; then
+              echo "Dependency graph submitted successfully (attempt $attempt/$max_retries)."
+              exit 0
+            fi
+            if [ "$attempt" -lt "$max_retries" ]; then
+              delay=$((attempt * 10))
+              echo "Submit failed (attempt $attempt/$max_retries). Retrying in ${delay}s..."
+              sleep "$delay"
+            fi
+          done
+
+          echo "Failed to submit dependency graph after $max_retries attempts."
+          exit 1
