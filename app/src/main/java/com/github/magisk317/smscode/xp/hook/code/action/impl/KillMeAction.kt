@@ -7,7 +7,6 @@ import android.content.IntentFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import androidx.core.content.ContextCompat
 import com.github.magisk317.smscode.receiver.KillSelfControlReceiver
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import io.github.magisk317.smscode.xposed.hook.system.SystemInputInjectorHook
@@ -93,7 +92,7 @@ class KillMeAction(
         val receiver = receiverToRegister ?: return
         runCatching {
             val filter = IntentFilter(SystemInputInjectorHook.resolveActionAutoInputResult())
-            mPhoneContext.registerReceiver(receiver, filter, ContextCompat.RECEIVER_EXPORTED)
+            mPhoneContext.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED)
         }.onSuccess {
             XLog.w(
                 "KillMeAction: auto-input result receiver armed: attemptId=%d",

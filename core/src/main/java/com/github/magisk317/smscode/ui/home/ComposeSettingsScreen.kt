@@ -1420,15 +1420,14 @@ private fun formatLogTimestamp(timestamp: Long): String {
 }
 
 private fun formatLogSize(bytes: Long): String {
-    if (bytes < 1024L) return "$bytes B"
-    val units = listOf("KB", "MB", "GB")
-    var value = bytes.toDouble() / 1024.0
+    if (bytes < BYTES_PER_KIB) return "$bytes B"
+    var value = bytes.toDouble() / BYTES_PER_KIB.toDouble()
     var unitIndex = 0
-    while (value >= 1024.0 && unitIndex < units.lastIndex) {
-        value /= 1024.0
+    while (value >= BYTES_PER_KIB.toDouble() && unitIndex < LOG_SIZE_UNITS.lastIndex) {
+        value /= BYTES_PER_KIB.toDouble()
         unitIndex += 1
     }
-    return String.format(Locale.getDefault(), "%.1f %s", value, units[unitIndex])
+    return String.format(Locale.getDefault(), "%.1f %s", value, LOG_SIZE_UNITS[unitIndex])
 }
 
 private fun handleSettingsEvent(
@@ -1769,6 +1768,8 @@ private fun ExpandableSettingsSection(
 
 private const val AUTO_INPUT_ACCESSIBILITY_SERVICE_CLASS_NAME =
     "com.github.magisk317.smscode.service.AutoInputAccessibilityService"
+private const val BYTES_PER_KIB = 1024L
+private val LOG_SIZE_UNITS = listOf("KB", "MB", "GB")
 
 private fun isAutoInputAccessibilityServiceEnabled(context: android.content.Context): Boolean {
     val expectedService = ComponentName(
