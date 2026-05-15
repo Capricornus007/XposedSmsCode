@@ -71,14 +71,16 @@ class CodeWorker(
         }
         val notificationAutoCancelDelayMs = plan.notificationPlan?.autoCancelDelayMs
         val killDelayMs = maxOf(autoInputDelayMs + 1500L, 2500L)
+        val killMeAction = KillMeAction(
+            pluginContext = pluginContext,
+            phoneContext = phoneContext,
+            smsMsg = smsMsg,
+            attemptId = attemptId,
+            notificationAutoCancelDelayMs = notificationAutoCancelDelayMs,
+        )
+        killMeAction.armAutoInputResultListener()
         executor.schedule(
-            KillMeAction(
-                pluginContext = pluginContext,
-                phoneContext = phoneContext,
-                smsMsg = smsMsg,
-                attemptId = attemptId,
-                notificationAutoCancelDelayMs = notificationAutoCancelDelayMs,
-            ),
+            killMeAction,
             killDelayMs,
             TimeUnit.MILLISECONDS,
         )

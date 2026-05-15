@@ -27,76 +27,147 @@ class KillMeAction(
     private var mResultReceiver: BroadcastReceiver? = null
     private var mTimeoutRunnable: Runnable? = null
     private val mKillLock = Any()
+    private var mActionStarted = false
+    private var mWaitResolved = false
+    private var mWaitResolveSuccess = false
+    private var mWaitResolveReason = "pending"
+    private var mKillChainStarted = false
+
+    fun armAutoInputResultListener() {
+        if (attemptId == null) return
+        ensureAutoInputResultListenerArmed()
+    }
 
     override fun action(): Bundle? {
-        if (attemptId != null) {
-            waitForAutoInputResult()
-        } else {
+        if (attemptId == null) {
             killMe()
+            return null
+        }
+
+        ensureAutoInputResultListenerArmed()
+        val resolved = synchronized(mKillLock) {
+            mActionStarted = true
+            if (!mWaitResolved) {
+                armWaitTimeoutLocked()
+            }
+            mWaitResolved
+        }
+        if (resolved) {
+            startKillChainIfNeeded()
+        } else {
+            XLog.w(
+                "KillMeAction: waiting for auto-input result: attemptId=%d timeoutMs=%d",
+                attemptId,
+                KILL_RESULT_TIMEOUT_MS,
+            )
         }
         return null
     }
 
-    private fun waitForAutoInputResult() {
-        mResultReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                if (intent.action != SystemInputInjectorHook.resolveActionAutoInputResult()) return
-                if (intent.getLongExtra("attemptId", -1L) != attemptId) return
-
-                val success = intent.getBooleanExtra("success", false)
-                XLog.w(
-                    "KillMeAction: auto-input result received: attemptId=%d success=%s reason=%s",
-                    attemptId,
-                    success,
-                    intent.getStringExtra("reason").orEmpty().ifBlank { "n/a" },
-                )
-                handleAutoInputResult()
+    private fun ensureAutoInputResultListenerArmed() {
+        val resolvedAttemptId = attemptId ?: return
+        var receiverToRegister: BroadcastReceiver? = null
+        synchronized(mKillLock) {
+            if (mWaitResolved || mResultReceiver != null) {
+                return
             }
-        }
+            mResultReceiver = object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    if (intent.action != SystemInputInjectorHook.resolveActionAutoInputResult()) return
+                    if (intent.getLongExtra("attemptId", -1L) != resolvedAttemptId) return
 
-        mHandler.post {
-            synchronized(mKillLock) {
-                val receiver = mResultReceiver ?: return@post
-                runCatching {
-                    val filter = IntentFilter(SystemInputInjectorHook.resolveActionAutoInputResult())
-                    mPhoneContext.registerReceiver(receiver, filter, ContextCompat.RECEIVER_EXPORTED)
-                    val timeout = Runnable { handleAutoInputTimeout(receiver) }
-                    mTimeoutRunnable = timeout
-                    mHandler.postDelayed(timeout, KILL_RESULT_TIMEOUT_MS)
-                }.onFailure { error ->
+                    val success = intent.getBooleanExtra("success", false)
+                    val reason = intent.getStringExtra("reason").orEmpty().ifBlank { "n/a" }
                     XLog.w(
-                        "KillMeAction: result receiver registration failed: %s",
-                        error.message ?: error.javaClass.simpleName,
+                        "KillMeAction: auto-input result received: attemptId=%d success=%s reason=%s",
+                        resolvedAttemptId,
+                        success,
+                        reason,
                     )
-                    proceedWithKillChain()
+                    resolveAutoInputWait(success, reason)
                 }
             }
+            receiverToRegister = mResultReceiver
+        }
+
+        val receiver = receiverToRegister ?: return
+        runCatching {
+            val filter = IntentFilter(SystemInputInjectorHook.resolveActionAutoInputResult())
+            mPhoneContext.registerReceiver(receiver, filter, ContextCompat.RECEIVER_EXPORTED)
+        }.onSuccess {
+            XLog.w(
+                "KillMeAction: auto-input result receiver armed: attemptId=%d",
+                resolvedAttemptId,
+            )
+        }.onFailure { error ->
+            XLog.w(
+                "KillMeAction: result receiver registration failed: %s",
+                error.message ?: error.javaClass.simpleName,
+            )
+            resolveAutoInputWait(success = false, reason = "receiver_register_failed")
         }
     }
 
-    private fun handleAutoInputResult() {
-        val receiver = synchronized(mKillLock) {
-            mResultReceiver.also { mResultReceiver = null }
-        } ?: return
-
-        mTimeoutRunnable?.let { mHandler.removeCallbacks(it) }
-        mTimeoutRunnable = null
-        runCatching { mPhoneContext.unregisterReceiver(receiver) }
-            .onFailure { XLog.w("KillMeAction: unregister result receiver failed") }
-
-        proceedWithKillChain()
+    private fun armWaitTimeoutLocked() {
+        if (mTimeoutRunnable != null || mWaitResolved) return
+        val timeout = Runnable {
+            XLog.w(
+                "KillMeAction: auto-input result timeout (%d ms), proceeding with kill",
+                KILL_RESULT_TIMEOUT_MS,
+            )
+            resolveAutoInputWait(success = false, reason = "timeout")
+        }
+        mTimeoutRunnable = timeout
+        mHandler.postDelayed(timeout, KILL_RESULT_TIMEOUT_MS)
     }
 
-    private fun handleAutoInputTimeout(receiver: BroadcastReceiver) {
-        val removed = synchronized(mKillLock) {
-            mResultReceiver.also { mResultReceiver = null }
-        } ?: return
+    private fun resolveAutoInputWait(success: Boolean, reason: String) {
+        var receiverToUnregister: BroadcastReceiver? = null
+        var shouldStartKillChain = false
+        val normalizedReason = reason.ifBlank { "n/a" }
+        synchronized(mKillLock) {
+            if (mWaitResolved) return
+            mWaitResolved = true
+            mWaitResolveSuccess = success
+            mWaitResolveReason = normalizedReason
+            receiverToUnregister = mResultReceiver.also { mResultReceiver = null }
+            mTimeoutRunnable?.let { mHandler.removeCallbacks(it) }
+            mTimeoutRunnable = null
+            shouldStartKillChain = mActionStarted
+        }
 
-        mTimeoutRunnable = null
-        runCatching { mPhoneContext.unregisterReceiver(removed) }
-            .onFailure { XLog.w("KillMeAction: unregister timed-out receiver failed") }
+        receiverToUnregister?.let { receiver ->
+            runCatching { mPhoneContext.unregisterReceiver(receiver) }
+                .onFailure { XLog.w("KillMeAction: unregister result receiver failed") }
+        }
 
-        XLog.w("KillMeAction: auto-input result timeout (%d ms), proceeding with kill", KILL_RESULT_TIMEOUT_MS)
+        if (shouldStartKillChain) {
+            XLog.w(
+                "KillMeAction: auto-input wait resolved: attemptId=%d success=%s reason=%s",
+                attemptId ?: -1L,
+                success,
+                normalizedReason,
+            )
+            startKillChainIfNeeded()
+        }
+    }
+
+    private fun startKillChainIfNeeded() {
+        val shouldStart = synchronized(mKillLock) {
+            if (mKillChainStarted) {
+                false
+            } else {
+                mKillChainStarted = true
+                true
+            }
+        }
+        if (!shouldStart) return
+        XLog.w(
+            "KillMeAction: start kill chain: attemptId=%d success=%s reason=%s",
+            attemptId ?: -1L,
+            mWaitResolveSuccess,
+            mWaitResolveReason,
+        )
         proceedWithKillChain()
     }
 
