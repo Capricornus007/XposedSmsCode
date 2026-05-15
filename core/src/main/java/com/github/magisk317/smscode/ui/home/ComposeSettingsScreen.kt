@@ -1598,8 +1598,8 @@ private fun SettingsDialogs(
             singleLine = false,
             maxLines = 8,
         ) { value ->
-            onSmsTestInputChange(value)
             settingsViewModel.performSmsCodeTest(value)
+            onSmsTestInputChange("")
             onShowSmsTestDialogChange(false)
         }
     }
