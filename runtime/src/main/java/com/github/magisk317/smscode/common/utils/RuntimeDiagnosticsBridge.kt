@@ -9,7 +9,7 @@ import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeDiagnostics
 
 internal object RuntimeDiagnosticsBridge {
     private const val KEY_RUNTIME_LOG_RETENTION_DAYS = "pref_runtime_log_retention_days"
-    private const val RUNTIME_LOG_RETENTION_DAYS_DEFAULT = 7
+    private const val RUNTIME_LOG_RETENTION_DAYS_DEFAULT = 2
     private const val RUNTIME_LOG_RETENTION_DAYS_MIN = 1
 
     @Volatile

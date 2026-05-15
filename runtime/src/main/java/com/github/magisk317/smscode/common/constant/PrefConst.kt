@@ -73,7 +73,7 @@ object PrefConst {
     // Others
     const val KEY_VERBOSE_LOG_MODE = "pref_verbose_log_mode"
     const val KEY_RUNTIME_LOG_RETENTION_DAYS = "pref_runtime_log_retention_days"
-    const val RUNTIME_LOG_RETENTION_DAYS_DEFAULT = 7
+    const val RUNTIME_LOG_RETENTION_DAYS_DEFAULT = 2
     const val RUNTIME_LOG_RETENTION_DAYS_MIN = 1
     const val KEY_SENSITIVE_DEBUG_LOG_MODE = "pref_sensitive_debug_log_mode"
     const val KEY_AUTO_UPDATE_ON_START = "pref_auto_update_on_start"
