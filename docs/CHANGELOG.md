@@ -4,6 +4,14 @@
 
 ---
 
+## [v3.2.10] - 2026-05-15
+- 版本：`versionCode 115` / `versionName 3.2.10`。
+- 开始下一轮开发周期。
+
+> Full Changelog: https://github.com/magisk317/XposedSmsCode/compare/v3.2.9...HEAD
+
+---
+
 ## [v3.2.9] - 2026-05-15
 - 版本：`versionCode 114` / `versionName 3.2.9`。
 - `[rules]` 新增外置 `smscode-rules` 官方规则目录：APK 内置离线快照，运行时支持远程刷新、本地缓存与只读展示；验证码匹配改为“用户自定义优先 + 官方规则按优先级 + 内置通用兜底”的分层合并模型，保持旧版用户规则导入导出格式不变。
