@@ -23,6 +23,10 @@ jobs:
             (
               github.head_ref == 'chore/dependency-force-update' &&
               github.event.pull_request.title == 'build: update forced dependencies'
+            ) ||
+            (
+              github.head_ref == 'janitor/security-fixes' &&
+              github.event.pull_request.title == 'chore(security): apply automated dependency security fixes'
             )
           )
         )
@@ -31,7 +35,7 @@ jobs:
       - name: Enable auto-merge for dependency PRs
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+          GH_TOKEN: ${{ secrets.GH_PAT != '' && secrets.GH_PAT || secrets.GITHUB_TOKEN }}
         run: |
           test -n "$GH_TOKEN"
           gh pr merge --auto --merge --delete-branch "$PR_URL"

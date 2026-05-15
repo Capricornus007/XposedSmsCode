@@ -1,8 +1,19 @@
-name: Dependency Force Manager
+name: Dependency Security Manager
 
 on:
   schedule:
     - cron: "30 2 * * *" # Daily 02:30 UTC
+  push:
+    branches:
+      - beta
+  pull_request_target:
+    branches:
+      - beta
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
   workflow_dispatch:
 
 permissions:
@@ -11,13 +22,30 @@ permissions:
   security-events: read
 
 jobs:
-  dependency-force:
-    name: Attempt dependency remediation
+  dependency-security:
+    name: Attempt dependency security remediation
     runs-on: ubuntu-latest
     continue-on-error: true
     concurrency:
-      group: dependency-force-manager-${{ github.ref }}
+      group: dependency-security-manager-${{ github.ref }}
       cancel-in-progress: false
+    if: |
+      !(
+        github.event_name == 'push' &&
+        github.ref == 'refs/heads/beta' &&
+        startsWith(github.event.head_commit.message, 'Merge pull request #') &&
+        (
+          contains(github.event.head_commit.message, 'from magisk317/chore/dependency-force-update') ||
+          contains(github.event.head_commit.message, 'from magisk317/janitor/security-fixes')
+        )
+      ) &&
+      !(
+        github.event_name == 'pull_request_target' &&
+        (
+          github.event.pull_request.head.ref == 'chore/dependency-force-update' ||
+          github.event.pull_request.head.ref == 'janitor/security-fixes'
+        )
+      )
     env:
       DEPENDENCY_FORCE_CONFIGS: githubApi101DebugRuntimeClasspath,githubLegacyDebugRuntimeClasspath,playApi101DebugRuntimeClasspath
       DEPENDENCY_FORCE_HISTORICAL_ALERT_COOLDOWN_HOURS: 168
@@ -144,15 +172,16 @@ jobs:
         with:
           token: ${{ secrets.GH_PAT != '' && secrets.GH_PAT || github.token }}
           base: beta
-          branch: chore/dependency-force-update
+          branch: janitor/security-fixes
           delete-branch: true
-          title: "build: update forced dependencies"
-          commit-message: "build: update forced dependencies"
+          title: "chore(security): apply automated dependency security fixes"
+          commit-message: "chore(security): apply automated dependency security fixes"
           labels: |
             dependencies
             java
+            security
           body: |
-            Automated dependency force maintenance:
+            Automated dependency security fix run.
             - Removed force rules when natural resolution already matches forced versions.
             - Added or updated force rules for dependencies with open security alerts (Dependabot).
             - Refreshed committed Gradle dependency lockfiles after dependency graph changes.
@@ -161,7 +190,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Dependency remediation"
+            echo "## Dependency security remediation"
             echo ""
             echo "- Trigger: ${{ github.event_name }}"
             echo "- Base ref: ${{ github.base_ref || github.ref_name }}"
