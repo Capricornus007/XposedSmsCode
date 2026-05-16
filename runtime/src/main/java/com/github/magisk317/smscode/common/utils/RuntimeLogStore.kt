@@ -48,9 +48,15 @@ object RuntimeLogStore {
         setRetentionDays(sizeMb)
     }
 
-    fun append(priority: Int, tag: String, message: String, force: Boolean = false) {
+    fun append(
+        priority: Int,
+        tag: String,
+        message: String,
+        force: Boolean = false,
+        route: String? = ROUTE_APP,
+    ) {
         RuntimeDiagnosticsBridge.ensureInstalled()
-        SharedRuntimeLogStore.append(priority, tag, message, force, ROUTE_APP)
+        SharedRuntimeLogStore.append(priority, tag, message, force, route ?: ROUTE_APP)
     }
 
     fun clear() {

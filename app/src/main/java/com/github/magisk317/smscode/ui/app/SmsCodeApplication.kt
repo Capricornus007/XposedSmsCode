@@ -27,6 +27,7 @@ import io.github.magisk317.smscode.xposed.runtime.CoreLogSinkHolder
 import io.github.magisk317.smscode.xposed.runtime.CoreRuntime
 import io.github.magisk317.smscode.xposed.runtime.CoreRuntimeAccess
 import io.github.magisk317.smscode.xposed.utils.XLog
+import io.github.magisk317.smscode.runtime.contract.logging.DefaultLogSanitizer
 import com.github.magisk317.smscode.di.appModule
 import com.github.magisk317.smscode.ui.record.CodeRecordRestoreManager
 import java.io.File
@@ -99,8 +100,16 @@ class SmsCodeApplication : Application() {
             override val actionNamespace: String = "com.github.magisk317.smscode"
         })
         CoreLogSinkHolder.install(object : CoreLogSink {
-            override fun append(priority: Int, tag: String, message: String) {
-                RuntimeLogStore.append(priority, tag, message)
+            override fun append(
+                priority: Int,
+                tag: String,
+                message: String,
+                force: Boolean,
+                route: String?,
+                sensitive: Boolean,
+            ) {
+                val safeMessage = if (sensitive) DefaultLogSanitizer.sanitize(message) else message
+                RuntimeLogStore.append(priority, tag, safeMessage, force, route)
             }
         })
         CoreHookPolicyHolder.install(object : CoreHookPolicy {
