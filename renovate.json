@@ -17,6 +17,7 @@
             ],
             "automerge": true,
             "automergeType": "pr",
+            "recreateWhen": "always",
             "groupName": "all non-major dependencies",
             "groupSlug": "all-minor-patch",
             "matchPackageNames": [
