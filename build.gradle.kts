@@ -10,6 +10,12 @@ buildscript {
     }
     configurations.all {
         resolutionStrategy {
+            force("org.ow2.asm:asm:9.10")
+            force("org.ow2.asm:asm-commons:9.10")
+            force("org.ow2.asm:asm-tree:9.10")
+            force("org.ow2.asm:asm-util:9.10")
+            force("org.ow2.asm:asm-analysis:9.10")
+            force("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0")
             // BEGIN AUTO FORCED DEPENDENCIES (managed by workflow)
             force("io.netty:netty-codec:4.1.133.Final")
             force("io.netty:netty-codec-http:4.1.133.Final")
@@ -118,6 +124,12 @@ subprojects {
     configurations.all {
         resolutionStrategy {
             force(catalog.apache.httpclient)
+            force("org.ow2.asm:asm:9.10")
+            force("org.ow2.asm:asm-commons:9.10")
+            force("org.ow2.asm:asm-tree:9.10")
+            force("org.ow2.asm:asm-util:9.10")
+            force("org.ow2.asm:asm-analysis:9.10")
+            force("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0")
             // BEGIN AUTO FORCED DEPENDENCIES (managed by workflow)
             force("io.netty:netty-codec:4.1.133.Final")
             force("io.netty:netty-codec-http:4.1.133.Final")

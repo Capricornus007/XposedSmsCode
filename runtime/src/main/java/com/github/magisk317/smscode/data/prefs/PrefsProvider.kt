@@ -9,8 +9,8 @@ import android.database.MatrixCursor
 import android.net.Uri
 import android.os.Binder
 import android.os.Bundle
-import android.os.Process
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
+import com.github.magisk317.smscode.common.utils.ProviderCallerGuard
 import io.github.magisk317.smscode.xposed.utils.XLog
 import kotlinx.coroutines.runBlocking
 
@@ -45,10 +45,7 @@ class PrefsProvider : ContentProvider() {
         sortOrder: String?,
     ): Cursor? {
         val ctx = context ?: return null
-        if (!isCallerAllowed(ctx)) {
-            XLog.w("PrefsProvider: deny caller uid=%d", Binder.getCallingUid())
-            return null
-        }
+        if (!isCallerAllowed(ctx)) return null
         val type = uriMatcher.match(uri)
         val key = uri.getQueryParameter("key") ?: return null
         val defaultValue = uri.getQueryParameter("default")
@@ -80,50 +77,16 @@ class PrefsProvider : ContentProvider() {
 
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
         val ctx = context ?: return null
-        if (!isCallerAllowed(ctx)) {
-            XLog.w("PrefsProvider: deny call method=%s uid=%d", method, Binder.getCallingUid())
-            return null
-        }
+        if (!isCallerAllowed(ctx)) return null
         return super.call(method, arg, extras)
     }
 
     private fun isCallerAllowed(ctx: Context): Boolean {
-        val uid = Binder.getCallingUid()
-        // 1. Check for standard System UIDs
-        if (uid == Process.SYSTEM_UID || uid == Process.PHONE_UID) return true
-        // 2. Check for self
-        if (uid == ctx.applicationInfo?.uid) return true
-
-        // 3. Check if the caller is a System App
-        try {
-            val packages = ctx.packageManager.getPackagesForUid(uid) ?: return false
-            for (packageName in packages) {
-                // If any package sharing this UID is a system app, allow it.
-                if (isSystemApp(ctx, packageName)) {
-                    return true
-                }
+        return ProviderCallerGuard.isCallerAllowed(ctx).also { allowed ->
+            if (!allowed) {
+                XLog.w("PrefsProvider: deny caller uid=%d", Binder.getCallingUid())
             }
-        } catch (ignored: Exception) {
-            // It's safe to ignore as we default to false
-            return false
         }
-
-        return false
-    }
-
-    private fun isSystemApp(context: Context, packageName: String): Boolean = try {
-        val pm = context.packageManager
-        val info = pm.getApplicationInfo(packageName, 0)
-        (
-            info.flags and
-                (
-                    android.content.pm.ApplicationInfo.FLAG_SYSTEM or
-                        android.content.pm.ApplicationInfo.FLAG_UPDATED_SYSTEM_APP
-                    )
-            ) !=
-            0
-    } catch (ignored: Exception) {
-        false
     }
 
     companion object {

@@ -11,6 +11,11 @@ import kotlinx.coroutines.runBlocking
 
 class KillSelfControlReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action != ACTION_KILL_SELF) {
+            XLog.w("KillSelfControlReceiver: ignored unexpected action=%s", intent.action.orEmpty())
+            return
+        }
+
         val expectedToken = runBlocking {
             AppPreferencesDataStore.getString(context, PrefConst.KEY_IPC_TOKEN, "")
         }
@@ -20,7 +25,7 @@ class KillSelfControlReceiver : BroadcastReceiver() {
             return
         }
 
-        val delayMs = intent.getLongExtra(EXTRA_DELAY_MS, 80L)
+        val delayMs = normalizeDelayMs(intent.getLongExtra(EXTRA_DELAY_MS, DEFAULT_DELAY_MS))
         val processName = context.applicationInfo?.processName ?: context.packageName
         XLog.w(
             "KillSelfControlReceiver: kill self requested, delay=%dms pid=%d process=%s",
@@ -52,5 +57,9 @@ class KillSelfControlReceiver : BroadcastReceiver() {
         const val ACTION_KILL_SELF = "com.github.magisk317.smscode.ACTION_KILL_SELF"
         const val EXTRA_DELAY_MS = "delay_ms"
         const val EXTRA_IPC_TOKEN = "ipc_token"
+        private const val DEFAULT_DELAY_MS = 80L
+        private const val MAX_DELAY_MS = 5_000L
+
+        fun normalizeDelayMs(value: Long): Long = value.coerceIn(0L, MAX_DELAY_MS)
     }
 }

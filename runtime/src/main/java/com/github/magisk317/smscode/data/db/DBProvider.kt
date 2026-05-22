@@ -7,10 +7,14 @@ import android.content.UriMatcher
 import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
+import android.os.Binder
+import com.github.magisk317.smscode.common.utils.ProviderCallerGuard
 import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import io.github.magisk317.smscode.runtime.common.record.SmsMsgCursorContract
+import io.github.magisk317.smscode.xposed.utils.XLog
+import java.util.Locale
 
 class DBProvider : ContentProvider() {
     private var mDbManager: DBManager? = null
@@ -18,17 +22,16 @@ class DBProvider : ContentProvider() {
     private lateinit var authority: String
 
     override fun onCreate(): Boolean {
-        context?.let {
-            mDbManager = DBManager.get(it)
-            authority = "${it.packageName}.db.provider"
-            uriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
-                addURI(authority, PATH_SMS_MSG, SMS_MSG_DIR)
-                addURI(authority, "$PATH_SMS_MSG/#", SMS_MSG_ID)
-                addURI(authority, PATH_SMS_CODE_RULE, SMS_CODE_RULE_DIR)
-                addURI(authority, "$PATH_SMS_CODE_RULE/#", SMS_CODE_RULE_ID)
-                addURI(authority, PATH_APP_INFO, APP_INFO_DIR)
-                addURI(authority, "$PATH_APP_INFO/*", APP_INFO_ITEM)
-            }
+        val ctx = context ?: return false
+        mDbManager = DBManager.get(ctx)
+        authority = "${ctx.packageName}.db.provider"
+        uriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
+            addURI(authority, PATH_SMS_MSG, SMS_MSG_DIR)
+            addURI(authority, "$PATH_SMS_MSG/#", SMS_MSG_ID)
+            addURI(authority, PATH_SMS_CODE_RULE, SMS_CODE_RULE_DIR)
+            addURI(authority, "$PATH_SMS_CODE_RULE/#", SMS_CODE_RULE_ID)
+            addURI(authority, PATH_APP_INFO, APP_INFO_DIR)
+            addURI(authority, "$PATH_APP_INFO/*", APP_INFO_ITEM)
         }
         return true
     }
@@ -36,35 +39,17 @@ class DBProvider : ContentProvider() {
     override fun getType(uri: Uri): String? = null
 
     override fun insert(uri: Uri, values: ContentValues?): Uri? {
+        if (!isCallerAllowed()) return null
         val uriType = uriMatcher.match(uri)
-        val id: Long
-        val path: String
-        when (uriType) {
+        val id = when (uriType) {
             SMS_MSG_DIR -> {
-                val msg = SmsMsg(
-                    sender = values?.getAsString("sender"),
-                    body = values?.getAsString("body"),
-                    date = values?.getAsLong("date") ?: 0L,
-                    processedTime = values?.getAsLong("processed_time") ?: System.currentTimeMillis(),
-                    company = values?.getAsString("company"),
-                    smsCode = values?.getAsString("sms_code"),
-                    packageName = values?.getAsString("package_name"),
-                    notifyChannelId = values?.getAsString("notify_channel_id").orEmpty(),
-                    msgType = values?.getAsInteger("msg_type") ?: SmsMsg.MSG_TYPE_SMS,
-                    callType = values?.getAsInteger("call_type") ?: 0,
-                    forwardStatus = values?.getAsInteger("forward_status") ?: SmsMsg.FORWARD_STATUS_NONE,
-                    forwardTarget = values?.getAsString("forward_target"),
-                    forwardMessage = values?.getAsString("forward_message"),
-                    forwardTime = values?.getAsLong("forward_time") ?: 0L,
-                )
-                id = mDbManager!!.addSmsMsg(msg)
-                path = "$PATH_SMS_MSG/$id"
+                db.addSmsMsg(values.toSmsMsg())
             }
 
             else -> throw IllegalArgumentException("Unsupported URI: $uri")
         }
         context?.contentResolver?.notifyChange(uri, null)
-        return Uri.parse(path)
+        return Uri.withAppendedPath(uri, id.toString())
     }
 
     override fun query(
@@ -74,6 +59,7 @@ class DBProvider : ContentProvider() {
         selectionArgs: Array<String>?,
         sortOrder: String?,
     ): Cursor? {
+        if (!isCallerAllowed()) return null
         val uriType = uriMatcher.match(uri)
         return when (uriType) {
             SMS_CODE_RULE_DIR -> querySmsCodeRules(projection)
@@ -87,10 +73,11 @@ class DBProvider : ContentProvider() {
     }
 
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<String>?): Int {
+        if (!isCallerAllowed()) return 0
         val uriType = uriMatcher.match(uri)
         val rowsDeleted: Int = when (uriType) {
             SMS_MSG_DIR -> deleteSmsMsg(selection, selectionArgs)
-            SMS_MSG_ID -> uri.lastPathSegment?.toLongOrNull()?.let { mDbManager!!.removeSmsMsgById(it) } ?: 0
+            SMS_MSG_ID -> uri.lastPathSegment?.toLongOrNull()?.let { db.removeSmsMsgById(it) } ?: 0
             APP_INFO_ITEM -> deleteAppInfoByPackageName(uri)
             else -> throw IllegalArgumentException("Unsupported URI: $uri")
         }
@@ -107,14 +94,14 @@ class DBProvider : ContentProvider() {
         val normalized = selection.replace("`", "").trim().lowercase()
         if (normalized == "_id = ?" || normalized == "id = ?") {
             val id = selectionArgs.firstOrNull()?.toLongOrNull() ?: return 0
-            return mDbManager!!.removeSmsMsgById(id)
+            return db.removeSmsMsgById(id)
         }
         throw IllegalArgumentException("Unsupported delete selection: $selection")
     }
 
     private fun querySmsCodeRules(projection: Array<String>?): Cursor {
-        val rules = mDbManager!!.queryAllSmsCodeRules()
-        val columns = projection ?: arrayOf("company", "code_keyword", "code_regex", "_id")
+        val rules = db.queryAllSmsCodeRules()
+        val columns = columnsOrDefault(projection, SMS_CODE_RULE_DEFAULT_COLUMNS, SMS_CODE_RULE_COLUMNS)
         val cursor = MatrixCursor(columns)
         rules.forEach { rule ->
             cursor.addRow(buildRow(columns) { column -> valueFromSmsCodeRule(rule, column) })
@@ -128,17 +115,19 @@ class DBProvider : ContentProvider() {
         selectionArgs: Array<String>?,
         sortOrder: String?,
     ): Cursor {
-        val filteredRows = mDbManager!!
+        val filteredRows = db
             .queryAllSmsMsg()
             .asSequence()
             .filterSmsMsgs(selection, selectionArgs)
             .toList()
-        val rows: List<SmsMsg> = when (sortOrder?.trim()?.lowercase()) {
-            "date asc" -> filteredRows.sortedBy { it.date }
-            "date desc", null, "" -> filteredRows.sortedByDescending { it.date }
-            else -> filteredRows
+        val sortSpec = parseSortOrder(sortOrder)
+        val sortedRows = if (sortSpec.descending) {
+            filteredRows.sortedByDescending { it.date }
+        } else {
+            filteredRows.sortedBy { it.date }
         }
-        val columns = projection ?: SmsMsgCursorContract.defaultColumns
+        val rows = sortSpec.limit?.let { sortedRows.take(it) } ?: sortedRows
+        val columns = columnsOrDefault(projection, SmsMsgCursorContract.defaultColumns, SMS_MSG_COLUMNS)
         val cursor = MatrixCursor(columns)
         rows.forEach { msg ->
             cursor.addRow(buildRow(columns) { column -> valueFromSmsMsg(msg, column) })
@@ -165,9 +154,8 @@ class DBProvider : ContentProvider() {
                 "msg_type = ?" -> {
                     val expected = selectionArgs?.getOrNull(argIndex)?.toIntOrNull()
                     argIndex += 1
-                    if (expected != null) {
-                        rows = rows.filter { it.msgType == expected }
-                    }
+                    require(expected != null) { "Missing or invalid msg_type selection arg" }
+                    rows = rows.filter { it.msgType == expected }
                 }
 
                 "sms_code is not null" -> {
@@ -181,24 +169,26 @@ class DBProvider : ContentProvider() {
                 "package_name = ?" -> {
                     val expected = selectionArgs?.getOrNull(argIndex)
                     argIndex += 1
-                    if (expected != null) {
-                        rows = rows.filter { it.packageName == expected }
-                    }
+                    require(expected != null) { "Missing package_name selection arg" }
+                    rows = rows.filter { it.packageName == expected }
                 }
 
                 "notify_channel_id != ''", "notify_channel_id <> ''" -> {
                     rows = rows.filter { it.notifyChannelId.isNotBlank() }
                 }
+
+                else -> throw IllegalArgumentException("Unsupported sms_msg selection clause: $clause")
             }
         }
+        require(argIndex <= selectionArgs.orEmpty().size) { "Unused selection args are not supported" }
         return rows
     }
 
     private fun querySmsMsgById(projection: Array<String>?, uri: Uri): Cursor {
         val id = uri.lastPathSegment?.toLongOrNull() ?: throw IllegalArgumentException("Invalid URI: $uri")
-        val columns = projection ?: SmsMsgCursorContract.defaultColumns
+        val columns = columnsOrDefault(projection, SmsMsgCursorContract.defaultColumns, SMS_MSG_COLUMNS)
         val cursor = MatrixCursor(columns)
-        val msg = mDbManager!!.querySmsMsgById(id)
+        val msg = db.querySmsMsgById(id)
         if (msg != null) {
             cursor.addRow(buildRow(columns) { column -> valueFromSmsMsg(msg, column) })
         }
@@ -207,9 +197,9 @@ class DBProvider : ContentProvider() {
 
     private fun querySmsCodeRuleById(projection: Array<String>?, uri: Uri): Cursor {
         val id = uri.lastPathSegment?.toLongOrNull() ?: throw IllegalArgumentException("Invalid URI: $uri")
-        val columns = projection ?: arrayOf("company", "code_keyword", "code_regex", "_id")
+        val columns = columnsOrDefault(projection, SMS_CODE_RULE_DEFAULT_COLUMNS, SMS_CODE_RULE_COLUMNS)
         val cursor = MatrixCursor(columns)
-        val rule = mDbManager!!.querySmsCodeRuleById(id)
+        val rule = db.querySmsCodeRuleById(id)
         if (rule != null) {
             cursor.addRow(buildRow(columns) { column -> valueFromSmsCodeRule(rule, column) })
         }
@@ -221,7 +211,7 @@ class DBProvider : ContentProvider() {
         selection: String?,
         selectionArgs: Array<String>?,
     ): Cursor {
-        var rows = mDbManager!!.queryAllAppInfos()
+        var rows = db.queryAllAppInfos()
         if (!selection.isNullOrBlank()) {
             val normalized = selection.replace("`", "").trim().lowercase()
             if (normalized == "blocked = ?" && !selectionArgs.isNullOrEmpty()) {
@@ -230,9 +220,11 @@ class DBProvider : ContentProvider() {
             } else if (normalized == "forwarding = ?" && !selectionArgs.isNullOrEmpty()) {
                 val forwarding = selectionArgs[0] == "1" || selectionArgs[0].equals("true", ignoreCase = true)
                 rows = rows.filter { it.forwarding == forwarding }
+            } else {
+                throw IllegalArgumentException("Unsupported app_info selection: $selection")
             }
         }
-        val columns = projection ?: arrayOf("package_name", "label", "blocked", "forwarding", "notify_template")
+        val columns = columnsOrDefault(projection, APP_INFO_DEFAULT_COLUMNS, APP_INFO_COLUMNS)
         val cursor = MatrixCursor(columns)
         rows.forEach { app: AppInfo ->
             cursor.addRow(buildRow(columns) { column -> valueFromAppInfo(app, column) })
@@ -242,12 +234,12 @@ class DBProvider : ContentProvider() {
 
     private fun queryAppInfoByPackageName(projection: Array<String>?, uri: Uri): Cursor {
         val packageName = uri.lastPathSegment.orEmpty()
-        val columns = projection ?: arrayOf("package_name", "label", "blocked", "forwarding", "notify_template")
+        val columns = columnsOrDefault(projection, APP_INFO_DEFAULT_COLUMNS, APP_INFO_COLUMNS)
         val cursor = MatrixCursor(columns)
         if (packageName.isBlank()) {
             return cursor
         }
-        val app = mDbManager!!.queryAppInfoByPackageName(packageName)
+        val app = db.queryAppInfoByPackageName(packageName)
         if (app != null) {
             cursor.addRow(buildRow(columns) { column -> valueFromAppInfo(app, column) })
         }
@@ -280,6 +272,7 @@ class DBProvider : ContentProvider() {
         }
 
     override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<String>?): Int {
+        if (!isCallerAllowed()) return 0
         val uriType = uriMatcher.match(uri)
         val rowsUpdated = when (uriType) {
             SMS_MSG_DIR -> updateSmsMsg(values, selection, selectionArgs)
@@ -308,32 +301,32 @@ class DBProvider : ContentProvider() {
             val id = selectionArgs.firstOrNull()?.toLongOrNull() ?: return 0
             return updateSmsMsgById(id, values)
         }
-        return 0
+        throw IllegalArgumentException("Unsupported sms_msg update selection: $selection")
     }
 
     private fun updateSmsMsgById(id: Long, values: ContentValues?): Int {
-        val existing = mDbManager!!.querySmsMsgById(id) ?: return 0
+        val existing = db.querySmsMsgById(id) ?: return 0
         val updated = existing.copy(
-            sender = values?.getAsString("sender") ?: existing.sender,
-            body = values?.getAsString("body") ?: existing.body,
-            date = values?.getAsLong("date") ?: existing.date,
+            sender = values.getBoundedString("sender", MAX_SENDER_LENGTH) ?: existing.sender,
+            body = values.getBoundedString("body", MAX_BODY_LENGTH) ?: existing.body,
+            date = values.getNonNegativeLong("date", existing.date),
             processedTime = if (values?.containsKey("processed_time") == true) {
-                values.getAsLong("processed_time") ?: 0L
+                values.getNonNegativeLong("processed_time", 0L)
             } else {
                 existing.processedTime
             },
-            company = values?.getAsString("company") ?: existing.company,
-            smsCode = values?.getAsString("sms_code") ?: existing.smsCode,
-            packageName = values?.getAsString("package_name") ?: existing.packageName,
-            notifyChannelId = values?.getAsString("notify_channel_id") ?: existing.notifyChannelId,
-            msgType = values?.getAsInteger("msg_type") ?: existing.msgType,
-            callType = values?.getAsInteger("call_type") ?: existing.callType,
-            forwardStatus = values?.getAsInteger("forward_status") ?: existing.forwardStatus,
-            forwardTarget = values?.getAsString("forward_target") ?: existing.forwardTarget,
-            forwardMessage = values?.getAsString("forward_message") ?: existing.forwardMessage,
-            forwardTime = values?.getAsLong("forward_time") ?: existing.forwardTime,
+            company = values.getBoundedString("company", MAX_COMPANY_LENGTH) ?: existing.company,
+            smsCode = values.getBoundedString("sms_code", MAX_CODE_LENGTH) ?: existing.smsCode,
+            packageName = values.getBoundedString("package_name", MAX_PACKAGE_NAME_LENGTH) ?: existing.packageName,
+            notifyChannelId = values.getBoundedString("notify_channel_id", MAX_CHANNEL_ID_LENGTH) ?: existing.notifyChannelId,
+            msgType = values.getAllowedInt("msg_type", SMS_MSG_TYPES, existing.msgType),
+            callType = values.getAllowedInt("call_type", CALL_TYPES, existing.callType),
+            forwardStatus = values.getAllowedInt("forward_status", FORWARD_STATUSES, existing.forwardStatus),
+            forwardTarget = values.getBoundedString("forward_target", MAX_FORWARD_TARGET_LENGTH) ?: existing.forwardTarget,
+            forwardMessage = values.getBoundedString("forward_message", MAX_BODY_LENGTH) ?: existing.forwardMessage,
+            forwardTime = values.getNonNegativeLong("forward_time", existing.forwardTime),
         )
-        return mDbManager!!.updateSmsMsg(updated)
+        return db.updateSmsMsg(updated)
     }
 
     private fun updateAppInfo(values: ContentValues?, selection: String?, selectionArgs: Array<String>?): Int {
@@ -342,7 +335,7 @@ class DBProvider : ContentProvider() {
         }
         val normalized = selection.replace("`", "").trim().lowercase()
         if (normalized != "package_name = ?") {
-            return 0
+            throw IllegalArgumentException("Unsupported app_info update selection: $selection")
         }
         val packageName = selectionArgs.firstOrNull().orEmpty()
         if (packageName.isBlank()) {
@@ -360,18 +353,22 @@ class DBProvider : ContentProvider() {
     }
 
     private fun updateAppInfoByPackageName(packageName: String, values: ContentValues?): Int {
-        val existing = mDbManager!!.queryAppInfoByPackageName(packageName) ?: AppInfo(packageName = packageName)
+        val boundedPackageName = packageName.take(MAX_PACKAGE_NAME_LENGTH)
+        val existing = db.queryAppInfoByPackageName(boundedPackageName) ?: AppInfo(packageName = boundedPackageName)
         val blocked = parseBooleanValue(values, "blocked", existing.blocked)
         val forwarding = parseBooleanValue(values, "forwarding", existing.forwarding)
         val label = when {
-            values?.containsKey("label") == true -> values.getAsString("label")
+            values?.containsKey("label") == true -> values.getBoundedString("label", MAX_LABEL_LENGTH)
             else -> existing.label
         }
         val notifyTemplate = when {
-            values?.containsKey("notify_template") == true -> values.getAsString("notify_template").orEmpty()
+            values?.containsKey("notify_template") == true -> values.getBoundedString(
+                "notify_template",
+                MAX_NOTIFY_TEMPLATE_LENGTH,
+            ).orEmpty()
             else -> existing.notifyTemplate
         }
-        return mDbManager!!.upsertAppInfo(
+        return db.upsertAppInfo(
             existing.copy(
                 label = label,
                 blocked = blocked,
@@ -397,8 +394,102 @@ class DBProvider : ContentProvider() {
         if (packageName.isBlank()) {
             return 0
         }
-        val app = mDbManager!!.queryAppInfoByPackageName(packageName) ?: return 0
-        return mDbManager!!.removeAppInfosByPackage(listOf(app.packageName))
+        val app = db.queryAppInfoByPackageName(packageName) ?: return 0
+        return db.removeAppInfosByPackage(listOf(app.packageName))
+    }
+
+    private val db: DBManager
+        get() = mDbManager ?: throw IllegalStateException("DBProvider is not initialized")
+
+    private fun isCallerAllowed(): Boolean {
+        val ctx = context ?: return false
+        return ProviderCallerGuard.isCallerAllowed(ctx).also { allowed ->
+            if (!allowed) {
+                XLog.w("DBProvider: deny caller uid=%d", Binder.getCallingUid())
+            }
+        }
+    }
+
+    private fun ContentValues?.toSmsMsg(): SmsMsg = SmsMsg(
+        sender = getBoundedString("sender", MAX_SENDER_LENGTH),
+        body = getBoundedString("body", MAX_BODY_LENGTH),
+        date = getNonNegativeLong("date", 0L),
+        processedTime = getNonNegativeLong("processed_time", System.currentTimeMillis()),
+        company = getBoundedString("company", MAX_COMPANY_LENGTH),
+        smsCode = getBoundedString("sms_code", MAX_CODE_LENGTH),
+        packageName = getBoundedString("package_name", MAX_PACKAGE_NAME_LENGTH),
+        notifyChannelId = getBoundedString("notify_channel_id", MAX_CHANNEL_ID_LENGTH).orEmpty(),
+        msgType = getAllowedInt("msg_type", SMS_MSG_TYPES, SmsMsg.MSG_TYPE_SMS),
+        callType = getAllowedInt("call_type", CALL_TYPES, 0),
+        forwardStatus = getAllowedInt("forward_status", FORWARD_STATUSES, SmsMsg.FORWARD_STATUS_NONE),
+        forwardTarget = getBoundedString("forward_target", MAX_FORWARD_TARGET_LENGTH),
+        forwardMessage = getBoundedString("forward_message", MAX_BODY_LENGTH),
+        forwardTime = getNonNegativeLong("forward_time", 0L),
+    )
+
+    private fun ContentValues?.getBoundedString(key: String, maxLength: Int): String? {
+        val raw = this?.getAsString(key) ?: return null
+        return raw.take(maxLength)
+    }
+
+    private fun ContentValues?.getNonNegativeLong(key: String, defaultValue: Long): Long {
+        val value = this?.getAsLong(key) ?: return defaultValue
+        return value.coerceAtLeast(0L)
+    }
+
+    private fun ContentValues?.getAllowedInt(key: String, allowedValues: Set<Int>, defaultValue: Int): Int {
+        val value = this?.getAsInteger(key) ?: return defaultValue
+        return value.takeIf { it in allowedValues } ?: defaultValue
+    }
+
+    private fun columnsOrDefault(
+        projection: Array<String>?,
+        defaultColumns: Array<String>,
+        allowedColumns: Set<String>,
+    ): Array<String> {
+        val columns = projection ?: defaultColumns
+        val unsupported = columns.filterNot { it in allowedColumns }
+        require(unsupported.isEmpty()) {
+            "Unsupported projection column(s): ${unsupported.joinToString()}"
+        }
+        return columns
+    }
+
+    private fun parseSortOrder(sortOrder: String?): SortSpec {
+        val normalized = sortOrder
+            ?.replace(Regex("\\s+"), " ")
+            ?.trim()
+            ?.lowercase(Locale.ROOT)
+            .orEmpty()
+        if (normalized.isEmpty()) return SortSpec(descending = true, limit = null)
+        val match = DATE_SORT_REGEX.matchEntire(normalized)
+            ?: throw IllegalArgumentException("Unsupported sort order: $sortOrder")
+        return SortSpec(
+            descending = match.groupValues[1] == "desc",
+            limit = match.groupValues.getOrNull(2)?.takeIf { it.isNotBlank() }?.toIntOrNull(),
+        )
+    }
+
+    private data class SortSpec(
+        val descending: Boolean,
+        val limit: Int?,
+    )
+
+    internal object Contract {
+        fun isSupportedDateSortOrder(sortOrder: String?): Boolean {
+            return sortOrder
+                ?.replace(Regex("\\s+"), " ")
+                ?.trim()
+                ?.lowercase(Locale.ROOT)
+                .orEmpty()
+                .let { normalized ->
+                    normalized.isEmpty() || DATE_SORT_REGEX.matches(normalized)
+                }
+        }
+
+        fun isProjectionSupported(projection: Array<String>?, allowedColumns: Set<String>): Boolean {
+            return projection == null || projection.all { it in allowedColumns }
+        }
     }
 
     companion object {
@@ -411,6 +502,31 @@ class DBProvider : ContentProvider() {
         private const val SMS_CODE_RULE_ID = 3
         private const val APP_INFO_DIR = 4
         private const val APP_INFO_ITEM = 5
+        private const val MAX_SENDER_LENGTH = 128
+        private const val MAX_BODY_LENGTH = 4096
+        private const val MAX_COMPANY_LENGTH = 128
+        private const val MAX_CODE_LENGTH = 64
+        private const val MAX_PACKAGE_NAME_LENGTH = 255
+        private const val MAX_CHANNEL_ID_LENGTH = 255
+        private const val MAX_FORWARD_TARGET_LENGTH = 512
+        private const val MAX_LABEL_LENGTH = 256
+        private const val MAX_NOTIFY_TEMPLATE_LENGTH = 2048
+
+        internal val SMS_MSG_COLUMNS = SmsMsgCursorContract.defaultColumns.toSet() + "id"
+        internal val SMS_CODE_RULE_COLUMNS = setOf("_id", "id", "company", "code_keyword", "code_regex")
+        internal val APP_INFO_COLUMNS = setOf("package_name", "label", "blocked", "forwarding", "notify_template")
+        private val SMS_CODE_RULE_DEFAULT_COLUMNS = arrayOf("company", "code_keyword", "code_regex", "_id")
+        private val APP_INFO_DEFAULT_COLUMNS = arrayOf("package_name", "label", "blocked", "forwarding", "notify_template")
+        private val SMS_MSG_TYPES = setOf(SmsMsg.MSG_TYPE_SMS, SmsMsg.MSG_TYPE_APP_NOTIFY, SmsMsg.MSG_TYPE_CALL_NOTIFY)
+        private val FORWARD_STATUSES = setOf(
+            SmsMsg.FORWARD_STATUS_NONE,
+            SmsMsg.FORWARD_STATUS_SUCCESS,
+            SmsMsg.FORWARD_STATUS_FAILED,
+            SmsMsg.FORWARD_STATUS_PARTIAL,
+            SmsMsg.FORWARD_STATUS_BLOCKED,
+        )
+        private val CALL_TYPES = (0..6).toSet()
+        private val DATE_SORT_REGEX = Regex("""date (asc|desc)(?: limit ([1-9]\d{0,3}))?""")
 
         fun authority(context: Context): String = "${context.packageName}.db.provider"
 
