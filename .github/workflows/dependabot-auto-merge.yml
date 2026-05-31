@@ -14,6 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event.pull_request.base.ref == 'beta' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
       (
         github.event.pull_request.user.login == 'github-actions[bot]' ||
         (
@@ -32,7 +33,62 @@ jobs:
         )
       )
     steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GH_PAT != '' && secrets.GH_PAT || github.token }}
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up JDK 26
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "26"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          validate-wrappers: false
+          allow-snapshot-wrappers: true
+
+      - name: Refresh Gradle lockfiles
+        id: refresh_lockfiles
+        run: |
+          bash scripts/refresh_gradle_lockfiles.sh
+          if git diff --quiet -- \
+            gradle.lockfile \
+            settings-gradle.lockfile \
+            app/gradle.lockfile \
+            core/gradle.lockfile \
+            runtime/gradle.lockfile \
+            xposed-stub/gradle.lockfile; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit refreshed lockfiles
+        if: steps.refresh_lockfiles.outputs.changed == 'true'
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add \
+            gradle.lockfile \
+            settings-gradle.lockfile \
+            app/gradle.lockfile \
+            core/gradle.lockfile \
+            runtime/gradle.lockfile \
+            xposed-stub/gradle.lockfile
+          git commit -m "chore(deps): refresh Gradle lockfiles"
+          git push origin "HEAD:${PR_HEAD_REF}"
+
       - name: Enable auto-merge for dependency PRs
+        if: steps.refresh_lockfiles.outputs.changed != 'true'
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
           GH_TOKEN: ${{ secrets.GH_PAT != '' && secrets.GH_PAT || secrets.GITHUB_TOKEN }}
