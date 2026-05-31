@@ -53,7 +53,7 @@ jobs:
           fi
 
           TG_MAX_FILESIZE=$((50 * 1024 * 1024))
-          PROJECT_TAG="📌 #xposedsmscode"
+          PROJECT_TAG="📌 #XposedSmsCode"
 
           send_message() {
             local thread=$1
@@ -131,7 +131,7 @@ jobs:
               exit 0
             fi
 
-            CI_MSG=$(printf '✅ XposedSmsCode Workflow: %s\n%s\n📋 %s\n🔗 Run: %s' \
+            CI_MSG=$(printf '✅ XposedSmsCode：%s\n%s\n📋 %s\n🔗 Run: %s' \
               "${WF_RUN_NAME:-CI}" "$PROJECT_TAG" "${CI_COMMIT_TITLE:-}" "${WF_RUN_URL:-}")
             CI_THREAD=""
             if [ -n "${TG_CI_THREAD_ID:-}" ]; then
@@ -168,7 +168,7 @@ jobs:
             WHATSNEW_CONTENT="Release notes file not found: $WHATSNEW_FILE"
           fi
 
-          CAPTION=$(printf '📦 XposedSmsCode Release: %s\n%s\n\n%s' "$RELEASE_TAG" "$PROJECT_TAG" "$WHATSNEW_CONTENT")
+          CAPTION=$(printf '📦 XposedSmsCode：Release %s\n%s\n\n%s' "$RELEASE_TAG" "$PROJECT_TAG" "$WHATSNEW_CONTENT")
 
           RELEASE_THREAD=""
           if [ -n "${TG_THREAD_ID:-}" ]; then
