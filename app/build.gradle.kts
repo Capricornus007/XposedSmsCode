@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.mokkery)
     id("smscode.android.common")
     id("smscode.app.signing")
     id("smscode.app.packaging")
@@ -119,11 +118,6 @@ tasks.named("preBuild") {
     dependsOn(syncSmsCodeRulesAssets)
 }
 
-mokkery {
-    defaultMockMode.set(dev.mokkery.MockMode.autofill)
-    ignoreFinalMembers.set(true)
-}
-
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(project(":core"))
@@ -179,7 +173,7 @@ dependencies {
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
-    testImplementation(libs.mokkery.runtime.jvm)
+    testImplementation(libs.mockk)
 
     implementation(libs.timber)
     implementation(libs.koin.android)

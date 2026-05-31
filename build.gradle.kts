@@ -15,7 +15,6 @@ buildscript {
             force("org.ow2.asm:asm-tree:9.10")
             force("org.ow2.asm:asm-util:9.10")
             force("org.ow2.asm:asm-analysis:9.10")
-            force("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0")
             // BEGIN AUTO FORCED DEPENDENCIES (managed by workflow)
             force("io.netty:netty-codec:4.1.133.Final")
             force("io.netty:netty-codec-http:4.1.133.Final")
@@ -60,6 +59,7 @@ kover {
 }
 
 val catalog = libs
+val forcedKotlinVersion = libs.versions.kotlin.get()
 
 dependencyLocking {
     lockAllConfigurations()
@@ -129,7 +129,7 @@ subprojects {
             force("org.ow2.asm:asm-tree:9.10")
             force("org.ow2.asm:asm-util:9.10")
             force("org.ow2.asm:asm-analysis:9.10")
-            force("org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0")
+            force("org.jetbrains.kotlin:kotlin-metadata-jvm:$forcedKotlinVersion")
             // BEGIN AUTO FORCED DEPENDENCIES (managed by workflow)
             force("io.netty:netty-codec:4.1.133.Final")
             force("io.netty:netty-codec-http:4.1.133.Final")

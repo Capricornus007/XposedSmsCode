@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.mokkery)
     id(libs.plugins.kotlin.serialization.get().pluginId)
     id(libs.plugins.kotlin.parcelize.get().pluginId)
     alias(libs.plugins.ksp)
@@ -62,11 +61,6 @@ android {
     }
 }
 
-mokkery {
-    defaultMockMode.set(dev.mokkery.MockMode.autofill)
-    ignoreFinalMembers.set(true)
-}
-
 dependencies {
     implementation(project(":smscode-core:smscode-xposed-core"))
     implementation(project(":smscode-core:smscode-domain"))
@@ -90,7 +84,7 @@ dependencies {
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
-    testImplementation(libs.mokkery.runtime.jvm)
+    testImplementation(libs.mockk)
 }
 
 val verifyNoComposeUiLeak by tasks.registering {

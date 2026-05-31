@@ -11,6 +11,7 @@ cleanup_submodule_lockfiles() {
     while IFS= read -r lockfile; do
       local relative_path="${lockfile#${ROOT_DIR}/${submodule}/}"
       if git -C "${ROOT_DIR}/${submodule}" ls-files --error-unmatch "${relative_path}" >/dev/null 2>&1; then
+        git -C "${ROOT_DIR}/${submodule}" restore -- "${relative_path}"
         continue
       fi
       rm -f "${lockfile}"
@@ -28,6 +29,13 @@ bash "${ROOT_DIR}/scripts/with_workspace_gradle_lock.sh" \
   :core:check \
   :runtime:check \
   :app:check \
+  :app:compileGithubApi101DebugAndroidTestKotlin \
+  :app:compileGithubLegacyDebugAndroidTestKotlin \
+  :app:compilePlayApi101DebugAndroidTestKotlin \
+  :runtime:compileGithubApi101DebugAndroidTestKotlin \
+  :runtime:compileGithubLegacyDebugAndroidTestKotlin \
+  :runtime:compilePlayApi101DebugAndroidTestKotlin \
+  :runtime:compilePlayLegacyDebugAndroidTestKotlin \
   assembleGithubApi101Debug \
   assembleGithubLegacyDebug \
   :app:koverVerifyGithubApi101Debug \
