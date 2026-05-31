@@ -53,7 +53,7 @@ jobs:
           fi
 
           TG_MAX_FILESIZE=$((50 * 1024 * 1024))
-          PROJECT_TAG="#xposedsmscode"
+          PROJECT_TAG="📌 #xposedsmscode"
 
           send_message() {
             local thread=$1
