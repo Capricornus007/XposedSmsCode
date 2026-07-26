@@ -4,6 +4,14 @@
 
 ---
 
+## [v3.3.2] - WIP
+- 版本：`versionCode 125` / `versionName 3.3.2`。
+- `[TODO]` 准备下一阶段开发。
+
+> Full Changelog: https://gitlab.com/magisk3171/XposedSmsCode/-/compare/v3.3.1...v3.3.2
+
+---
+
 ## [v3.3.1] - 2026-07-26
 - 版本：`versionCode 124` / `versionName 3.3.1`。
 - `[architecture]` 抽出独立 `:hook` 模块，复用共享 Hook 入口、Billing runtime 与 Preview SDK 约定，收敛 runtime / UI 边界并清理旧兼容资源。

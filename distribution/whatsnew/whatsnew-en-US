@@ -1,7 +1,4 @@
-- Updated to 3.3.1 (124).
-- Refactored Hook/runtime boundaries with shared entry points, billing, and UI.
-- Hardened SMS/MMS dispatch, Google Messages, app notifications, auto-input, prefs, and IPC.
-- Added OpenTelemetry across app and Xposed lifecycles.
-- Updated Preview SDK conventions, release tooling, and core submodules.
+- Updated to 3.3.2 (125).
+- Preparing the next development cycle.
 - https://github.com/magisk317/XposedSmsCode/releases
 - https://gitlab.com/magisk3171/XposedSmsCode/-/releases
