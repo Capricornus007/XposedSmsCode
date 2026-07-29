@@ -169,7 +169,7 @@ object XposedRuntimeInstaller {
             com.github.magisk317.smscode.common.utils.PrefsReader.isSensitiveDebugLogMode(ctx)
         }.getOrNull()
         io.github.magisk317.xposed.logging.LogSanitizerConfig
-            .syncSensitiveDebugMode(sensitiveDebugEnabled)
+            .syncSanitizationEnabled(sensitiveDebugEnabled?.not())
         lastSanitizerSyncAt = android.os.SystemClock.elapsedRealtime()
     }
 

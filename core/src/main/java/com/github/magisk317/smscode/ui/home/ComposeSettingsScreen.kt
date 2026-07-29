@@ -1018,7 +1018,7 @@ internal fun ComposeSettingsScreenShared(
                                         markPrefsSaved()
                                     }
                                     io.github.magisk317.xposed.logging.LogSanitizerConfig
-                                        .syncSensitiveDebugMode(enabled)
+                                        .syncSanitizationEnabled(!enabled)
                                 },
                             ),
                             layout = RuntimeLogDiagnosticsLayout(

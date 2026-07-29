@@ -131,7 +131,7 @@ class SmsCodeApplication : Application() {
                 false,
             )
             io.github.magisk317.xposed.logging.LogSanitizerConfig
-                .syncSensitiveDebugMode(sensitiveDebugMode)
+                .syncSanitizationEnabled(!sensitiveDebugMode)
         }
     }
 
@@ -158,8 +158,8 @@ class SmsCodeApplication : Application() {
                 sensitive: Boolean,
             ) {
                 // sensitive=true means payload may contain secrets; honor shared switch
-                // (default sanitize). Opening pref_sensitive_debug_log_mode disables
-                // LogSanitizerConfig and lets plaintext through for debugging.
+                // Opening pref_sensitive_debug_log_mode disables sanitization and lets
+                // plaintext through for debugging.
                 val safeMessage = if (sensitive) {
                     DefaultLogSanitizer.sanitizeIfEnabled(message)
                 } else {
