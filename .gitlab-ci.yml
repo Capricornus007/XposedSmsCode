@@ -186,7 +186,7 @@ telegram:release:
   stage: release-publish
   allow_failure: true
   tags:
-    - magisk-remote-linux
+    - magisk-arm64-linux
   variables:
     MAGISK_TELEGRAM_PROJECT_TAG: "📌 #XposedSmsCode"
     MAGISK_TELEGRAM_PROJECT_NAME: "XposedSmsCode"
@@ -201,7 +201,7 @@ telegram:ci:
   stage: notify
   allow_failure: true
   tags:
-    - magisk-remote-linux
+    - magisk-arm64-linux
   variables:
     MAGISK_TELEGRAM_PROJECT_TAG: "📌 #XposedSmsCode"
     MAGISK_TELEGRAM_PROJECT_NAME: "XposedSmsCode"
