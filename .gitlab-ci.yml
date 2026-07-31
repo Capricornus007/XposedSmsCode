@@ -25,7 +25,7 @@ workflow:
 default:
   interruptible: true
   tags:
-    - magisk-linux
+    - magisk-amd64-linux
 
 stages:
   - build
@@ -54,6 +54,7 @@ variables:
   MAGISK_RENOVATE_REPOSITORY: "magisk3171/XposedSmsCode"
 
 .xposed_android_rules:
+  cache: []
   rules:
     - if: '$DEPENDENCY_OWNER == "gitlab" && $CI_PIPELINE_SOURCE == "web"'
       when: never
