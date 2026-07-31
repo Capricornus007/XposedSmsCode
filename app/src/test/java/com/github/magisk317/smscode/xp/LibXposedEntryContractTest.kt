@@ -34,6 +34,17 @@ class LibXposedEntryContractTest {
     }
 
     @Test
+    fun `release shrinking preserves libxposed entry and hook contracts`() {
+        val rules = resolveProjectFile("app/proguard-common.pro").readText()
+
+        assertTrue("-keep class com.github.magisk317.smscode.xp.** { *; }" in rules)
+        assertTrue("-keep class io.github.magisk317.xposed.** { *; }" in rules)
+        assertTrue("implements io.github.libxposed.api.XposedInterface\$Hooker" in rules)
+        assertTrue("extends io.github.libxposed.api.XposedModule" in rules)
+        assertTrue("-dontwarn io.github.libxposed.api.**" in rules)
+    }
+
+    @Test
     fun `hot reload stores only parcelable process and package state`() {
         val appEntrySource = resolveProjectFile(
             "app/src/main/java/com/github/magisk317/smscode/xp/LibXposedEntry.kt",
