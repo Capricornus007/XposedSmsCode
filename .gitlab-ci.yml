@@ -70,6 +70,13 @@ variables:
     - if: '$CI_COMMIT_BRANCH'
     - when: never
 
+.xposed_signed_android_rules:
+  cache: []
+  rules:
+    - if: '$RELEASE_KEYSTORE == "" || $STORE_PASSWORD == "" || $KEY_ALIAS == "" || $KEY_PASSWORD == ""'
+      when: never
+    - !reference [.xposed_android_rules, rules]
+
 android:build:
   extends:
     - .magisk_android_build
@@ -95,8 +102,15 @@ android:build:
       :runtime:compileDebugAndroidTestKotlin
       :app:koverVerifyGithubDebug
       :app:koverHtmlReportGithubDebug
-      :app:assembleGithubDebug
       -PenableKover=true
+
+android:apk:
+  extends:
+    - .magisk_android_build
+    - .xposed_signed_android_rules
+  variables:
+    MAGISK_ANDROID_BUILD_TASKS: >-
+      :app:assembleGithubDebug
       -PbuildSplits
   artifacts:
     name: "XposedSmsCode-debug-$CI_COMMIT_REF_SLUG"

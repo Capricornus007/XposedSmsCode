@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GRADLE_OPTS: -Dorg.gradle.warning.mode=all
+      HAS_RELEASE_SIGNING: ${{ secrets.RELEASE_KEYSTORE != '' && secrets.STORE_PASSWORD != '' && secrets.KEY_ALIAS != '' && secrets.KEY_PASSWORD != '' }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -31,15 +32,25 @@ jobs:
         with:
           checkout: 'false'
 
+      - name: Decode Keystore
+        if: env.HAS_RELEASE_SIGNING == 'true'
+        run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 --decode > app/release.jks
+
       - name: Build Legacy Debug APK
+        if: env.HAS_RELEASE_SIGNING == 'true'
         uses: ./.magisk-ci-toolkit/.github/actions/run-gradle-with-retry
         with:
           arguments: >
             --warning-mode all
             :app:assembleGithubLegacyDebug
+        env:
+          KEYSTORE_FILE: release.jks
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Write build summary
-        if: always()
+        if: always() && env.HAS_RELEASE_SIGNING == 'true'
         run: |
           {
             echo "## Legacy Debug APK summary"
@@ -57,7 +68,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Legacy Debug APK
-        if: always()
+        if: always() && env.HAS_RELEASE_SIGNING == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: XposedSmsCode-legacy-debug-apk
