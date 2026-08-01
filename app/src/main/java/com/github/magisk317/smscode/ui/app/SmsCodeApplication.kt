@@ -1,5 +1,6 @@
 package com.github.magisk317.smscode.ui.app
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.content.Context
@@ -40,6 +41,7 @@ import timber.log.Timber
 import io.github.magisk317.xposed.logging.MagiskOtel
 import io.github.magisk317.xposed.logging.AnonymousInstallationId
 
+@SuppressLint("LogNotTimber")
 class SmsCodeApplication : Application() {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

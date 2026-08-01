@@ -1,5 +1,6 @@
 package com.github.magisk317.smscode.common.utils
 
+import android.annotation.SuppressLint
 import android.content.Context
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.data.db.DBProvider
@@ -186,6 +187,7 @@ object SmsCodeUtils {
         return normalized
     }
 
+    @SuppressLint("QueryPermissionsNeeded")
     private fun resolvePackageNameByLabel(context: Context, label: String): String? {
         return try {
             val pm = context.packageManager

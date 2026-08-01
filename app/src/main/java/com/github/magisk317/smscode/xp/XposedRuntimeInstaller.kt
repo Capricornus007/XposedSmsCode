@@ -1,5 +1,6 @@
 package com.github.magisk317.smscode.xp
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import com.github.magisk317.smscode.common.utils.PrefsReader
@@ -27,6 +28,7 @@ import io.github.magisk317.smscode.xposed.runtime.CoreRuntime
 import io.github.magisk317.smscode.xposed.runtime.CoreRuntimeAccess
 import io.github.magisk317.xposed.logging.XposedLogClient
 
+@SuppressLint("LogNotTimber", "PrivateApi", "StaticFieldLeak")
 object XposedRuntimeInstaller {
 
     @Volatile

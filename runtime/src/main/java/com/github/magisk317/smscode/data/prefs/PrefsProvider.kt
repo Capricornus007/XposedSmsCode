@@ -9,6 +9,7 @@ import android.database.MatrixCursor
 import android.net.Uri
 import android.os.Binder
 import android.os.Bundle
+import androidx.core.net.toUri
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.ProviderCallerGuard
 import io.github.magisk317.smscode.xposed.utils.XLog
@@ -101,12 +102,12 @@ class PrefsProvider : ContentProvider() {
         fun authority(context: Context): String = "${context.packageName}.pref.provider"
 
         fun buildBoolUri(context: Context): Uri =
-            Uri.parse("content://${context.packageName}.pref.provider/$PATH_BOOL")
+            "content://${context.packageName}.pref.provider/$PATH_BOOL".toUri()
 
         fun buildStringUri(context: Context): Uri =
-            Uri.parse("content://${context.packageName}.pref.provider/$PATH_STRING")
+            "content://${context.packageName}.pref.provider/$PATH_STRING".toUri()
 
         fun buildIntUri(context: Context): Uri =
-            Uri.parse("content://${context.packageName}.pref.provider/$PATH_INT")
+            "content://${context.packageName}.pref.provider/$PATH_INT".toUri()
     }
 }

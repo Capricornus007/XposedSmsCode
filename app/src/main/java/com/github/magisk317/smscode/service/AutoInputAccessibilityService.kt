@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.os.Build
 import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.content.ContextCompat
@@ -170,11 +169,7 @@ class AutoInputAccessibilityService : AccessibilityService() {
 
     private fun accessibilityServiceInfoSummary(): String {
         val info = runCatching { serviceInfo }.getOrNull() ?: return "serviceInfo=<null>"
-        val capabilities = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-            info.capabilities
-        } else {
-            -1
-        }
+        val capabilities = info.capabilities
         return "serviceInfo[eventTypes=${info.eventTypes}, feedbackType=${info.feedbackType}, " +
             "flags=${info.flags}, capabilities=$capabilities]"
     }

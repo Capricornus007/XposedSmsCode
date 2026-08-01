@@ -1,5 +1,6 @@
 package com.github.magisk317.smscode.common.utils
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import com.github.magisk317.smscode.common.constant.CodeNotificationOwner
@@ -12,6 +13,7 @@ import io.github.magisk317.smscode.runtime.contract.prefs.PrefReadResult
 import io.github.magisk317.smscode.runtime.contract.prefs.PrefSources
 import io.github.magisk317.smscode.runtime.contract.prefs.PrefsSource
 
+@SuppressLint("StaticFieldLeak")
 object PrefsReader {
     private const val PREFS_NAME = "xposed_prefs"
     private const val SOURCE_REMOTE_PROVIDER = "provider"

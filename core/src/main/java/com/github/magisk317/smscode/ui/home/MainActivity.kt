@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.core.graphics.createBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.SpanStyle
@@ -78,6 +79,7 @@ import io.github.magisk317.uikit.theme.applyEdgeToEdge
 import io.github.magisk317.uikit.common.DismissibleSnackbarHost
 import io.github.magisk317.uikit.foundation.LocalSnackbarHostState
 import com.github.magisk317.smscode.ui.home.update.FlavorPlayUpdateDelegate
+import java.util.Locale
 import io.github.magisk317.uikit.shell.PlayUpdateDelegate
 import com.github.magisk317.smscode.ui.nav.SmsCodeNavHost
 import com.github.magisk317.smscode.ui.privacy.PrivacyPolicyPage
@@ -274,7 +276,7 @@ class MainActivity : ComponentActivity() {
 
                     try {
                         clearScreenshotBitmap()
-                        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                        val bitmap = createBitmap(width, height, Bitmap.Config.ARGB_8888)
                         val canvas = android.graphics.Canvas(bitmap)
                         view.draw(canvas)
                         screenshotBitmap = bitmap
@@ -952,7 +954,7 @@ class MainActivity : ComponentActivity() {
         return if (index == 0) {
             "${value.toInt()}${units[index]}"
         } else {
-            String.format("%.1f%s", value, units[index])
+            String.format(Locale.ROOT, "%.1f%s", value, units[index])
         }
     }
 

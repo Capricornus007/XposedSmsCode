@@ -1,5 +1,6 @@
 package com.github.magisk317.smscode.common.utils
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.datastore.core.DataStore
@@ -475,6 +476,7 @@ object AppPreferencesDataStore {
         return syncToRemotePrefs(context) != false
     }
 
+    @SuppressLint("ApplySharedPref")
     @Suppress("TooGenericExceptionCaught")
     suspend fun syncToRemotePrefs(context: Context): Boolean? {
         if (remotePrefsProvider == null) return null

@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Binder
+import androidx.core.net.toUri
 import com.github.magisk317.smscode.common.utils.ProviderCallerGuard
 import com.github.magisk317.smscode.common.utils.RuntimeDiagnosticsBridge
 import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogStore
@@ -63,7 +64,7 @@ class RuntimeLogProvider : BaseXposedLogProvider() {
 
         fun authority(packageName: String): String = "$packageName.$AUTHORITY_SUFFIX"
 
-        fun uri(packageName: String): Uri = Uri.parse("content://${authority(packageName)}/entry")
+        fun uri(packageName: String): Uri = "content://${authority(packageName)}/entry".toUri()
 
         fun uri(context: Context): Uri = uri(context.packageName)
 

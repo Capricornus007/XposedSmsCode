@@ -44,10 +44,10 @@ object SmsCodeRuleSourceRoute
 fun SmsCodeNavHost(
     navController: NavHostController,
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
     initialTab: Any? = null,
     onInitialTabConsumed: (() -> Unit)? = null,
     onBottomOverlayPaddingChanged: (Dp) -> Unit = {},
-    modifier: Modifier = Modifier,
 ) {
     NavHost(
         navController = navController,

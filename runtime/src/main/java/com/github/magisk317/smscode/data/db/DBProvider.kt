@@ -8,6 +8,7 @@ import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
 import android.os.Binder
+import androidx.core.net.toUri
 import com.github.magisk317.smscode.common.utils.ProviderCallerGuard
 import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
@@ -616,16 +617,16 @@ class DBProvider : ContentProvider() {
         fun authority(context: Context): String = "${context.packageName}.db.provider"
 
         fun smsMsgContentUri(context: Context): Uri =
-            Uri.parse("content://${context.packageName}.db.provider/$PATH_SMS_MSG")
+            "content://${context.packageName}.db.provider/$PATH_SMS_MSG".toUri()
 
         fun smsCodeRuleContentUri(context: Context): Uri =
-            Uri.parse("content://${context.packageName}.db.provider/$PATH_SMS_CODE_RULE")
+            "content://${context.packageName}.db.provider/$PATH_SMS_CODE_RULE".toUri()
 
         fun appInfoContentUri(context: Context): Uri =
-            Uri.parse("content://${context.packageName}.db.provider/$PATH_APP_INFO")
+            "content://${context.packageName}.db.provider/$PATH_APP_INFO".toUri()
 
         fun autoInputEventContentUri(context: Context): Uri =
-            Uri.parse("content://${context.packageName}.db.provider/$PATH_AUTO_INPUT_EVENT")
+            "content://${context.packageName}.db.provider/$PATH_AUTO_INPUT_EVENT".toUri()
 
         /**
          * Notify-only signal URI for hook-side prefs cache invalidation.
@@ -633,14 +634,14 @@ class DBProvider : ContentProvider() {
          * registers a ContentObserver and clears [com.github.magisk317.smscode.common.utils.PrefsReader].
          */
         fun prefsCacheContentUri(context: Context): Uri =
-            Uri.parse(prefsCacheContentUriString(context.packageName))
+            prefsCacheContentUriString(context.packageName).toUri()
 
         /**
          * Notify-only signal URI for hook-side rule caches (user + official snapshot).
          * Writers call [notifyRulesCacheChanged] after Room rule mutations or official refresh.
          */
         fun rulesCacheContentUri(context: Context): Uri =
-            Uri.parse(rulesCacheContentUriString(context.packageName))
+            rulesCacheContentUriString(context.packageName).toUri()
 
         /** Pure string form of [prefsCacheContentUri] for unit tests (no Android Uri.parse). */
         fun prefsCacheContentUriString(packageName: String): String =

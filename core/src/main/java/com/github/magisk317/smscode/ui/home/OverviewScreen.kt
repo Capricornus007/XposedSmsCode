@@ -2,6 +2,7 @@
 
 package com.github.magisk317.smscode.ui.home
 
+import android.annotation.SuppressLint
 import android.os.Build
 import android.os.SystemClock
 import androidx.activity.ComponentActivity
@@ -70,6 +71,7 @@ fun OverviewScreen() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
+@SuppressLint("AutoboxingStateCreation")
 internal fun OverviewScreenShared() {
     val context = LocalContext.current
     val activityOwner = context as? ComponentActivity

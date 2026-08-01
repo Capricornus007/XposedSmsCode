@@ -83,6 +83,7 @@ class AppConfigViewModel(
 
     private val usageStatsMap = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
+    @SuppressLint("QueryPermissionsNeeded")
     fun refreshData(force: Boolean = false) {
         if (isLoadSucceed && !force) {
             applyFilterAndSort(resetVisibleWindow = true)
