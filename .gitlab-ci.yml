@@ -1,15 +1,15 @@
 include:
   - project: magisk3171/magisk-ci-toolkit
-    ref: 5bf4300fe276f07921e389a90c17a7fcb556c516
+    ref: f7f01cd8b4bfb7c541dbab9b17cf84e10930ab79
     file: /.gitlab/ci/android.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: 5bf4300fe276f07921e389a90c17a7fcb556c516
+    ref: f7f01cd8b4bfb7c541dbab9b17cf84e10930ab79
     file: /.gitlab/ci/android-release.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: 5bf4300fe276f07921e389a90c17a7fcb556c516
+    ref: f7f01cd8b4bfb7c541dbab9b17cf84e10930ab79
     file: /.gitlab/ci/telegram.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: 5bf4300fe276f07921e389a90c17a7fcb556c516
+    ref: f7f01cd8b4bfb7c541dbab9b17cf84e10930ab79
     file: /.gitlab/ci/renovate.yml
 
 workflow:
@@ -37,7 +37,7 @@ stages:
   - maintenance
 
 variables:
-  MAGISK_CI_TOOLKIT_REF: "5bf4300fe276f07921e389a90c17a7fcb556c516"
+  MAGISK_CI_TOOLKIT_REF: "f7f01cd8b4bfb7c541dbab9b17cf84e10930ab79"
   GIT_DEPTH: "0"
   GIT_SUBMODULE_STRATEGY: recursive
   GIT_SUBMODULE_DEPTH: "0"
@@ -51,6 +51,8 @@ variables:
   MAGISK_ANDROID_RELEASE_MODULES_REPO: ""
   MAGISK_ANDROID_RELEASE_PUBLISH_PLAY: "true"
   MAGISK_ANDROID_RELEASE_PLAY_TRACK: "production"
+  # Public SHA-256 fingerprint of the production APK signing certificate.
+  MAGISK_ANDROID_RELEASE_CERT_SHA256: "027b936e1d82a606d83599548b8b11e49a2c8ae2588c4a9fbe8311e2c54f103a"
   MAGISK_RENOVATE_REPOSITORY: "magisk3171/XposedSmsCode"
 
 .xposed_android_rules:
@@ -124,6 +126,8 @@ android:detekt:
     - .magisk_android_detekt
     - .xposed_android_rules
   stage: quality
+  tags:
+    - magisk-arm64-linux
   allow_failure: true
   needs: []
   artifacts:
@@ -137,6 +141,8 @@ android:detekt:
 android:release:guard:
   extends: .magisk_android_release_guard
   stage: release-validate
+  tags:
+    - magisk-arm64-linux
 
 android:release:github-apk:
   extends: .magisk_android_release_apk
@@ -173,6 +179,8 @@ android:release:gitlab:
   extends: .magisk_android_gitlab_release
   resource_group: xposed-android-release-publish
   stage: release-publish
+  tags:
+    - magisk-arm64-linux
   needs:
     - job: android:release:github-apk
       artifacts: true
@@ -184,6 +192,8 @@ android:release:play:
   extends: .magisk_android_publish_play
   resource_group: xposed-android-release-play
   stage: release-publish
+  tags:
+    - magisk-arm64-linux
   needs:
     - job: android:release:play-bundle
       artifacts: true
@@ -192,6 +202,8 @@ android:release:modules-repo:
   extends: .magisk_android_publish_modules_repo
   resource_group: xposed-android-release-publish
   stage: release-publish
+  tags:
+    - magisk-arm64-linux
   needs:
     - job: android:release:github-apk
       artifacts: true
@@ -208,6 +220,8 @@ telegram:release:
   needs:
     - job: android:release:github-apk
       artifacts: true
+    - job: android:release:gitlab
+      artifacts: false
 
 telegram:ci:
   extends:
