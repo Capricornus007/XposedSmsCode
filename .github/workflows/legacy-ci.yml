@@ -36,13 +36,13 @@ jobs:
         if: env.HAS_RELEASE_SIGNING == 'true'
         run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 --decode > app/release.jks
 
-      - name: Build Legacy Debug APK
+      - name: Build GitHub Debug APK
         if: env.HAS_RELEASE_SIGNING == 'true'
         uses: ./.magisk-ci-toolkit/.github/actions/run-gradle-with-retry
         with:
           arguments: >
             --warning-mode all
-            :app:assembleGithubLegacyDebug
+            :app:assembleGithubDebug
         env:
           KEYSTORE_FILE: release.jks
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
@@ -53,7 +53,7 @@ jobs:
         if: always() && env.HAS_RELEASE_SIGNING == 'true'
         run: |
           {
-            echo "## Legacy Debug APK summary"
+            echo "## GitHub Debug APK summary"
             echo ""
             echo "| File | Size |"
             echo "| --- | --- |"
@@ -64,12 +64,12 @@ jobs:
               size=$(du -h "$apk" | awk '{print $1}')
               name=$(basename "$apk")
               echo "| $name | $size |"
-            done < <(find app/build/outputs/apk/githubLegacy/debug -name '*.apk' | sort)
+            done < <(find app/build/outputs/apk/github/debug -name '*.apk' | sort)
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload Legacy Debug APK
+      - name: Upload GitHub Debug APK
         if: always() && env.HAS_RELEASE_SIGNING == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: XposedSmsCode-legacy-debug-apk
-          path: app/build/outputs/apk/githubLegacy/debug/*.apk
+          name: XposedSmsCode-github-debug-apk
+          path: app/build/outputs/apk/github/debug/*.apk
