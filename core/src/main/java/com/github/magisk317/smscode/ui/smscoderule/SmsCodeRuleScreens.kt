@@ -48,6 +48,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -146,8 +147,9 @@ internal fun SmsCodeRuleListScreenShared(
     var officialSnapshot by remember { mutableStateOf<SmsCodeRuleCatalogSnapshot?>(null) }
     var officialLoading by remember { mutableStateOf(false) }
     val officialRules = officialSnapshot?.rules.orEmpty()
-    val officialSummary = stringResource(
-        id = R.string.official_code_rules_summary,
+    val officialSummary = pluralStringResource(
+        id = R.plurals.official_code_rules_summary,
+        count = officialRules.size,
         officialRules.size,
         officialSnapshot?.sourceKind?.name?.lowercase().orEmpty().ifBlank { "-" },
     )

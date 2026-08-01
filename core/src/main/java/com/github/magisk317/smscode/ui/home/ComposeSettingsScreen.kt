@@ -39,12 +39,14 @@ import androidx.compose.ui.layout.LayoutCoordinates
 import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -119,6 +121,7 @@ fun ComposeSettingsScreen(
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Suppress("CyclomaticComplexMethod")
+@SuppressLint("InlinedApi")
 @Composable
 internal fun ComposeSettingsScreenShared(
     viewModel: SettingsViewModel? = null,
@@ -529,13 +532,8 @@ internal fun ComposeSettingsScreenShared(
     // Opens the system notification settings page for this app as a fallback when the
     // runtime permission dialog can no longer be shown.
     val openAppNotificationSettings: () -> Unit = {
-        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-        } else {
-            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                .setData(Uri.fromParts("package", context.packageName, null))
-        }
+        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
         runCatching { notificationSettingsLauncher.launch(intent) }.onFailure {
             scope.launch {
                 snackbarHostState.showSnackbar(
@@ -620,7 +618,9 @@ internal fun ComposeSettingsScreenShared(
         Box(modifier = Modifier.fillMaxSize()) {
         val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
             Const.TOP_BAR_HEIGHT.dp // TopBar height
-        val isCompact = LocalConfiguration.current.screenWidthDp < 600
+        val isCompact = with(LocalDensity.current) {
+            LocalWindowInfo.current.containerSize.width.toDp() < 600.dp
+        }
         val bottomPadding =
             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
                 if (isCompact) Const.BOTTOM_SPACE_HEIGHT.dp else 0.dp
@@ -972,8 +972,9 @@ internal fun ComposeSettingsScreenShared(
                                 verboseLogTitle = stringResource(id = R.string.pref_verbose_log_mode_title),
                                 verboseLogSummary = stringResource(id = R.string.pref_verbose_log_mode_summary),
                                 retentionTitle = stringResource(id = R.string.pref_runtime_log_retention_days_title),
-                                retentionSummary = stringResource(
-                                    id = R.string.pref_runtime_log_retention_days_summary,
+                                retentionSummary = pluralStringResource(
+                                    id = R.plurals.pref_runtime_log_retention_days_summary,
+                                    count = runtimeLogRetentionDays,
                                     runtimeLogRetentionDays,
                                 ),
                                 clearLogTitle = stringResource(id = R.string.runtime_log_clear_confirm_title),

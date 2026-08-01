@@ -106,7 +106,9 @@
     <string name="prompt_sms_code_copied">驗證碼已複製: %s</string>
     <string name="action_delete">刪除</string>
     <string name="action_select_all">全選</string>
-    <string name="some_items_removed">刪除了 %d 條記錄</string>
+    <plurals name="some_items_removed">
+        <item quantity="other">刪除了 %d 條記錄</item>
+    </plurals>
     <string name="message_details">簡訊詳情</string>
     <string name="detail_sender">發件人</string>
     <string name="detail_receiver_sim">接收卡</string>
@@ -121,7 +123,9 @@
     <string name="prompt_sms_copied">簡訊已複製</string>
     <string name="pref_enable_code_records_title">保留驗證碼記錄</string>
 
-    <string name="selected_count">已選 %d 項</string>
+    <plurals name="selected_count">
+        <item quantity="other">已選 %d 項</item>
+    </plurals>
     <string name="pref_history_limit_title">歷史記錄限制</string>
     <string name="pref_history_limit_title_with_target">歷史記錄限制（%1$s）</string>
     <string name="record_settings_title_with_target">記錄設定（%1$s）</string>
@@ -197,7 +201,9 @@
     <string name="pref_enable_analytics_title">統計資料</string>
     <string name="pref_enable_analytics_summary">允許開發者匿名分析通道使用情況、成功率、崩潰等技術細節</string>
     <string name="pref_runtime_log_retention_days_title">日誌保留天數</string>
-    <string name="pref_runtime_log_retention_days_summary">按天輪轉，保留最近 %1$d 天日誌</string>
+    <plurals name="pref_runtime_log_retention_days_summary">
+        <item quantity="other">按天輪轉，保留最近 %1$d 天日誌</item>
+    </plurals>
     <string name="pref_runtime_log_retention_days_hint">單位：天，最小值 1，預設 2。</string>
     <string name="pref_runtime_log_retention_days_error">請輸入大於等於 1 的整數。</string>
     <string name="runtime_log_export_failed">導出失敗：%1$s</string>
@@ -282,7 +288,9 @@
     <string name="edit_rule">編輯規則</string>
     <string name="rule_list_empty_prompt">暫無規則，點擊 + 添加。</string>
     <string name="official_code_rules_title">官方驗證碼規則</string>
-    <string name="official_code_rules_summary">已從 smscode-rules 載入 %1$d 條規則（%2$s），可刷新拉取最新規則。</string>
+    <plurals name="official_code_rules_summary">
+        <item quantity="other">已從 smscode-rules 載入 %1$d 條規則（%2$s），可刷新拉取最新規則。</item>
+    </plurals>
     <string name="official_code_rules_empty_prompt">暫未載入官方規則，點擊刷新拉取規則目錄。</string>
     <string name="official_code_rules_refresh_success">官方規則已刷新。</string>
     <string name="official_code_rules_refresh_failed">刷新失敗，繼續使用快取或內建規則。</string>
@@ -398,7 +406,7 @@
 
     <string name="dialog_donate_alipay_qrcode">查看收款碼</string>
 
-    <string name="save_to_gallery_success">圖片已保存到相簿，正在打開 %s...</string>
+    <string name="save_to_gallery_success">圖片已保存到相簿，正在打開 %s…</string>
     <string name="save_to_gallery_failed">保存失敗，請檢查文件權限</string>
     <string name="save_to_gallery">保存到相簿</string>
     <!-- alipay packet end -->

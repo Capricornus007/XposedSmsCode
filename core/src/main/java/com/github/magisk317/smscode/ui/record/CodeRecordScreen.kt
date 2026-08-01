@@ -38,6 +38,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
@@ -132,6 +133,7 @@ internal fun CodeRecordScreenShared(
     val snackbarHostState = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val resources = LocalResources.current
     val prefs = koinInject<UiPrefsAccess>()
     val fallbackSimSlot1Remark = remember(context) {
         prefs.getSimSlotRemark(context, 0)
@@ -243,12 +245,16 @@ internal fun CodeRecordScreenShared(
     }
 
     // Move deleteAndUndo outside items block and remember it
-    val deleteAndUndo = remember(viewModel, scope, context, snackbarHostState) {
+    val deleteAndUndo = remember(viewModel, scope, context, resources, snackbarHostState) {
         { target: SmsMsg ->
             viewModel.removeSmsMsg(listOf(target))
             scope.launch {
                 val result = snackbarHostState.showLatestSnackbar(
-                    message = context.getString(R.string.some_items_removed, 1),
+                    message = resources.getQuantityString(
+                        R.plurals.some_items_removed,
+                        1,
+                        1,
+                    ),
                     actionLabel = context.getString(R.string.revoke),
                     duration = SnackbarDuration.Long,
                 )
@@ -269,7 +275,11 @@ internal fun CodeRecordScreenShared(
 
         scope.launch {
             val result = snackbarHostState.showLatestSnackbar(
-                message = context.getString(R.string.some_items_removed, deleteList.size),
+                message = resources.getQuantityString(
+                    R.plurals.some_items_removed,
+                    deleteList.size,
+                    deleteList.size,
+                ),
                 actionLabel = context.getString(R.string.revoke),
                 duration = SnackbarDuration.Long,
             )
@@ -524,7 +534,11 @@ internal fun CodeRecordScreenShared(
         ) {
             AppTopBar(
                 title = if (isSelectionMode) {
-                    context.getString(R.string.selected_count, selectedIds.size)
+                    resources.getQuantityString(
+                        R.plurals.selected_count,
+                        selectedIds.size,
+                        selectedIds.size,
+                    )
                 } else {
                     context.getString(R.string.pref_code_records_title)
                 },

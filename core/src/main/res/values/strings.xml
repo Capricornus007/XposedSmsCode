@@ -105,7 +105,10 @@
     <string name="prompt_sms_code_copied">SMS Code copied: %s</string>
     <string name="action_delete">Delete</string>
     <string name="action_select_all">Select All</string>
-    <string name="some_items_removed">Removed %d record(s)</string>
+    <plurals name="some_items_removed">
+        <item quantity="one">Removed %d record</item>
+        <item quantity="other">Removed %d records</item>
+    </plurals>
     <string name="message_details">Message Details</string>
     <string name="detail_sender">Sender</string>
     <string name="detail_receiver_sim">Received by</string>
@@ -121,7 +124,10 @@
     <string name="pref_enable_code_records_title">Reserve SMS code records</string>
 
 
-    <string name="selected_count">%d selected</string>
+    <plurals name="selected_count">
+        <item quantity="one">%d selected</item>
+        <item quantity="other">%d selected</item>
+    </plurals>
     <string name="pref_history_limit_title">History record limit</string>
     <string name="pref_history_limit_title_with_target">History record limit (%1$s)</string>
     <string name="record_settings_title_with_target">Record settings (%1$s)</string>
@@ -156,7 +162,7 @@
     <string name="pref_smscode_test_summary">Test whether SMS code can be recognized or not</string>
     <string name="pref_sim_slot1_remark_title">SIM1 remark</string>
     <string name="pref_sim_slot2_remark_title">SIM2 remark</string>
-    <string name="pref_sim_slot_remark_summary">Shown in records when this SIM receives a message. Leave empty to show SIM1/SIM2.</string>
+    <string name="pref_sim_slot_remark_summary">Shown in records when this SIM receives a message. Leave empty to show SIM 1/SIM 2.</string>
     <string name="pref_sim_slot_remark_empty">No remark, show SIM name</string>
 
 
@@ -198,7 +204,10 @@
     <string name="pref_enable_analytics_title">Analytics</string>
     <string name="pref_enable_analytics_summary">Allow anonymous analytics for channel usage, success rates, crashes and technical diagnostics.</string>
     <string name="pref_runtime_log_retention_days_title">Runtime log retention</string>
-    <string name="pref_runtime_log_retention_days_summary">Daily rotation, keep the last %1$d days</string>
+    <plurals name="pref_runtime_log_retention_days_summary">
+        <item quantity="one">Daily rotation, keep the last %1$d day</item>
+        <item quantity="other">Daily rotation, keep the last %1$d days</item>
+    </plurals>
     <string name="pref_runtime_log_retention_days_hint">Retention in days, minimum 1. Default is 2.</string>
     <string name="pref_runtime_log_retention_days_error">Please enter an integer greater than or equal to 1.</string>
     <string name="runtime_log_export_failed">Export failed: %1$s</string>
@@ -283,7 +292,10 @@
     <string name="edit_rule">Edit Rule</string>
     <string name="rule_list_empty_prompt">No rules yet. Click + to add one.</string>
     <string name="official_code_rules_title">Official rules</string>
-    <string name="official_code_rules_summary">Loaded %1$d rule(s) from smscode-rules (%2$s). Refresh to pull the latest catalog.</string>
+    <plurals name="official_code_rules_summary">
+        <item quantity="one">Loaded %1$d rule from smscode-rules (%2$s). Refresh to pull the latest catalog.</item>
+        <item quantity="other">Loaded %1$d rules from smscode-rules (%2$s). Refresh to pull the latest catalog.</item>
+    </plurals>
     <string name="official_code_rules_empty_prompt">No official rules loaded yet. Tap refresh to pull the catalog.</string>
     <string name="official_code_rules_refresh_success">Official rules refreshed.</string>
     <string name="official_code_rules_refresh_failed">Refresh failed. Using cached or bundled rules.</string>
@@ -405,7 +417,7 @@
 
     <string name="dialog_donate_alipay_qrcode">View QR Code</string>
 
-    <string name="save_to_gallery_success">Image saved to gallery, opening %s...</string>
+    <string name="save_to_gallery_success">Image saved to gallery, opening %s…</string>
     <string name="pref_sync_toast">Settings saved</string>
     <string name="save_to_gallery_failed">Save failed, please check file permissions</string>
     <string name="save_to_gallery">Save to Gallery</string>
@@ -421,16 +433,24 @@
 
     <!-- faq -->
     <string-array name="question_list">
-        <item>Module inactive after being updated.</item>
-        <item>Which Rom is this module suitable for?</item>
-        <item>Why can\'t it mark SMS as read or delete SMS?</item>
-        <item>What\'s the original intention of this App?</item>
+        <item>Module inactive after being updated?</item>
+        <item>Why does Android 15 crash intermittently?</item>
+        <item>Why is the phone heating up?</item>
+        <item>Why is auto input incomplete?</item>
+        <item>What should I do if the module stops working?</item>
+        <item>Why cannot SMS be marked as read or deleted?</item>
+        <item>Which ROM is this module suitable for?</item>
+        <item>What is the original intention of this app?</item>
     </string-array>
     <string-array name="answer_list">
-        <item>Re-check this module in module list, and re-launch this app, and reboot system if it\'s necessary</item>
-        <item>It\'s suitable for AOSP Rom, may not be suitable for other third-party heavily customized Rom.</item>
-        <item>If the system default SMS app uses its own SMS database instead of the system\'s, it will not take effect for marking SMS as read or deleting SMS. If this happens, it may not work well on your device.</item>
-        <item>Don\'t be evil. Green Android.</item>
+        <item>Re-check this module in the module list, force-stop and reopen this app, or reboot the phone if necessary.</item>
+        <item>Android 15 introduced new system behavior. Use the latest LSPosed and configure its scope correctly.</item>
+        <item>This module is lightweight. If the phone heats up severely, check for conflicts with other modules.</item>
+        <item>Auto input can be incomplete when another app takes focus. Check for clipboard-monitoring apps and disable them, or disable the module\'s Copy to clipboard option.</item>
+        <item>1. Add the app to the allowlist of battery or process managers.\n\n2. Check whether the module components are disabled.\n\n3. Check whether the ROM\'s verification-code protection is enabled.\n\n4. Contact the developer with details.</item>
+        <item>If the default SMS app uses its own database instead of the system SMS database, marking or deleting messages may not work on the device.</item>
+        <item>It is designed for AOSP-based ROMs and may work poorly on heavily customized ROMs.</item>
+        <item>Build a clean, green Android.</item>
     </string-array>
     <!-- faq end -->
 
