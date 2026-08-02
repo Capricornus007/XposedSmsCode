@@ -55,8 +55,10 @@ import org.koin.compose.viewmodel.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.widget.Toast
 import io.github.magisk317.uikit.surface.DonateDialog
 import io.github.magisk317.uikit.surface.QRCodeDialog
+import io.github.magisk317.uikit.surface.startAlipayPlatformDonate
 import io.github.magisk317.uikit.surface.saveImageToGalleryAsync
 import io.github.magisk317.uikit.R as UiKitR
 
@@ -232,7 +234,18 @@ internal fun OverviewScreenShared() {
             onDismiss = { showDonateDialog = false },
             onAlipay = {
                 showDonateDialog = false
-                showQRCodeDialog = Pair(UiKitR.drawable.alipay, "alipay")
+                Toast.makeText(
+                    context,
+                    UiKitR.string.alipay_platform_opening,
+                    Toast.LENGTH_SHORT,
+                ).show()
+                scope.launch {
+                    val error = startAlipayPlatformDonate(context)
+                    if (error != null) {
+                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                        showQRCodeDialog = Pair(UiKitR.drawable.alipay, "alipay")
+                    }
+                }
             },
             onWechat = {
                 showDonateDialog = false
