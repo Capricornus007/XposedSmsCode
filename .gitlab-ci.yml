@@ -1,15 +1,15 @@
 include:
   - project: magisk3171/magisk-ci-toolkit
-    ref: f7f01cd8b4bfb7c541dbab9b17cf84e10930ab79
+    ref: 2df77420a6f05d42283a5ada14957b62746a17aa
     file: /.gitlab/ci/android.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: f7f01cd8b4bfb7c541dbab9b17cf84e10930ab79
+    ref: 2df77420a6f05d42283a5ada14957b62746a17aa
     file: /.gitlab/ci/android-release.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: f7f01cd8b4bfb7c541dbab9b17cf84e10930ab79
+    ref: 2df77420a6f05d42283a5ada14957b62746a17aa
     file: /.gitlab/ci/telegram.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: f7f01cd8b4bfb7c541dbab9b17cf84e10930ab79
+    ref: 2df77420a6f05d42283a5ada14957b62746a17aa
     file: /.gitlab/ci/renovate.yml
 
 workflow:
@@ -37,7 +37,8 @@ stages:
   - maintenance
 
 variables:
-  MAGISK_CI_TOOLKIT_REF: "f7f01cd8b4bfb7c541dbab9b17cf84e10930ab79"
+  MAGISK_CI_TOOLKIT_REPOSITORY: "https://gitlab.com/magisk3171/magisk-ci-toolkit.git"
+  MAGISK_CI_TOOLKIT_REF: "2df77420a6f05d42283a5ada14957b62746a17aa"
   GIT_DEPTH: "0"
   GIT_SUBMODULE_STRATEGY: recursive
   GIT_SUBMODULE_DEPTH: "0"
@@ -79,7 +80,7 @@ variables:
       when: never
     - !reference [.xposed_android_rules, rules]
 
-android:build:
+android:check:
   extends:
     - .magisk_android_build
     - .xposed_android_rules
@@ -106,7 +107,7 @@ android:build:
       :app:koverHtmlReportGithubDebug
       -PenableKover=true
 
-android:apk:
+android:build:
   extends:
     - .magisk_android_build
     - .xposed_signed_android_rules
@@ -226,7 +227,7 @@ telegram:release:
 telegram:ci:
   extends:
     - .magisk_telegram_ci
-    - .xposed_android_rules
+    - .xposed_signed_android_rules
   stage: notify
   allow_failure: true
   tags:
@@ -236,6 +237,9 @@ telegram:ci:
     MAGISK_TELEGRAM_PROJECT_NAME: "XposedSmsCode"
     MAGISK_TELEGRAM_CI_BRANCH: "beta"
   needs:
+    - job: android:check
+      artifacts: false
+      optional: false
     - job: android:build
       artifacts: true
       optional: false
