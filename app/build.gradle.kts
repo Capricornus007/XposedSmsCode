@@ -105,7 +105,7 @@ android {
             jvmTarget.set(
                 runCatching {
                     org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(javaVersion.toString())
-                }.getOrElse { org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25 }
+                }.getOrElse { org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_26 }
             )
         }
     }
