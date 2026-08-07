@@ -21,6 +21,7 @@ import io.github.magisk317.xposed.logging.MagiskOtel
  */
 interface HookPrefsAccess {
     fun isEnabled(context: Context): Boolean
+    fun mobileAutomationAllowed(context: Context): Boolean
     fun isVerboseLogMode(context: Context): Boolean
     fun isSensitiveDebugLogMode(context: Context): Boolean
     fun autoInputCodeEnabled(context: Context): Boolean

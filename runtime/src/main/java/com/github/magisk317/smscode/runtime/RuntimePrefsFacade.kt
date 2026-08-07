@@ -8,6 +8,9 @@ import com.github.magisk317.smscode.runtime.bridge.UiPrefsAccess
 object RuntimePrefsFacade : HookPrefsAccess, UiPrefsAccess {
     override fun isEnabled(context: Context): Boolean = PrefsReader.isEnabled(context)
 
+    override fun mobileAutomationAllowed(context: Context): Boolean =
+        PrefsReader.mobileAutomationAllowed(context)
+
     override fun isVerboseLogMode(context: Context): Boolean = PrefsReader.isVerboseLogMode(context)
 
     override fun isSensitiveDebugLogMode(context: Context): Boolean = PrefsReader.isSensitiveDebugLogMode(context)

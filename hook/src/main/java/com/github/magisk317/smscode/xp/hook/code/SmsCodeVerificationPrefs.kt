@@ -23,11 +23,17 @@ class SmsCodeVerificationPrefs(
 
     override fun recordSmsEnabled(): Boolean = HookRuntimeBridge.prefsAccess.recordCodeSmsEnabled(context)
 
-    override fun blockSmsEnabled(): Boolean = HookRuntimeBridge.prefsAccess.blockSmsEnabled(context)
+    override fun blockSmsEnabled(): Boolean =
+        HookRuntimeBridge.prefsAccess.mobileAutomationAllowed(context) &&
+            HookRuntimeBridge.prefsAccess.blockSmsEnabled(context)
 
-    override fun markAsReadEnabled(): Boolean = HookRuntimeBridge.prefsAccess.markAsReadEnabled(context)
+    override fun markAsReadEnabled(): Boolean =
+        HookRuntimeBridge.prefsAccess.mobileAutomationAllowed(context) &&
+            HookRuntimeBridge.prefsAccess.markAsReadEnabled(context)
 
-    override fun deleteSmsEnabled(): Boolean = HookRuntimeBridge.prefsAccess.deleteSmsEnabled(context)
+    override fun deleteSmsEnabled(): Boolean =
+        HookRuntimeBridge.prefsAccess.mobileAutomationAllowed(context) &&
+            HookRuntimeBridge.prefsAccess.deleteSmsEnabled(context)
 
     override fun deduplicateSmsEnabled(): Boolean = HookRuntimeBridge.prefsAccess.deduplicateSms(context)
 }

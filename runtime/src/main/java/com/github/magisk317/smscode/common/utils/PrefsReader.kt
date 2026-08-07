@@ -171,6 +171,12 @@ object PrefsReader {
     }
 
     @JvmStatic
+    fun mobileAutomationAllowed(context: Context): Boolean = getBooleanViaProvider(
+        PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
+        PrefConst.DEFAULT_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
+    )
+
+    @JvmStatic
     fun isVerboseLogMode(context: Context): Boolean {
         val defaultValue = false
         return getBooleanViaProvider(PrefConst.KEY_VERBOSE_LOG_MODE, defaultValue)

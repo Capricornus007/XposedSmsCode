@@ -119,6 +119,8 @@ class CodeWorker(
     }
 
     private fun buildParseResult(blockSms: Boolean): ParseResult {
-        return ParseResult().apply { isBlockSms = blockSms }
+        return ParseResult().apply {
+            isBlockSms = blockSms && HookRuntimeBridge.prefsAccess.mobileAutomationAllowed(mPluginContext)
+        }
     }
 }
