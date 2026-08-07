@@ -70,6 +70,14 @@ class SmsHandlerHook : BaseHook() {
     @Volatile
     private var suppressionLogged = false
 
+    override fun onHotReloading() {
+        // Release resources owned by the old module ClassLoader before libxposed hot reload.
+        smsInboxObserver?.unregister()
+        smsInboxObserver = null
+        SMS_OPERATION_EXECUTOR.shutdownNow()
+        mPhoneContext?.let { CopyCodeReceiver.unregisterMe(it) }
+    }
+
     private data class DispatchContextRecovery(
         val context: Context,
         val source: String,
@@ -629,6 +637,10 @@ class SmsHandlerHook : BaseHook() {
         val runtime = ensureRuntimeForDispatch(param, receiverIndex = -1) ?: return
         val pluginContext = runtime.pluginContext
         val phoneContext = runtime.phoneContext
+        if (!runCatching { HookRuntimeBridge.prefsAccess.mobileAutomationAllowed(pluginContext) }.getOrDefault(false)) {
+            XLog.i("Mobile entitlement gate skipped dispatch-chain side effects")
+            return
+        }
         val eventId = VerificationSmsIntentHookSupport.ensureEventId(intent)
         if (ModuleConflictArbiter.shouldSuppressByRelay(phoneContext, "SmsHandlerHook#$methodName")) {
             logSuppressedOnce("dispatchChain:$methodName")

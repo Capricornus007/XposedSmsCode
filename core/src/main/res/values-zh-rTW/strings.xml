@@ -477,6 +477,25 @@
     <string name="settings_group_notification">通知設定</string>
     <string name="settings_group_experimental">實驗性功能</string>
     <string name="settings_group_others">其他</string>
+    <string name="mobile_entitlement_settings_title">裝置啟用狀態</string>
+    <string name="mobile_entitlement_settings_summary">查看狀態或啟用此裝置</string>
+    <string name="mobile_entitlement_title">裝置啟用狀態</string>
+    <string name="mobile_entitlement_status">啟用狀態：%1$s</string>
+    <string name="mobile_entitlement_automation">功能狀態：%1$s</string>
+    <string name="mobile_entitlement_allowed">可用</string>
+    <string name="mobile_entitlement_paused">已暫停</string>
+    <string name="mobile_entitlement_expires">到期時間：%1$s</string>
+    <string name="mobile_entitlement_renew_due">可以更新啟用狀態。</string>
+    <string name="mobile_entitlement_refresh">重新整理狀態</string>
+    <string name="mobile_entitlement_activate_telegram">透過 Telegram 啟用</string>
+    <string name="mobile_entitlement_activate_google">透過 Google 啟用</string>
+    <string name="mobile_entitlement_open_telegram">開啟 Telegram</string>
+    <string name="mobile_entitlement_pending">等待頻道確認...</string>
+    <string name="mobile_entitlement_play_flow">Play 版本使用 Google 啟用，本版本尚未設定。</string>
+    <string name="mobile_entitlement_not_loaded">未載入</string>
+    <string name="mobile_entitlement_poll_failed">啟用檢查失敗，正在重試...</string>
+    <string name="mobile_entitlement_challenge_expired">啟用要求已過期。</string>
+    <string name="mobile_entitlement_error">要求失敗：%1$s</string>
 
     <!-- backup and restore -->
     <string name="pref_backup_title">備份</string>
@@ -513,6 +532,7 @@
     <string name="model">型號</string>
     <string name="status_working">已啟用</string>
     <string name="status_not_active">未啟用</string>
+    <string name="mobile_entitlement_status_not_activated">未啟用</string>
     <string name="status_tip">請在管理器中啟用並重啟設備</string>
     <string name="framework_incompatibility_title">偵測到框架不相容</string>
     <string name="framework_incompatibility_hooker_annotation_message">目前框架與模組不相容，Hook 註冊失敗。請安裝相容的新版本，或到群組內取得對應構建。</string>

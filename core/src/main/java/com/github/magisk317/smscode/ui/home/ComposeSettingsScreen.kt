@@ -928,6 +928,17 @@ internal fun ComposeSettingsScreenShared(
                         accordionMode = accordionMode.value,
                     ) {
                         Item(
+                            title = stringResource(id = R.string.mobile_entitlement_settings_title),
+                            summary = stringResource(id = R.string.mobile_entitlement_settings_summary),
+                        ) {
+                            context.startActivity(
+                                Intent().setClassName(
+                                    context,
+                                    "com.github.magisk317.smscode.entitlement.MobileEntitlementActivity",
+                                ),
+                            )
+                        }
+                        Item(
                             title = stringResource(id = R.string.pref_backup_title),
                             summary = stringResource(id = R.string.pref_backup_summary),
                         ) { showBackupDialog = true }

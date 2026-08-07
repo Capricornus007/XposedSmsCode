@@ -482,6 +482,25 @@
     <string name="settings_group_notification">通知设置</string>
     <string name="settings_group_experimental">实验性功能</string>
     <string name="settings_group_others">其他</string>
+    <string name="mobile_entitlement_settings_title">设备激活状态</string>
+    <string name="mobile_entitlement_settings_summary">查看状态或激活此设备</string>
+    <string name="mobile_entitlement_title">设备激活状态</string>
+    <string name="mobile_entitlement_status">激活状态：%1$s</string>
+    <string name="mobile_entitlement_automation">功能状态：%1$s</string>
+    <string name="mobile_entitlement_allowed">可用</string>
+    <string name="mobile_entitlement_paused">已暂停</string>
+    <string name="mobile_entitlement_expires">到期时间：%1$s</string>
+    <string name="mobile_entitlement_renew_due">可以更新激活状态。</string>
+    <string name="mobile_entitlement_refresh">刷新状态</string>
+    <string name="mobile_entitlement_activate_telegram">通过 Telegram 激活</string>
+    <string name="mobile_entitlement_activate_google">通过 Google 激活</string>
+    <string name="mobile_entitlement_open_telegram">打开 Telegram</string>
+    <string name="mobile_entitlement_pending">等待频道确认...</string>
+    <string name="mobile_entitlement_play_flow">Play 版本使用 Google 激活，本版本尚未配置。</string>
+    <string name="mobile_entitlement_not_loaded">未加载</string>
+    <string name="mobile_entitlement_poll_failed">激活检查失败，正在重试...</string>
+    <string name="mobile_entitlement_challenge_expired">激活请求已过期。</string>
+    <string name="mobile_entitlement_error">请求失败：%1$s</string>
 
     <!-- backup and restore -->
     <string name="pref_backup_title">备份</string>
@@ -518,6 +537,7 @@
     <string name="model">型号</string>
     <string name="status_working">工作正常</string>
     <string name="status_not_active">未激活</string>
+    <string name="mobile_entitlement_status_not_activated">未激活</string>
     <string name="status_tip">请在管理器中启用并重启设备</string>
     <string name="framework_incompatibility_title">检测到框架不兼容</string>
     <string name="framework_incompatibility_hooker_annotation_message">当前框架与模块不兼容，Hook 注册失败。请安装兼容的新版本，或到群组内获取对应构建。</string>

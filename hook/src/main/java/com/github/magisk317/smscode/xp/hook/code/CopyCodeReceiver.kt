@@ -9,8 +9,10 @@ import androidx.core.content.ContextCompat
 import com.github.magisk317.smscode.hook.BuildConfig
 import com.github.magisk317.smscode.hook.R
 import io.github.magisk317.smscode.runtime.common.utils.ClipboardUtils
+import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import io.github.magisk317.smscode.verification.CodeNotificationActionHandler
 import io.github.magisk317.smscode.verification.CodeNotificationActionPayload
+import io.github.magisk317.smscode.xposed.utils.XLog
 import io.github.magisk317.xposed.logging.MagiskOtel
 
 /**
@@ -19,6 +21,14 @@ import io.github.magisk317.xposed.logging.MagiskOtel
 class CopyCodeReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        if (!runCatching { HookRuntimeBridge.prefsAccess.mobileAutomationAllowed(context) }.getOrDefault(false)) {
+            MagiskOtel.event(
+                name = "sms.copy",
+                attributes = mapOf("result" to "skip", "process" to "hook", "reason" to "mobile_entitlement"),
+                statusOk = true,
+            )
+            return
+        }
         MagiskOtel.event(
             name = "sms.copy",
             attributes = mapOf(
@@ -66,6 +76,14 @@ class CopyCodeReceiver : BroadcastReceiver() {
             val filter = IntentFilter()
             filter.addAction(ACTION_COPY_CODE)
             ContextCompat.registerReceiver(context, instance, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        }
+
+        @JvmStatic
+        fun unregisterMe(context: Context) {
+            runCatching { context.unregisterReceiver(instance) }
+                .onFailure {
+                    XLog.w("CopyCodeReceiver unregister failed: %s", it.message ?: it.javaClass.simpleName)
+                }
         }
     }
 }

@@ -2,6 +2,7 @@ package com.github.magisk317.smscode.xp.hook.code
 
 import android.content.Context
 import android.os.Handler
+import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import io.github.magisk317.smscode.runtime.common.utils.SharedRuntimeGate
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.hook.code.action.impl.AutoInputAction
@@ -15,6 +16,7 @@ import io.github.magisk317.smscode.verification.SmsCodeActionScheduler
 import io.github.magisk317.smscode.verification.SmsCodeActionDispatcher as SharedSmsCodeActionDispatcher
 import io.github.magisk317.smscode.verification.SmsCodePostParseCoordinator
 import io.github.magisk317.smscode.xposed.utils.XLog
+import java.util.concurrent.Callable
 import java.util.concurrent.ScheduledExecutorService
 
 object SmsCodeActionDispatcher {
@@ -91,6 +93,10 @@ object SmsCodeActionDispatcher {
         smsMsg: SmsMsg,
         uiPlan: SmsCodePostParseCoordinator.UiPlan,
     ) {
+        if (!mobileAutomationAllowed(pluginContext)) {
+            XLog.i("Mobile entitlement gate skipped UI actions")
+            return
+        }
         uiHandler.post(
             CopyToClipboardAction(
                 pluginContext = pluginContext,
@@ -204,6 +210,7 @@ object SmsCodeActionDispatcher {
         smsMsg: SmsMsg,
         plan: SmsCodePostParseCoordinator.NotificationPlan,
     ) {
+        if (!mobileAutomationAllowed(pluginContext)) return
         XLog.i("scheduleNotification() running inline: smsCode=%s", smsMsg.smsCode)
         runCatching {
             NotifyAction(
@@ -230,7 +237,11 @@ object SmsCodeActionDispatcher {
             executor = executor,
             delays = delays,
         ) {
-            OperateSmsAction(pluginContext, phoneContext, smsMsg)
+            Callable {
+                if (mobileAutomationAllowed(pluginContext)) {
+                    OperateSmsAction(pluginContext, phoneContext, smsMsg).call()
+                }
+            }
         }
     }
 
@@ -239,6 +250,7 @@ object SmsCodeActionDispatcher {
         smsMsg: SmsMsg,
         delayMs: Long,
     ): Boolean {
+        if (!mobileAutomationAllowed(pluginContext)) return false
         return AutoInputDispatchGuard.claim(
             pluginContext = pluginContext,
             smsMsg = smsMsg.toVerificationMessage(),
@@ -253,6 +265,10 @@ object SmsCodeActionDispatcher {
             ).toAutoInputClaim()
         }
     }
+
+    private fun mobileAutomationAllowed(context: Context): Boolean = runCatching {
+        HookRuntimeBridge.prefsAccess.mobileAutomationAllowed(context)
+    }.getOrDefault(false)
 
     private fun SharedRuntimeGate.ClaimResult.toAutoInputClaim(): AutoInputDispatchGuard.ClaimResult {
         return AutoInputDispatchGuard.ClaimResult(

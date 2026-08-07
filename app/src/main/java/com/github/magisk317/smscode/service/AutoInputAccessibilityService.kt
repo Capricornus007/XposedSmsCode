@@ -11,6 +11,7 @@ import androidx.core.content.ContextCompat
 import io.github.magisk317.smscode.verification.AutoInputAccessibilityNodeHelper
 import io.github.magisk317.smscode.verification.AutoInputAccessibilityNodeHelper.Result as AutoInputResult
 import io.github.magisk317.smscode.verification.AutoInputAccessibilityRequestHandler
+import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import io.github.magisk317.smscode.xposed.hook.system.SystemInputInjectorHook
 import io.github.magisk317.smscode.xposed.utils.XLog
 import io.github.magisk317.xposed.logging.MagiskOtel
@@ -27,6 +28,10 @@ class AutoInputAccessibilityService : AccessibilityService() {
 
     private val autoInputReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
+            if (!PrefsReader.mobileAutomationAllowed(this@AutoInputAccessibilityService)) {
+                XLog.i("Mobile entitlement gate skipped accessibility auto-input")
+                return
+            }
             AutoInputAccessibilityRequestHandler.handle(
                 serviceContext = this@AutoInputAccessibilityService,
                 receiver = this,
@@ -178,6 +183,10 @@ class AutoInputAccessibilityService : AccessibilityService() {
         code: String,
         autoEnter: Boolean,
     ): AutoInputResult {
+        if (!PrefsReader.mobileAutomationAllowed(this)) {
+            XLog.i("Mobile entitlement gate skipped accessibility execution")
+            return AutoInputResult(false, "none", "mobile_entitlement", packageName)
+        }
         return AutoInputAccessibilityNodeHelper.performAutoInput(rootInActiveWindow, code, autoEnter)
     }
 
