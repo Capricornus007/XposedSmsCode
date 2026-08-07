@@ -29,6 +29,10 @@ class MmsMessagesHook : BaseHook() {
         }
     }
 
+    override fun onHotReloading() {
+        SMS_OPERATION_EXECUTOR.shutdownNow()
+    }
+
     private fun onLoadPackageRouted(param: LoadParam) {
         if (param.packageName != MMS_PACKAGE_NAME) return
         val classLoader = param.classLoader

@@ -74,6 +74,17 @@ internal class SmsInboxObserver(
         }
     }
 
+    /** Release the content observer and executor owned by the old module ClassLoader before hot reload. */
+    fun unregister() {
+        runCatching {
+            phoneContext.contentResolver.unregisterContentObserver(observer)
+            XLog.i("SmsInboxObserver unregistered")
+        }.onFailure {
+            XLog.w("SmsInboxObserver unregister failed: %s", it.message ?: it.javaClass.simpleName)
+        }
+        queryExecutor.shutdownNow()
+    }
+
     private fun repairRecentRouting() {
         var scanned = 0
         var updated = 0
