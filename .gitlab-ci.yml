@@ -1,18 +1,18 @@
 include:
   - project: magisk3171/magisk-ci-toolkit
-    ref: f52f56a2bd14ecd9c3130fa3d7e424039440dadd
+    ref: ab1988d8adb7afd0d28be300aae03202eade0c77
     file: /.gitlab/ci/android.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: f52f56a2bd14ecd9c3130fa3d7e424039440dadd
+    ref: ab1988d8adb7afd0d28be300aae03202eade0c77
     file: /.gitlab/ci/android-release.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: f52f56a2bd14ecd9c3130fa3d7e424039440dadd
+    ref: ab1988d8adb7afd0d28be300aae03202eade0c77
     file: /.gitlab/ci/telegram.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: f52f56a2bd14ecd9c3130fa3d7e424039440dadd
+    ref: ab1988d8adb7afd0d28be300aae03202eade0c77
     file: /.gitlab/ci/renovate.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: f52f56a2bd14ecd9c3130fa3d7e424039440dadd
+    ref: ab1988d8adb7afd0d28be300aae03202eade0c77
     file: /.gitlab/ci/cancel-mr-pipelines.yml
 
 workflow:
@@ -41,7 +41,7 @@ stages:
 
 variables:
   MAGISK_CI_TOOLKIT_REPOSITORY: "https://gitlab.com/magisk3171/magisk-ci-toolkit.git"
-  MAGISK_CI_TOOLKIT_REF: "f52f56a2bd14ecd9c3130fa3d7e424039440dadd"
+  MAGISK_CI_TOOLKIT_REF: "ab1988d8adb7afd0d28be300aae03202eade0c77"
   MAGISK_CANCEL_OLDER_MR_PIPELINES: "true"
   GIT_DEPTH: "0"
   GIT_SUBMODULE_STRATEGY: recursive
@@ -88,28 +88,16 @@ android:check:
   extends:
     - .magisk_android_build
     - .xposed_android_rules
-  variables:
-    MAGISK_ANDROID_BUILD_TASKS: >-
-      :core:check
-      :runtime:check
-      :app:check
-      :smscode-core:contract:testDebugUnitTest
-      :smscode-core:domain:testDebugUnitTest
-      :smscode-core:hook:testDebugUnitTest
-      :smscode-core:runtime:testDebugUnitTest
-      :smscode-core:verification:detekt
-      :smscode-core:verification:testDebugUnitTest
-      :magisk-xposed-kit:testDebugUnitTest
-      :magisk-xposed-kit:logging:testDebugUnitTest
-      :magisk-xposed-kit:diagnostics:testDebugUnitTest
-      :app:compileGithubDebugAndroidTestKotlin
-      :app:compilePlayDebugAndroidTestKotlin
-      :core:compilePlayDebugUnitTestKotlin
-      :core:generatePlayDebugUnitTestStubRFile
-      :runtime:compileDebugAndroidTestKotlin
-      :app:koverVerifyGithubDebug
-      :app:koverHtmlReportGithubDebug
-      -PenableKover=true
+  script:
+    - |
+      set -euo pipefail
+      mapfile -t selected_tasks < <(bash scripts/ci/select_android_test_tasks.sh "$MAGISK_CI_TOOLKIT_DIR")
+      if ((${#selected_tasks[@]} == 0)); then
+        echo "No Android test tasks selected for this change."
+        exit 0
+      fi
+      bash "$MAGISK_CI_TOOLKIT_DIR/gradle/run_gradle_with_retry.sh" \
+        ${MAGISK_GRADLE_ARGS:---warning-mode all} "${selected_tasks[@]}" -PenableKover=true
 
 cancel:older:mr:pipelines:
   extends: .magisk_cancel_older_mr_pipelines

@@ -34,30 +34,16 @@ jobs:
         if: env.HAS_RELEASE_SIGNING == 'true'
         run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 --decode > app/release.jks
       - name: Test project
-        uses: ./.magisk-ci-toolkit/.github/actions/run-gradle-with-retry
-        with:
-          arguments: >
-            --warning-mode all
-            :core:check
-            :runtime:check
-            :app:check
-            :smscode-core:contract:testDebugUnitTest
-            :smscode-core:domain:testDebugUnitTest
-            :smscode-core:hook:testDebugUnitTest
-            :smscode-core:runtime:testDebugUnitTest
-            :smscode-core:verification:detekt
-            :smscode-core:verification:testDebugUnitTest
-            :magisk-xposed-kit:testDebugUnitTest
-            :magisk-xposed-kit:logging:testDebugUnitTest
-            :magisk-xposed-kit:diagnostics:testDebugUnitTest
-            :app:compileGithubDebugAndroidTestKotlin
-            :app:compilePlayDebugAndroidTestKotlin
-            :core:compilePlayDebugUnitTestKotlin
-            :core:generatePlayDebugUnitTestStubRFile
-            :runtime:compileDebugAndroidTestKotlin
-            :app:koverVerifyGithubDebug
-            :app:koverHtmlReportGithubDebug
-            -PenableKover=true
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t selected_tasks < <(bash scripts/ci/select_android_test_tasks.sh "${MAGISK_CI_TOOLKIT_DIR:-.magisk-ci-toolkit}")
+          if ((${#selected_tasks[@]} == 0)); then
+            echo "No Android test tasks selected for this change."
+            exit 0
+          fi
+          bash "${MAGISK_CI_TOOLKIT_DIR:-.magisk-ci-toolkit}/gradle/run_gradle_with_retry.sh" \
+            --warning-mode all "${selected_tasks[@]}" -PenableKover=true
       - name: Build signed debug APKs
         if: env.HAS_RELEASE_SIGNING == 'true'
         uses: ./.magisk-ci-toolkit/.github/actions/run-gradle-with-retry
