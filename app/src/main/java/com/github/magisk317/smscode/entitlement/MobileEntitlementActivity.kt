@@ -62,6 +62,7 @@ class MobileEntitlementActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        XLog.w("Mobile entitlement activity created")
         setContent {
             AppTheme(themeMode = 0, uiKitStyle = UiKitStyle.Expressive.value) {
                 MobileEntitlementScreen(
@@ -85,20 +86,31 @@ private fun MobileEntitlementScreen(
     val scope = rememberCoroutineScope()
     var evaluation by remember { mutableStateOf<MobileEntitlementEvaluation?>(null) }
     var challenge by remember { mutableStateOf<MobileEntitlementChallenge?>(null) }
-    var busy by remember { mutableStateOf(false) }
+    var busyAction by remember { mutableStateOf<ActivationAction?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
 
     fun refreshStatus() {
         scope.launch {
-            busy = true
+            busyAction = ActivationAction.REFRESH
             message = null
+            XLog.w("Mobile entitlement refresh started")
             runCatching {
                 withContext(Dispatchers.IO) {
                     MobileEntitlementCoordinator.refresh(context)
                 }
-            }.onSuccess { evaluation = it }
-                .onFailure { message = it.message ?: it.javaClass.simpleName }
-            busy = false
+            }.onSuccess {
+                evaluation = it
+                XLog.w(
+                    "Mobile entitlement refresh finished status=%s allowed=%s renewDue=%s",
+                    it.status,
+                    it.automationAllowed,
+                    it.renewDue,
+                )
+            }.onFailure {
+                XLog.e("Mobile entitlement refresh failed", it)
+                message = it.message ?: it.javaClass.simpleName
+            }
+            busyAction = null
         }
     }
 
@@ -110,23 +122,28 @@ private fun MobileEntitlementScreen(
 
     fun createChallenge() {
         scope.launch {
-            busy = true
+            busyAction = ActivationAction.TELEGRAM
             message = null
+            XLog.w("Mobile entitlement Telegram activation started")
             runCatching {
                 withContext(Dispatchers.IO) {
                     MobileEntitlementCoordinator.createTelegramChallenge(context)
                 }
             }.onSuccess {
                 challenge = it
+                XLog.w("Mobile entitlement Telegram challenge received id=%s", it.id.take(8))
                 openTelegram(it.botUrl)
-            }.onFailure { message = it.message ?: it.javaClass.simpleName }
-            busy = false
+            }.onFailure {
+                XLog.e("Mobile entitlement Telegram activation failed", it)
+                message = it.message ?: it.javaClass.simpleName
+            }
+            busyAction = null
         }
     }
 
     fun activateWithGoogle() {
         scope.launch {
-            busy = true
+            busyAction = ActivationAction.GOOGLE
             message = null
             var googleBotUrl: String? = null
             runCatching {
@@ -167,7 +184,7 @@ private fun MobileEntitlementScreen(
                     XLog.e("Google activation failed", it)
                     message = it.message ?: it.javaClass.simpleName
                 }
-            busy = false
+            busyAction = null
         }
     }
 
@@ -193,6 +210,18 @@ private fun MobileEntitlementScreen(
                 withContext(Dispatchers.IO) {
                     MobileEntitlementCoordinator.pollTelegramChallenge(context, activeChallenge.id)
                 }
+            }.onSuccess {
+                XLog.w(
+                    "Mobile entitlement Telegram poll status=%s id=%s",
+                    it.status,
+                    activeChallenge.id.take(8),
+                )
+            }.onFailure {
+                XLog.e(
+                    "Mobile entitlement Telegram poll failed id=%s",
+                    activeChallenge.id.take(8),
+                    it,
+                )
             }.getOrNull()
             if (state == null) {
                 message = context.getString(R.string.mobile_entitlement_poll_failed)
@@ -282,32 +311,38 @@ private fun MobileEntitlementScreen(
                     }
                 }
             }
-            Button(
-                onClick = ::createChallenge,
-                enabled = !busy,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                if (busy) {
-                    CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
+            val currentEvaluation = evaluation
+            val showActivationActions = currentEvaluation == null ||
+                currentEvaluation.status != MobileEntitlementStatus.ACTIVE ||
+                currentEvaluation.renewDue
+            if (showActivationActions) {
+                Button(
+                    onClick = ::createChallenge,
+                    enabled = busyAction == null,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (busyAction == ActivationAction.TELEGRAM) {
+                        CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
+                    }
+                    Text(stringResource(R.string.mobile_entitlement_activate_telegram))
                 }
-                Text(stringResource(R.string.mobile_entitlement_activate_telegram))
-            }
-            if (BuildConfig.MOBILE_ENTITLEMENT_CHANNEL == "play") {
-                if (BuildConfig.MOBILE_ENTITLEMENT_GOOGLE_WEB_CLIENT_ID.isBlank()) {
-                    Text(
-                        text = stringResource(R.string.mobile_entitlement_play_flow),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    Button(
-                        onClick = ::activateWithGoogle,
-                        enabled = !busy,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        if (busy) {
-                            CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
+                if (BuildConfig.MOBILE_ENTITLEMENT_CHANNEL == "play") {
+                    if (BuildConfig.MOBILE_ENTITLEMENT_GOOGLE_WEB_CLIENT_ID.isBlank()) {
+                        Text(
+                            text = stringResource(R.string.mobile_entitlement_play_flow),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Button(
+                            onClick = ::activateWithGoogle,
+                            enabled = busyAction == null,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            if (busyAction == ActivationAction.GOOGLE) {
+                                CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
+                            }
+                            Text(stringResource(R.string.mobile_entitlement_activate_google))
                         }
-                        Text(stringResource(R.string.mobile_entitlement_activate_google))
                     }
                 }
             }
@@ -326,7 +361,7 @@ private fun MobileEntitlementScreen(
             }
             OutlinedButton(
                 onClick = ::refreshStatus,
-                enabled = !busy,
+                enabled = busyAction == null,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null)
@@ -342,6 +377,12 @@ private fun MobileEntitlementScreen(
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
+}
+
+private enum class ActivationAction {
+    REFRESH,
+    TELEGRAM,
+    GOOGLE,
 }
 
 private fun formatEpoch(epochSeconds: Long): String =

@@ -51,6 +51,7 @@ class SmsCodeApplication : Application() {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var startedActivityCount: Int = 0
+    private var entitlementForegroundPrimed = false
 
     override fun onCreate() {
         super.onCreate()
@@ -286,6 +287,16 @@ class SmsCodeApplication : Application() {
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
             override fun onActivityStarted(activity: Activity) {
+                if (startedActivityCount == 0) {
+                    if (entitlementForegroundPrimed) {
+                        applicationScope.launch {
+                            runCatching { MobileEntitlementCoordinator.refresh(this@SmsCodeApplication) }
+                        }
+                    } else {
+                        // initialize() covers the first process start.
+                        entitlementForegroundPrimed = true
+                    }
+                }
                 startedActivityCount += 1
             }
             override fun onActivityResumed(activity: Activity) {
