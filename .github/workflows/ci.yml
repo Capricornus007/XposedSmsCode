@@ -14,7 +14,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-debug:
+    name: Build Debug APKs
     runs-on: ubuntu-latest
     env:
       GRADLE_OPTS: -Dorg.gradle.warning.mode=all
@@ -33,17 +34,6 @@ jobs:
       - name: Decode Keystore
         if: env.HAS_RELEASE_SIGNING == 'true'
         run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 --decode > app/release.jks
-      - name: Test project
-        shell: bash
-        run: |
-          set -euo pipefail
-          mapfile -t selected_tasks < <(bash scripts/ci/select_android_test_tasks.sh "${MAGISK_CI_TOOLKIT_DIR:-.magisk-ci-toolkit}")
-          if ((${#selected_tasks[@]} == 0)); then
-            echo "No Android test tasks selected for this change."
-            exit 0
-          fi
-          bash "${MAGISK_CI_TOOLKIT_DIR:-.magisk-ci-toolkit}/gradle/run_gradle_with_retry.sh" \
-            --warning-mode all "${selected_tasks[@]}" -PenableKover=true
       - name: Build signed debug APKs
         if: env.HAS_RELEASE_SIGNING == 'true'
         uses: ./.magisk-ci-toolkit/.github/actions/run-gradle-with-retry
@@ -80,6 +70,35 @@ jobs:
         with:
           name: XposedSmsCode-debug-apks
           path: app/build/outputs/apk/**/debug/*.apk
+  test:
+    name: Post-build Tests
+    needs: [build-debug]
+    if: always() && needs.build-debug.result == 'success'
+    runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: -Dorg.gradle.warning.mode=all
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Resolve CI toolkit
+        run: bash scripts/resolve_ci_toolkit.sh
+      - name: Setup Android CI
+        uses: ./.magisk-ci-toolkit/.github/actions/setup-android-ci
+        with:
+          checkout: 'false'
+      - name: Run Android tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t selected_tasks < <(bash scripts/ci/select_android_test_tasks.sh "${MAGISK_CI_TOOLKIT_DIR:-.magisk-ci-toolkit}")
+          if ((${#selected_tasks[@]} == 0)); then
+            echo "No Android test tasks selected for this change."
+            exit 0
+          fi
+          bash "${MAGISK_CI_TOOLKIT_DIR:-.magisk-ci-toolkit}/gradle/run_gradle_with_retry.sh" \
+            --warning-mode all "${selected_tasks[@]}" -PenableKover=true
       - name: Upload Kover Report
         if: always()
         uses: actions/upload-artifact@v7

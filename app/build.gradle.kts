@@ -9,8 +9,13 @@ plugins {
     id(libs.plugins.kotlin.serialization.get().pluginId)
 }
 
-val versionNameStr = libs.versions.versionName.get()
-val versionCodeInt = libs.versions.versionCode.get().toInt()
+val versionNameStr = providers.gradleProperty("versionName")
+    .orElse(libs.versions.versionName)
+    .get()
+val versionCodeInt = providers.gradleProperty("versionCode")
+    .map { requireNotNull(it.toIntOrNull()) { "Invalid -PversionCode=$it" } }
+    .orElse(libs.versions.versionCode.map { it.toInt() })
+    .get()
 val ndkVersionStr = libs.versions.ndk.get()
 val relayDownloadUrl = "https://github.com/magisk317/xinyi-relay"
 val allowConflictBypass = findProperty("allowConflictBypass")

@@ -2,6 +2,8 @@ name: Release
 
 on:
   push:
+    branches:
+      - beta
     tags:
       - 'v*.*.*'
   workflow_dispatch:
@@ -14,9 +16,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate-release:
+  validate-release-metadata:
     name: Validate Release Metadata
-    if: ${{ vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github' }}
+    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/beta') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -35,32 +37,12 @@ jobs:
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             scripts/release/check_release_guard.sh "${GITHUB_REF_NAME}"
           else
-            scripts/release/check_release_guard.sh
+            echo "Skip formal release guard on beta branch; this pipeline publishes Alpha."
           fi
-      - name: Run quality gate
-        uses: ./.magisk-ci-toolkit/.github/actions/run-gradle-with-retry
-        with:
-          arguments: >
-            --warning-mode all
-            :core:check
-            :runtime:check
-            :app:check
-            :smscode-core:contract:testDebugUnitTest
-            :smscode-core:domain:testDebugUnitTest
-            :smscode-core:hook:testDebugUnitTest
-            :smscode-core:runtime:testDebugUnitTest
-            :smscode-core:verification:detekt
-            :smscode-core:verification:testDebugUnitTest
-            :magisk-xposed-kit:testDebugUnitTest
-            :magisk-xposed-kit:logging:testDebugUnitTest
-            :magisk-xposed-kit:diagnostics:testDebugUnitTest
-            :app:koverVerifyGithubDebug
-            -PenableKover=true
-
   build-github-apk:
     name: Build GitHub APK
-    needs: [validate-release]
-    if: ${{ vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github' }}
+    needs: [validate-release-metadata]
+    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     env:
       HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
@@ -95,8 +77,8 @@ jobs:
 
   build-aab:
     name: Build Bundle
-    needs: [validate-release]
-    if: ${{ vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github' }}
+    needs: [validate-release-metadata]
+    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/beta') }}
     runs-on: ubuntu-latest
     outputs:
       has_play_native_symbols: ${{ steps.play_symbols.outputs.exists }}
@@ -116,10 +98,22 @@ jobs:
       - name: Decode Keystore
         if: env.HAS_RELEASE_KEYSTORE == 'true'
         run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 --decode > app/release.jks
+      - name: Resolve Play release version
+        shell: bash
+        env:
+          ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
+        run: |
+          bash .magisk-ci-toolkit/release/resolve_play_release.sh \
+            --package-name com.github.tianma8023.xposed.smscode \
+            --version-file gradle/libs.versions.toml \
+            --output play-release.env
+          {
+            cat play-release.env
+          } >> "$GITHUB_ENV"
       - name: Build App Bundle
         uses: ./.magisk-ci-toolkit/.github/actions/run-gradle-with-retry
         with:
-          arguments: :app:bundlePlayRelease
+          arguments: :app:bundlePlayRelease -PversionName=${{ env.MAGISK_PLAY_VERSION_NAME }} -PversionCode=${{ env.MAGISK_PLAY_VERSION_CODE }}
         env:
           KEYSTORE_FILE: release.jks
           STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
@@ -132,6 +126,7 @@ jobs:
           path: |
             app/build/outputs/bundle/**/*.aab
             app/build/outputs/mapping/**/mapping.txt
+            play-release.env
       - name: Detect Play Native Symbols
         id: play_symbols
         shell: bash
@@ -152,8 +147,8 @@ jobs:
 
   release:
     name: Create Release
-    needs: [validate-release, build-github-apk, build-aab]
-    if: always() && (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && needs.validate-release.result == 'success' && needs.build-github-apk.result == 'success'
+    needs: [validate-release-metadata, build-github-apk, build-aab]
+    if: always() && (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') && needs.validate-release-metadata.result == 'success' && needs.build-github-apk.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -209,16 +204,23 @@ jobs:
 
   publish-play:
     name: Publish to Google Play
-    needs: [release, build-aab]
+    needs: [build-aab]
     if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     env:
       HAS_GOOGLE_PLAY_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS != '' }}
     steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Resolve CI toolkit
+        run: bash scripts/resolve_ci_toolkit.sh
       - uses: actions/download-artifact@v8
         with:
           name: bundle-assets
           path: artifacts/bundle
+      - name: Load Play release version
+        run: cat artifacts/bundle/play-release.env >> "$GITHUB_ENV"
       - uses: actions/download-artifact@v8
         if: needs.build-aab.outputs.has_play_native_symbols == 'true'
         with:
@@ -248,16 +250,6 @@ jobs:
           else
             echo "has_symbols=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: Set up Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 'ruby'
-      - name: Install fastlane
-        shell: bash
-        run: |
-          gem_user_dir="$(ruby -r rubygems -e 'print Gem.user_dir')"
-          echo "$gem_user_dir/bin" >> "$GITHUB_PATH"
-          gem install --user-install fastlane --no-document
       - name: Publish to Google Play
         if: env.HAS_GOOGLE_PLAY_CREDENTIALS == 'true'
         shell: bash
@@ -268,31 +260,77 @@ jobs:
           CI: 'true'
         run: |
           set -euo pipefail
-          gem_user_bin="$(ruby -r rubygems -e 'print Gem.user_dir')/bin"
-          fastlane_bin="$gem_user_bin/fastlane"
-          cmd=(
-            "$fastlane_bin" supply
-            --aab "${{ steps.resolve_play.outputs.aab_file }}"
-            --package_name "com.github.tianma8023.xposed.smscode"
-            --track "production"
-            --release_status "completed"
-            --json_key_data "$ANDROID_PUBLISHER_CREDENTIALS"
-            --skip_upload_metadata true
-            --skip_upload_images true
-            --skip_upload_screenshots true
-          )
-          if [[ "${{ steps.resolve_play.outputs.has_mapping }}" == "true" && "${{ steps.resolve_play.outputs.has_symbols }}" == "true" ]]; then
-            cmd+=(--mapping_paths "${{ steps.resolve_play.outputs.mapping_file }},${{ steps.resolve_play.outputs.symbols_file }}")
-          elif [[ "${{ steps.resolve_play.outputs.has_mapping }}" == "true" ]]; then
-            cmd+=(--mapping "${{ steps.resolve_play.outputs.mapping_file }}")
-          elif [[ "${{ steps.resolve_play.outputs.has_symbols }}" == "true" ]]; then
-            cmd+=(--mapping_paths "${{ steps.resolve_play.outputs.symbols_file }}")
+          export MAGISK_ANDROID_RELEASE_PACKAGE_NAME="com.github.tianma8023.xposed.smscode"
+          export MAGISK_PLAY_AAB_FILE="${{ steps.resolve_play.outputs.aab_file }}"
+          if [[ "${{ steps.resolve_play.outputs.has_mapping }}" == "true" ]]; then
+            export MAGISK_PLAY_MAPPING_FILE="${{ steps.resolve_play.outputs.mapping_file }}"
           fi
-          "${cmd[@]}"
+          if [[ "${{ steps.resolve_play.outputs.has_symbols }}" == "true" ]]; then
+            export MAGISK_PLAY_SYMBOLS_FILE="${{ steps.resolve_play.outputs.symbols_file }}"
+          fi
+          export MAGISK_RELEASE_ENV_FILE=play-release-status.env
+          bash .magisk-ci-toolkit/release/publish_play.sh
+
+  publish-play-alpha:
+    name: Publish Alpha to Google Play
+    needs: [build-aab]
+    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && github.ref == 'refs/heads/beta' }}
+    runs-on: ubuntu-latest
+    env:
+      HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
+      HAS_GOOGLE_PLAY_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS != '' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Resolve CI toolkit
+        run: bash scripts/resolve_ci_toolkit.sh
+      - uses: actions/download-artifact@v8
+        with:
+          name: bundle-assets
+          path: artifacts/bundle
+      - name: Resolve Play release inputs
+        shell: bash
+        env:
+          ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
+        run: |
+          cp artifacts/bundle/play-release.env .
+          source ./play-release.env
+          {
+            echo "MAGISK_PLAY_TRACK=$MAGISK_PLAY_TRACK"
+            echo "MAGISK_PLAY_VERSION_NAME=$MAGISK_PLAY_VERSION_NAME"
+            echo "MAGISK_PLAY_VERSION_CODE=$MAGISK_PLAY_VERSION_CODE"
+          } >> "$GITHUB_ENV"
+      - name: Publish Alpha to Google Play
+        if: env.HAS_RELEASE_KEYSTORE == 'true' && env.HAS_GOOGLE_PLAY_CREDENTIALS == 'true'
+        env:
+          ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
+          MAGISK_ANDROID_RELEASE_PACKAGE_NAME: com.github.tianma8023.xposed.smscode
+          MAGISK_PLAY_AAB_FILE: ${{ '' }}
+        shell: bash
+        run: |
+          aab_file="$(find artifacts/bundle -type f -name '*.aab' | sort | head -n 1)"
+          mapping_file="$(find artifacts/bundle -type f -name mapping.txt | sort | head -n 1 || true)"
+          export MAGISK_PLAY_AAB_FILE="$aab_file"
+          export MAGISK_PLAY_MAPPING_FILE="$mapping_file"
+          export MAGISK_RELEASE_ENV_FILE=play-release-status.env
+          bash .magisk-ci-toolkit/release/publish_play.sh
+      - name: Upload Alpha publish status
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: play-alpha-status
+          path: play-release-status.env
+      - name: Verify Alpha publish credentials
+        if: env.HAS_RELEASE_KEYSTORE != 'true' || env.HAS_GOOGLE_PLAY_CREDENTIALS != 'true'
+        run: |
+          echo "ERROR: Alpha Play publishing requires RELEASE_KEYSTORE and ANDROID_PUBLISHER_CREDENTIALS" >&2
+          exit 1
 
   publish-modules-repo:
     name: Publish to Xposed-Modules-Repo
-    needs: [release]
+    needs: [build-github-apk]
     if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     env:
@@ -336,3 +374,58 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" "${apk_files[@]}" --repo "$MODULES_REPO" --title "$GITHUB_REF_NAME" --notes-file release-notes.md
           fi
+
+  release-notification:
+    name: Release Notification
+    needs: [release, publish-play, publish-play-alpha, publish-modules-repo]
+    if: always() && (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/beta') && needs.publish-play.result != 'failure' && needs.publish-play-alpha.result != 'failure' && needs.publish-modules-repo.result != 'failure' && needs.release.result != 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write release status
+        shell: bash
+        run: |
+          {
+            echo "## Release status"
+            echo ""
+            echo "- Ref: $GITHUB_REF_NAME"
+            echo "- Play: ${{ needs.publish-play.result }}"
+            echo "- Alpha Play: ${{ needs.publish-play-alpha.result }}"
+            echo "- GitHub Release: ${{ needs.release.result }}"
+            echo "- Modules Repo: ${{ needs.publish-modules-repo.result }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  post-release-quality:
+    name: Post-release Quality
+    needs: [release, publish-play, publish-play-alpha, publish-modules-repo]
+    if: always() && (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/beta') && needs.publish-play.result != 'failure' && needs.publish-play-alpha.result != 'failure' && needs.publish-modules-repo.result != 'failure' && needs.release.result != 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - name: Resolve CI toolkit
+        run: bash scripts/resolve_ci_toolkit.sh
+      - name: Setup Android CI
+        uses: ./.magisk-ci-toolkit/.github/actions/setup-android-ci
+        with:
+          checkout: 'false'
+      - name: Run post-release quality gate
+        uses: ./.magisk-ci-toolkit/.github/actions/run-gradle-with-retry
+        with:
+          arguments: >
+            --warning-mode all
+            :core:check
+            :runtime:check
+            :app:check
+            :smscode-core:contract:testDebugUnitTest
+            :smscode-core:domain:testDebugUnitTest
+            :smscode-core:hook:testDebugUnitTest
+            :smscode-core:runtime:testDebugUnitTest
+            :smscode-core:verification:detekt
+            :smscode-core:verification:testDebugUnitTest
+            :magisk-xposed-kit:testDebugUnitTest
+            :magisk-xposed-kit:logging:testDebugUnitTest
+            :magisk-xposed-kit:diagnostics:testDebugUnitTest
+            :app:koverVerifyGithubDebug
+            -PenableKover=true
