@@ -1158,6 +1158,7 @@ internal fun ComposeSettingsScreenShared(
                 },
             ),
             initialValue = if (isFirstSlot) simSlot1Remark else simSlot2Remark,
+            selectAllOnOpen = true,
             onDismiss = { showSimSlotRemarkDialog = null },
             supportingText = stringResource(id = R.string.pref_sim_slot_remark_summary),
             showClearButton = true,
@@ -1340,6 +1341,7 @@ private fun SettingsDialogs(
         TextInputDialog(
             title = stringResource(id = R.string.pref_auto_input_code_delay_title),
             initialValue = normalizeNumericInput(autoInputDelay),
+            selectAllOnOpen = true,
             onDismiss = { onShowAutoInputDialogChange(false) },
             showClearButton = true,
             validator = {
@@ -1362,6 +1364,7 @@ private fun SettingsDialogs(
         TextInputDialog(
             title = stringResource(id = R.string.pref_auto_input_code_interval_title),
             initialValue = normalizeNumericInput(autoInputInterval),
+            selectAllOnOpen = true,
             onDismiss = { onShowAutoInputIntervalDialogChange(false) },
             showClearButton = true,
             validator = {
@@ -1413,6 +1416,7 @@ private fun SettingsDialogs(
         TextInputDialog(
             title = stringResource(id = R.string.pref_smscode_keywords_title),
             initialValue = smsCodeKeywords,
+            selectAllOnOpen = true,
             onDismiss = { onShowKeywordsDialogChange(false) },
             singleLine = false,
             maxLines = 10,

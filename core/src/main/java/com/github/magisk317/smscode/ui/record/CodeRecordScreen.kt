@@ -366,6 +366,7 @@ internal fun CodeRecordScreenShared(
             } else {
                 currentHistoryLimit
             },
+            selectAllOnOpen = true,
             onDismiss = { showHistoryLimitInput = false },
             showClearButton = true,
         ) { value ->
