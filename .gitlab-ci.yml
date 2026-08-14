@@ -1,18 +1,18 @@
 include:
   - project: magisk3171/magisk-ci-toolkit
-    ref: 3e5823c5c22fac593c329b24221925f63f44ccfe
+    ref: 4d4c0997501faf2c2fa7427066e240b11fc32fd3
     file: /.gitlab/ci/android.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: 3e5823c5c22fac593c329b24221925f63f44ccfe
+    ref: 4d4c0997501faf2c2fa7427066e240b11fc32fd3
     file: /.gitlab/ci/android-release.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: 3e5823c5c22fac593c329b24221925f63f44ccfe
+    ref: 4d4c0997501faf2c2fa7427066e240b11fc32fd3
     file: /.gitlab/ci/telegram.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: 3e5823c5c22fac593c329b24221925f63f44ccfe
+    ref: 4d4c0997501faf2c2fa7427066e240b11fc32fd3
     file: /.gitlab/ci/renovate.yml
   - project: magisk3171/magisk-ci-toolkit
-    ref: 3e5823c5c22fac593c329b24221925f63f44ccfe
+    ref: 4d4c0997501faf2c2fa7427066e240b11fc32fd3
     file: /.gitlab/ci/cancel-mr-pipelines.yml
 
 workflow:
@@ -32,16 +32,17 @@ default:
 
 stages:
   - build
-  - quality
-  - notify
+  - package
   - release-validate
   - release-build
   - release-publish
+  - notify
+  - quality
   - maintenance
 
 variables:
   MAGISK_CI_TOOLKIT_REPOSITORY: "https://gitlab.com/magisk3171/magisk-ci-toolkit.git"
-  MAGISK_CI_TOOLKIT_REF: "3e5823c5c22fac593c329b24221925f63f44ccfe"
+  MAGISK_CI_TOOLKIT_REF: "4d4c0997501faf2c2fa7427066e240b11fc32fd3"
   MAGISK_CANCEL_OLDER_MR_PIPELINES: "true"
   GIT_DEPTH: "0"
   GIT_SUBMODULE_STRATEGY: recursive
@@ -56,6 +57,7 @@ variables:
   MAGISK_ANDROID_RELEASE_MODULES_REPO: ""
   MAGISK_ANDROID_RELEASE_PUBLISH_PLAY: "true"
   MAGISK_ANDROID_RELEASE_PLAY_TRACK: "production"
+  MAGISK_PLAY_INITIAL_VERSION_CODE: "126"
   # Public SHA-256 fingerprint of the production APK signing certificate.
   MAGISK_ANDROID_RELEASE_CERT_SHA256: "027b936e1d82a606d83599548b8b11e49a2c8ae2588c4a9fbe8311e2c54f103a"
   MAGISK_RENOVATE_REPOSITORY: "magisk3171/XposedSmsCode"
@@ -206,13 +208,16 @@ android:ci:play-alpha-bundle:
   script:
     - |
       set -euo pipefail
-      printf '%s' "$RELEASE_KEYSTORE" | base64 --decode > app/release.jks
+      keystore_path="$CI_PROJECT_DIR/app/release.jks"
+      printf '%s' "$RELEASE_KEYSTORE" | base64 --decode > "$keystore_path"
+      chmod 0600 "$keystore_path"
       bash "$MAGISK_CI_TOOLKIT_DIR/release/resolve_play_release.sh" \
         --package-name "$MAGISK_ANDROID_RELEASE_PACKAGE_NAME" \
         --version-file "$CI_PROJECT_DIR/gradle/libs.versions.toml" \
-        --output "$CI_PROJECT_DIR/play-release.env"
+        --output "$CI_PROJECT_DIR/play-release.env" \
+        --initial-version-code "$MAGISK_PLAY_INITIAL_VERSION_CODE"
       source "$CI_PROJECT_DIR/play-release.env"
-      KEYSTORE_FILE=release.jks STORE_PASSWORD="$STORE_PASSWORD" KEY_ALIAS="$KEY_ALIAS" KEY_PASSWORD="$KEY_PASSWORD" \
+      KEYSTORE_FILE="$keystore_path" STORE_PASSWORD="$STORE_PASSWORD" KEY_ALIAS="$KEY_ALIAS" KEY_PASSWORD="$KEY_PASSWORD" \
         bash "$MAGISK_CI_TOOLKIT_DIR/gradle/run_gradle_with_retry.sh" $MAGISK_GRADLE_ARGS :app:bundlePlayRelease \
           -PversionName="$MAGISK_PLAY_VERSION_NAME" -PversionCode="$MAGISK_PLAY_VERSION_CODE"
   artifacts:
@@ -299,6 +304,9 @@ telegram:ci:
     - job: android:build
       artifacts: true
       optional: false
+    - job: android:ci:play-alpha
+      artifacts: false
+      optional: true
 
 renovate:gitlab:
   extends: .magisk_renovate_gitlab

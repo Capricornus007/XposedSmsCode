@@ -1,0 +1,1 @@
+Xposed module that recognizes SMS codes and copies or auto-fills them.

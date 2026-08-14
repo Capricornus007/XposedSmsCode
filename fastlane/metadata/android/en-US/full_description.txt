@@ -1,0 +1,17 @@
+XposedSmsCode is an Xposed/LSPosed module focused on verification code handling.
+
+Core capabilities:
+- Recognize and parse verification codes from incoming SMS.
+- Copy detected codes to clipboard.
+- Auto-fill codes in supported apps.
+- Show toast and system notifications for extracted codes.
+- Mark verification SMS as read or delete it after extraction (experimental).
+- Block specific verification SMS.
+- Custom verification code keywords (regular expressions supported).
+- Official read-only SMS code rules plus custom match rules with import/export.
+- Forward verification codes extracted from app notifications.
+
+Stability and compatibility:
+- Android 7.0+ (API 24+).
+- Designed for AOSP-like ROMs; compatibility may vary on heavily customized systems.
+- Requires root with Xposed/LSPosed module activation and reboot.
