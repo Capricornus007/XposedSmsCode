@@ -191,8 +191,15 @@ internal fun ComposeSettingsScreenShared(
         autoInputDelay = AppPreferencesDataStore.getString(
             context,
             PrefConst.KEY_AUTO_INPUT_CODE_DELAY,
-            PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT,
-        )
+            "",
+        ).ifEmpty {
+            val legacySeconds = AppPreferencesDataStore.getString(
+                context,
+                PrefConst.KEY_AUTO_INPUT_CODE_DELAY_LEGACY,
+                PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT,
+            ).toLongOrNull()?.coerceAtLeast(0L) ?: 0L
+            (legacySeconds * 1000L).toString()
+        }
         autoInputInterval = AppPreferencesDataStore.getString(
             context,
             PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL,
@@ -1656,6 +1663,10 @@ private fun parseNonNegativeLong(raw: String): Long? {
         ?.takeIf { it >= 0L }
 }
 
+/**
+ * Migrates legacy seconds-formatted delay values to milliseconds.
+ * Stored values ≤ 60 are legacy seconds from before the unit change; convert to ms.
+ */
 @Composable
 private fun simSlotRemarkSummary(remark: String): String {
     return remark.takeIf { it.isNotBlank() } ?: stringResource(id = R.string.pref_sim_slot_remark_empty)

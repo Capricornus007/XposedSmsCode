@@ -15,7 +15,9 @@ class SmsCodeVerificationPrefs(
 
     override fun autoInputEnabled(): Boolean = HookRuntimeBridge.prefsAccess.autoInputCodeEnabled(context)
 
-    override fun autoInputDelayMs(): Long = HookRuntimeBridge.prefsAccess.getAutoInputCodeDelay(context) * 1000L
+    override fun autoInputDelayMs(): Long = HookRuntimeBridge.prefsAccess.getAutoInputCodeDelay(context)
+
+    override fun inputIntervalMs(): Long = HookRuntimeBridge.prefsAccess.getAutoInputCodeIntervalMs(context)
 
     override fun copyToClipboardEnabled(): Boolean = HookRuntimeBridge.prefsAccess.copyToClipboardEnabled(context)
 

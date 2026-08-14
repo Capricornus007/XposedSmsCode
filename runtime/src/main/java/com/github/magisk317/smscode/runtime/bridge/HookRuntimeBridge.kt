@@ -26,6 +26,7 @@ interface HookPrefsAccess {
     fun isSensitiveDebugLogMode(context: Context): Boolean
     fun autoInputCodeEnabled(context: Context): Boolean
     fun getAutoInputCodeDelay(context: Context): Long
+    fun getAutoInputCodeIntervalMs(context: Context): Long
     fun shouldShowToast(context: Context): Boolean
     fun markAsReadEnabled(context: Context): Boolean
     fun deleteSmsEnabled(context: Context): Boolean

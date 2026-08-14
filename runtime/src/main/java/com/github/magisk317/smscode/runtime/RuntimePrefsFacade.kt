@@ -21,7 +21,7 @@ object RuntimePrefsFacade : HookPrefsAccess, UiPrefsAccess {
 
     override fun getAutoInputCodeDelay(context: Context): Long = PrefsReader.getAutoInputCodeDelay(context)
 
-    fun getAutoInputCodeIntervalMs(context: Context): Long = PrefsReader.getAutoInputCodeIntervalMs(context)
+    override fun getAutoInputCodeIntervalMs(context: Context): Long = PrefsReader.getAutoInputCodeIntervalMs(context)
 
     override fun shouldShowToast(context: Context): Boolean = PrefsReader.shouldShowToast(context)
 

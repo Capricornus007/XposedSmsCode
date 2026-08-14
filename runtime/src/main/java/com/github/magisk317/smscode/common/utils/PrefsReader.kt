@@ -16,6 +16,7 @@ import io.github.magisk317.smscode.runtime.contract.prefs.PrefsSource
 @SuppressLint("StaticFieldLeak")
 object PrefsReader {
     private const val PREFS_NAME = "xposed_prefs"
+    private const val MISSING_LONG_VALUE = "-9223372036854775808"
     private const val SOURCE_REMOTE_PROVIDER = "provider"
     private const val SOURCE_LOCAL_HOOK_PREFS = "local_hook_prefs"
 
@@ -212,13 +213,15 @@ object PrefsReader {
     fun getAutoInputCodeDelay(context: Context): Long {
         val value = getStringViaProvider(
             PrefConst.KEY_AUTO_INPUT_CODE_DELAY,
-            PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT,
+            MISSING_LONG_VALUE,
         )
-        return try {
-            value.toLong()
-        } catch (ignored: Exception) {
-            PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT.toLong()
-        }
+        value.toLongOrNull()?.takeUnless { it == Long.MIN_VALUE }?.let { return it.coerceAtLeast(0L) }
+
+        return getStringViaProvider(
+            PrefConst.KEY_AUTO_INPUT_CODE_DELAY_LEGACY,
+            PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT,
+        ).toLongOrNull()?.coerceAtLeast(0L)?.times(1000L)
+            ?: PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT.toLong()
     }
 
     @JvmStatic

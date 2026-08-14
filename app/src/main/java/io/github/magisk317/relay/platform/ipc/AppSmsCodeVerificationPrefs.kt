@@ -15,7 +15,9 @@ internal class AppSmsCodeVerificationPrefs(
 
     override fun autoInputEnabled(): Boolean = RuntimePrefsFacade.autoInputCodeEnabled(context)
 
-    override fun autoInputDelayMs(): Long = RuntimePrefsFacade.getAutoInputCodeDelay(context) * 1000L
+    override fun autoInputDelayMs(): Long = RuntimePrefsFacade.getAutoInputCodeDelay(context)
+
+    override fun inputIntervalMs(): Long = RuntimePrefsFacade.getAutoInputCodeIntervalMs(context)
 
     override fun copyToClipboardEnabled(): Boolean = RuntimePrefsFacade.copyToClipboardEnabled(context)
 
