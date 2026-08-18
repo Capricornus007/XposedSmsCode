@@ -3,7 +3,6 @@ package com.github.magisk317.smscode.xp.hook.mms
 import android.content.Context
 import android.content.Intent
 import com.github.magisk317.smscode.hook.BuildConfig
-import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
@@ -143,12 +142,13 @@ class MmsMessagesHook : BaseHook() {
             return
         }
         val resolvedPluginContext = pluginContext ?: return
-        ActivationDiagnosticsStore.recordHookHeartbeat(
+        HookRuntimeBridge.contentProviderAccess.recordHookHeartbeat(
             context = resolvedPluginContext,
             packageName = MMS_PACKAGE_NAME,
             processName = context.applicationInfo?.processName ?: MMS_PACKAGE_NAME,
             source = "mms_${source.substringAfterLast('.')}",
             verboseLogging = HookRuntimeBridge.prefsAccess.isVerboseLogMode(resolvedPluginContext),
+            route = LogRoute.SMS_HOOK.id,
         )
         val evaluation = SmsBlockEvaluator.evaluate(resolvedPluginContext, intent, eventId, "mms") ?: return
         if (evaluation.blacklistDeleteOnly && evaluation.smsMsg != null) {

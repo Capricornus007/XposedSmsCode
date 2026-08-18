@@ -3,7 +3,6 @@ package com.github.magisk317.smscode.xp.hook.code
 import android.content.Context
 import android.os.Handler
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
-import io.github.magisk317.smscode.runtime.common.utils.SharedRuntimeGate
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.hook.code.action.impl.AutoInputAction
 import com.github.magisk317.smscode.xp.hook.code.action.impl.CopyToClipboardAction
@@ -256,7 +255,7 @@ object SmsCodeActionDispatcher {
             smsMsg = smsMsg.toVerificationMessage(),
             delayMs = delayMs,
         ) { context, fileName, keys, windowMs, maxEntries ->
-            SharedRuntimeGate.claimAllWithinWindow(
+            HookRuntimeBridge.contentProviderAccess.claimRuntimeGate(
                 context = context,
                 fileName = fileName,
                 keys = keys,
@@ -270,11 +269,11 @@ object SmsCodeActionDispatcher {
         HookRuntimeBridge.prefsAccess.mobileAutomationAllowed(context)
     }.getOrDefault(false)
 
-    private fun SharedRuntimeGate.ClaimResult.toAutoInputClaim(): AutoInputDispatchGuard.ClaimResult {
+    private fun com.github.magisk317.smscode.runtime.bridge.HookRuntimeGateClaimResult.toAutoInputClaim(): AutoInputDispatchGuard.ClaimResult {
         return AutoInputDispatchGuard.ClaimResult(
             claimed = claimed,
             ageMs = ageMs,
-            key = key,
+            key = blockedKey,
         )
     }
 }

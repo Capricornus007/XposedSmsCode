@@ -21,7 +21,6 @@ object EntityStoreManager {
         fileResolver = { context, entityType ->
             File(StorageUtils.getFilesDir(context), fileName(entityType))
         },
-        prepareFileForCommit = { file -> StorageUtils.setFileWorldWritable(file, 0) },
         logger = JsonEntityFileStore.Logger { message, throwable ->
             if (throwable == null) XLog.e(message) else XLog.e(message, throwable)
         },

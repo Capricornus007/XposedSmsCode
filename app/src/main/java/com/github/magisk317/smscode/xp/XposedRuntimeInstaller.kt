@@ -14,6 +14,7 @@ import com.github.magisk317.smscode.runtime.RuntimeNotificationFacade
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade
 import com.github.magisk317.smscode.runtime.RuntimeStorageFacade
 import com.github.magisk317.smscode.runtime.bridge.HookContentProviderAccess
+import com.github.magisk317.smscode.runtime.bridge.HookRuntimeGateClaimResult
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
 import com.github.tianma8023.xposed.smscode.BuildConfig
@@ -111,6 +112,36 @@ object XposedRuntimeInstaller {
 
                 override fun authority(context: Context): String =
                     DBProvider.authority(context)
+
+                override fun claimRuntimeGate(
+                    context: Context,
+                    fileName: String,
+                    keys: Collection<String>,
+                    windowMs: Long,
+                    maxEntries: Int,
+                ): HookRuntimeGateClaimResult = DBProvider.claimRuntimeGate(
+                    context = context,
+                    fileName = fileName,
+                    keys = keys,
+                    windowMs = windowMs,
+                    maxEntries = maxEntries,
+                )
+
+                override fun recordHookHeartbeat(
+                    context: Context,
+                    packageName: String,
+                    processName: String,
+                    source: String,
+                    verboseLogging: Boolean,
+                    route: String,
+                ): Boolean = DBProvider.recordHookHeartbeat(
+                    context = context,
+                    packageName = packageName,
+                    processName = processName,
+                    source = source,
+                    verboseLogging = verboseLogging,
+                    route = route,
+                )
             },
         )
         HookRuntimeBridge.hookProcessInit = { context -> ensureHookProcessLogging(context) }

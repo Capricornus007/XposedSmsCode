@@ -8,11 +8,17 @@ import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
 import android.os.Binder
+import android.os.Bundle
 import androidx.core.net.toUri
 import com.github.magisk317.smscode.common.utils.ProviderCallerGuard
 import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import com.github.magisk317.smscode.runtime.bridge.HookRuntimeGateClaimResult
+import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsStore
+import io.github.magisk317.smscode.runtime.common.ipc.RuntimeStateProviderContract
+import io.github.magisk317.smscode.runtime.common.utils.SharedRuntimeGate
+import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
 import io.github.magisk317.smscode.runtime.common.record.SmsMsgCursorContract
 import io.github.magisk317.smscode.xposed.utils.XLog
 import java.util.Locale
@@ -25,6 +31,7 @@ class DBProvider : ContentProvider() {
     override fun onCreate(): Boolean {
         val ctx = context ?: return false
         mDbManager = DBManager.get(ctx)
+        StorageUtils.repairExternalAppDataPermissions(ctx)
         authority = "${ctx.packageName}.db.provider"
         uriMatcher = UriMatcher(UriMatcher.NO_MATCH).apply {
             addURI(authority, PATH_SMS_MSG, SMS_MSG_DIR)
@@ -40,22 +47,99 @@ class DBProvider : ContentProvider() {
 
     override fun getType(uri: Uri): String? = null
 
+    override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
+        if (!isCallerAllowed()) {
+            return Bundle().apply { putBoolean(RuntimeStateProviderContract.RESULT_OK, false) }
+        }
+        val ctx = context ?: return Bundle().apply {
+            putBoolean(RuntimeStateProviderContract.RESULT_OK, false)
+        }
+        return when (method) {
+            RuntimeStateProviderContract.METHOD_CLAIM_RUNTIME_GATE -> {
+                val fileName = arg.orEmpty()
+                val keys = extras?.getStringArrayList(RuntimeStateProviderContract.EXTRA_KEYS).orEmpty()
+                val windowMs = extras?.getLong(RuntimeStateProviderContract.EXTRA_WINDOW_MS, 0L) ?: 0L
+                val maxEntries = extras?.getInt(
+                    RuntimeStateProviderContract.EXTRA_MAX_ENTRIES,
+                    RuntimeStateProviderContract.DEFAULT_MAX_ENTRIES,
+                ) ?: RuntimeStateProviderContract.DEFAULT_MAX_ENTRIES
+                val result = runCatching {
+                    require(windowMs > 0L) { "Invalid runtime gate window" }
+                    SharedRuntimeGate.claimAllWithinWindow(
+                        file = SharedRuntimeGate.internalGateFile(ctx, fileName),
+                        keys = keys,
+                        windowMs = windowMs,
+                        maxEntries = maxEntries.coerceIn(1, MAX_RUNTIME_GATE_ENTRIES),
+                    )
+                }.getOrNull()
+                Bundle().apply {
+                    putBoolean(RuntimeStateProviderContract.RESULT_OK, result != null)
+                    // Preserve the existing fail-open behavior if app storage is unavailable.
+                    putBoolean(RuntimeStateProviderContract.RESULT_CLAIMED, result?.claimed ?: true)
+                    putLong(
+                        RuntimeStateProviderContract.RESULT_AGE_MS,
+                        result?.ageMs ?: RuntimeStateProviderContract.NO_AGE_MS,
+                    )
+                    result?.key?.let {
+                        putString(RuntimeStateProviderContract.RESULT_BLOCKED_KEY, it)
+                    }
+                }
+            }
+
+            RuntimeStateProviderContract.METHOD_RECORD_HOOK_HEARTBEAT -> {
+                val ok = runCatching {
+                    ActivationDiagnosticsStore.recordHookHeartbeat(
+                        context = ctx,
+                        packageName = extras?.getString(RuntimeStateProviderContract.EXTRA_PACKAGE_NAME).orEmpty(),
+                        processName = extras?.getString(RuntimeStateProviderContract.EXTRA_PROCESS_NAME).orEmpty(),
+                        source = extras?.getString(RuntimeStateProviderContract.EXTRA_SOURCE).orEmpty(),
+                        verboseLogging = extras?.getBoolean(
+                            RuntimeStateProviderContract.EXTRA_VERBOSE_LOGGING,
+                            false,
+                        ) ?: false,
+                        route = extras?.getString(RuntimeStateProviderContract.EXTRA_ROUTE).orEmpty(),
+                    )
+                }.isSuccess
+                Bundle().apply { putBoolean(RuntimeStateProviderContract.RESULT_OK, ok) }
+            }
+
+            else -> super.call(method, arg, extras)
+        }
+    }
+
     override fun insert(uri: Uri, values: ContentValues?): Uri? {
         if (!isCallerAllowed()) return null
         val uriType = uriMatcher.match(uri)
-        val id = when (uriType) {
+        val outcome = when (uriType) {
             SMS_MSG_DIR -> {
-                db.addSmsMsg(values.toSmsMsg())
+                val result = db.insertSmsMsgOrGetExisting(
+                    smsMsg = values.toSmsMsg(),
+                    deduplicate = parseBooleanValue(values, KEY_DEDUPLICATE, true),
+                )
+                InsertOutcome(
+                    id = result.id,
+                    inserted = !result.duplicate,
+                    duplicate = result.duplicate,
+                )
             }
 
             AUTO_INPUT_EVENT_DIR -> {
-                addAutoInputEvent(values)
+                InsertOutcome(id = addAutoInputEvent(values), inserted = true)
             }
 
             else -> throw IllegalArgumentException("Unsupported URI: $uri")
         }
-        context?.contentResolver?.notifyChange(uri, null)
-        return Uri.withAppendedPath(uri, id.toString())
+        if (outcome.inserted) {
+            context?.contentResolver?.notifyChange(uri, null)
+        }
+        return Uri.withAppendedPath(uri, outcome.id.toString())
+            .buildUpon()
+            .apply {
+                if (outcome.duplicate) {
+                    appendQueryParameter(QUERY_DUPLICATE, "true")
+                }
+            }
+            .build()
     }
 
     override fun query(
@@ -523,6 +607,12 @@ class DBProvider : ContentProvider() {
         val limit: Int?,
     )
 
+    private data class InsertOutcome(
+        val id: Long,
+        val inserted: Boolean,
+        val duplicate: Boolean = false,
+    )
+
     internal object Contract {
         fun isSupportedDateSortOrder(sortOrder: String?): Boolean {
             return sortOrder
@@ -581,6 +671,8 @@ class DBProvider : ContentProvider() {
         private const val PATH_SMS_CODE_RULE = "sms_code_rule"
         private const val PATH_APP_INFO = "app_info"
         private const val PATH_AUTO_INPUT_EVENT = "auto_input_event"
+        private const val KEY_DEDUPLICATE = "deduplicate"
+        const val QUERY_DUPLICATE = "duplicate"
         private const val SMS_MSG_DIR = 0
         private const val SMS_MSG_ID = 1
         private const val SMS_CODE_RULE_DIR = 2
@@ -597,6 +689,7 @@ class DBProvider : ContentProvider() {
         private const val MAX_FORWARD_TARGET_LENGTH = 512
         private const val MAX_LABEL_LENGTH = 256
         private const val MAX_NOTIFY_TEMPLATE_LENGTH = 2048
+        private const val MAX_RUNTIME_GATE_ENTRIES = 4096
 
         internal val SMS_MSG_COLUMNS = SmsMsgCursorContract.defaultColumns.toSet() + "id"
         internal val SMS_CODE_RULE_COLUMNS = setOf("_id", "id", "company", "code_keyword", "code_regex")
@@ -627,6 +720,65 @@ class DBProvider : ContentProvider() {
 
         fun autoInputEventContentUri(context: Context): Uri =
             "content://${context.packageName}.db.provider/$PATH_AUTO_INPUT_EVENT".toUri()
+
+        private fun runtimeStateContentUri(context: Context): Uri =
+            "content://${authority(context)}".toUri()
+
+        fun claimRuntimeGate(
+            context: Context,
+            fileName: String,
+            keys: Collection<String>,
+            windowMs: Long,
+            maxEntries: Int = RuntimeStateProviderContract.DEFAULT_MAX_ENTRIES,
+        ): HookRuntimeGateClaimResult {
+            val extras = Bundle().apply {
+                putStringArrayList(RuntimeStateProviderContract.EXTRA_KEYS, ArrayList(keys))
+                putLong(RuntimeStateProviderContract.EXTRA_WINDOW_MS, windowMs)
+                putInt(RuntimeStateProviderContract.EXTRA_MAX_ENTRIES, maxEntries)
+            }
+            val result = runCatching {
+                context.contentResolver.call(
+                    runtimeStateContentUri(context),
+                    RuntimeStateProviderContract.METHOD_CLAIM_RUNTIME_GATE,
+                    fileName,
+                    extras,
+                )
+            }.getOrNull()
+            val age = result?.getLong(
+                RuntimeStateProviderContract.RESULT_AGE_MS,
+                RuntimeStateProviderContract.NO_AGE_MS,
+            ) ?: RuntimeStateProviderContract.NO_AGE_MS
+            return HookRuntimeGateClaimResult(
+                claimed = result?.getBoolean(RuntimeStateProviderContract.RESULT_CLAIMED, true) ?: true,
+                ageMs = age.takeIf { it >= 0L },
+                blockedKey = result?.getString(RuntimeStateProviderContract.RESULT_BLOCKED_KEY),
+            )
+        }
+
+        fun recordHookHeartbeat(
+            context: Context,
+            packageName: String,
+            processName: String,
+            source: String,
+            verboseLogging: Boolean,
+            route: String,
+        ): Boolean {
+            val extras = Bundle().apply {
+                putString(RuntimeStateProviderContract.EXTRA_PACKAGE_NAME, packageName)
+                putString(RuntimeStateProviderContract.EXTRA_PROCESS_NAME, processName)
+                putString(RuntimeStateProviderContract.EXTRA_SOURCE, source)
+                putBoolean(RuntimeStateProviderContract.EXTRA_VERBOSE_LOGGING, verboseLogging)
+                putString(RuntimeStateProviderContract.EXTRA_ROUTE, route)
+            }
+            return runCatching {
+                context.contentResolver.call(
+                    runtimeStateContentUri(context),
+                    RuntimeStateProviderContract.METHOD_RECORD_HOOK_HEARTBEAT,
+                    null,
+                    extras,
+                )?.getBoolean(RuntimeStateProviderContract.RESULT_OK, false) == true
+            }.getOrDefault(false)
+        }
 
         /**
          * Notify-only signal URI for hook-side prefs cache invalidation.

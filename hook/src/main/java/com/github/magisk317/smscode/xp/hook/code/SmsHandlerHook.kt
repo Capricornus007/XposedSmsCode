@@ -8,8 +8,6 @@ import android.os.Build
 import android.provider.Telephony
 import com.github.magisk317.smscode.hook.BuildConfig
 import com.github.magisk317.smscode.common.constant.NotificationConst
-import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsStore
-import io.github.magisk317.smscode.xposed.utils.ModuleActivationStore
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import com.github.magisk317.smscode.common.utils.SmsBlacklistUtils
 import io.github.magisk317.smscode.xposed.utils.XLog
@@ -29,10 +27,8 @@ import io.github.magisk317.xposed.MethodHook
 import io.github.magisk317.xposed.LoadParam
 import io.github.magisk317.xposed.MethodHookParam
 import io.github.magisk317.xposed.logging.MagiskOtel
-import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
 import io.github.magisk317.smscode.runtime.contract.logging.LogRoute
 import io.github.magisk317.smscode.verification.SmsDispatchIntentDeduplicator
-import java.io.File
 import java.lang.reflect.Method
 import java.util.Collections
 import java.util.concurrent.Executors
@@ -50,6 +46,9 @@ class SmsHandlerHook : BaseHook() {
         runtimeInitializer = ::initializeRuntime,
         notificationChannelInitializer = { initNotificationChannel() },
         copyCodeRegistrar = { registerCopyCodeReceiver() },
+        // The following heartbeat persists activation in the app-owned process.
+        // A hook process must not write ModuleActivationStore directly.
+        activationMarker = {},
         heartbeatRecorder = ::recordHookHeartbeat,
         suppressionLogger = ::logSuppressedOnce,
         inboxObserverRegistrar = ::registerSmsInboxObserver,
@@ -381,12 +380,13 @@ class SmsHandlerHook : BaseHook() {
 
     private fun recordHookHeartbeat(source: String) {
         val runtime = currentRuntime() ?: return
-        ActivationDiagnosticsStore.recordHookHeartbeat(
+        HookRuntimeBridge.contentProviderAccess.recordHookHeartbeat(
             context = runtime.pluginContext,
             packageName = runtime.phoneContext.packageName,
             processName = runtime.phoneContext.applicationInfo?.processName ?: runtime.phoneContext.packageName,
             source = source,
             verboseLogging = HookRuntimeBridge.prefsAccess.isVerboseLogMode(runtime.pluginContext),
+            route = LogRoute.SMS_HOOK.id,
         )
     }
 
@@ -595,20 +595,23 @@ class SmsHandlerHook : BaseHook() {
         action: String?,
     ): Boolean {
         return runCatching {
-            val file = File(
-                StorageUtils.getExternalFilesDir(pluginContext),
-                SmsDispatchIntentDeduplicator.DEFAULT_FILE_NAME,
+            if (eventId.isBlank() || action.isNullOrBlank()) return false
+            val claim = HookRuntimeBridge.contentProviderAccess.claimRuntimeGate(
+                context = pluginContext,
+                fileName = SmsDispatchIntentDeduplicator.DEFAULT_FILE_NAME,
+                keys = listOf("$eventId|$action"),
+                windowMs = SmsDispatchIntentDeduplicator.DEFAULT_WINDOW_MS,
+                maxEntries = SmsDispatchIntentDeduplicator.DEFAULT_MAX_ENTRIES,
             )
-            val result = dispatchIntentDeduplicator.shouldSkipByFile(file, eventId, action)
-            if (result.shouldSkip) {
+            if (!claim.claimed) {
                 XLog.d(
                     "Diag SMS dispatch duplicate skip: event_id=%s action=%s source=shared_store ageMs=%d",
                     eventId,
                     action,
-                    result.ageMs ?: 0L,
+                    claim.ageMs ?: 0L,
                 )
             }
-            result.shouldSkip
+            !claim.claimed
         }.onFailure {
             XLog.w(
                 "Diag SMS dispatch shared dedup failed: event_id=%s action=%s err=%s",
@@ -655,13 +658,7 @@ class SmsHandlerHook : BaseHook() {
         if (shouldSkipDispatchChainBlock(evaluation.smsMsg, action, reason)) {
             return
         }
-        ActivationDiagnosticsStore.recordHookHeartbeat(
-            context = pluginContext,
-            packageName = phoneContext.packageName,
-            processName = phoneContext.applicationInfo?.processName ?: phoneContext.packageName,
-            source = "sms_handler_dispatch_chain",
-            verboseLogging = HookRuntimeBridge.prefsAccess.isVerboseLogMode(pluginContext),
-        )
+        recordHookHeartbeat("sms_handler_dispatch_chain")
         XLog.w(
             "Diag SMS dispatch chain block: method=%s reason=%s event_id=%s",
             methodName,
@@ -788,7 +785,6 @@ class SmsHandlerHook : BaseHook() {
         private val SMSCODE_PACKAGE = BuildConfig.APPLICATION_ID
         private val SMS_OPERATION_EXECUTOR = Executors.newSingleThreadExecutor()
         private val installedHookKeys = Collections.synchronizedSet(mutableSetOf<String>())
-        private val dispatchIntentDeduplicator = SmsDispatchIntentDeduplicator()
         private val dispatchChainBlockDeduplicator = SmsDispatchChainBlockDeduplicator()
 
         fun isSmsHandlerPackage(packageName: String): Boolean {

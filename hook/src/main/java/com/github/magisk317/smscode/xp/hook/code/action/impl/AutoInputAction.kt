@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Bundle
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
-import io.github.magisk317.smscode.runtime.common.utils.SharedRuntimeGate
 import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
@@ -41,13 +40,18 @@ class AutoInputAction(
             dispatchDelayMs = dispatchDelayMs,
             deduplicateReader = PrefsReader::deduplicateSms,
             sharedGateClaimer = { context, fileName, key, windowMs, maxEntries ->
-                SharedRuntimeGate.claimAllWithinWindow(
+                HookRuntimeBridge.contentProviderAccess.claimRuntimeGate(
                     context = context,
                     fileName = fileName,
                     keys = key,
                     windowMs = windowMs,
                     maxEntries = maxEntries,
-                ).toShared()
+                ).let { claim ->
+                    AutoInputActionHelper.ClaimResult(
+                        claimed = claim.claimed,
+                        ageMs = claim.ageMs,
+                    )
+                }
             },
             packageBlockedChecker = ::isPackageBlocked,
             autoEnterReader = PrefsReader::autoEnterCodeEnabled,
@@ -121,10 +125,4 @@ class AutoInputAction(
         }
     }
 
-    private fun SharedRuntimeGate.ClaimResult.toShared(): AutoInputActionHelper.ClaimResult {
-        return AutoInputActionHelper.ClaimResult(
-            claimed = claimed,
-            ageMs = ageMs,
-        )
-    }
 }

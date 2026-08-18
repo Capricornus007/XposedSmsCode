@@ -79,7 +79,35 @@ interface HookContentProviderAccess {
     fun appInfoContentUri(context: Context): Uri
     fun autoInputEventContentUri(context: Context): Uri
     fun authority(context: Context): String
+
+    /**
+     * Claims one or more deduplication keys in storage owned by the module app.
+     * Hook processes must not open the module's external/private files directly.
+     */
+    fun claimRuntimeGate(
+        context: Context,
+        fileName: String,
+        keys: Collection<String>,
+        windowMs: Long,
+        maxEntries: Int = 256,
+    ): HookRuntimeGateClaimResult
+
+    /** Records hook activation through the app-owned provider process. */
+    fun recordHookHeartbeat(
+        context: Context,
+        packageName: String,
+        processName: String,
+        source: String,
+        verboseLogging: Boolean,
+        route: String,
+    ): Boolean
 }
+
+data class HookRuntimeGateClaimResult(
+    val claimed: Boolean,
+    val ageMs: Long? = null,
+    val blockedKey: String? = null,
+)
 
 /**
  * Singleton holder that hook code uses to access runtime services.

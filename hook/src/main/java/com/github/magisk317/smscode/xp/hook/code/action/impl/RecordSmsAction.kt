@@ -6,10 +6,7 @@ import android.content.Context
 import android.database.Cursor
 import android.os.Bundle
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
-import io.github.magisk317.smscode.runtime.common.utils.SharedRuntimeGate
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import io.github.magisk317.smscode.domain.utils.CodeRecordSimilarityUtils
-import io.github.magisk317.smscode.verification.RecordSmsDedupHelper
 import io.github.magisk317.smscode.verification.RecordSmsActionHelper
 import io.github.magisk317.smscode.verification.RecordSmsInsertResultHelper
 import com.github.magisk317.smscode.xp.hook.code.action.CallableAction
@@ -36,12 +33,12 @@ class RecordSmsAction(
             eventId = eventId,
             enabled = enabled ?: recordEnabledForMessageType(mSmsMsg),
             deduplicateEnabled = deduplicateEnabled ?: HookRuntimeBridge.prefsAccess.deduplicateSms(mPluginContext),
-            withFileLock = { context, fileName, block ->
-                SharedRuntimeGate.withFileLock(context, fileName) { block() }
-            },
-            shouldSkipByDedup = { smsMsg, eventLabel -> shouldSkipByDedup(smsMsg.raw, eventLabel) },
+            // The app-owned provider serializes fingerprint upserts. Hook
+            // processes no longer need a world-writable file lock or direct DB access.
+            withFileLock = { _, _, block -> block() },
+            shouldSkipByDedup = { _, _ -> false },
             primaryInserter = { smsMsg -> insertPrimary(smsMsg.raw) },
-            fallbackExporter = { smsMsg -> exportFallback(smsMsg.raw) },
+            fallbackExporter = { false },
         ).run()
     }
 
@@ -66,9 +63,16 @@ class RecordSmsAction(
                 put("forward_target", smsMsg.forwardTarget)
                 put("forward_message", smsMsg.forwardMessage)
                 put("forward_time", smsMsg.forwardTime)
+                put("deduplicate", deduplicateEnabled ?: HookRuntimeBridge.prefsAccess.deduplicateSms(mPluginContext))
             }
 
             val insertedUri = resolver.insert(smsMsgUri, values)
+                ?: return RecordSmsInsertResultHelper.failure("provider_insert_rejected")
+            if (insertedUri.getBooleanQueryParameter("duplicate", false)) {
+                return RecordSmsInsertResultHelper.duplicate(
+                    detail = "record_uri=$insertedUri,simSlot=${smsMsg.simSlot},subId=${smsMsg.subId}",
+                )
+            }
 
             val projections = arrayOf("_id")
             val order = "date ASC"
@@ -123,51 +127,4 @@ class RecordSmsAction(
         }
     }
 
-    private fun exportFallback(smsMsg: SmsMsg): Boolean {
-        return HookRuntimeBridge.codeRecordAccess.exportToFile(mPluginContext, smsMsg)
-    }
-
-    private fun shouldSkipByDedup(smsMsg: SmsMsg, eventLabel: String): Boolean {
-        val db = HookRuntimeBridge.storageAccess.dbManager(mPluginContext)
-        return RecordSmsDedupHelper.shouldSkipByWindow(
-            smsMsg = smsMsg.toVerificationMessage(),
-            eventLabel = eventLabel,
-            hasFingerprintDuplicate = { sender, body, from, to ->
-                runCatching {
-                    db.querySmsMsgByFingerprintInRange(sender, body, from, to) != null
-                }.getOrDefault(false)
-            },
-            hasCodeDuplicateInWindow = { code, from, to ->
-                runCatching {
-                    val candidates = db.querySmsMsgByCodeInRange(code, from, to)
-                    RecordSmsDedupHelper.hasCrossSourceCodeDuplicate(
-                        incoming = smsMsg,
-                        candidates = candidates,
-                        scorer = { existing, incoming ->
-                            CodeRecordSimilarityUtils.crossSourceMatchScore(
-                                existingCode = existing.smsCode,
-                                existingBody = existing.body,
-                                existingCompany = existing.company,
-                                existingSender = existing.sender,
-                                incomingCode = incoming.smsCode,
-                                incomingBody = incoming.body,
-                                incomingCompany = incoming.company,
-                                incomingSender = incoming.sender,
-                            )
-                        }
-                    )
-                }.getOrDefault(false)
-            },
-            hasCodeDuplicateByPackage = { code, pkg, from, to ->
-                runCatching {
-                    db.querySmsMsgByCodeAndPackageInRange(code, pkg, from, to) != null
-                }.getOrDefault(false)
-            },
-            hasCodeDuplicateByCompany = { code, company, from, to ->
-                runCatching {
-                    db.querySmsMsgByCodeAndCompanyInRange(code, company, from, to) != null
-                }.getOrDefault(false)
-            },
-        )
-    }
 }

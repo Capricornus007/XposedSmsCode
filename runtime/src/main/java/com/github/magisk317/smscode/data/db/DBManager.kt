@@ -1,6 +1,7 @@
 package com.github.magisk317.smscode.data.db
 
 import android.content.Context
+import androidx.room.withTransaction
 import com.github.magisk317.smscode.data.db.dao.AppInfoDao
 import com.github.magisk317.smscode.data.db.dao.AutoInputEventDao
 import com.github.magisk317.smscode.data.db.dao.SmsCodeRuleDao
@@ -9,6 +10,7 @@ import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.data.db.entity.AutoInputEvent
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
+import io.github.magisk317.smscode.domain.utils.CodeRecordSimilarityUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -102,6 +104,116 @@ class DBManager private constructor(context: Context) {
     }
 
     fun addSmsMsg(smsMsg: SmsMsg): Long = runBlocking { mSmsMsgDao.insert(smsMsg) }
+
+    /**
+     * Atomically inserts a record or returns the row that already owns the
+     * canonical fingerprint (sender, body, date, message type).
+     *
+     * ContentProvider methods may run concurrently on several Binder threads.
+     * Keeping the lookup and insert in one Room write transaction prevents two
+     * hook processes from racing a check-then-insert sequence. The IGNORE
+     * insert also preserves the original row instead of REPLACE deleting it.
+     */
+    fun insertSmsMsgOrGetExisting(
+        smsMsg: SmsMsg,
+        deduplicate: Boolean = true,
+    ): SmsMsgInsertResult = runBlocking {
+        mDatabase.withTransaction {
+            val existing = mSmsMsgDao.getByFingerprint(
+                sender = smsMsg.sender,
+                body = smsMsg.body,
+                date = smsMsg.date,
+                msgType = smsMsg.msgType,
+            )
+            val existingId = existing?.id
+            if (existingId != null) {
+                return@withTransaction SmsMsgInsertResult(id = existingId, duplicate = true)
+            }
+
+            if (deduplicate) {
+                val timestamp = smsMsg.date.takeIf { it > 0L } ?: System.currentTimeMillis()
+                val from = (timestamp - RECORD_DEDUP_WINDOW_MS).coerceAtLeast(0L)
+                val to = timestamp + RECORD_DEDUP_WINDOW_MS
+                val code = smsMsg.smsCode
+                if (!code.isNullOrBlank()) {
+                    val codeDuplicate = mSmsMsgDao.getByCodeInRange(
+                        smsCode = code,
+                        msgType = smsMsg.msgType,
+                        dateFrom = from,
+                        dateTo = to,
+                    ).firstOrNull { existingRecord ->
+                        CodeRecordSimilarityUtils.crossSourceMatchScore(
+                            existingCode = existingRecord.smsCode,
+                            existingBody = existingRecord.body,
+                            existingCompany = existingRecord.company,
+                            existingSender = existingRecord.sender,
+                            incomingCode = smsMsg.smsCode,
+                            incomingBody = smsMsg.body,
+                            incomingCompany = smsMsg.company,
+                            incomingSender = smsMsg.sender,
+                        ) > 0
+                    }
+                    if (codeDuplicate != null) {
+                        return@withTransaction SmsMsgInsertResult(
+                            id = codeDuplicate.id ?: error("Code duplicate has no id"),
+                            duplicate = true,
+                        )
+                    }
+
+                    smsMsg.packageName?.takeIf { it.isNotBlank() }?.let { packageName ->
+                        mSmsMsgDao.getByCodeAndPackageInRange(
+                            smsCode = code,
+                            packageName = packageName,
+                            msgType = smsMsg.msgType,
+                            dateFrom = from,
+                            dateTo = to,
+                        )?.id?.let { id ->
+                            return@withTransaction SmsMsgInsertResult(id = id, duplicate = true)
+                        }
+                    }
+                    smsMsg.company?.takeIf { it.isNotBlank() }?.let { company ->
+                        mSmsMsgDao.getByCodeAndCompanyInRange(
+                            smsCode = code,
+                            company = company,
+                            msgType = smsMsg.msgType,
+                            dateFrom = from,
+                            dateTo = to,
+                        )?.id?.let { id ->
+                            return@withTransaction SmsMsgInsertResult(id = id, duplicate = true)
+                        }
+                    }
+                }
+
+                if (!smsMsg.sender.isNullOrBlank() && !smsMsg.body.isNullOrBlank()) {
+                    mSmsMsgDao.getByFingerprintInRange(
+                        sender = smsMsg.sender,
+                        body = smsMsg.body,
+                        msgType = smsMsg.msgType,
+                        dateFrom = from,
+                        dateTo = to,
+                    )?.id?.let { id ->
+                        return@withTransaction SmsMsgInsertResult(id = id, duplicate = true)
+                    }
+                }
+            }
+
+            val insertedId = mSmsMsgDao.insertIfAbsent(smsMsg)
+            if (insertedId > 0L) {
+                return@withTransaction SmsMsgInsertResult(id = insertedId, duplicate = false)
+            }
+
+            // A unique-index conflict can still win between the lookup and
+            // INSERT. Resolve and return that row while still in the same
+            // transaction so callers receive a stable canonical URI.
+            val racedId = mSmsMsgDao.getByFingerprint(
+                sender = smsMsg.sender,
+                body = smsMsg.body,
+                date = smsMsg.date,
+                msgType = smsMsg.msgType,
+            )?.id ?: error("SMS fingerprint conflict without an existing row")
+            SmsMsgInsertResult(id = racedId, duplicate = true)
+        }
+    }
 
     fun addSmsMsgList(smsMsgList: List<SmsMsg>) = runBlocking {
         mSmsMsgDao.insertAll(smsMsgList)
@@ -287,6 +399,8 @@ class DBManager private constructor(context: Context) {
     }
 
     companion object {
+        private const val RECORD_DEDUP_WINDOW_MS = 20_000L
+
         @Volatile
         private var sInstance: DBManager? = null
 
@@ -302,4 +416,10 @@ class DBManager private constructor(context: Context) {
             }
         }
     }
+
+    data class SmsMsgInsertResult(
+        val id: Long,
+        val duplicate: Boolean,
+    )
+
 }

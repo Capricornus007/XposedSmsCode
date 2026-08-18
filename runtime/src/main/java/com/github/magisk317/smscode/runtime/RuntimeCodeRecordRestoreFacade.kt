@@ -1,6 +1,5 @@
 package com.github.magisk317.smscode.runtime
 
-import android.annotation.SuppressLint
 import android.content.Context
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.XLog
@@ -19,7 +18,6 @@ import io.github.magisk317.xposed.logging.MagiskOtel
 object RuntimeCodeRecordRestoreFacade : com.github.magisk317.smscode.runtime.bridge.HookCodeRecordAccess {
     private const val RECORD_FILE_PREFIX = "CodeRecord_"
 
-    @SuppressLint("SetWorldWritable", "SetWorldReadable")
     override fun exportToFile(context: Context, smsMsg: SmsMsg): Boolean {
         val startedAt = System.nanoTime()
         return runCatching {
@@ -28,7 +26,6 @@ object RuntimeCodeRecordRestoreFacade : com.github.magisk317.smscode.runtime.bri
             OutputStreamWriter(FileOutputStream(recordFile), StandardCharsets.UTF_8).use { writer ->
                 JsonUtils.toJson(smsMsg, writer, true)
             }
-            StorageUtils.setFileWorldWritable(recordFile, 0)
             true
         }.onFailure { XLog.e("Export code record to file failed", it) }
             .getOrDefault(false)

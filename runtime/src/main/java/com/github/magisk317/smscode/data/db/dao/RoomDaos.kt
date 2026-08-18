@@ -146,6 +146,14 @@ interface SmsMsgDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(msg: SmsMsg): Long
 
+    /**
+     * Provider-side record insertion uses IGNORE so an already persisted SMS
+     * fingerprint is returned to the caller instead of being deleted and
+     * recreated by REPLACE.
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfAbsent(msg: SmsMsg): Long
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(msgs: List<SmsMsg>)
 

@@ -8,7 +8,6 @@ import android.os.Build
 import android.telephony.SubscriptionManager
 import android.util.Log
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
-import io.github.magisk317.smscode.runtime.common.utils.SharedRuntimeGate
 import io.github.magisk317.smscode.runtime.contract.logging.LogRoute
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
@@ -35,12 +34,12 @@ internal class ObservedSmsHandler(
     private val conflictSuppressor: (Context, String) -> Boolean = { context, source ->
         ModuleConflictArbiter.shouldSuppressByRelay(context, source)
     },
-    private val sharedGateClaimer: (Context, String, String, Long, Int) -> SharedRuntimeGate.ClaimResult =
+    private val sharedGateClaimer: (Context, String, String, Long, Int) -> com.github.magisk317.smscode.runtime.bridge.HookRuntimeGateClaimResult =
         { context, fileName, key, windowMs, maxEntries ->
-            SharedRuntimeGate.claimWithinWindow(
+            HookRuntimeBridge.contentProviderAccess.claimRuntimeGate(
                 context = context,
                 fileName = fileName,
-                key = key,
+                keys = listOf(key),
                 windowMs = windowMs,
                 maxEntries = maxEntries,
             )
@@ -308,7 +307,7 @@ internal class ObservedSmsHandler(
         }
     }
 
-    private fun SharedRuntimeGate.ClaimResult.toShared(): SharedObservedSmsHandler.ClaimResult {
+    private fun com.github.magisk317.smscode.runtime.bridge.HookRuntimeGateClaimResult.toShared(): SharedObservedSmsHandler.ClaimResult {
         return SharedObservedSmsHandler.ClaimResult(
             claimed = claimed,
             ageMs = ageMs,

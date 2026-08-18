@@ -279,7 +279,9 @@ class SettingsViewModel(
     }
 
     fun setInternalFilesWritable() {
-        StorageUtils.setFileWorldWritable(StorageUtils.getFilesDir(getApplication()), 1)
+        // Repair releases that widened Android/data/<package> and files/ to
+        // 0777. Hook IPC now goes through the app-owned provider.
+        StorageUtils.repairExternalAppDataPermissions(getApplication())
         viewModelScope.launch {
             HookPreferenceMirror.publish(getApplication())
         }

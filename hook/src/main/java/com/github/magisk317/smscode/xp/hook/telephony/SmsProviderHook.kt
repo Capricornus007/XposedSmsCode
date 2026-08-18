@@ -5,7 +5,6 @@ import android.content.Context
 import android.os.Binder
 import com.github.magisk317.smscode.hook.BuildConfig
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
-import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsStore
 import io.github.magisk317.smscode.runtime.contract.logging.LogRoute
 import io.github.magisk317.smscode.xposed.hook.telephony.SmsProviderHookInstaller
 import io.github.magisk317.smscode.xposed.utils.XLog
@@ -42,12 +41,13 @@ class SmsProviderHook : BaseHook() {
         }.getOrNull()
         pluginContext?.let { HookRuntimeBridge.hookProcessInit?.invoke(it) }
         if (pluginContext != null && context != null) {
-            ActivationDiagnosticsStore.recordHookHeartbeat(
+            HookRuntimeBridge.contentProviderAccess.recordHookHeartbeat(
                 context = pluginContext,
                 packageName = SmsProviderHookInstaller.TARGET_PACKAGE,
                 processName = context.applicationInfo?.processName ?: SmsProviderHookInstaller.TARGET_PACKAGE,
                 source = "sms_provider_${call.methodName}",
                 verboseLogging = HookRuntimeBridge.prefsAccess.isVerboseLogMode(pluginContext),
+                route = LogRoute.SMS_HOOK.id,
             )
         }
         val verboseDiag = pluginContext != null && HookRuntimeBridge.prefsAccess.isVerboseLogMode(pluginContext)
