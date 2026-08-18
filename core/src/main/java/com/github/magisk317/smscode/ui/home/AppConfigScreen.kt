@@ -34,12 +34,16 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -65,32 +69,75 @@ import io.github.magisk317.uikit.theme.UiKitStyle
 import io.github.magisk317.uikit.theme.currentUiKitStyle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import org.koin.compose.viewmodel.koinViewModel
 
 private const val APP_LIST_PREFETCH_DISTANCE = 12
+
+private data class AppConfigPageRuntime(
+    val isActive: Boolean = true,
+    val keepDataActive: Boolean = isActive,
+    val onPageDataReady: (cacheHit: Boolean) -> Unit = {},
+)
+
+private val LocalAppConfigPageRuntime = staticCompositionLocalOf { AppConfigPageRuntime() }
+
+internal enum class PageRefreshAction {
+    INITIAL_LOAD,
+    FORCE_REFRESH,
+    NO_OP,
+}
+
+internal class PageRefreshTriggerConsumer {
+    private var lastHandledRefreshTrigger = 0
+    private var hasActivated = false
+
+    fun consume(isActive: Boolean, refreshTrigger: Int): PageRefreshAction? {
+        if (!isActive) return null
+        val firstActivation = !hasActivated
+        hasActivated = true
+        val forceRefresh = refreshTrigger > 0 && refreshTrigger != lastHandledRefreshTrigger
+        if (forceRefresh) {
+            lastHandledRefreshTrigger = refreshTrigger
+            return PageRefreshAction.FORCE_REFRESH
+        }
+        return if (firstActivation) PageRefreshAction.INITIAL_LOAD else PageRefreshAction.NO_OP
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppConfigScreen(
     onBack: (() -> Unit)? = null,
     refreshTrigger: Int = 0,
+    isActive: Boolean = true,
+    keepDataActive: Boolean = isActive,
+    onPageDataReady: (cacheHit: Boolean) -> Unit = {},
     viewModel: AppConfigViewModel = koinViewModel(),
     scrollChromeState: io.github.magisk317.uikit.scroll.ScrollChromeState? = null,
 ) {
-    when (currentUiKitStyle()) {
-        UiKitStyle.Miuix -> AppConfigScreenMiuix(
-            onBack = onBack,
-            refreshTrigger = refreshTrigger,
-            viewModel = viewModel,
-            scrollChromeState = scrollChromeState,
-        )
+    CompositionLocalProvider(
+        LocalAppConfigPageRuntime provides AppConfigPageRuntime(
+            isActive = isActive,
+            keepDataActive = keepDataActive,
+            onPageDataReady = onPageDataReady,
+        ),
+    ) {
+        when (currentUiKitStyle()) {
+            UiKitStyle.Miuix -> AppConfigScreenMiuix(
+                onBack = onBack,
+                refreshTrigger = refreshTrigger,
+                viewModel = viewModel,
+                scrollChromeState = scrollChromeState,
+            )
 
-        UiKitStyle.Expressive -> AppConfigScreenMaterial(
-            onBack = onBack,
-            refreshTrigger = refreshTrigger,
-            viewModel = viewModel,
-            scrollChromeState = scrollChromeState,
-        )
+            UiKitStyle.Expressive -> AppConfigScreenMaterial(
+                onBack = onBack,
+                refreshTrigger = refreshTrigger,
+                viewModel = viewModel,
+                scrollChromeState = scrollChromeState,
+            )
+        }
     }
 }
 
@@ -102,6 +149,10 @@ internal fun AppConfigScreenShared(
     viewModel: AppConfigViewModel = koinViewModel(),
     scrollChromeState: io.github.magisk317.uikit.scroll.ScrollChromeState? = null,
 ) {
+    val pageRuntime = LocalAppConfigPageRuntime.current
+    val isActive = pageRuntime.isActive
+    val keepDataActive = pageRuntime.keepDataActive
+    val currentOnPageDataReady by rememberUpdatedState(pageRuntime.onPageDataReady)
     val apps by viewModel.appsFlow.collectAsStateWithLifecycle()
     val isLoading by viewModel.loadingFlow.collectAsStateWithLifecycle()
     val hasMoreApps by viewModel.hasMoreAppsFlow.collectAsStateWithLifecycle()
@@ -119,12 +170,19 @@ internal fun AppConfigScreenShared(
     var showSettingsMenu by remember { mutableStateOf(false) }
 
     val showLoading = rememberMinDurationLoading(
-        actualLoading = isLoading && shouldShowInitialLoading,
+        actualLoading = isActive && isLoading && shouldShowInitialLoading,
         minDurationMillis = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
     )
 
-    LaunchedEffect(isLoading, shouldShowInitialLoading, initialLoadingStarted) {
-        if (!shouldShowInitialLoading) return@LaunchedEffect
+    DisposableEffect(viewModel, keepDataActive) {
+        viewModel.setActive(keepDataActive)
+        onDispose {
+            if (keepDataActive) viewModel.setActive(false)
+        }
+    }
+
+    LaunchedEffect(isActive, isLoading, shouldShowInitialLoading, initialLoadingStarted) {
+        if (!isActive || !shouldShowInitialLoading) return@LaunchedEffect
         if (isLoading) {
             initialLoadingStarted = true
         } else if (initialLoadingStarted) {
@@ -132,7 +190,12 @@ internal fun AppConfigScreenShared(
         }
     }
 
-    LaunchedEffect(isLoading, manualRefreshing) {
+    LaunchedEffect(isActive, isLoading, manualRefreshing) {
+        if (!isActive) {
+            manualRefreshing = false
+            manualRefreshStartedAt = 0L
+            return@LaunchedEffect
+        }
         if (manualRefreshing && !isLoading) {
             val elapsed = if (manualRefreshStartedAt > 0L) {
                 SystemClock.elapsedRealtime() - manualRefreshStartedAt
@@ -146,19 +209,31 @@ internal fun AppConfigScreenShared(
         }
     }
 
-    LaunchedEffect(refreshTrigger) {
-        if (refreshTrigger > 0) {
-            manualRefreshStartedAt = SystemClock.elapsedRealtime()
-            manualRefreshing = true
-            viewModel.refreshData(force = true)
+    val refreshTriggerConsumer = remember { PageRefreshTriggerConsumer() }
+    LaunchedEffect(isActive, refreshTrigger) {
+        val action = refreshTriggerConsumer.consume(isActive, refreshTrigger)
+            ?: return@LaunchedEffect
+        val forceRefresh = action == PageRefreshAction.FORCE_REFRESH
+        if (action == PageRefreshAction.INITIAL_LOAD || forceRefresh) {
+            if (forceRefresh) {
+                manualRefreshStartedAt = SystemClock.elapsedRealtime()
+                manualRefreshing = true
+            }
+            viewModel.refreshData(force = forceRefresh)
         }
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.refreshData()
+    LaunchedEffect(isActive) {
+        if (!isActive) return@LaunchedEffect
+        val cacheHit = viewModel.hasLoadedDataFlow.value
+        if (!cacheHit) {
+            viewModel.hasLoadedDataFlow.first { it }
+        }
+        currentOnPageDataReady(cacheHit)
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(viewModel, isActive) {
+        if (!isActive) return@LaunchedEffect
         viewModel.events.collect { event ->
             when (event) {
                 is AppConfigViewModel.AppConfigEvent.Error -> {
@@ -181,8 +256,8 @@ internal fun AppConfigScreenShared(
     val defaultTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 156.dp
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
 
-    LaunchedEffect(listState, apps.size, hasMoreApps, manualRefreshing, showLoading) {
-        if (manualRefreshing || showLoading) return@LaunchedEffect
+    LaunchedEffect(isActive, listState, apps.size, hasMoreApps, manualRefreshing, showLoading) {
+        if (!isActive || manualRefreshing || showLoading) return@LaunchedEffect
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1 }
             .distinctUntilChanged()
             .collect { lastVisibleIndex ->
@@ -272,6 +347,7 @@ internal fun AppConfigScreenShared(
                             items(apps) { app ->
                                 AppConfigItem(
                                     app = app,
+                                    isDataActive = keepDataActive,
                                     onBlockedChange = { blocked -> viewModel.setBlocked(app.packageName, blocked) },
                                 )
                                 if (!isMiuix) {
@@ -387,6 +463,7 @@ internal fun AppConfigScreenShared(
 @Composable
 fun AppConfigItem(
     app: AppInfo,
+    isDataActive: Boolean = true,
     onBlockedChange: (Boolean) -> Unit,
 ) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
@@ -400,10 +477,14 @@ fun AppConfigItem(
     WorkspaceListItem(
         containerColor = bgColor,
         leadingContent = {
-            AppIconImage(
-                packageName = app.packageName,
-                contentDescription = null,
-            )
+            if (isDataActive) {
+                AppIconImage(
+                    packageName = app.packageName,
+                    contentDescription = null,
+                )
+            } else {
+                Spacer(modifier = Modifier.size(40.dp))
+            }
         },
         trailingContent = {
             io.github.magisk317.uikit.preference.AppSwitch(

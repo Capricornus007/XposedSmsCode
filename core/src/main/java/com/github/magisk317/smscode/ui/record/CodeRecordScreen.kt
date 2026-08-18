@@ -14,6 +14,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
@@ -65,6 +69,8 @@ import io.github.magisk317.uikit.foundation.PolygonMorphLoadingIndicator
 import io.github.magisk317.uikit.foundation.SessionLoadingRegistry
 import io.github.magisk317.uikit.foundation.rememberMinDurationLoading
 import com.github.magisk317.smscode.ui.home.Item
+import com.github.magisk317.smscode.ui.home.PageRefreshAction
+import com.github.magisk317.smscode.ui.home.PageRefreshTriggerConsumer
 import com.github.magisk317.smscode.ui.home.RetentionDialog
 import com.github.magisk317.smscode.ui.home.SwitchItem
 import io.github.magisk317.uikit.preference.AppCheckbox
@@ -74,8 +80,11 @@ import io.github.magisk317.uikit.surface.WorkspaceEmptyState
 import io.github.magisk317.uikit.surface.WorkspaceListItem
 import io.github.magisk317.uikit.theme.UiKitStyle
 import io.github.magisk317.uikit.theme.currentUiKitStyle
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -84,29 +93,74 @@ private const val RECORD_ENABLE_KEY = PrefConst.KEY_ENABLE_CODE_RECORDS_CODE
 private const val RECORD_HISTORY_LIMIT_KEY = PrefConst.KEY_HISTORY_LIMIT_CODE
 private const val CODE_RECORD_DEDUP_WINDOW_MS = CodeRecordSimilarityUtils.DEFAULT_WINDOW_MS
 
+private data class CodeRecordPageRuntime(
+    val isActive: Boolean = true,
+    val keepDataActive: Boolean = isActive,
+    val onPageDataReady: (cacheHit: Boolean) -> Unit = {},
+    val onRecordSwipeGestureActiveChanged: (Boolean) -> Unit = {},
+)
+
+private val LocalCodeRecordPageRuntime = staticCompositionLocalOf { CodeRecordPageRuntime() }
+
+internal class RecordSwipeGestureCoordinator(
+    private val onActiveChanged: (Boolean) -> Unit,
+) {
+    private val activeRows = mutableSetOf<Any>()
+
+    fun update(rowKey: Any, active: Boolean) {
+        val wasActive = activeRows.isNotEmpty()
+        if (active) {
+            activeRows.add(rowKey)
+        } else {
+            activeRows.remove(rowKey)
+        }
+        val isActive = activeRows.isNotEmpty()
+        if (wasActive != isActive) onActiveChanged(isActive)
+    }
+
+    fun releaseAll() {
+        if (activeRows.isEmpty()) return
+        activeRows.clear()
+        onActiveChanged(false)
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Suppress("CyclomaticComplexMethod")
 @Composable
 fun CodeRecordScreen(
     onBack: (() -> Unit)? = null,
     refreshTrigger: Int = 0,
+    isActive: Boolean = true,
+    keepDataActive: Boolean = isActive,
+    onPageDataReady: (cacheHit: Boolean) -> Unit = {},
+    onRecordSwipeGestureActiveChanged: (Boolean) -> Unit = {},
     viewModel: CodeRecordViewModel = koinViewModel(),
     scrollChromeState: io.github.magisk317.uikit.scroll.ScrollChromeState? = null,
 ) {
-    when (currentUiKitStyle()) {
-        UiKitStyle.Miuix -> CodeRecordScreenMiuix(
-            onBack = onBack,
-            refreshTrigger = refreshTrigger,
-            viewModel = viewModel,
-            scrollChromeState = scrollChromeState,
-        )
+    CompositionLocalProvider(
+        LocalCodeRecordPageRuntime provides CodeRecordPageRuntime(
+            isActive = isActive,
+            keepDataActive = keepDataActive,
+            onPageDataReady = onPageDataReady,
+            onRecordSwipeGestureActiveChanged = onRecordSwipeGestureActiveChanged,
+        ),
+    ) {
+        when (currentUiKitStyle()) {
+            UiKitStyle.Miuix -> CodeRecordScreenMiuix(
+                onBack = onBack,
+                refreshTrigger = refreshTrigger,
+                viewModel = viewModel,
+                scrollChromeState = scrollChromeState,
+            )
 
-        UiKitStyle.Expressive -> CodeRecordScreenMaterial(
-            onBack = onBack,
-            refreshTrigger = refreshTrigger,
-            viewModel = viewModel,
-            scrollChromeState = scrollChromeState,
-        )
+            UiKitStyle.Expressive -> CodeRecordScreenMaterial(
+                onBack = onBack,
+                refreshTrigger = refreshTrigger,
+                viewModel = viewModel,
+                scrollChromeState = scrollChromeState,
+            )
+        }
     }
 }
 
@@ -119,6 +173,30 @@ internal fun CodeRecordScreenShared(
     viewModel: CodeRecordViewModel = koinViewModel(),
     scrollChromeState: io.github.magisk317.uikit.scroll.ScrollChromeState? = null,
 ) {
+    val pageRuntime = LocalCodeRecordPageRuntime.current
+    val isActive = pageRuntime.isActive
+    val keepDataActive = pageRuntime.keepDataActive
+    val currentOnPageDataReady by rememberUpdatedState(pageRuntime.onPageDataReady)
+    val currentOnRecordSwipeGestureActiveChanged by rememberUpdatedState(
+        pageRuntime.onRecordSwipeGestureActiveChanged,
+    )
+    val swipeGestureCoordinator = remember {
+        RecordSwipeGestureCoordinator { active ->
+            currentOnRecordSwipeGestureActiveChanged(active)
+        }
+    }
+    DisposableEffect(viewModel, keepDataActive) {
+        viewModel.setActive(keepDataActive)
+        onDispose {
+            if (keepDataActive) viewModel.setActive(false)
+        }
+    }
+    DisposableEffect(swipeGestureCoordinator, isActive) {
+        if (!isActive) swipeGestureCoordinator.releaseAll()
+        onDispose {
+            if (isActive) swipeGestureCoordinator.releaseAll()
+        }
+    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val smsList = uiState.smsList
     val isLoading = uiState.isLoading
@@ -127,7 +205,7 @@ internal fun CodeRecordScreenShared(
     var manualRefreshing by remember { mutableStateOf(false) }
     var manualRefreshStartedAt by remember { mutableLongStateOf(0L) }
     val showLoading = rememberMinDurationLoading(
-        actualLoading = isLoading && shouldShowInitialLoading,
+        actualLoading = isActive && isLoading && shouldShowInitialLoading,
         minDurationMillis = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
     )
     val snackbarHostState = LocalSnackbarHostState.current
@@ -135,22 +213,26 @@ internal fun CodeRecordScreenShared(
     val context = LocalContext.current
     val resources = LocalResources.current
     val prefs = koinInject<UiPrefsAccess>()
-    val fallbackSimSlot1Remark = remember(context) {
-        prefs.getSimSlotRemark(context, 0)
+    val simSlot1Remark by produceState(initialValue = "", context, keepDataActive) {
+        if (!keepDataActive) return@produceState
+        val fallback = withContext(Dispatchers.IO) { prefs.getSimSlotRemark(context, 0) }
+        value = fallback
+        AppPreferencesDataStore.getStringFlow(
+            context,
+            PrefConst.KEY_SIM_SLOT1_REMARK,
+            fallback,
+        ).collect { value = it }
     }
-    val fallbackSimSlot2Remark = remember(context) {
-        prefs.getSimSlotRemark(context, 1)
+    val simSlot2Remark by produceState(initialValue = "", context, keepDataActive) {
+        if (!keepDataActive) return@produceState
+        val fallback = withContext(Dispatchers.IO) { prefs.getSimSlotRemark(context, 1) }
+        value = fallback
+        AppPreferencesDataStore.getStringFlow(
+            context,
+            PrefConst.KEY_SIM_SLOT2_REMARK,
+            fallback,
+        ).collect { value = it }
     }
-    val simSlot1Remark by AppPreferencesDataStore.getStringFlow(
-        context,
-        PrefConst.KEY_SIM_SLOT1_REMARK,
-        fallbackSimSlot1Remark,
-    ).collectAsStateWithLifecycle(initialValue = fallbackSimSlot1Remark)
-    val simSlot2Remark by AppPreferencesDataStore.getStringFlow(
-        context,
-        PrefConst.KEY_SIM_SLOT2_REMARK,
-        fallbackSimSlot2Remark,
-    ).collectAsStateWithLifecycle(initialValue = fallbackSimSlot2Remark)
     val simSlotRemarkResolver: (Int) -> String = remember(simSlot1Remark, simSlot2Remark) {
         { slot ->
             when (slot) {
@@ -161,8 +243,8 @@ internal fun CodeRecordScreenShared(
         }
     }
 
-    LaunchedEffect(isLoading, shouldShowInitialLoading, initialLoadingStarted) {
-        if (!shouldShowInitialLoading) return@LaunchedEffect
+    LaunchedEffect(isActive, isLoading, shouldShowInitialLoading, initialLoadingStarted) {
+        if (!isActive || !shouldShowInitialLoading) return@LaunchedEffect
         if (isLoading) {
             initialLoadingStarted = true
         } else if (initialLoadingStarted) {
@@ -170,7 +252,12 @@ internal fun CodeRecordScreenShared(
         }
     }
 
-    LaunchedEffect(isLoading, manualRefreshing) {
+    LaunchedEffect(isActive, isLoading, manualRefreshing) {
+        if (!isActive) {
+            manualRefreshing = false
+            manualRefreshStartedAt = 0L
+            return@LaunchedEffect
+        }
         if (manualRefreshing && !isLoading) {
             val elapsed = if (manualRefreshStartedAt > 0L) {
                 SystemClock.elapsedRealtime() - manualRefreshStartedAt
@@ -184,8 +271,9 @@ internal fun CodeRecordScreenShared(
         }
     }
 
-    LaunchedEffect(refreshTrigger) {
-        if (refreshTrigger > 0) {
+    val refreshTriggerConsumer = remember { PageRefreshTriggerConsumer() }
+    LaunchedEffect(isActive, refreshTrigger) {
+        if (refreshTriggerConsumer.consume(isActive, refreshTrigger) == PageRefreshAction.FORCE_REFRESH) {
             manualRefreshStartedAt = SystemClock.elapsedRealtime()
             manualRefreshing = true
             viewModel.refreshData()
@@ -201,9 +289,13 @@ internal fun CodeRecordScreenShared(
         }
     }
 
-    // Initial Load
-    LaunchedEffect(Unit) {
-        viewModel.loadData()
+    LaunchedEffect(isActive) {
+        if (!isActive) return@LaunchedEffect
+        val cacheHit = viewModel.hasRecordSnapshot.value
+        if (!cacheHit) {
+            viewModel.hasRecordSnapshot.first { it }
+        }
+        currentOnPageDataReady(cacheHit)
     }
 
     // Selection State
@@ -217,7 +309,8 @@ internal fun CodeRecordScreenShared(
     var showHistoryLimitDialog by remember { mutableStateOf(false) }
     var showHistoryLimitInput by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(keepDataActive) {
+        if (!keepDataActive) return@LaunchedEffect
         historyLimitCode = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT_CODE, "0")
     }
 
@@ -517,6 +610,8 @@ internal fun CodeRecordScreenShared(
                             listContentPadding = PaddingValues(top = fixedTopHeight, bottom = bottomPadding),
                             simSlotRemarkResolver = simSlotRemarkResolver,
                             scrollChromeState = scrollChromeState,
+                            isActive = isActive,
+                            onRowSwipeGestureActiveChanged = swipeGestureCoordinator::update,
                         )
                     }
                 }
@@ -863,6 +958,8 @@ private fun RecordSplitColumn(
     listContentPadding: PaddingValues = PaddingValues(0.dp),
     simSlotRemarkResolver: (Int) -> String,
     scrollChromeState: io.github.magisk317.uikit.scroll.ScrollChromeState? = null,
+    isActive: Boolean = true,
+    onRowSwipeGestureActiveChanged: (rowKey: Any, active: Boolean) -> Unit = { _, _ -> },
 ) {
     val listState = rememberLazyListState()
     io.github.magisk317.uikit.scroll.ReportLazyListScrollToChrome(listState, scrollChromeState)
@@ -931,15 +1028,31 @@ private fun RecordSplitColumn(
                                 onDetailClick = { onShowDetail(smsMsg) },
                                 modifier = Modifier.animateItem(),
                                 simSlotRemarkResolver = simSlotRemarkResolver,
+                                isActive = isActive,
                             )
                         } else {
                             val dismissState = rememberSwipeToDismissBoxState()
-                            LaunchedEffect(dismissState.currentValue) {
-                                if (dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
+                            val rowGestureKey: Any = smsMsg.id ?: System.identityHashCode(smsMsg)
+                            LaunchedEffect(dismissState.currentValue, isActive) {
+                                if (isActive && dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
                                     onDelete(smsMsg)
                                 }
                             }
                             SwipeToDismissBox(
+                                modifier = Modifier.pointerInput(rowGestureKey, isActive) {
+                                    if (!isActive) return@pointerInput
+                                    awaitEachGesture {
+                                        awaitFirstDown(requireUnconsumed = false)
+                                        onRowSwipeGestureActiveChanged(rowGestureKey, true)
+                                        try {
+                                            do {
+                                                val event = awaitPointerEvent(PointerEventPass.Final)
+                                            } while (event.changes.any { it.pressed })
+                                        } finally {
+                                            onRowSwipeGestureActiveChanged(rowGestureKey, false)
+                                        }
+                                    }
+                                },
                                 state = dismissState,
                                 enableDismissFromStartToEnd = true,
                                 enableDismissFromEndToStart = true,
@@ -987,6 +1100,7 @@ private fun RecordSplitColumn(
                                         onDetailClick = { onShowDetail(smsMsg) },
                                         modifier = Modifier.animateItem(),
                                         simSlotRemarkResolver = simSlotRemarkResolver,
+                                        isActive = isActive,
                                     )
                                 },
                             )
@@ -1012,6 +1126,7 @@ fun CodeRecordItem(
     onDetailClick: () -> Unit,
     modifier: Modifier = Modifier,
     simSlotRemarkResolver: (Int) -> String,
+    isActive: Boolean = true,
 ) {
     val dateFormatter = remember { SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()) }
     val context = LocalContext.current
@@ -1024,16 +1139,20 @@ fun CodeRecordItem(
     val fallbackLabel = (smsMsg.company ?: smsMsg.sender ?: stringResource(R.string.unknown))
         .trim()
         .trim('【', '】', '[', ']')
-    val appLabel = remember(smsMsg.packageName) {
+    var appLabel by remember(smsMsg.packageName) { mutableStateOf<String?>(null) }
+    LaunchedEffect(smsMsg.packageName, isActive, appLabel == null) {
+        if (!isActive || appLabel != null) return@LaunchedEffect
         val pkg = smsMsg.packageName
-        if (pkg.isNullOrBlank()) {
+        appLabel = if (pkg.isNullOrBlank()) {
             null
         } else {
-            runCatching {
-                val pm = context.packageManager
-                val appInfo = pm.getApplicationInfo(pkg, 0)
-                pm.getApplicationLabel(appInfo).toString()
-            }.getOrNull()
+            withContext(Dispatchers.IO) {
+                runCatching {
+                    val pm = context.packageManager
+                    val appInfo = pm.getApplicationInfo(pkg, 0)
+                    pm.getApplicationLabel(appInfo).toString()
+                }.getOrNull()
+            }
         }
     }
     val displayLabel = appLabel ?: fallbackLabel
@@ -1070,11 +1189,15 @@ fun CodeRecordItem(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.width(64.dp),
                 ) {
-                    AppIconImage(
-                        packageName = smsMsg.packageName,
-                        label = iconLabel,
-                        contentDescription = stringResource(R.string.sms_icon_description),
-                    )
+                    if (isActive) {
+                        AppIconImage(
+                            packageName = smsMsg.packageName,
+                            label = iconLabel,
+                            contentDescription = stringResource(R.string.sms_icon_description),
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.size(40.dp))
+                    }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = displayLabel,

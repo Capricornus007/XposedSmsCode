@@ -50,7 +50,6 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.github.magisk317.smscode.core.BuildConfig
 import io.github.magisk317.xposed.logging.MagiskOtel
@@ -92,9 +91,18 @@ import io.github.magisk317.uikit.theme.UiKitStyle
 import io.github.magisk317.uikit.theme.currentUiKitStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
+
+private data class SettingsPageRuntime(
+    val isActive: Boolean = true,
+    val keepDataActive: Boolean = isActive,
+    val onPageDataReady: (cacheHit: Boolean) -> Unit = {},
+)
+
+private val LocalSettingsPageRuntime = staticCompositionLocalOf { SettingsPageRuntime() }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Suppress("CyclomaticComplexMethod")
@@ -102,20 +110,31 @@ import org.koin.compose.viewmodel.koinViewModel
 fun ComposeSettingsScreen(
     viewModel: SettingsViewModel? = null,
     refreshTrigger: Int = 0,
+    isActive: Boolean = true,
+    keepDataActive: Boolean = isActive,
+    onPageDataReady: (cacheHit: Boolean) -> Unit = {},
     onExit: () -> Unit = {},
 ) {
-    when (currentUiKitStyle()) {
-        UiKitStyle.Miuix -> ComposeSettingsScreenMiuix(
-            viewModel = viewModel,
-            refreshTrigger = refreshTrigger,
-            onExit = onExit,
-        )
+    CompositionLocalProvider(
+        LocalSettingsPageRuntime provides SettingsPageRuntime(
+            isActive = isActive,
+            keepDataActive = keepDataActive,
+            onPageDataReady = onPageDataReady,
+        ),
+    ) {
+        when (currentUiKitStyle()) {
+            UiKitStyle.Miuix -> ComposeSettingsScreenMiuix(
+                viewModel = viewModel,
+                refreshTrigger = refreshTrigger,
+                onExit = onExit,
+            )
 
-        UiKitStyle.Expressive -> ComposeSettingsScreenMaterial(
-            viewModel = viewModel,
-            refreshTrigger = refreshTrigger,
-            onExit = onExit,
-        )
+            UiKitStyle.Expressive -> ComposeSettingsScreenMaterial(
+                viewModel = viewModel,
+                refreshTrigger = refreshTrigger,
+                onExit = onExit,
+            )
+        }
     }
 }
 
@@ -128,6 +147,10 @@ internal fun ComposeSettingsScreenShared(
     refreshTrigger: Int = 0,
     onExit: () -> Unit = {},
 ) {
+    val pageRuntime = LocalSettingsPageRuntime.current
+    val isActive = pageRuntime.isActive
+    val keepDataActive = pageRuntime.keepDataActive
+    val currentOnPageDataReady by rememberUpdatedState(pageRuntime.onPageDataReady)
     val context = LocalContext.current
     val activityOwner = context as? ComponentActivity
     val settingsViewModel = viewModel ?: if (activityOwner != null) {
@@ -140,7 +163,14 @@ internal fun ComposeSettingsScreenShared(
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val themeState by settingsViewModel.themeState.collectAsStateWithLifecycle()
+    val themeState by produceState(
+        initialValue = SettingsViewModel.ThemeState(mode = 0),
+        settingsViewModel,
+        keepDataActive,
+    ) {
+        if (!keepDataActive) return@produceState
+        settingsViewModel.themeState.collect { value = it }
+    }
     val themeMode = themeState.mode
     val uiKitStyle = themeState.uiKitStyle
 
@@ -164,13 +194,9 @@ internal fun ComposeSettingsScreenShared(
     var showKeywordsDialog by remember { mutableStateOf(false) }
     var showSimSlotRemarkDialog by remember { mutableStateOf<Int?>(null) }
     var showLanguageDialog by remember { mutableStateOf(false) }
-    var isActivated by remember { mutableStateOf(ActivationDiagnosticsStore.isModuleActivated(context)) }
+    var isActivated by remember { mutableStateOf(false) }
     val supportsAccessibilityAutoInput = BuildConfig.ENABLE_ACCESSIBILITY_AUTO_INPUT
-    var autoInputAccessibilityEnabled by remember {
-        mutableStateOf(
-            supportsAccessibilityAutoInput && isAutoInputAccessibilityServiceEnabled(context),
-        )
-    }
+    var autoInputAccessibilityEnabled by remember { mutableStateOf(false) }
     var settingsDataLoaded by remember { mutableStateOf(false) }
     var manualRefreshing by remember { mutableStateOf(false) }
     var expandGeneral by remember { mutableStateOf(false) }
@@ -179,7 +205,7 @@ internal fun ComposeSettingsScreenShared(
     var expandNotification by remember { mutableStateOf(false) }
     var expandExperimental by remember { mutableStateOf(false) }
     var expandOthers by remember { mutableStateOf(false) }
-    val launcherIconVisible = remember { mutableStateOf(settingsViewModel.isLauncherIconVisible()) }
+    val launcherIconVisible = remember { mutableStateOf(true) }
     var runtimeLogRetentionDays by remember { mutableIntStateOf(PrefConst.RUNTIME_LOG_RETENTION_DAYS_DEFAULT) }
     val verboseLogEnabled = rememberPrefBoolean(PrefConst.KEY_VERBOSE_LOG_MODE, false)
     val analyticsEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE_ANALYTICS, true)
@@ -356,8 +382,17 @@ internal fun ComposeSettingsScreenShared(
         }
     }
 
-    LaunchedEffect(Unit) {
-        reloadSettingsData()
+    val refreshTriggerConsumer = remember { PageRefreshTriggerConsumer() }
+    LaunchedEffect(isActive, refreshTrigger) {
+        val action = refreshTriggerConsumer.consume(isActive, refreshTrigger)
+            ?: return@LaunchedEffect
+        when (action) {
+            PageRefreshAction.FORCE_REFRESH -> runManualRefresh()
+            PageRefreshAction.INITIAL_LOAD -> {
+                if (!settingsDataLoaded) reloadSettingsData()
+            }
+            PageRefreshAction.NO_OP -> Unit
+        }
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -410,7 +445,8 @@ internal fun ComposeSettingsScreenShared(
         }
     }
 
-    LaunchedEffect(lifecycleOwner) {
+    LaunchedEffect(lifecycleOwner, keepDataActive) {
+        if (!keepDataActive) return@LaunchedEffect
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
             isActivated = ActivationDiagnosticsStore.isModuleActivated(context)
             autoInputAccessibilityEnabled =
@@ -574,7 +610,8 @@ internal fun ComposeSettingsScreenShared(
         }
     }
 
-    LaunchedEffect(settingsViewModel, lifecycleOwner) {
+    LaunchedEffect(settingsViewModel, lifecycleOwner, keepDataActive) {
+        if (!keepDataActive) return@LaunchedEffect
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
             settingsViewModel.eventsFlow.collect { event ->
                 handleSettingsEvent(
@@ -600,7 +637,7 @@ internal fun ComposeSettingsScreenShared(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val shouldShowInitialLoading = remember { SessionLoadingRegistry.shouldShowInitial("settings") }
     val showLoading = rememberMinDurationLoading(
-        actualLoading = shouldShowInitialLoading && !settingsDataLoaded,
+        actualLoading = isActive && shouldShowInitialLoading && !settingsDataLoaded,
         minDurationMillis = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
     )
     val pullToRefreshState = rememberPullToRefreshState()
@@ -609,16 +646,19 @@ internal fun ComposeSettingsScreenShared(
     val moduleEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE, true)
     val accordionMode = rememberPrefBoolean(PrefConst.KEY_SETTINGS_ACCORDION_MODE, true)
 
-    LaunchedEffect(settingsDataLoaded, showLoading, shouldShowInitialLoading) {
-        if (shouldShowInitialLoading && settingsDataLoaded && !showLoading) {
+    LaunchedEffect(isActive, settingsDataLoaded, showLoading, shouldShowInitialLoading) {
+        if (isActive && shouldShowInitialLoading && settingsDataLoaded && !showLoading) {
             SessionLoadingRegistry.markShown("settings")
         }
     }
 
-    LaunchedEffect(refreshTrigger) {
-        if (refreshTrigger > 0) {
-            runManualRefresh()
+    LaunchedEffect(isActive) {
+        if (!isActive) return@LaunchedEffect
+        val cacheHit = settingsDataLoaded
+        if (!cacheHit) {
+            snapshotFlow { settingsDataLoaded }.first { it }
         }
+        currentOnPageDataReady(cacheHit)
     }
 
     CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
@@ -1630,8 +1670,10 @@ fun SwitchItem(
 @Composable
 fun rememberPrefBoolean(key: String, defaultValue: Boolean): MutableState<Boolean> {
     val context = LocalContext.current
+    val isActive = LocalSettingsPageRuntime.current.keepDataActive
     val state = remember { mutableStateOf(defaultValue) }
-    LaunchedEffect(key) {
+    LaunchedEffect(key, isActive) {
+        if (!isActive) return@LaunchedEffect
         state.value = AppPreferencesDataStore.getBoolean(context, key, defaultValue)
     }
     return state
@@ -2056,8 +2098,10 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (BackupSelect
 @Composable
 fun rememberPrefInt(key: String, defaultValue: Int): MutableIntState {
     val context = LocalContext.current
+    val isActive = LocalSettingsPageRuntime.current.keepDataActive
     val state = remember { mutableIntStateOf(defaultValue) }
-    LaunchedEffect(key) {
+    LaunchedEffect(key, isActive) {
+        if (!isActive) return@LaunchedEffect
         state.intValue = AppPreferencesDataStore.getInt(context, key, defaultValue)
     }
     return state
@@ -2066,8 +2110,10 @@ fun rememberPrefInt(key: String, defaultValue: Int): MutableIntState {
 @Composable
 fun rememberPrefFloat(key: String, defaultValue: Float): MutableFloatState {
     val context = LocalContext.current
+    val isActive = LocalSettingsPageRuntime.current.keepDataActive
     val state = remember { mutableFloatStateOf(defaultValue) }
-    LaunchedEffect(key) {
+    LaunchedEffect(key, isActive) {
+        if (!isActive) return@LaunchedEffect
         state.floatValue = AppPreferencesDataStore.getFloat(context, key, defaultValue)
     }
     return state

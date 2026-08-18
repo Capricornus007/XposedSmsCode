@@ -3,7 +3,6 @@
 package com.github.magisk317.smscode.ui.home
 
 import android.annotation.SuppressLint
-import android.os.Build
 import android.os.SystemClock
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
@@ -16,10 +15,14 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -31,7 +34,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.magisk317.smscode.core.R
 import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationStatusState
 import com.github.magisk317.smscode.common.constant.Const
@@ -48,7 +50,7 @@ import io.github.magisk317.uikit.surface.SummarySectionCard
 import io.github.magisk317.uikit.theme.UiKitStyle
 import io.github.magisk317.uikit.theme.currentUiKitStyle
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
@@ -62,12 +64,38 @@ import io.github.magisk317.uikit.surface.startAlipayPlatformDonate
 import io.github.magisk317.uikit.surface.saveImageToGalleryAsync
 import io.github.magisk317.uikit.R as UiKitR
 
+private data class OverviewPageRuntime(
+    val isActive: Boolean = true,
+    val keepDataActive: Boolean = isActive,
+    val onPageDataReady: (cacheHit: Boolean) -> Unit = {},
+)
+
+private data class FrameworkDiagnostics(
+    val moduleInfo: Pair<String, String>? = null,
+    val managerVersion: Pair<String, Long>? = null,
+    val managerInstalled: Boolean = false,
+)
+
+private val LocalOverviewPageRuntime = staticCompositionLocalOf { OverviewPageRuntime() }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OverviewScreen() {
-    when (currentUiKitStyle()) {
-        UiKitStyle.Miuix -> OverviewScreenMiuix()
-        UiKitStyle.Expressive -> OverviewScreenMaterial()
+fun OverviewScreen(
+    isActive: Boolean = true,
+    keepDataActive: Boolean = isActive,
+    onPageDataReady: (cacheHit: Boolean) -> Unit = {},
+) {
+    CompositionLocalProvider(
+        LocalOverviewPageRuntime provides OverviewPageRuntime(
+            isActive = isActive,
+            keepDataActive = keepDataActive,
+            onPageDataReady = onPageDataReady,
+        ),
+    ) {
+        when (currentUiKitStyle()) {
+            UiKitStyle.Miuix -> OverviewScreenMiuix()
+            UiKitStyle.Expressive -> OverviewScreenMaterial()
+        }
     }
 }
 
@@ -75,12 +103,20 @@ fun OverviewScreen() {
 @Composable
 @SuppressLint("AutoboxingStateCreation")
 internal fun OverviewScreenShared() {
+    val pageRuntime = LocalOverviewPageRuntime.current
+    val isActive = pageRuntime.isActive
+    val keepDataActive = pageRuntime.keepDataActive
+    val currentOnPageDataReady by rememberUpdatedState(pageRuntime.onPageDataReady)
     val context = LocalContext.current
     val activityOwner = context as? ComponentActivity
-    val settingsViewModel = if (activityOwner != null) {
-        koinViewModel<SettingsViewModel>(viewModelStoreOwner = activityOwner)
+    val settingsViewModel = if (keepDataActive) {
+        if (activityOwner != null) {
+            koinViewModel<SettingsViewModel>(viewModelStoreOwner = activityOwner)
+        } else {
+            koinViewModel()
+        }
     } else {
-        koinViewModel()
+        null
     }
     var showDonateDialog by remember { mutableStateOf(false) }
     val billingProvider: com.github.magisk317.smscode.billing.BillingProvider = org.koin.compose.koinInject()
@@ -99,40 +135,83 @@ internal fun OverviewScreenShared() {
 
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    val activationStatus by ActivationDiagnosticsStore.observeStatus(context)
-        .collectAsStateWithLifecycle(initialValue = ActivationStatusState())
-    val frameworkInfoState by produceState<Pair<String, String>?>(
-        initialValue = null,
-    ) {
-        value = withContext(Dispatchers.IO) {
-            PackageUtils.getLsposedModuleInfo(context)
+    var activationStatus by remember { mutableStateOf(ActivationStatusState()) }
+    var frameworkDiagnostics by remember { mutableStateOf(FrameworkDiagnostics()) }
+    var hasRootAccessState by remember { mutableStateOf(false) }
+    var appVersionState by remember { mutableStateOf<Pair<String, Long>?>(null) }
+    var hasActivationSnapshot by remember { mutableStateOf(false) }
+    var hasFrameworkSnapshot by remember { mutableStateOf(false) }
+    var hasRootSnapshot by remember { mutableStateOf(false) }
+    var hasAppVersionSnapshot by remember { mutableStateOf(false) }
+    val hasDiagnosticsSnapshot = hasActivationSnapshot && hasFrameworkSnapshot &&
+        hasRootSnapshot && hasAppVersionSnapshot
+
+    LaunchedEffect(context, keepDataActive) {
+        if (!keepDataActive) return@LaunchedEffect
+        launch {
+            ActivationDiagnosticsStore.observeStatus(context).collect {
+                activationStatus = it
+                hasActivationSnapshot = true
+            }
+        }
+        if (!hasFrameworkSnapshot) {
+            launch {
+                frameworkDiagnostics = withContext(Dispatchers.IO) {
+                    val moduleInfo = PackageUtils.getLsposedModuleInfo(context)
+                    FrameworkDiagnostics(
+                        moduleInfo = moduleInfo,
+                        managerVersion = if (moduleInfo == null) {
+                            PackageUtils.getPackageVersion(context, Const.LSPOSED_MANAGER_PACKAGE_NAME)
+                        } else {
+                            null
+                        },
+                        managerInstalled = moduleInfo != null || PackageUtils.isPackageInstalled(
+                            context,
+                            Const.LSPOSED_MANAGER_PACKAGE_NAME,
+                        ),
+                    )
+                }
+                hasFrameworkSnapshot = true
+            }
+        }
+        if (!hasRootSnapshot) {
+            launch {
+                hasRootAccessState = withContext(Dispatchers.IO) { PackageUtils.hasRootAccess() }
+                hasRootSnapshot = true
+            }
+        }
+        if (!hasAppVersionSnapshot) {
+            launch {
+                appVersionState = withContext(Dispatchers.IO) {
+                    PackageUtils.getPackageVersion(context, context.packageName)
+                }
+                hasAppVersionSnapshot = true
+            }
         }
     }
-    val frameworkType = frameworkInfoState?.first ?: stringResource(id = R.string.unknown)
-    val frameworkVersion = frameworkInfoState?.second ?: run {
-        val lsposedVersion = PackageUtils.getPackageVersion(context, Const.LSPOSED_MANAGER_PACKAGE_NAME)
+
+    LaunchedEffect(isActive) {
+        if (!isActive) return@LaunchedEffect
+        val cacheHit = hasDiagnosticsSnapshot
+        if (!cacheHit) {
+            snapshotFlow {
+                hasActivationSnapshot && hasFrameworkSnapshot && hasRootSnapshot && hasAppVersionSnapshot
+            }.first { it }
+        }
+        currentOnPageDataReady(cacheHit)
+    }
+
+    val frameworkType = frameworkDiagnostics.moduleInfo?.first ?: stringResource(id = R.string.unknown)
+    val frameworkVersion = frameworkDiagnostics.moduleInfo?.second ?: run {
+        val lsposedVersion = frameworkDiagnostics.managerVersion
         when {
             lsposedVersion != null && lsposedVersion.first.isNotBlank() ->
                 "${lsposedVersion.first} (${lsposedVersion.second})"
 
-            PackageUtils.isPackageInstalled(context, Const.LSPOSED_MANAGER_PACKAGE_NAME) ->
+            frameworkDiagnostics.managerInstalled ->
                 stringResource(id = R.string.unknown)
 
             else -> stringResource(id = R.string.not_installed)
-        }
-    }
-    val hasRootAccessState by produceState(
-        initialValue = false,
-    ) {
-        value = withContext(Dispatchers.IO) {
-            PackageUtils.hasRootAccess()
-        }
-    }
-    val appVersionState by produceState<Pair<String, Long>?>(
-        initialValue = null,
-    ) {
-        value = withContext(Dispatchers.IO) {
-            PackageUtils.getPackageVersion(context, context.packageName)
         }
     }
     val appVersionName = appVersionState?.first?.takeIf { it.isNotBlank() } ?: stringResource(id = R.string.unknown)
@@ -200,7 +279,7 @@ internal fun OverviewScreenShared() {
 
             item {
                 io.github.magisk317.uikit.surface.OverviewLinksCard(
-                    onCheckUpdate = { settingsViewModel.requestPreferredUpdate() },
+                    onCheckUpdate = { settingsViewModel?.requestPreferredUpdate() },
                     onJoinTelegram = {
                         BrowserUtils.openWebPage(
                             context,
