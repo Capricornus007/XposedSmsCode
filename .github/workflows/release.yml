@@ -2,8 +2,6 @@ name: Release
 
 on:
   push:
-    branches:
-      - beta
     tags:
       - 'v*.*.*'
   workflow_dispatch:
@@ -18,7 +16,7 @@ concurrency:
 jobs:
   validate-release-metadata:
     name: Validate Release Metadata
-    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/beta') }}
+    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -78,7 +76,7 @@ jobs:
   build-aab:
     name: Build Bundle
     needs: [validate-release-metadata]
-    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/beta') }}
+    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
     outputs:
       has_play_native_symbols: ${{ steps.play_symbols.outputs.exists }}
@@ -274,7 +272,7 @@ jobs:
   publish-play-alpha:
     name: Publish Alpha to Google Play
     needs: [build-aab]
-    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && github.ref == 'refs/heads/beta' }}
+    if: ${{ false }}
     runs-on: ubuntu-latest
     env:
       HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
@@ -378,7 +376,7 @@ jobs:
   release-notification:
     name: Release Notification
     needs: [release, publish-play, publish-play-alpha, publish-modules-repo]
-    if: always() && (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/beta') && needs.publish-play.result != 'failure' && needs.publish-play-alpha.result != 'failure' && needs.publish-modules-repo.result != 'failure' && needs.release.result != 'failure'
+    if: always() && (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') && needs.publish-play.result != 'failure' && needs.publish-play-alpha.result != 'failure' && needs.publish-modules-repo.result != 'failure' && needs.release.result != 'failure'
     runs-on: ubuntu-latest
     steps:
       - name: Write release status
@@ -397,7 +395,7 @@ jobs:
   post-release-quality:
     name: Post-release Quality
     needs: [release, publish-play, publish-play-alpha, publish-modules-repo]
-    if: always() && (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && (startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/beta') && needs.publish-play.result != 'failure' && needs.publish-play-alpha.result != 'failure' && needs.publish-modules-repo.result != 'failure' && needs.release.result != 'failure'
+    if: always() && (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') && needs.publish-play.result != 'failure' && needs.publish-play-alpha.result != 'failure' && needs.publish-modules-repo.result != 'failure' && needs.release.result != 'failure'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
