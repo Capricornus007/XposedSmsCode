@@ -88,6 +88,9 @@ android:check:
   extends:
     - .magisk_android_build
     - .xposed_android_rules
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - when: never
   script:
     - |
       set -euo pipefail
@@ -106,6 +109,11 @@ android:build:
   extends:
     - .magisk_android_build
     - .xposed_signed_android_rules
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "beta" && $CI_PIPELINE_SOURCE == "push" && $RELEASE_KEYSTORE != "" && $STORE_PASSWORD != "" && $KEY_ALIAS != "" && $KEY_PASSWORD != ""'
+    - when: never
   variables:
     MAGISK_ANDROID_BUILD_TASKS: >-
       :app:assembleGithubDebug
@@ -289,6 +297,9 @@ telegram:ci:
     - .xposed_signed_android_rules
   stage: notify
   allow_failure: true
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "beta" && $CI_PIPELINE_SOURCE == "push" && $RELEASE_KEYSTORE != "" && $STORE_PASSWORD != "" && $KEY_ALIAS != "" && $KEY_PASSWORD != ""'
+    - when: never
   tags:
     - magisk-arm64-linux
   variables:
@@ -298,10 +309,10 @@ telegram:ci:
   needs:
     - job: android:check
       artifacts: false
-      optional: false
+      optional: true
     - job: android:build
       artifacts: true
-      optional: false
+      optional: true
     - job: android:ci:play-alpha
       artifacts: false
       optional: true
