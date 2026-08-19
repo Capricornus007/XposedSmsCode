@@ -1031,6 +1031,28 @@ private fun RecordSplitColumn(
                                 isActive = isActive,
                             )
                         } else {
+                            // Track whether this page has completed its first frame. During the
+                            // first frame, render a lightweight card without SwipeToDismissBox to
+                            // avoid the per-item state + effect + pointerInput cost on the initial
+                            // composition pass. The swipe gesture becomes available on the next frame.
+                            var swipeReady by remember { mutableStateOf(false) }
+                            LaunchedEffect(Unit) {
+                                withFrameNanos { }
+                                swipeReady = true
+                            }
+                            if (!swipeReady) {
+                                CodeRecordItem(
+                                    smsMsg = smsMsg,
+                                    isSelectionMode = false,
+                                    isSelected = false,
+                                    onClick = { onCopyCode(smsMsg) },
+                                    onLongClick = { onActivateSelection(smsMsg.id ?: 0) },
+                                    onDetailClick = { onShowDetail(smsMsg) },
+                                    modifier = Modifier.animateItem(),
+                                    simSlotRemarkResolver = simSlotRemarkResolver,
+                                    isActive = false,
+                                )
+                            } else {
                             val dismissState = rememberSwipeToDismissBoxState()
                             val rowGestureKey: Any = smsMsg.id ?: System.identityHashCode(smsMsg)
                             LaunchedEffect(dismissState.currentValue, isActive) {
@@ -1104,6 +1126,7 @@ private fun RecordSplitColumn(
                                     )
                                 },
                             )
+                            } // swipeReady else
                         }
                         if (!isMiuix) {
                             HorizontalDivider()
