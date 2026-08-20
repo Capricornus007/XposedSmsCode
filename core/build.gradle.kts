@@ -18,10 +18,15 @@ val enableUiKitStyleSwitch = findProperty("enableUiKitStyleSwitch")
 android {
     namespace = "com.github.magisk317.smscode.core"
 
+    val gitCommitHash = providers.exec {
+        commandLine("git", "-C", projectDir, "rev-parse", "--short", "HEAD")
+    }.standardOutput.asText.get().trim()
+
     defaultConfig {
         minSdk = minSdkInt
         buildConfigField("int", "VERSION_CODE", libs.versions.versionCode.get())
         buildConfigField("String", "VERSION_NAME", "\"${libs.versions.versionName.get()}\"")
+        buildConfigField("String", "COMMIT_HASH", "\"$gitCommitHash\"")
         buildConfigField("boolean", "ALLOW_CONFLICT_BYPASS", allowConflictBypass.toString())
         buildConfigField("boolean", "ENABLE_UI_KIT_STYLE_SWITCH", enableUiKitStyleSwitch.toString())
     }

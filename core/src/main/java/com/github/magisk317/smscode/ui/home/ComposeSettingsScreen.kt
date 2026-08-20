@@ -51,6 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import com.github.magisk317.smscode.common.utils.ModuleUtils
 import com.github.magisk317.smscode.core.BuildConfig
 import io.github.magisk317.xposed.logging.MagiskOtel
 import com.github.magisk317.smscode.core.R
@@ -718,15 +719,18 @@ internal fun ComposeSettingsScreenShared(
                         modifier = Modifier.padding(horizontal = Const.PADDING_SMALL.dp),
                         onSaved = markPrefsSaved,
                     )
-                    SwitchItem(
-                        title = stringResource(id = R.string.pref_settings_display_mode_title),
-                        summary = stringResource(id = R.string.pref_settings_display_mode_summary),
-                        key = PrefConst.KEY_SETTINGS_ACCORDION_MODE,
-                        defaultValue = true,
-                        stateOverride = accordionMode,
+                    Item(
+                        title = stringResource(id = R.string.mobile_entitlement_settings_title),
+                        summary = stringResource(id = R.string.mobile_entitlement_settings_summary),
                         modifier = Modifier.padding(horizontal = Const.PADDING_SMALL.dp),
-                        onSaved = markPrefsSaved,
-                    )
+                    ) {
+                        context.startActivity(
+                            Intent().setClassName(
+                                context,
+                                "com.github.magisk317.smscode.entitlement.MobileEntitlementActivity",
+                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                    }
 
                     ExpandableSettingsSection(
                         title = stringResource(id = R.string.settings_group_general),
@@ -734,6 +738,14 @@ internal fun ComposeSettingsScreenShared(
                         onExpandedChange = { expandGeneral = !expandGeneral },
                         accordionMode = accordionMode.value,
                     ) {
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_settings_display_mode_title),
+                            summary = stringResource(id = R.string.pref_settings_display_mode_summary),
+                            key = PrefConst.KEY_SETTINGS_ACCORDION_MODE,
+                            defaultValue = true,
+                            stateOverride = accordionMode,
+                            onSaved = markPrefsSaved,
+                        )
                         SwitchItem(
                             title = stringResource(id = R.string.pref_show_launcher_icon_title),
                             summary = stringResource(id = R.string.pref_show_launcher_icon_summary),
@@ -974,17 +986,6 @@ internal fun ComposeSettingsScreenShared(
                         onExpandedChange = { expandOthers = !expandOthers },
                         accordionMode = accordionMode.value,
                     ) {
-                        Item(
-                            title = stringResource(id = R.string.mobile_entitlement_settings_title),
-                            summary = stringResource(id = R.string.mobile_entitlement_settings_summary),
-                        ) {
-                            context.startActivity(
-                                Intent().setClassName(
-                                    context,
-                                    "com.github.magisk317.smscode.entitlement.MobileEntitlementActivity",
-                                ),
-                            )
-                        }
                         Item(
                             title = stringResource(id = R.string.pref_backup_title),
                             summary = stringResource(id = R.string.pref_backup_summary),

@@ -35,6 +35,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.magisk317.smscode.core.R
+import com.github.magisk317.smscode.core.BuildConfig
+import io.github.magisk317.uikit.R as UiKitR
 import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationStatusState
 import com.github.magisk317.smscode.common.constant.Const
 import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsSnapshot
@@ -62,7 +64,6 @@ import io.github.magisk317.uikit.surface.DonateDialog
 import io.github.magisk317.uikit.surface.QRCodeDialog
 import io.github.magisk317.uikit.surface.startAlipayPlatformDonate
 import io.github.magisk317.uikit.surface.saveImageToGalleryAsync
-import io.github.magisk317.uikit.R as UiKitR
 
 private data class OverviewPageRuntime(
     val isActive: Boolean = true,
@@ -215,7 +216,8 @@ internal fun OverviewScreenShared() {
         }
     }
     val appVersionName = appVersionState?.first?.takeIf { it.isNotBlank() } ?: stringResource(id = R.string.unknown)
-    val appVersionCode = appVersionState?.second?.toString() ?: stringResource(id = R.string.unknown)
+    val appVersionCode = BuildConfig.COMMIT_HASH.takeIf { it.isNotBlank() && it != "unknown" }
+        ?: (appVersionState?.second?.toString() ?: stringResource(id = R.string.unknown))
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -235,6 +237,7 @@ internal fun OverviewScreenShared() {
             item {
                 StatusCard(
                     isEnabled = activationStatus.isEnabled,
+                    isEntitled = activationStatus.runtimeConnected,
                     showDiagnostics = showStatusDiagnostics,
                     diagnostics = buildStatusDiagnostics(
                         context = context,
@@ -266,6 +269,7 @@ internal fun OverviewScreenShared() {
                 io.github.magisk317.uikit.surface.OverviewAppInfoCard(
                     appVersionName = appVersionName,
                     appVersionCode = appVersionCode,
+                    appVersionCodeLabel = stringResource(id = UiKitR.string.uikit_version_code),
                     frameworkType = frameworkType,
                     frameworkVersion = frameworkVersion,
                     interactive = true,
@@ -356,15 +360,35 @@ internal fun OverviewScreenShared() {
 @Composable
 fun StatusCard(
     isEnabled: Boolean,
+    isEntitled: Boolean,
     showDiagnostics: Boolean,
     diagnostics: List<Pair<String, String>>,
     onClick: (() -> Unit)? = null,
 ) {
+    val moduleStatusText = if (isEnabled) {
+        stringResource(id = R.string.status_module_activated)
+    } else {
+        stringResource(id = R.string.status_module_not_activated)
+    }
+    val entitlementStatusText = if (isEntitled) {
+        stringResource(id = R.string.status_entitlement_verified)
+    } else {
+        stringResource(id = R.string.status_entitlement_unverified)
+    }
+    val title = "$moduleStatusText\n$entitlementStatusText"
+
+    val isAllOk = isEnabled && isEntitled
+    val summary = if (!isEnabled) {
+        stringResource(id = R.string.status_activate_hint)
+    } else {
+        null
+    }
+
     StatusHeroCard(
-        title = if (isEnabled) stringResource(id = R.string.status_working) else stringResource(id = R.string.status_not_active),
-        summary = if (isEnabled) null else stringResource(id = R.string.status_tip),
-        icon = if (isEnabled) Icons.Default.CheckCircle else Icons.Default.Warning,
-        highlighted = isEnabled,
+        title = title,
+        summary = summary,
+        icon = if (isAllOk) Icons.Default.CheckCircle else Icons.Default.Warning,
+        highlighted = isAllOk,
         diagnostics = if (showDiagnostics) diagnostics else emptyList(),
         onClick = onClick,
     )

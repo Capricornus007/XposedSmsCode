@@ -10,6 +10,10 @@ import android.net.Uri
 import android.os.Binder
 import android.os.Bundle
 import androidx.core.net.toUri
+import kotlinx.coroutines.runBlocking
+import com.github.magisk317.smscode.common.constant.PrefConst
+import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
+import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeDiagnosticsPreferences
 import com.github.magisk317.smscode.common.utils.ProviderCallerGuard
 import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
@@ -103,6 +107,7 @@ class DBProvider : ContentProvider() {
                 Bundle().apply { putBoolean(RuntimeStateProviderContract.RESULT_OK, ok) }
             }
 
+            RuntimeStateProviderContract.METHOD_GET_RETENTION_DAYS -> getRetentionDays(ctx)
             else -> super.call(method, arg, extras)
         }
     }
@@ -112,10 +117,12 @@ class DBProvider : ContentProvider() {
         val uriType = uriMatcher.match(uri)
         val outcome = when (uriType) {
             SMS_MSG_DIR -> {
+                val smsMsg = values.toSmsMsg()
                 val result = db.insertSmsMsgOrGetExisting(
-                    smsMsg = values.toSmsMsg(),
+                    smsMsg = smsMsg,
                     deduplicate = parseBooleanValue(values, KEY_DEDUPLICATE, true),
                 )
+                trimOldRecordsIfNeeded(context!!, smsMsg)
                 InsertOutcome(
                     id = result.id,
                     inserted = !result.duplicate,
@@ -665,6 +672,45 @@ class DBProvider : ContentProvider() {
         val codeLength: Int,
         val attemptAt: Long,
     )
+
+    private fun getRetentionDays(ctx: Context): Bundle? {
+        val days = RuntimeDiagnosticsPreferences.readInt(
+            context = ctx,
+            preferencesName = "xposed_prefs",
+            key = "pref_runtime_log_retention_days",
+            defaultValue = 2,
+            minimumValue = 1,
+        )
+        return Bundle().apply {
+            putInt(RuntimeStateProviderContract.RESULT_RETENTION_DAYS, days)
+        }
+    }
+
+    private fun trimOldRecordsIfNeeded(ctx: Context, smsMsg: SmsMsg) {
+        val isCodeSms = !smsMsg.smsCode.isNullOrBlank()
+        val limitKey = when (smsMsg.msgType) {
+            SmsMsg.MSG_TYPE_APP_NOTIFY -> PrefConst.KEY_HISTORY_LIMIT_APP_NOTIFY
+            SmsMsg.MSG_TYPE_CALL_NOTIFY -> PrefConst.KEY_HISTORY_LIMIT_CALL_NOTIFY
+            SmsMsg.MSG_TYPE_SMS -> if (isCodeSms) PrefConst.KEY_HISTORY_LIMIT_CODE else PrefConst.KEY_HISTORY_LIMIT_PLAIN_SMS
+            else -> PrefConst.KEY_HISTORY_LIMIT_CODE
+        }
+        val limit = runBlocking {
+            AppPreferencesDataStore.getString(ctx, limitKey, "0")
+        }.toIntOrNull() ?: 0
+        if (limit <= 0) return
+
+        val all = db.queryAllSmsMsg()
+        val matching = all.asSequence()
+            .filter { record ->
+                record.msgType == smsMsg.msgType &&
+                    (smsMsg.msgType != SmsMsg.MSG_TYPE_SMS || (!record.smsCode.isNullOrBlank()) == isCodeSms)
+            }
+            .sortedBy { it.date }
+            .toList()
+        if (matching.size < limit) return
+        val deleteCount = matching.size - limit + 1
+        db.removeSmsMsgList(matching.take(deleteCount))
+    }
 
     companion object {
         private const val PATH_SMS_MSG = "sms_msg"
