@@ -23,6 +23,7 @@ import io.github.magisk317.smscode.xposed.runtime.CoreHookPolicyHolder
 import io.github.magisk317.smscode.xposed.runtime.CoreLogSink
 import io.github.magisk317.smscode.xposed.runtime.CoreLogSinkHolder
 import io.github.magisk317.smscode.xposed.runtime.CoreRuntime
+import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
 import io.github.magisk317.smscode.xposed.runtime.CoreRuntimeAccess
 import io.github.magisk317.smscode.xposed.utils.XLog
 import io.github.magisk317.xposed.logging.DefaultLogSanitizer
@@ -166,6 +167,7 @@ class SmsCodeApplication : Application() {
             )
             io.github.magisk317.xposed.logging.LogSanitizerConfig
                 .syncSanitizationEnabled(!sensitiveDebugMode)
+            StorageUtils.ensureExternalAppDataPermissions(this@SmsCodeApplication)
         }
     }
 
