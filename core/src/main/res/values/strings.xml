@@ -508,6 +508,12 @@
     <string name="mobile_entitlement_poll_failed">Activation check failed; retrying...</string>
     <string name="mobile_entitlement_challenge_expired">The activation request expired.</string>
     <string name="mobile_entitlement_error">Request failed: %1$s</string>
+    <string name="mobile_entitlement_license_code_label">License Code</string>
+    <string name="mobile_entitlement_license_code_hint">Enter 32-character license code</string>
+    <string name="mobile_entitlement_license_code_confirm">Activate</string>
+    <string name="mobile_entitlement_license_code_get_hint">Send /start to the official Telegram bot to get your 32-character license code</string>
+    <string name="mobile_entitlement_license_code_invalid">Please enter a valid 32-character license code</string>
+    <string name="mobile_entitlement_or">Or</string>
 
     <!-- backup and restore -->
     <string name="pref_backup_title">Backup</string>

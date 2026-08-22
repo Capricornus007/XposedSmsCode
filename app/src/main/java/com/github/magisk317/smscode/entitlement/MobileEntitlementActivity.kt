@@ -29,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -88,6 +89,8 @@ private fun MobileEntitlementScreen(
     var challenge by remember { mutableStateOf<MobileEntitlementChallenge?>(null) }
     var busyAction by remember { mutableStateOf<ActivationAction?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
+    var licenseCodeInput by remember { mutableStateOf("") }
+    var savedLicenseCode by remember { mutableStateOf<String?>(null) }
 
     fun refreshStatus() {
         scope.launch {
@@ -100,6 +103,7 @@ private fun MobileEntitlementScreen(
                 }
             }.onSuccess {
                 evaluation = it
+                savedLicenseCode = MobileEntitlementCoordinator.readSavedLicenseCode(context)
                 XLog.w(
                     "Mobile entitlement refresh finished status=%s allowed=%s renewDue=%s",
                     it.status,
@@ -188,7 +192,47 @@ private fun MobileEntitlementScreen(
         }
     }
 
+    fun maskLicenseCode(code: String): String {
+        val trimmed = code.trim()
+        if (trimmed.length != 32) return trimmed
+        return trimmed.take(4) + "*".repeat(24) + trimmed.takeLast(4)
+    }
+
+    fun activateWithCode() {
+        val trimmed = licenseCodeInput.trim()
+        if (trimmed.length != 32) {
+            message = context.getString(R.string.mobile_entitlement_license_code_invalid)
+            return
+        }
+        scope.launch {
+            busyAction = ActivationAction.LICENSE_CODE
+            message = null
+            XLog.w("Mobile entitlement license code activation started")
+            runCatching {
+                withContext(Dispatchers.IO) {
+                    MobileEntitlementCoordinator.activateWithLicenseCode(context, trimmed)
+                }
+            }.onSuccess {
+                evaluation = it
+                savedLicenseCode = MobileEntitlementCoordinator.readSavedLicenseCode(context)
+                licenseCodeInput = ""
+                XLog.w(
+                    "Mobile entitlement license code activation success status=%s allowed=%s",
+                    it.status,
+                    it.automationAllowed,
+                )
+            }.onFailure {
+                XLog.e("Mobile entitlement license code activation failed", it)
+                message = it.message ?: it.javaClass.simpleName
+            }
+            busyAction = null
+        }
+    }
+
     LaunchedEffect(Unit) {
+        savedLicenseCode = withContext(Dispatchers.IO) {
+            MobileEntitlementCoordinator.readSavedLicenseCode(context)
+        }
         val pendingChallengeId = withContext(Dispatchers.IO) {
             MobileEntitlementCoordinator.readPendingChallenge(context)
         }
@@ -311,6 +355,56 @@ private fun MobileEntitlementScreen(
                     }
                 }
             }
+            val isActivated = evaluation?.status == MobileEntitlementStatus.ACTIVE
+            val displayCode = savedLicenseCode ?: ""
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.mobile_entitlement_license_code_label),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    if (isActivated && displayCode.isNotBlank()) {
+                        OutlinedTextField(
+                            value = maskLicenseCode(displayCode),
+                            onValueChange = {},
+                            readOnly = true,
+                            enabled = false,
+                            label = { Text(stringResource(R.string.mobile_entitlement_license_code_label)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                        )
+                    } else {
+                        OutlinedTextField(
+                            value = licenseCodeInput,
+                            onValueChange = { licenseCodeInput = it.trim().uppercase() },
+                            label = { Text(stringResource(R.string.mobile_entitlement_license_code_hint)) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = busyAction == null,
+                        )
+                        Button(
+                            onClick = ::activateWithCode,
+                            enabled = busyAction == null && licenseCodeInput.trim().length == 32,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            if (busyAction == ActivationAction.LICENSE_CODE) {
+                                CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
+                            }
+                            Text(stringResource(R.string.mobile_entitlement_license_code_confirm))
+                        }
+                        Text(
+                            text = stringResource(R.string.mobile_entitlement_license_code_get_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
             val currentEvaluation = evaluation
             val showActivationActions = currentEvaluation == null ||
                 currentEvaluation.status != MobileEntitlementStatus.ACTIVE ||
@@ -381,6 +475,7 @@ private fun MobileEntitlementScreen(
 
 private enum class ActivationAction {
     REFRESH,
+    LICENSE_CODE,
     TELEGRAM,
     GOOGLE,
 }

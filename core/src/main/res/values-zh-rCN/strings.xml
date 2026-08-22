@@ -502,6 +502,12 @@
     <string name="mobile_entitlement_poll_failed">激活检查失败，正在重试...</string>
     <string name="mobile_entitlement_challenge_expired">激活请求已过期。</string>
     <string name="mobile_entitlement_error">请求失败：%1$s</string>
+    <string name="mobile_entitlement_license_code_label">专属激活码</string>
+    <string name="mobile_entitlement_license_code_hint">请输入 32 位激活码</string>
+    <string name="mobile_entitlement_license_code_confirm">确认激活</string>
+    <string name="mobile_entitlement_license_code_get_hint">在官方 Telegram 机器人发送 /start 即可获取你的 32 位专属激活码</string>
+    <string name="mobile_entitlement_license_code_invalid">请输入有效的 32 位激活码</string>
+    <string name="mobile_entitlement_or">或者</string>
 
     <!-- backup and restore -->
     <string name="pref_backup_title">备份</string>
