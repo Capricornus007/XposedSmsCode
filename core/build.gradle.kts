@@ -52,6 +52,7 @@ dependencies {
     implementation(project(":runtime"))
     api(project(":magisk-ui-kit"))
     implementation(project(":magisk-xposed-kit:logging"))
+    implementation(project(":magisk-xposed-kit:diagnostics"))
     implementation(project(":smscode-core:domain"))
     implementation(project(":smscode-core:runtime"))
     implementation(libs.androidx.core.ktx)

@@ -39,6 +39,7 @@ import com.github.magisk317.smscode.core.BuildConfig
 import io.github.magisk317.uikit.R as UiKitR
 import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationStatusState
 import com.github.magisk317.smscode.common.constant.Const
+import com.github.magisk317.smscode.common.constant.PrefConst
 import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsSnapshot
 import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.PackageUtils
@@ -125,6 +126,7 @@ internal fun OverviewScreenShared() {
     var statusTapCount by remember { mutableStateOf(0) }
     var statusTapStartedAtMs by remember { mutableStateOf(0L) }
     var showStatusDiagnostics by remember { mutableStateOf(false) }
+    var mobileAutomationAllowed by remember { mutableStateOf(PrefConst.DEFAULT_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED) }
     val snackbarHostState = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
 
@@ -189,6 +191,15 @@ internal fun OverviewScreenShared() {
                 hasAppVersionSnapshot = true
             }
         }
+        launch {
+            mobileAutomationAllowed = withContext(Dispatchers.IO) {
+                com.github.magisk317.smscode.common.utils.AppPreferencesDataStore.getBoolean(
+                    context,
+                    PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
+                    PrefConst.DEFAULT_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
+                )
+            }
+        }
     }
 
     LaunchedEffect(isActive) {
@@ -237,7 +248,7 @@ internal fun OverviewScreenShared() {
             item {
                 StatusCard(
                     isEnabled = activationStatus.isEnabled,
-                    isEntitled = activationStatus.runtimeConnected,
+                    isEntitled = mobileAutomationAllowed,
                     showDiagnostics = showStatusDiagnostics,
                     diagnostics = buildStatusDiagnostics(
                         context = context,
