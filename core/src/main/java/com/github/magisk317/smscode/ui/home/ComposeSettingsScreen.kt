@@ -54,6 +54,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.github.magisk317.smscode.common.utils.ModuleUtils
 import com.github.magisk317.smscode.core.BuildConfig
 import io.github.magisk317.xposed.logging.MagiskOtel
+import io.github.magisk317.xposed.diagnostics.DiagnosticExportMode
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
@@ -407,7 +408,10 @@ internal fun ComposeSettingsScreenShared(
         scope.launch {
             val result = withContext(Dispatchers.IO) {
                 RuntimeDiagnosticsBridge.ensureInstalled()
-                LogBundleExporter.buildLogBundle(context)
+                LogBundleExporter.buildLogBundle(
+                    context = context,
+                    mode = DiagnosticExportMode.fromDebugLogging(verboseLogEnabled.value),
+                )
             }
             val file = result.file
             if (file == null) {
