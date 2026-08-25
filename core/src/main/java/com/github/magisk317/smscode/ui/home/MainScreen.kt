@@ -404,13 +404,13 @@ fun MainScreen(
     val lastReportedBottomPadding = remember { arrayOfNulls<Dp>(1) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (isTopLevelRoute) {
-            PagerTabScaffold(
-                tabs = tabs,
-                pagerState = pagerState,
-                isCompact = isCompact,
-                chromeController = chromeController,
-                onTabReselected = ::triggerRefreshForIndex,
+        PagerTabScaffold(
+            tabs = tabs,
+            pagerState = pagerState,
+            isCompact = isCompact,
+            chromeController = chromeController,
+            onTabReselected = ::triggerRefreshForIndex,
+            pagerVisible = isTopLevelRoute,
                 onChromeTransition = { transition ->
                     if (transition.targetPage != transition.settledPage) {
                         val hasPendingInput = pendingPerformanceTargetPage == transition.targetPage
@@ -507,7 +507,7 @@ fun MainScreen(
                     )
                 }
             }
-        } else {
+        if (!isTopLevelRoute) {
             MainTabScaffold(
                 tabs = tabs,
                 selectedIndex = resolveTabIndex(currentDestination),
