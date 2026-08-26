@@ -60,7 +60,7 @@ import com.github.magisk317.smscode.runtime.bridge.UiStorageAccess
 import org.koin.compose.koinInject
 import io.github.magisk317.smscode.rule.model.BuiltinSmsCodeRuleSpec
 import io.github.magisk317.smscode.rule.model.BuiltinSmsCodeRules
-import io.github.magisk317.smscode.runtime.common.rules.OfficialSmsCodeRule
+import io.github.magisk317.smscode.rule.catalog.OfficialSmsCodeRule
 import io.github.magisk317.smscode.runtime.common.rules.SmsCodeRuleCatalogSnapshot
 import io.github.magisk317.uikit.surface.AppFloatingActionButton
 import io.github.magisk317.uikit.surface.AppPrimaryButton
