@@ -294,7 +294,6 @@ internal fun OverviewScreenShared() {
 
             item {
                 io.github.magisk317.uikit.surface.OverviewLinksCard(
-                    onCheckUpdate = { settingsViewModel?.requestPreferredUpdate() },
                     onJoinTelegram = {
                         BrowserUtils.openWebPage(
                             context,

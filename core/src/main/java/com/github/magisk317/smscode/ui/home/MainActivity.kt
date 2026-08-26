@@ -242,9 +242,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
             LaunchedEffect(Unit) {
-                githubUpdateUiState = checkStartupGithubUpdateIfNeeded()
-            }
-            LaunchedEffect(Unit) {
                 snackbarMessages.collect { message ->
                     appSnackbarHostState.showSnackbar(message)
                 }
@@ -359,11 +356,6 @@ class MainActivity : ComponentActivity() {
                         is SettingsEvent.NavigateToRecords -> requestedTab = com.github.magisk317.smscode.ui.nav.RecordsRoute
                         is SettingsEvent.NavigateToSettings -> requestedTab = com.github.magisk317.smscode.ui.nav.SettingsRoute
                         is SettingsEvent.StartPlayUpdate -> requestPlayUpdate()
-                        is SettingsEvent.StartGithubUpdateCheck -> {
-                            requestGithubUpdateCheck(showNoUpdateSnackbar = true) { update ->
-                                githubUpdateUiState = update
-                            }
-                        }
                         is SettingsEvent.ShowSnackbar -> {
                             scope.launch { appSnackbarHostState.showSnackbar(event.message) }
                         }
@@ -736,7 +728,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun triggerAutoUpdateIfEnabled() {
-        if (autoUpdateChecked) return
+        if (!BuildConfig.HAS_BILLING || autoUpdateChecked) return
         autoUpdateChecked = true
 
         lifecycleScope.launch {
@@ -755,14 +747,7 @@ class MainActivity : ComponentActivity() {
             val onWifi = PackageUtils.isOnWifi(this@MainActivity)
             if (!updateAccess.shouldRunAutoCheck(enabled, wifiOnly, onWifi)) return@launch
 
-            when (updateAccess.resolveStartupTarget(PackageUtils.isInstalledFromPlay(this@MainActivity))) {
-                RuntimeStartupTarget.PLAY -> {
-                    requestPlayUpdateInternal(silentIfNoUpdate = true, fallbackOnQueryFailure = false)
-                }
-                RuntimeStartupTarget.GITHUB -> {
-                    // Startup GitHub check is handled by checkStartupGithubUpdateIfNeeded()
-                }
-            }
+            requestPlayUpdateInternal(silentIfNoUpdate = true, fallbackOnQueryFailure = false)
         }
     }
 
