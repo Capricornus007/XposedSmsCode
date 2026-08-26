@@ -10,7 +10,7 @@ import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.data.db.entity.AutoInputEvent
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import io.github.magisk317.smscode.domain.utils.CodeRecordSimilarityUtils
+import io.github.magisk317.smscode.rule.utils.CodeRecordSimilarityUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext

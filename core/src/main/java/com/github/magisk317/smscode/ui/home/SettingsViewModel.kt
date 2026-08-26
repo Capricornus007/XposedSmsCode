@@ -30,8 +30,8 @@ import com.github.magisk317.smscode.common.utils.XLog
 import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
 import io.github.magisk317.smscode.runtime.common.utils.StringUtils
 import io.github.magisk317.smscode.runtime.common.utils.BrowserUtils
-import io.github.magisk317.smscode.domain.model.SmsCodeMatchedRule
-import io.github.magisk317.smscode.domain.model.SmsCodeMatchedRuleSource
+import io.github.magisk317.smscode.rule.model.SmsCodeMatchedRule
+import io.github.magisk317.smscode.rule.model.SmsCodeMatchedRuleSource
 import io.github.magisk317.smscode.runtime.common.prefs.PreferenceCommitResult
 import io.github.magisk317.smscode.runtime.common.prefs.PreferenceSpec
 import io.github.magisk317.uikit.theme.UiKitStyle

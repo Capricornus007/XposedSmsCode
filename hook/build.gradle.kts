@@ -26,6 +26,7 @@ dependencies {
     implementation(project(":runtime"))
     implementation(project(":smscode-core:hook"))
     implementation(project(":smscode-core:domain"))
+    implementation(project(":smscode-core:rule"))
     implementation(project(":smscode-core:contract"))
     implementation(project(":smscode-core:runtime"))
     implementation(project(":smscode-core:verification"))

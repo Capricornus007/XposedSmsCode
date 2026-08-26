@@ -12,7 +12,7 @@ import io.github.magisk317.smscode.runtime.contract.logging.LogRoute
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import io.github.magisk317.smscode.domain.utils.SmsCodeParsedMetadataResolver
+import io.github.magisk317.smscode.rule.utils.SmsCodeParsedMetadataResolver
 import io.github.magisk317.smscode.xposed.utils.XLog
 import io.github.magisk317.smscode.verification.ObservedInboxScanRecord
 import io.github.magisk317.smscode.verification.ObservedSmsHandler as SharedObservedSmsHandler

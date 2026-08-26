@@ -1,7 +1,7 @@
 package com.github.magisk317.smscode.common.utils
 
 import android.content.Context
-import io.github.magisk317.smscode.domain.model.SmsBlacklistConfig
+import io.github.magisk317.smscode.rule.model.SmsBlacklistConfig
 import io.github.magisk317.smscode.runtime.common.sms.RuntimeSmsBlacklistAdapter
 import io.github.magisk317.smscode.runtime.common.sms.SmsBlacklistConfigProvider
 

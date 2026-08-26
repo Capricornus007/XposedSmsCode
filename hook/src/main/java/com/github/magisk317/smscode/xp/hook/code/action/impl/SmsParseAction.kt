@@ -7,7 +7,7 @@ import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import io.github.magisk317.smscode.runtime.common.utils.StringUtils
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
-import io.github.magisk317.smscode.domain.utils.SmsCodeParsedMetadataResolver
+import io.github.magisk317.smscode.rule.utils.SmsCodeParsedMetadataResolver
 import io.github.magisk317.smscode.verification.SmsParseAction as SharedSmsParseAction
 import com.github.magisk317.smscode.xp.hook.code.action.CallableAction
 import com.github.magisk317.smscode.xp.hook.code.VerificationSmsMsg

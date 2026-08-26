@@ -1,6 +1,6 @@
 package com.github.magisk317.smscode.common.constant
 
-import io.github.magisk317.smscode.domain.constant.SmsCodeConst
+import io.github.magisk317.smscode.rule.constant.SmsCodeConst
 
 /**
  * Preference相关的常量

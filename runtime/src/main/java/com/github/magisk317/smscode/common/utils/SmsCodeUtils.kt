@@ -7,9 +7,9 @@ import com.github.magisk317.smscode.data.db.DBProvider
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.feature.store.EntityStoreManager
 import com.github.magisk317.smscode.feature.store.EntityType
-import io.github.magisk317.smscode.domain.model.SmsCodeParseResult
-import io.github.magisk317.smscode.domain.model.SmsCodeParseSource
-import io.github.magisk317.smscode.domain.model.SmsCodeRuleSpec
+import io.github.magisk317.smscode.rule.model.SmsCodeParseResult
+import io.github.magisk317.smscode.rule.model.SmsCodeParseSource
+import io.github.magisk317.smscode.rule.model.SmsCodeRuleSpec
 import io.github.magisk317.smscode.runtime.common.rules.SmsCodeRuleCatalogRefreshResult
 import io.github.magisk317.smscode.runtime.common.rules.SmsCodeRuleCatalogRepository
 import io.github.magisk317.smscode.runtime.common.rules.SmsCodeRuleCatalogSnapshot

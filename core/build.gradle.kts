@@ -54,6 +54,7 @@ dependencies {
     implementation(project(":magisk-xposed-kit:logging"))
     implementation(project(":magisk-xposed-kit:diagnostics"))
     implementation(project(":smscode-core:domain"))
+    implementation(project(":smscode-core:rule"))
     implementation(project(":smscode-core:runtime"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.serialization.json)
