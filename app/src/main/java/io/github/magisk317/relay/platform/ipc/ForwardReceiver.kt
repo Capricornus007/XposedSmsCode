@@ -10,8 +10,8 @@ import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.ui.app.AppIpcTokenStore
 import com.github.magisk317.smscode.xp.hook.code.SmsCodeActionDispatcher
 import io.github.magisk317.smscode.runtime.contract.logging.LogRoute
-import io.github.magisk317.smscode.verification.CodeNotificationPayload
-import io.github.magisk317.smscode.verification.SmsCodePostParseCoordinator
+import io.github.magisk317.smscode.runtime.verification.CodeNotificationPayload
+import io.github.magisk317.smscode.runtime.verification.SmsCodePostParseCoordinator
 import io.github.magisk317.smscode.xposed.hook.notification.NotificationHookConst
 import io.github.magisk317.smscode.xposed.utils.XLog
 import java.util.concurrent.Executors

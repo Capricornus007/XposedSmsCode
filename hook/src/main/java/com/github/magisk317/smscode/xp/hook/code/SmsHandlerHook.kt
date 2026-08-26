@@ -15,8 +15,8 @@ import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
 import com.github.magisk317.smscode.xp.helper.RelayConflictNoticeHelper
 import com.github.magisk317.smscode.hook.R
-import io.github.magisk317.smscode.verification.SmsDispatchChainBlockDeduplicator
-import io.github.magisk317.smscode.verification.SmsIntentHookSupport as VerificationSmsIntentHookSupport
+import io.github.magisk317.smscode.runtime.verification.SmsDispatchChainBlockDeduplicator
+import io.github.magisk317.smscode.runtime.verification.SmsIntentHookSupport as VerificationSmsIntentHookSupport
 import io.github.magisk317.xposed.HookHelpers
 import io.github.magisk317.xposed.BaseHook
 import io.github.magisk317.smscode.xposed.hook.telephony.InboundSmsBlocker
@@ -28,7 +28,7 @@ import io.github.magisk317.xposed.LoadParam
 import io.github.magisk317.xposed.MethodHookParam
 import io.github.magisk317.xposed.logging.MagiskOtel
 import io.github.magisk317.smscode.runtime.contract.logging.LogRoute
-import io.github.magisk317.smscode.verification.SmsDispatchIntentDeduplicator
+import io.github.magisk317.smscode.runtime.verification.SmsDispatchIntentDeduplicator
 import java.lang.reflect.Method
 import java.util.Collections
 import java.util.concurrent.Executors

@@ -32,8 +32,8 @@ import io.github.magisk317.smscode.runtime.common.utils.StringUtils
 import io.github.magisk317.smscode.runtime.common.utils.BrowserUtils
 import io.github.magisk317.smscode.rule.model.SmsCodeMatchedRule
 import io.github.magisk317.smscode.rule.model.SmsCodeMatchedRuleSource
-import io.github.magisk317.smscode.runtime.common.prefs.PreferenceCommitResult
-import io.github.magisk317.smscode.runtime.common.prefs.PreferenceSpec
+import io.github.magisk317.smscode.runtime.contract.prefs.PreferenceCommitResult
+import io.github.magisk317.smscode.runtime.contract.prefs.PreferenceSpec
 import io.github.magisk317.uikit.theme.UiKitStyle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow

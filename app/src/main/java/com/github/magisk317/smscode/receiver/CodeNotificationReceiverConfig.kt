@@ -10,8 +10,8 @@ import com.github.magisk317.smscode.runtime.RuntimeNotificationFacade as Notific
 import com.github.magisk317.smscode.xp.hook.code.AutoCancelReceiver
 import com.github.magisk317.smscode.xp.hook.code.CodeNotificationBroadcastContract
 import com.github.magisk317.smscode.xp.hook.code.CopyCodeReceiver
-import io.github.magisk317.smscode.verification.CodeNotificationDeliveryHelper
-import io.github.magisk317.smscode.verification.CodeNotificationReceiverHandler
+import io.github.magisk317.smscode.runtime.verification.CodeNotificationDeliveryHelper
+import io.github.magisk317.smscode.runtime.verification.CodeNotificationReceiverHandler
 import kotlinx.coroutines.runBlocking
 
 object CodeNotificationReceiverConfig {

@@ -20,10 +20,10 @@ import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeGateClaimResult
 import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsStore
-import io.github.magisk317.smscode.runtime.common.ipc.RuntimeStateProviderContract
+import io.github.magisk317.smscode.runtime.contract.ipc.RuntimeStateProviderContract
 import io.github.magisk317.smscode.runtime.common.utils.SharedRuntimeGate
 import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
-import io.github.magisk317.smscode.runtime.common.record.SmsMsgCursorContract
+import io.github.magisk317.smscode.runtime.contract.record.SmsMsgCursorContract
 import io.github.magisk317.smscode.xposed.utils.XLog
 import java.util.Locale
 

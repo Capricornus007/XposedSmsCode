@@ -10,8 +10,8 @@ import com.github.magisk317.smscode.hook.BuildConfig
 import com.github.magisk317.smscode.hook.R
 import io.github.magisk317.smscode.runtime.common.utils.ClipboardUtils
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
-import io.github.magisk317.smscode.verification.CodeNotificationActionHandler
-import io.github.magisk317.smscode.verification.CodeNotificationActionPayload
+import io.github.magisk317.smscode.runtime.verification.CodeNotificationActionHandler
+import io.github.magisk317.smscode.runtime.verification.CodeNotificationActionPayload
 import io.github.magisk317.smscode.xposed.utils.XLog
 import io.github.magisk317.xposed.logging.MagiskOtel
 

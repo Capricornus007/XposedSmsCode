@@ -3,7 +3,7 @@ package com.github.magisk317.smscode.receiver
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import io.github.magisk317.smscode.verification.CodeNotificationReceiverHandler
+import io.github.magisk317.smscode.runtime.verification.CodeNotificationReceiverHandler
 
 class CodeNotificationReceiver : BroadcastReceiver() {
 

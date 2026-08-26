@@ -3,7 +3,7 @@ package com.github.magisk317.smscode.xp.helper
 import android.content.Context
 import com.github.magisk317.smscode.hook.BuildConfig
 import com.github.magisk317.smscode.common.constant.TransitionConst
-import io.github.magisk317.smscode.verification.ModuleConflictArbiterCore
+import io.github.magisk317.smscode.runtime.verification.ModuleConflictArbiterCore
 
 object ModuleConflictArbiter {
     val SUPPRESSION_REASON: String = ModuleConflictArbiterCore.SUPPRESSION_REASON

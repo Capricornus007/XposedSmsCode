@@ -2,7 +2,7 @@ package com.github.magisk317.smscode.data.update
 
 import android.os.Build
 import io.github.magisk317.smscode.runtime.common.update.GithubUpdateChecker as SharedGithubUpdateChecker
-import io.github.magisk317.smscode.runtime.common.update.GithubUpdateConfig
+import io.github.magisk317.smscode.runtime.contract.update.GithubUpdateConfig
 
 object GithubUpdateChecker {
 

@@ -5,7 +5,7 @@ import android.os.Bundle
 import io.github.magisk317.smscode.runtime.common.utils.ClipboardUtils
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import io.github.magisk317.smscode.verification.CopyToClipboardActionHelper
+import io.github.magisk317.smscode.runtime.verification.CopyToClipboardActionHelper
 import com.github.magisk317.smscode.xp.hook.code.action.RunnableAction
 
 /**

@@ -11,7 +11,7 @@ import com.github.magisk317.smscode.ui.app.AppShellRuntimeBridge
 import io.github.magisk317.relay.platform.ipc.ForwardActionDispatcher
 import io.github.magisk317.relay.platform.ipc.ForwardOrderedResultFinisher
 import io.github.magisk317.relay.platform.ipc.ForwardReceiver
-import io.github.magisk317.smscode.verification.SmsCodePostParseCoordinator
+import io.github.magisk317.smscode.runtime.verification.SmsCodePostParseCoordinator
 import io.github.magisk317.smscode.xposed.hook.notification.NotificationHookConst
 import io.github.magisk317.smscode.xposed.runtime.CoreRuntime
 import io.github.magisk317.smscode.xposed.runtime.CoreRuntimeAccess

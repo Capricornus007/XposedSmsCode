@@ -2,7 +2,7 @@ package com.github.magisk317.smscode.receiver
 
 import android.content.Context
 import android.content.Intent
-import io.github.magisk317.smscode.verification.AsyncActionBroadcastReceiver
+import io.github.magisk317.smscode.runtime.verification.AsyncActionBroadcastReceiver
 
 class AutoInputResultReceiver : AsyncActionBroadcastReceiver() {
     override val action: String

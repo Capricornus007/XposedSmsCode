@@ -4,7 +4,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.os.Bundle
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import io.github.magisk317.smscode.verification.CodeNotificationActionPayload
+import io.github.magisk317.smscode.runtime.verification.CodeNotificationActionPayload
 import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.xp.hook.code.action.CallableAction
 

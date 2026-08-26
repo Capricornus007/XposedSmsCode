@@ -15,8 +15,8 @@ import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import io.github.magisk317.smscode.rule.utils.SmsCodeParsedMetadataResolver
 import io.github.magisk317.smscode.xposed.utils.XLog
 import io.github.magisk317.smscode.verification.ObservedInboxScanRecord
-import io.github.magisk317.smscode.verification.ObservedSmsHandler as SharedObservedSmsHandler
-import io.github.magisk317.smscode.verification.SmsCodePostParseCoordinator
+import io.github.magisk317.smscode.runtime.verification.ObservedSmsHandler as SharedObservedSmsHandler
+import io.github.magisk317.smscode.runtime.verification.SmsCodePostParseCoordinator
 import io.github.magisk317.smscode.verification.SmsInboxObserverDecision
 import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
 import java.util.concurrent.ScheduledExecutorService

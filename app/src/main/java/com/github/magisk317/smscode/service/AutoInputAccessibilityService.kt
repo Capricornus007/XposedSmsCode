@@ -8,9 +8,9 @@ import android.content.IntentFilter
 import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 import androidx.core.content.ContextCompat
-import io.github.magisk317.smscode.verification.AutoInputAccessibilityNodeHelper
-import io.github.magisk317.smscode.verification.AutoInputAccessibilityNodeHelper.Result as AutoInputResult
-import io.github.magisk317.smscode.verification.AutoInputAccessibilityRequestHandler
+import io.github.magisk317.smscode.runtime.verification.AutoInputAccessibilityNodeHelper
+import io.github.magisk317.smscode.runtime.verification.AutoInputAccessibilityNodeHelper.Result as AutoInputResult
+import io.github.magisk317.smscode.runtime.verification.AutoInputAccessibilityRequestHandler
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import io.github.magisk317.smscode.xposed.hook.system.SystemInputInjectorHook
 import io.github.magisk317.smscode.xposed.utils.XLog

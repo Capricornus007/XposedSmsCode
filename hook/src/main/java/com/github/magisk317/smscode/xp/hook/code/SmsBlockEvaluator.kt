@@ -7,7 +7,7 @@ import com.github.magisk317.smscode.common.utils.SmsBlacklistUtils
 import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import io.github.magisk317.smscode.verification.BlacklistMatchResult
-import io.github.magisk317.smscode.verification.SmsBlockEvaluator as SharedSmsBlockEvaluator
+import io.github.magisk317.smscode.runtime.verification.SmsBlockEvaluator as SharedSmsBlockEvaluator
 
 object SmsBlockEvaluator {
     const val BLOCK_REASON_BLACKLIST = "blacklist_block"

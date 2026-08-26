@@ -4,7 +4,7 @@ import android.content.Context
 import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
 import com.github.magisk317.smscode.xp.helper.RelayConflictNoticeHelper
-import io.github.magisk317.smscode.verification.SmsHookConstructorInitializer as SharedSmsHookConstructorInitializer
+import io.github.magisk317.smscode.runtime.verification.SmsHookConstructorInitializer as SharedSmsHookConstructorInitializer
 import io.github.magisk317.smscode.xposed.utils.ModuleActivationStore
 
 internal class SmsHookConstructorInitializer(

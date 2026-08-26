@@ -9,7 +9,7 @@ import com.github.magisk317.smscode.hook.R
 import com.github.magisk317.smscode.common.constant.NotificationConst
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import com.github.magisk317.smscode.xp.hook.code.helper.InputHelper
-import io.github.magisk317.smscode.verification.ConflictNotificationHelper
+import io.github.magisk317.smscode.runtime.verification.ConflictNotificationHelper
 import io.github.magisk317.smscode.verification.RecentEventIdTracker
 import io.github.magisk317.smscode.xposed.utils.XLog
 

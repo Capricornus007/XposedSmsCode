@@ -1,11 +1,11 @@
 package com.github.magisk317.smscode.runtime
 
-import io.github.magisk317.smscode.runtime.common.backup.BackupImportResult
-import io.github.magisk317.smscode.runtime.common.backup.BackupRule
-import io.github.magisk317.smscode.runtime.common.backup.BackupSmsRecord
-import io.github.magisk317.smscode.runtime.common.backup.ExportResult
-import io.github.magisk317.smscode.runtime.common.backup.ImportResult
-import io.github.magisk317.smscode.runtime.common.backup.ImportWarning
+import io.github.magisk317.smscode.runtime.contract.backup.BackupImportResult
+import io.github.magisk317.smscode.runtime.contract.backup.BackupRule
+import io.github.magisk317.smscode.runtime.contract.backup.BackupSmsRecord
+import io.github.magisk317.smscode.runtime.contract.backup.ExportResult
+import io.github.magisk317.smscode.runtime.contract.backup.ImportResult
+import io.github.magisk317.smscode.runtime.contract.backup.ImportWarning
 
 data class RuntimeBackupRule(
     val company: String? = null,

@@ -2,8 +2,8 @@ package com.github.magisk317.smscode.common.utils
 
 import android.content.Context
 import com.github.magisk317.smscode.runtime.BuildConfig
-import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsSnapshot
-import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationStatusInputs
+import io.github.magisk317.smscode.runtime.contract.diagnostics.ActivationDiagnosticsSnapshot
+import io.github.magisk317.smscode.runtime.contract.diagnostics.ActivationStatusInputs
 import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeDiagnosticsConfig
 import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeDiagnosticsInstaller
 import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeDiagnosticsPreferences

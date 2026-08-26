@@ -11,8 +11,8 @@ import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.feature.store.EntityStoreManager
 import com.github.magisk317.smscode.feature.store.EntityType
-import io.github.magisk317.smscode.verification.AutoInputActionHelper
-import io.github.magisk317.smscode.verification.AutoInputBlockedPackageHelper
+import io.github.magisk317.smscode.runtime.verification.AutoInputActionHelper
+import io.github.magisk317.smscode.runtime.verification.AutoInputBlockedPackageHelper
 import com.github.magisk317.smscode.xp.hook.code.action.CallableAction
 import com.github.magisk317.smscode.xp.hook.code.helper.InputHelper
 import com.github.magisk317.smscode.xp.hook.code.VerificationSmsMsg

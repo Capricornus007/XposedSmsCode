@@ -7,8 +7,8 @@ import android.database.Cursor
 import android.os.Bundle
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import io.github.magisk317.smscode.verification.RecordSmsActionHelper
-import io.github.magisk317.smscode.verification.RecordSmsInsertResultHelper
+import io.github.magisk317.smscode.runtime.verification.RecordSmsActionHelper
+import io.github.magisk317.smscode.runtime.verification.RecordSmsInsertResultHelper
 import com.github.magisk317.smscode.xp.hook.code.action.CallableAction
 import com.github.magisk317.smscode.xp.hook.code.VerificationSmsMsg
 import com.github.magisk317.smscode.xp.hook.code.toVerificationMessage

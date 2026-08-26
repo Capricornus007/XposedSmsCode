@@ -11,9 +11,9 @@ import com.github.magisk317.smscode.common.constant.NotificationConst
 import com.github.magisk317.smscode.hook.R
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import com.github.magisk317.smscode.xp.hook.code.CodeNotificationBroadcastContract
-import io.github.magisk317.smscode.verification.CodeNotificationDeliveryHelper
+import io.github.magisk317.smscode.runtime.verification.CodeNotificationDeliveryHelper
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import io.github.magisk317.smscode.verification.NotifyActionHelper
+import io.github.magisk317.smscode.runtime.verification.NotifyActionHelper
 import com.github.magisk317.smscode.xp.hook.code.AutoCancelReceiver
 import com.github.magisk317.smscode.xp.hook.code.CopyCodeReceiver
 import com.github.magisk317.smscode.xp.hook.code.action.CallableAction

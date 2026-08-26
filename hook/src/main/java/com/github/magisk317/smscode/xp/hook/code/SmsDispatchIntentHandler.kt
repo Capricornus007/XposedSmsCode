@@ -7,8 +7,8 @@ import com.github.magisk317.smscode.data.db.entity.SmsMsg
 import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
 import com.github.magisk317.smscode.xp.helper.RelayConflictNoticeHelper
 import io.github.magisk317.smscode.verification.DispatchGateDecision
-import io.github.magisk317.smscode.verification.SmsDispatchIntentProcessor as SharedSmsDispatchIntentProcessor
-import io.github.magisk317.smscode.verification.SmsDispatchIntentHandler as SharedSmsDispatchIntentHandler
+import io.github.magisk317.smscode.runtime.verification.SmsDispatchIntentProcessor as SharedSmsDispatchIntentProcessor
+import io.github.magisk317.smscode.runtime.verification.SmsDispatchIntentHandler as SharedSmsDispatchIntentHandler
 
 internal class SmsDispatchIntentHandler(
     private val runtimeResolver: (String) -> SmsHookRuntimeContext?,

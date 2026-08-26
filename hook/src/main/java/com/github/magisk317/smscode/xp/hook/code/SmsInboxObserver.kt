@@ -10,9 +10,9 @@ import com.github.magisk317.smscode.common.utils.SmsCodeUtils
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import io.github.magisk317.smscode.runtime.contract.logging.LogRoute
 import io.github.magisk317.smscode.runtime.common.utils.StringUtils
-import io.github.magisk317.smscode.verification.ObservedInboxScanner
+import io.github.magisk317.smscode.runtime.verification.ObservedInboxScanner
 import io.github.magisk317.smscode.verification.SmsInboxSeenTracker
-import io.github.magisk317.smscode.verification.SmsRoleStateResolver
+import io.github.magisk317.smscode.runtime.verification.SmsRoleStateResolver
 import io.github.magisk317.smscode.xposed.utils.XLog
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService

@@ -7,7 +7,7 @@ import com.github.magisk317.smscode.hook.R
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import com.github.magisk317.smscode.xp.hook.code.helper.InputHelper
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import io.github.magisk317.smscode.verification.ToastActionHelper
+import io.github.magisk317.smscode.runtime.verification.ToastActionHelper
 import com.github.magisk317.smscode.xp.hook.code.action.RunnableAction
 import com.github.magisk317.smscode.xp.hook.code.toVerificationMessage
 

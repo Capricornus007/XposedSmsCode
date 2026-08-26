@@ -1,11 +1,11 @@
 package com.github.magisk317.smscode.runtime
 
 import com.github.magisk317.smscode.data.update.UpgradeDownloader
-import io.github.magisk317.smscode.runtime.common.update.GithubReleaseInfo
-import io.github.magisk317.smscode.runtime.common.update.UpgradeApkAsset
-import io.github.magisk317.smscode.runtime.common.update.UpgradeCheckResult
-import io.github.magisk317.smscode.runtime.common.update.UpgradeInfo
-import io.github.magisk317.smscode.runtime.common.update.VersionLog
+import io.github.magisk317.smscode.runtime.contract.update.GithubReleaseInfo
+import io.github.magisk317.smscode.runtime.contract.update.UpgradeApkAsset
+import io.github.magisk317.smscode.runtime.contract.update.UpgradeCheckResult
+import io.github.magisk317.smscode.runtime.contract.update.UpgradeInfo
+import io.github.magisk317.smscode.runtime.contract.update.VersionLog
 
 data class RuntimeVersionLog(
     val name: String = "",

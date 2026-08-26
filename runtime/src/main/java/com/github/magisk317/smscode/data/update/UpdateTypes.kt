@@ -1,7 +1,7 @@
 package com.github.magisk317.smscode.data.update
 
-typealias GithubReleaseInfo = io.github.magisk317.smscode.runtime.common.update.GithubReleaseInfo
-typealias UpgradeApkAsset = io.github.magisk317.smscode.runtime.common.update.UpgradeApkAsset
-typealias UpgradeCheckResult = io.github.magisk317.smscode.runtime.common.update.UpgradeCheckResult
-typealias UpgradeInfo = io.github.magisk317.smscode.runtime.common.update.UpgradeInfo
-typealias VersionLog = io.github.magisk317.smscode.runtime.common.update.VersionLog
+typealias GithubReleaseInfo = io.github.magisk317.smscode.runtime.contract.update.GithubReleaseInfo
+typealias UpgradeApkAsset = io.github.magisk317.smscode.runtime.contract.update.UpgradeApkAsset
+typealias UpgradeCheckResult = io.github.magisk317.smscode.runtime.contract.update.UpgradeCheckResult
+typealias UpgradeInfo = io.github.magisk317.smscode.runtime.contract.update.UpgradeInfo
+typealias VersionLog = io.github.magisk317.smscode.runtime.contract.update.VersionLog

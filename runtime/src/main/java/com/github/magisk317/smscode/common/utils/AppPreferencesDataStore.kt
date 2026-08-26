@@ -16,8 +16,8 @@ import com.github.magisk317.smscode.common.constant.CodeNotificationOwner
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.XLog
 import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
-import io.github.magisk317.smscode.runtime.common.prefs.PreferenceChange
-import io.github.magisk317.smscode.runtime.common.prefs.PreferenceChangeSet
+import io.github.magisk317.smscode.runtime.contract.prefs.PreferenceChange
+import io.github.magisk317.smscode.runtime.contract.prefs.PreferenceChangeSet
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map

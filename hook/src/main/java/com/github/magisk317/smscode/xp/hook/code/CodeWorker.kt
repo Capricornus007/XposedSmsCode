@@ -8,9 +8,9 @@ import com.github.magisk317.smscode.hook.BuildConfig
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import com.github.magisk317.smscode.common.utils.PrefsReader
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import io.github.magisk317.smscode.verification.CodeWorker as SharedCodeWorker
-import io.github.magisk317.smscode.verification.SmsCodePostParseCoordinator
-import io.github.magisk317.smscode.verification.SmsParseActionRunner
+import io.github.magisk317.smscode.runtime.verification.CodeWorker as SharedCodeWorker
+import io.github.magisk317.smscode.runtime.verification.SmsCodePostParseCoordinator
+import io.github.magisk317.smscode.runtime.verification.SmsParseActionRunner
 import io.github.magisk317.smscode.xposed.utils.XLog
 import com.github.magisk317.smscode.xp.hook.code.action.impl.KillMeAction
 import com.github.magisk317.smscode.xp.hook.code.action.impl.SmsParseAction

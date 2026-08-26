@@ -37,10 +37,10 @@ import androidx.compose.ui.unit.dp
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.core.BuildConfig
 import io.github.magisk317.uikit.R as UiKitR
-import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationStatusState
+import io.github.magisk317.smscode.runtime.contract.diagnostics.ActivationStatusState
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
-import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsSnapshot
+import io.github.magisk317.smscode.runtime.contract.diagnostics.ActivationDiagnosticsSnapshot
 import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import io.github.magisk317.smscode.runtime.common.utils.BrowserUtils
