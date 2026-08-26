@@ -1,9 +1,12 @@
 package com.github.magisk317.smscode.ui.home.update
 
 import androidx.activity.ComponentActivity
+import com.github.magisk317.smscode.runtime.bridge.UiUpdateAccess
 import io.github.magisk317.uikit.shell.PlayUpdateDelegate
 
-class FlavorPlayUpdateDelegate : PlayUpdateDelegate {
+class FlavorPlayUpdateDelegate(
+    @Suppress("UNUSED_PARAMETER") updateAccess: UiUpdateAccess,
+) : PlayUpdateDelegate {
 
     override fun onCreate(activity: ComponentActivity, onFallbackToStore: () -> Unit) = Unit
 

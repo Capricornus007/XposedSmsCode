@@ -3,7 +3,6 @@ plugins {
     id(libs.plugins.kotlin.serialization.get().pluginId)
     id(libs.plugins.kotlin.parcelize.get().pluginId)
     alias(libs.plugins.ksp)
-    id("magisk.android.common")
 }
 val relayDownloadUrl = "https://github.com/magisk317/xinyi-relay"
 
@@ -22,7 +21,6 @@ android {
     }
 
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
         buildConfigField("String", "LOG_TAG", "\"XSmsCode\"")
         buildConfigField("String", "APPLICATION_ID", "\"com.github.tianma8023.xposed.smscode\"")
         buildConfigField("String", "B_DOWNLOAD_URL", "\"$relayDownloadUrl\"")
@@ -43,20 +41,6 @@ android {
             buildConfigField("int", "LOG_LEVEL", "2")
             buildConfigField("boolean", "LOG_TO_XPOSED", "true")
         }
-    }
-
-    val javaVersion = JavaVersion.toVersion(libs.versions.javaBytecode.get())
-    compileOptions {
-        sourceCompatibility = javaVersion
-        targetCompatibility = javaVersion
-    }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(javaVersion.toString()))
-        }
-    }
-    testOptions {
     }
 }
 

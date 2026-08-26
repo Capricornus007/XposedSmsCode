@@ -89,16 +89,6 @@ subprojects {
         maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     }
 
-    tasks.withType<Test>().configureEach {
-        // MockK attaches Byte Buddy to the test VM; CDS cannot be used once the bootstrap path changes.
-        jvmArgs("-Xshare:off")
-        // Java 26 no longer silently permits the dynamic agent loading used by MockK/Byte Buddy.
-        jvmArgs("-XX:+EnableDynamicAgentLoading")
-        if (Runtime.version().feature() >= 24) {
-            jvmArgs("--sun-misc-unsafe-memory-access=allow")
-        }
-    }
-
 }
 
 allprojects {

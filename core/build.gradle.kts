@@ -5,7 +5,6 @@ plugins {
     id("smscode.android.common")
 }
 
-val minSdkInt = libs.versions.minSdk.get().toInt()
 val allowConflictBypass = findProperty("allowConflictBypass")
     ?.toString()
     ?.toBooleanStrictOrNull()
@@ -23,7 +22,6 @@ android {
     }.standardOutput.asText.get().trim()
 
     defaultConfig {
-        minSdk = minSdkInt
         buildConfigField("int", "VERSION_CODE", libs.versions.versionCode.get())
         buildConfigField("String", "VERSION_NAME", "\"${libs.versions.versionName.get()}\"")
         buildConfigField("String", "COMMIT_HASH", "\"$gitCommitHash\"")
@@ -58,15 +56,8 @@ dependencies {
     implementation(project(":smscode-core:runtime"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.serialization.json)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.material.icons.extended)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.lifecycle.runtime.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
     implementation(libs.koin.compose.viewmodel)

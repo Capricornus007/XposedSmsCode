@@ -104,21 +104,6 @@ android {
         }
     }
 
-    val javaVersion = JavaVersion.toVersion(libs.versions.javaBytecode.get())
-    compileOptions {
-        sourceCompatibility = javaVersion
-        targetCompatibility = javaVersion
-    }
-
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(
-                runCatching {
-                    org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(javaVersion.toString())
-                }.getOrElse { org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_26 }
-            )
-        }
-    }
 }
 
 tasks.named("preBuild") {
@@ -228,8 +213,4 @@ val verifyNoLocalVerificationEngine = tasks.register("verifyNoLocalVerificationE
 
 tasks.named("check").configure {
     dependsOn(verifyNoLocalVerificationEngine)
-}
-
-tasks.withType<Test> {
-    useJUnitPlatform()
 }
