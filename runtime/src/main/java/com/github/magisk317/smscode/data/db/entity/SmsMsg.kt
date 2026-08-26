@@ -6,7 +6,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.github.magisk317.smscode.common.utils.XLog
-import io.github.magisk317.smscode.domain.utils.SmsMessageUtils
+import io.github.magisk317.smscode.runtime.common.sms.SmsMessageUtils
 import io.github.magisk317.smscode.runtime.common.record.SmsMsgRecord
 import io.github.magisk317.smscode.runtime.common.sim.SmsRoutingIntentExtras
 import io.github.magisk317.smscode.runtime.contract.sim.SmsRoutingMetadata
