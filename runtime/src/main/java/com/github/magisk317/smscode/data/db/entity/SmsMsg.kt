@@ -6,7 +6,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.github.magisk317.smscode.common.utils.XLog
-import io.github.magisk317.smscode.runtime.common.sms.SmsMessageUtils
+import io.github.magisk317.smscode.runtime.common.sms.SmsIntentDecoder
 import io.github.magisk317.smscode.runtime.common.record.SmsMsgRecord
 import io.github.magisk317.smscode.runtime.common.sim.SmsRoutingIntentExtras
 import io.github.magisk317.smscode.runtime.contract.sim.SmsRoutingMetadata
@@ -111,12 +111,11 @@ data class SmsMsg(
 
         @JvmStatic
         fun fromIntent(intent: Intent): SmsMsg {
-            val smsMessageParts = SmsMessageUtils.fromIntent(intent)
-            if (smsMessageParts.isEmpty()) return SmsMsg()
+            val decodedMessage = SmsIntentDecoder.decode(intent) ?: return SmsMsg()
 
-            var sender = smsMessageParts[0].displayOriginatingAddress
-            var body = SmsMessageUtils.getMessageBody(smsMessageParts)
-            val date = smsMessageParts[0].timestampMillis
+            var sender = decodedMessage.sender
+            var body = decodedMessage.body
+            val date = decodedMessage.timestampMillis
 
             sender = Normalizer.normalize(sender, Normalizer.Form.NFC)
             body = Normalizer.normalize(body, Normalizer.Form.NFC)
