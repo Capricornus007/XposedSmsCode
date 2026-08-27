@@ -114,6 +114,7 @@ dependencies {
     implementation("com.magisk317.mobile:entitlement-android:0.1.12")
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(project(":core"))
+    implementation(project(":magisk-ui-kit"))
     implementation(project(":hook"))
     implementation(project(":runtime"))
     implementation(project(":smscode-core:domain"))

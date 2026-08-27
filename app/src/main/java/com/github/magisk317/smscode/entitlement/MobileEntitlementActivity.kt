@@ -76,20 +76,22 @@ private fun MobileEntitlementScreen(
 ) {
     val context: Context = activity
     val scope = rememberCoroutineScope()
-    var evaluation by remember { mutableStateOf<MobileEntitlementEvaluation?>(null) }
+    var evaluation by remember {
+        mutableStateOf(MobileEntitlementCoordinator.readCachedEvaluation())
+    }
     var busyAction by remember { mutableStateOf<ActivationAction?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
     var licenseCodeInput by remember { mutableStateOf("") }
     var savedLicenseCode by remember { mutableStateOf<String?>(null) }
 
-    fun refreshStatus() {
+    fun refreshStatus(force: Boolean = false) {
         scope.launch {
             busyAction = ActivationAction.REFRESH
             message = null
             XLog.w("Mobile entitlement refresh started")
             runCatching {
                 withContext(Dispatchers.IO) {
-                    MobileEntitlementCoordinator.refresh(context)
+                    MobileEntitlementCoordinator.refresh(context, force = force)
                 }
             }.onSuccess {
                 evaluation = it
@@ -133,12 +135,6 @@ private fun MobileEntitlementScreen(
         }
     }
 
-    fun maskLicenseCode(code: String): String {
-        val trimmed = code.trim()
-        if (trimmed.length != 32) return trimmed
-        return trimmed.take(4) + "*".repeat(24) + trimmed.takeLast(4)
-    }
-
     fun activateWithCode() {
         val trimmed = licenseCodeInput.trim()
         if (trimmed.length != 32) {
@@ -155,6 +151,7 @@ private fun MobileEntitlementScreen(
                 }
             }.onSuccess {
                 evaluation = it
+                savedLicenseCode = MobileEntitlementCoordinator.readSavedLicenseCode(context)
                 licenseCodeInput = ""
                 XLog.w(
                     "Mobile entitlement token activation success status=%s allowed=%s",
@@ -236,8 +233,13 @@ private fun MobileEntitlementScreen(
                     }
                 }
             }
-            val isActivated = evaluation?.status == MobileEntitlementStatus.ACTIVE
-            val displayCode = savedLicenseCode ?: ""
+            val isActivated = evaluation?.status == MobileEntitlementStatus.ACTIVE ||
+                evaluation?.status == MobileEntitlementStatus.GRACE
+            val displayCode = io.github.magisk317.uikit.text.maskSensitiveIdentifier(
+                value = savedLicenseCode?.trim()?.uppercase(),
+                expectedLength = 32,
+                maskLength = 4,
+            )
 
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(
@@ -248,14 +250,17 @@ private fun MobileEntitlementScreen(
                         text = stringResource(R.string.mobile_entitlement_license_code_label),
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    if (isActivated && displayCode.isNotBlank()) {
+                    if (isActivated) {
                         OutlinedTextField(
-                            value = maskLicenseCode(displayCode),
+                            value = displayCode.orEmpty(),
                             onValueChange = {},
                             readOnly = true,
                             enabled = false,
                             label = { Text(stringResource(R.string.mobile_entitlement_license_code_label)) },
                             modifier = Modifier.fillMaxWidth(),
+                            textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            ),
                             singleLine = true,
                         )
                     } else {
@@ -303,7 +308,7 @@ private fun MobileEntitlementScreen(
                 }
             }
             OutlinedButton(
-                onClick = ::refreshStatus,
+                onClick = { refreshStatus(force = true) },
                 enabled = busyAction == null,
                 modifier = Modifier.fillMaxWidth(),
             ) {
