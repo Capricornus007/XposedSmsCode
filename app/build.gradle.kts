@@ -155,43 +155,34 @@ dependencies {
 
 val verifyNoLocalVerificationEngine = tasks.register("verifyNoLocalVerificationEngine") {
     group = "verification"
-    description = "Ensure app does not reintroduce local verification engine infrastructure already shared in smscode-core."
+    description = "Ensure the app shell owns neither hook runtime code nor a local verification engine."
 
     val bannedFiles = listOf(
         "src/main/java/com/github/magisk317/smscode/xp/hook/code/InboundSmsBlocker.kt",
         "src/main/java/com/github/magisk317/smscode/xp/hook/code/InboundSmsMethodInvoker.kt",
         "src/main/java/com/github/magisk317/smscode/xp/hook/code/SmsIntentHookSupport.kt",
     )
-    val hookSourceRoot = layout.projectDirectory.dir("src/main/java/com/github/magisk317/smscode/xp")
-    val bannedHookRegexes = listOf(
-        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.ui\.record\."""),
-    )
     val projectRoot = layout.projectDirectory.asFile
+    val hookSourceDir = projectRoot.resolve("src/main/java/com/github/magisk317/smscode/xp")
 
-    inputs.files(bannedFiles.map { layout.projectDirectory.file(it) })
-    inputs.dir(hookSourceRoot)
+    inputs.files(bannedFiles.map(projectRoot::resolve))
+    inputs.files(fileTree(hookSourceDir) { include("**/*.kt") })
 
     doLast {
-        val bannedFileViolations = bannedFiles.filter { projectRoot.resolve(it).exists() }
-        val hookImportViolations = hookSourceRoot
-            .asFileTree
-            .matching { include("**/*.kt") }
-            .files
-            .flatMap { source ->
-                source.readLines().mapIndexedNotNull { index, line ->
-                    if (bannedHookRegexes.any { regex -> regex.containsMatchIn(line) }) {
-                        "${source.relativeTo(projectRoot)}:${index + 1}: ${line.trim()}"
-                    } else {
-                        null
-                    }
-                }
-            }
-        val violations = bannedFileViolations + hookImportViolations
+        val violations = bannedFiles
+            .map(projectRoot::resolve)
+            .filter(File::exists)
+            .map { it.relativeTo(projectRoot).path } +
+            hookSourceDir.walkTopDown()
+                .filter { it.isFile && it.extension == "kt" }
+                .map { it.relativeTo(projectRoot).path }
+                .toList()
+
         if (violations.isNotEmpty()) {
             error(
                 buildString {
-                    appendLine("App must not reintroduce local verification engine infrastructure:")
-                    violations.forEach { appendLine(it) }
+                    appendLine("App shell must not own Xposed runtime or local verification engine code; use :hook or smscode-core:")
+                    violations.distinct().sorted().forEach { appendLine(it) }
                 },
             )
         }

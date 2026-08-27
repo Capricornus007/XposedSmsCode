@@ -6,19 +6,26 @@
 
 ### `app`
 
-- Android application 壳、manifest entry、Receiver / Service。
-- libxposed entry、hook 宿主适配、migration / transition、shared `smscode-core` 装配桥。
+- Android application 壳、manifest entry、Receiver / Service 和最终 APK 打包。
+- 主项目 composition root：把 `core` 的 ViewModel、runtime gateway 实现和应用生命周期装配到一起。
 - 负责把 `smscode-rules` 内容子模块同步为 APK assets。
-- 不重新定义已经下沉到 `smscode-core` 的验证码主链基础设施。
+- libxposed metadata 仍由 `app/src/main/resources/META-INF/xposed/` 打包，但 entry/runtime 实现归 `hook` 所有。
+- 不重新定义已经下沉到 `smscode-core` 的验证码主链基础设施，也不承载 Xposed runtime 实现。
 
 ### `core`
 
 - 历史命名的 UI core / presentation 层，不是底层 core。
-- 承载 Compose UI、导航、ViewModel、主题、应用内 UI facade 和 Koin UI 装配。
-- 允许依赖 `runtime` facade、`magisk-ui-kit` 和共享领域模型。
-- 不直接依赖 `AppDatabase`、`DBManager`、`DBProvider`。
-- 不直接依赖 update 实现类，例如下载、安装、校验器。
-- update 检查结果、策略判断与 Play 更新动作统一经 `RuntimeUpdateFacade`。
+- 承载 Compose UI、导航、ViewModel、主题和应用内 UI gateway 消费端。
+- 只通过 `runtime.bridge.Ui*Access` 等 gateway 使用项目运行时；Koin 对 runtime 实现的绑定归 `app` composition root。
+- 不直接引用 `Runtime*Facade`、`AppDatabase`、`DBManager`、`DBProvider` 或 update/store 实现类。
+- update 检查结果、策略判断与 Play 更新动作统一经 `UiUpdateAccess`。
+
+### `hook`
+
+- 主项目专属 Xposed Android 层。
+- 承载 libxposed entry、hook 宿主适配、`XposedRuntimeInstaller`、`CorePrefsBridge` 和项目专属 hooks/actions。
+- 可依赖 `runtime` gateway/实现与共享 `smscode-core:hook`，但不得反向依赖 `app` 或 UI `core`。
+- 反射入口类名保持 `com.github.magisk317.smscode.xp.LibXposedEntry`，由 app 中的 metadata 引用并随最终 APK 合并。
 
 ### `runtime`
 
@@ -47,19 +54,19 @@
 
 ## 依赖方向
 
-- `app -> core, runtime, smscode-core:domain, smscode-core:runtime, smscode-core:verification, smscode-core:hook`
-- `core -> runtime, magisk-ui-kit, smscode-core:domain, smscode-core:runtime`
+- `app -> core, hook, runtime, smscode-core:*`（最终 composition/packaging root）
+- `core -> runtime` 的公开 UI gateway/model、`magisk-ui-kit` 与共享领域模型；不得绑定 runtime facade 实现
+- `hook -> runtime, smscode-core:hook, magisk-xposed-kit`
 - `runtime -> smscode-core:domain, smscode-core:runtime, smscode-core:hook`
 - `smscode-rules` 不参与 Kotlin 依赖图，只作为 APK assets 输入。
 
 约束：
 
 - `core` 是 UI/展示层，不得被当作底层 contract 模块继续塞共享业务逻辑。
-- `core` 不得直接依赖 runtime 的 DB/update/store 实现类。
+- `core` 不得直接引用 runtime 的 facade、DB/update/store 实现类；实现绑定只能在 `app` composition root。
 - `runtime` 不得引入 Compose/UI API。
-- `app` 不得重新放回本地验证码引擎基础设施。
-- `app/xp` 新增可复用短信策略时，应优先考虑下沉到 `smscode-core:verification` 或
-  `smscode-core:hook`，app 侧只保留 Android/Xposed 宿主适配。
+- `hook` 不得依赖 `app`/`core`；`app` 不得承载 `com.github.magisk317.smscode.xp` 生产源码。
+- 可复用短信策略应优先下沉到 `smscode-core:verification` 或 `smscode-core:hook`，主项目 `hook` 只保留项目专属 Android/Xposed 宿主适配。
 
 ## 构建治理
 
@@ -79,19 +86,17 @@
 - `verifyMainModuleDependencies`: 禁止 `runtime` 反向依赖 `app/core`，禁止 `core` 依赖 `app`，
   并禁止 `smscode-core:*` 依赖主项目或 `magisk-ui-kit`。
 - `runtime:verifyNoComposeUiLeak`: 禁止 runtime 源码引入 Compose / UI API。
-- `core:verifyNoRuntimeStorageImplLeak`: 禁止 core 直接依赖 runtime 存储、更新和部分 feature internals；
-  `ui/record` 的记录查询、删除、恢复、导出必须通过 `RuntimeCodeRecordFacade`。
-- `app:verifyNoLocalVerificationEngine`: 禁止 app 重新引入已经共享化的验证码引擎基础设施，
-  并禁止 `app/xp` hook 代码直接借用 `core.ui.record` UI 实现。
+- `core:verifyNoRuntimeStorageImplLeak`: 禁止 core 直接绑定任意 `Runtime*Facade`，并禁止存储、更新和 feature internals；UI 只能消费 runtime gateway/model。
+- `app:verifyNoLocalVerificationEngine`: 禁止 app 重新引入共享验证码引擎基础设施，也禁止 `app` 拥有 `com.github.magisk317.smscode.xp` 生产源码；Xposed entry/runtime 必须位于 `hook`。
 - `scripts/checks/verify_shared_submodule_compat.sh`: 验证根边界、`smscode-core` domain 单测、
   verification detekt、hook/runtime lint、`core` 和 `app:check` 的兼容链路。
 
 ## 继续优化的方向
 
-1. 继续增加 runtime facade，减少 `core/app` 对 runtime 具体实现和 UI 实现的交叉感知；记录恢复文件链路已迁到 `RuntimeCodeRecordRestoreFacade`，记录页存储与导出入口已收口到 `RuntimeCodeRecordFacade`。
-2. 继续把 `app/xp/hook/code` 内可复用的短信策略下沉到 `smscode-core:verification`，app 侧保留宿主适配。
+1. 继续收窄 `runtime.bridge.Ui*Access`，逐步以 UI DTO/port 替代 DB entity 和 manager 暴露；runtime 实现绑定保持在 `app` composition root。
+2. 继续把主项目 `hook` 内可复用的短信策略下沉到 `smscode-core:verification`，`hook` 只保留宿主适配。
 3. 视风险决定是否把主项目 `core` 重命名为 `ui-core` / `presentation`；当前先通过文档和边界闸门消除歧义。
-4. 继续把测试按模块语义归位，避免 `app` 承载 runtime/core 的测试。
+4. 继续把测试按模块语义归位，避免 `app` 承载 runtime/core 的单元测试；app 可保留最终 APK metadata/R8 集成契约测试。
 
 ## 平台兼容性：Android 17 (API 37)
 

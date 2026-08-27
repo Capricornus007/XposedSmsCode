@@ -130,8 +130,9 @@ val sharedCoreProjectPaths = listOf(
     ":smscode-core:verification",
 )
 val forbiddenMainModuleDependencies = buildMap {
-    put(":runtime", setOf(":app", ":core"))
-    put(":core", setOf(":app"))
+    put(":runtime", setOf(":app", ":core", ":hook"))
+    put(":hook", setOf(":app", ":core"))
+    put(":core", setOf(":app", ":hook"))
     sharedCoreProjectPaths.forEach { sourcePath ->
         put(sourcePath, setOf(":app", ":core", ":runtime", ":magisk-ui-kit"))
     }

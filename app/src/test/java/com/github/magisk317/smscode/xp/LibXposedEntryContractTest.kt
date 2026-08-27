@@ -47,7 +47,7 @@ class LibXposedEntryContractTest {
     @Test
     fun `hot reload stores only parcelable process and package state`() {
         val appEntrySource = resolveProjectFile(
-            "app/src/main/java/com/github/magisk317/smscode/xp/LibXposedEntry.kt",
+            "hook/src/main/java/com/github/magisk317/smscode/xp/LibXposedEntry.kt",
         ).readText()
         val baseEntrySource = resolveProjectFile(
             "magisk-xposed-kit/src/main/java/io/github/magisk317/xposed/BaseLibXposedEntry.kt",

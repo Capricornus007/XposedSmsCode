@@ -14,6 +14,7 @@ android {
         missingDimensionStrategy("distribution", "github")
 
         // Keep hook diagnostics and module compatibility checks on the app's catalog version.
+        buildConfigField("String", "LOG_TAG", "\"XSmsCode\"")
         buildConfigField("String", "APPLICATION_ID", "\"com.github.tianma8023.xposed.smscode\"")
         buildConfigField("String", "VERSION_NAME", "\"$appVersionName\"")
         buildConfigField("int", "VERSION_CODE", "$appVersionCode")

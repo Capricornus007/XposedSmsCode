@@ -17,7 +17,7 @@ import com.github.magisk317.smscode.runtime.bridge.HookContentProviderAccess
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeGateClaimResult
 import com.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
-import com.github.tianma8023.xposed.smscode.BuildConfig
+import com.github.magisk317.smscode.hook.BuildConfig
 import io.github.magisk317.xposed.logging.DefaultLogSanitizer
 import io.github.magisk317.xposed.logging.MagiskOtel
 import io.github.magisk317.xposed.logging.AnonymousInstallationId

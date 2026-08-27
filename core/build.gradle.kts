@@ -79,6 +79,7 @@ val verifyNoRuntimeStorageImplLeak = tasks.register("verifyNoRuntimeStorageImplL
     val recordSourceRoot = layout.projectDirectory.dir("src/main/java/com/github/magisk317/smscode/ui/record")
     val projectRoot = layout.projectDirectory.asFile
     val bannedRegexes = listOf(
+        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.runtime\.Runtime\w*Facade\b"""),
         Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.data\.db\.(AppDatabase|DBManager|DBProvider)\b"""),
         Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.data\.update\."""),
         Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.common\.utils\.PrefsReader\b"""),
