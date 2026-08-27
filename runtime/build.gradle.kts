@@ -2,7 +2,7 @@ plugins {
     id("magisk.android.library")
     id(libs.plugins.kotlin.serialization.get().pluginId)
     id(libs.plugins.kotlin.parcelize.get().pluginId)
-    alias(libs.plugins.ksp)
+    id("magisk.android.room")
 }
 val relayDownloadUrl = "https://github.com/magisk317/xinyi-relay"
 
@@ -51,10 +51,8 @@ dependencies {
     implementation(project(":smscode-core:domain"))
     implementation(project(":smscode-core:rule"))
     implementation(project(":smscode-core:runtime"))
-    implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.gson)
     
@@ -62,9 +60,6 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
     // Database (Room)
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
     
     implementation(libs.timber)
 
