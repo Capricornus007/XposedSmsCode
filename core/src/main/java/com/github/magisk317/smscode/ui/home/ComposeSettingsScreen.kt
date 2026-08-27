@@ -404,34 +404,33 @@ internal fun ComposeSettingsScreenShared(
         }
     }
 
-    fun shareRuntimeLogBundle() {
+    val saveRuntimeLogLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip"),
+    ) { destination ->
+        if (destination == null) return@rememberLauncherForActivityResult
         scope.launch {
             val result = withContext(Dispatchers.IO) {
                 RuntimeDiagnosticsBridge.ensureInstalled()
-                LogBundleExporter.buildLogBundle(
+                val bundle = LogBundleExporter.buildLogBundle(
                     context = context,
                     mode = DiagnosticExportMode.fromDebugLogging(verboseLogEnabled.value),
                 )
+                val file = bundle.file ?: return@withContext bundle.details
+                context.contentResolver.openOutputStream(destination, "wt")?.use { output ->
+                    file.inputStream().use { input -> input.copyTo(output) }
+                } ?: return@withContext "log_export_destination_open_failed"
+                ""
             }
-            val file = result.file
-            if (file == null) {
-                snackbarHostState.showSnackbar(
-                    context.getString(R.string.runtime_log_export_failed, result.details),
-                )
-                return@launch
-            }
-            runCatching {
-                RuntimeDiagnosticsBridge.ensureInstalled()
-                LogBundleExporter.shareLogBundle(context, file)
-            }.onFailure {
-                snackbarHostState.showSnackbar(
-                    context.getString(
-                        R.string.runtime_log_share_failed,
-                        it.message ?: it.javaClass.simpleName,
-                    ),
-                )
+            if (result.isNotBlank()) {
+                snackbarHostState.showSnackbar(context.getString(R.string.runtime_log_export_failed, result))
             }
         }
+    }
+
+    fun saveRuntimeLogBundle() {
+        val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", java.util.Locale.US)
+            .format(java.util.Date())
+        saveRuntimeLogLauncher.launch("smscode_logs_$timestamp.zip")
     }
 
     fun clearRuntimeLogFolders() {
@@ -1050,7 +1049,7 @@ internal fun ComposeSettingsScreenShared(
                                 sensitiveLogEnabled = sensitiveDebugLogEnabled.value,
                             ),
                             callbacks = RuntimeLogDiagnosticsCallbacks(
-                                onShareLog = ::shareRuntimeLogBundle,
+                                onShareLog = ::saveRuntimeLogBundle,
                                 onVerboseLogEnabledChange = { enabled ->
                                     verboseLogEnabled.value = enabled
                                     scope.launch {
@@ -1672,16 +1671,23 @@ fun SwitchItem(
     }
 }
 
+private val booleanPreferenceStateCache =
+    io.github.magisk317.uikit.state.RetainedValueCache<String, Boolean>()
+
 @Composable
 fun rememberPrefBoolean(key: String, defaultValue: Boolean): MutableState<Boolean> {
     val context = LocalContext.current
     val isActive = LocalSettingsPageRuntime.current.keepDataActive
-    val state = remember { mutableStateOf(defaultValue) }
-    LaunchedEffect(key, isActive) {
-        if (!isActive) return@LaunchedEffect
-        state.value = AppPreferencesDataStore.getBoolean(context, key, defaultValue)
+    val flow = remember(context, key, defaultValue) {
+        AppPreferencesDataStore.getBooleanFlow(context, key, defaultValue)
     }
-    return state
+    return io.github.magisk317.uikit.state.rememberRetainedFlowState(
+        cache = booleanPreferenceStateCache,
+        key = key,
+        initialValue = defaultValue,
+        isActive = isActive,
+        flow = flow,
+    )
 }
 
 @Composable
