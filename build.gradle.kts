@@ -80,14 +80,6 @@ subprojects {
         configureDetekt()
     }
 
-    repositories {
-        google()
-        mavenCentral()
-        gradlePluginPortal()
-        maven("https://jitpack.io")
-        maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
-    }
-
 }
 
 allprojects {

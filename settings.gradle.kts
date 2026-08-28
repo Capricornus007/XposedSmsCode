@@ -17,6 +17,9 @@ dependencyResolutionManagement {
         mavenLocal()
         google()
         mavenCentral()
+        gradlePluginPortal()
+        maven("https://jitpack.io")
+        maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
         maven {
             name = "MagiskMobilePrivate"
             url = uri(
