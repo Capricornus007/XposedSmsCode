@@ -7,7 +7,7 @@ assert_contains() { grep -Fx -- "$1" "$2" >/dev/null || { echo "missing $1" >&2;
 printf 'impact\napp/src/main/App.kt\n' > "$tmp_dir/app"
 bash "$selector" /dev/null "$tmp_dir/app" > "$tmp_dir/out"; assert_contains ':app:check' "$tmp_dir/out"; assert_contains ':app:koverVerifyGithubDebug' "$tmp_dir/out"
 printf 'impact\nsmscode/core/domain/src/main.kt\n' > "$tmp_dir/core"
-bash "$selector" /dev/null "$tmp_dir/core" > "$tmp_dir/out"; assert_contains ':smscode-core:domain:testDebugUnitTest' "$tmp_dir/out"
+bash "$selector" /dev/null "$tmp_dir/core" > "$tmp_dir/out"; assert_contains ':smscode-core:domain:test' "$tmp_dir/out"
 printf 'impact\ndocs/ci.md\n' > "$tmp_dir/docs"
 bash "$selector" /dev/null "$tmp_dir/docs" > "$tmp_dir/out"; [[ ! -s "$tmp_dir/out" ]] || exit 1
 printf 'full\n' > "$tmp_dir/full"

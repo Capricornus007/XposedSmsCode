@@ -8,12 +8,12 @@ TOOLKIT_DIR="$("$ROOT_DIR/scripts/resolve_ci_toolkit.sh")"
 
 bash "$TOOLKIT_DIR/gradle/run_gradle_with_retry.sh" \
   verifyModuleBoundaries \
-  :smscode-core:contract:testDebugUnitTest \
-  :smscode-core:domain:testDebugUnitTest \
+  :smscode-core:contract:test \
+  :smscode-core:domain:test \
   :smscode-core:hook:testDebugUnitTest \
   :smscode-core:runtime:testDebugUnitTest \
   :smscode-core:verification:detekt \
-  :smscode-core:verification:testDebugUnitTest \
+  :smscode-core:verification:test \
   :magisk-xposed-kit:testDebugUnitTest \
   :magisk-xposed-kit:logging:testDebugUnitTest \
   :magisk-xposed-kit:diagnostics:testDebugUnitTest \

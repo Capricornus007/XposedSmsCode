@@ -416,12 +416,12 @@ jobs:
             :core:check
             :runtime:check
             :app:check
-            :smscode-core:contract:testDebugUnitTest
-            :smscode-core:domain:testDebugUnitTest
+            :smscode-core:contract:test
+            :smscode-core:domain:test
             :smscode-core:hook:testDebugUnitTest
             :smscode-core:runtime:testDebugUnitTest
             :smscode-core:verification:detekt
-            :smscode-core:verification:testDebugUnitTest
+            :smscode-core:verification:test
             :magisk-xposed-kit:testDebugUnitTest
             :magisk-xposed-kit:logging:testDebugUnitTest
             :magisk-xposed-kit:diagnostics:testDebugUnitTest

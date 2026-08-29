@@ -1,18 +1,18 @@
 include:
   - project: magisk3171/shared/magisk-ci-toolkit
-    ref: e4c4a9105025ee4d3ba6d97733850134dc5dac37
+    ref: efb141b766502035982af8342f97ee93e46f996b
     file: /.gitlab/ci/android.yml
   - project: magisk3171/shared/magisk-ci-toolkit
-    ref: e4c4a9105025ee4d3ba6d97733850134dc5dac37
+    ref: efb141b766502035982af8342f97ee93e46f996b
     file: /.gitlab/ci/android-release.yml
   - project: magisk3171/shared/magisk-ci-toolkit
-    ref: e4c4a9105025ee4d3ba6d97733850134dc5dac37
+    ref: efb141b766502035982af8342f97ee93e46f996b
     file: /.gitlab/ci/telegram.yml
   - project: magisk3171/shared/magisk-ci-toolkit
-    ref: e4c4a9105025ee4d3ba6d97733850134dc5dac37
+    ref: efb141b766502035982af8342f97ee93e46f996b
     file: /.gitlab/ci/renovate.yml
   - project: magisk3171/shared/magisk-ci-toolkit
-    ref: e4c4a9105025ee4d3ba6d97733850134dc5dac37
+    ref: efb141b766502035982af8342f97ee93e46f996b
     file: /.gitlab/ci/cancel-mr-pipelines.yml
 
 workflow:
@@ -42,7 +42,7 @@ stages:
 
 variables:
   MAGISK_CI_TOOLKIT_REPOSITORY: "https://gitlab.com/magisk3171/shared/magisk-ci-toolkit.git"
-  MAGISK_CI_TOOLKIT_REF: "e4c4a9105025ee4d3ba6d97733850134dc5dac37"
+  MAGISK_CI_TOOLKIT_REF: "efb141b766502035982af8342f97ee93e46f996b"
   MAGISK_CANCEL_OLDER_MR_PIPELINES: "true"
   GIT_DEPTH: "0"
   GIT_SUBMODULE_STRATEGY: recursive
@@ -167,6 +167,11 @@ android:release:play-bundle:
   extends: .magisk_android_release_aab
   resource_group: xposed-android-release-play
   stage: release-build
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+[.][0-9]+[.][0-9]+$/ && $MAGISK_ANDROID_RELEASE_PUBLISH_PLAY == "true"'
+    - when: never
+  variables:
+    MAGISK_PLAY_TRACK_OVERRIDE: "production"
   needs:
     - job: android:release:guard
       artifacts: false
@@ -196,13 +201,18 @@ android:release:play:
   extends: .magisk_android_publish_play
   resource_group: xposed-android-release-play
   stage: release-publish
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v[0-9]+[.][0-9]+[.][0-9]+$/ && $RELEASE_OWNER == "gitlab" && $MAGISK_ANDROID_RELEASE_PUBLISH_PLAY == "true" && $ANDROID_PUBLISHER_CREDENTIALS != ""'
+    - when: never
+  variables:
+    MAGISK_PLAY_TRACK_OVERRIDE: "production"
   tags:
     - magisk-arm64-linux
   needs:
     - job: android:release:play-bundle
       artifacts: true
 
-android:ci:play-alpha-bundle:
+android:ci:play-beta-bundle:
   extends: .magisk_android_base
   resource_group: xposed-android-release-play
   stage: release-build
@@ -214,6 +224,7 @@ android:ci:play-alpha-bundle:
   script:
     - |
       set -euo pipefail
+      export MAGISK_PLAY_TRACK_OVERRIDE=beta
       keystore_path="$CI_PROJECT_DIR/app/release.jks"
       printf '%s' "$RELEASE_KEYSTORE" | base64 --decode > "$keystore_path"
       chmod 0600 "$keystore_path"
@@ -235,7 +246,7 @@ android:ci:play-alpha-bundle:
       - app/build/outputs/native-debug-symbols/**/native-debug-symbols.zip
       - play-release.env
 
-android:ci:play-alpha:
+android:ci:play-beta:
   extends: .magisk_android_base
   resource_group: xposed-android-release-play
   stage: release-publish
@@ -245,7 +256,7 @@ android:ci:play-alpha:
     - if: '$CI_COMMIT_BRANCH == "beta" && $CI_PIPELINE_SOURCE == "push" && $MAGISK_ANDROID_RELEASE_PUBLISH_PLAY == "true" && $ANDROID_PUBLISHER_CREDENTIALS != ""'
     - when: never
   needs:
-    - job: android:ci:play-alpha-bundle
+    - job: android:ci:play-beta-bundle
       artifacts: true
   script:
     - |
@@ -313,7 +324,7 @@ telegram:ci:
     - job: android:build
       artifacts: true
       optional: true
-    - job: android:ci:play-alpha
+    - job: android:ci:play-beta
       artifacts: false
       optional: true
 
