@@ -111,7 +111,7 @@ tasks.named("preBuild") {
 }
 
 dependencies {
-    implementation("com.magisk317.mobile:entitlement-android:0.1.12")
+    implementation("com.magisk317.mobile:entitlement-android:0.1.13")
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(project(":core"))
     implementation(project(":magisk-ui-kit"))
