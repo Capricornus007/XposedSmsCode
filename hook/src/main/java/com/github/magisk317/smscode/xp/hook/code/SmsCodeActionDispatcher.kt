@@ -11,6 +11,7 @@ import com.github.magisk317.smscode.xp.hook.code.action.impl.OperateSmsAction
 import com.github.magisk317.smscode.xp.hook.code.action.impl.RecordSmsAction
 import com.github.magisk317.smscode.xp.hook.code.action.impl.ToastAction
 import io.github.magisk317.smscode.runtime.verification.AutoInputDispatchGuard
+import io.github.magisk317.smscode.runtime.verification.NotificationDispatchGuard
 import io.github.magisk317.smscode.runtime.verification.SmsCodeActionScheduler
 import io.github.magisk317.smscode.runtime.verification.SmsCodeActionDispatcher as SharedSmsCodeActionDispatcher
 import io.github.magisk317.smscode.runtime.verification.SmsCodePostParseCoordinator
@@ -44,7 +45,14 @@ object SmsCodeActionDispatcher {
                 scheduleAutoInput(scheduledExecutor, plugin, phone, message.raw, delayMs, deduplicateEnabled, attemptId)
             },
             notificationScheduler = { scheduledExecutor, plugin, phone, message, notificationPlan ->
-                scheduleNotification(scheduledExecutor, plugin, phone, message.raw, notificationPlan)
+                scheduleNotification(
+                    scheduledExecutor,
+                    plugin,
+                    phone,
+                    message.raw,
+                    notificationPlan,
+                    plan.deduplicateSmsEnabled,
+                )
             },
             recordScheduler = { scheduledExecutor, plugin, phone, message, recordEventId, deduplicateEnabled ->
                 scheduleRecord(scheduledExecutor, plugin, phone, message.raw, recordEventId, deduplicateEnabled)
@@ -208,8 +216,10 @@ object SmsCodeActionDispatcher {
         phoneContext: Context,
         smsMsg: SmsMsg,
         plan: SmsCodePostParseCoordinator.NotificationPlan,
+        deduplicateEnabled: Boolean,
     ) {
         if (!mobileAutomationAllowed(pluginContext)) return
+        if (deduplicateEnabled && !claimNotificationDispatch(pluginContext, smsMsg)) return
         XLog.i("scheduleNotification() running inline: smsCode=%s", smsMsg.smsCode)
         runCatching {
             NotifyAction(
@@ -262,6 +272,30 @@ object SmsCodeActionDispatcher {
                 windowMs = windowMs,
                 maxEntries = maxEntries,
             ).toAutoInputClaim()
+        }
+    }
+
+    private fun claimNotificationDispatch(
+        pluginContext: Context,
+        smsMsg: SmsMsg,
+    ): Boolean {
+        return NotificationDispatchGuard.claim(
+            pluginContext = pluginContext,
+            smsMsg = smsMsg.toVerificationMessage(),
+        ) { context, fileName, keys, windowMs, maxEntries ->
+            HookRuntimeBridge.contentProviderAccess.claimRuntimeGate(
+                context = context,
+                fileName = fileName,
+                keys = keys,
+                windowMs = windowMs,
+                maxEntries = maxEntries,
+            ).let { result ->
+                NotificationDispatchGuard.ClaimResult(
+                    claimed = result.claimed,
+                    ageMs = result.ageMs,
+                    key = result.blockedKey,
+                )
+            }
         }
     }
 
