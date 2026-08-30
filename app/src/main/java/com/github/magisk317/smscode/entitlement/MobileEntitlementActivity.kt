@@ -81,8 +81,7 @@ private fun MobileEntitlementScreen(
     }
     var busyAction by remember { mutableStateOf<ActivationAction?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
-    var licenseCodeInput by remember { mutableStateOf("") }
-    var savedLicenseCode by remember { mutableStateOf<String?>(null) }
+    var activationTokenInput by remember { mutableStateOf("") }
 
     fun refreshStatus(force: Boolean = false) {
         scope.launch {
@@ -95,7 +94,6 @@ private fun MobileEntitlementScreen(
                 }
             }.onSuccess {
                 evaluation = it
-                savedLicenseCode = MobileEntitlementCoordinator.readSavedLicenseCode(context)
                 XLog.w(
                     "Mobile entitlement refresh finished status=%s allowed=%s renewDue=%s",
                     it.status,
@@ -135,14 +133,14 @@ private fun MobileEntitlementScreen(
         }
     }
 
-    fun activateWithCode() {
-        val trimmed = licenseCodeInput.trim()
+    fun activateWithToken() {
+        val trimmed = activationTokenInput.trim()
         if (trimmed.length != 32) {
-            message = context.getString(R.string.mobile_entitlement_license_code_invalid)
+            message = context.getString(R.string.mobile_entitlement_activation_token_invalid)
             return
         }
         scope.launch {
-            busyAction = ActivationAction.LICENSE_CODE
+            busyAction = ActivationAction.TOKEN
             message = null
             XLog.w("Mobile entitlement token activation started")
             runCatching {
@@ -151,8 +149,7 @@ private fun MobileEntitlementScreen(
                 }
             }.onSuccess {
                 evaluation = it
-                savedLicenseCode = MobileEntitlementCoordinator.readSavedLicenseCode(context)
-                licenseCodeInput = ""
+                activationTokenInput = ""
                 XLog.w(
                     "Mobile entitlement token activation success status=%s allowed=%s",
                     it.status,
@@ -167,9 +164,6 @@ private fun MobileEntitlementScreen(
     }
 
     LaunchedEffect(Unit) {
-        savedLicenseCode = withContext(Dispatchers.IO) {
-            MobileEntitlementCoordinator.readSavedLicenseCode(context)
-        }
         refreshStatus()
     }
 
@@ -235,11 +229,6 @@ private fun MobileEntitlementScreen(
             }
             val isActivated = evaluation?.status == MobileEntitlementStatus.ACTIVE ||
                 evaluation?.status == MobileEntitlementStatus.GRACE
-            val displayCode = io.github.magisk317.uikit.text.maskSensitiveIdentifier(
-                value = savedLicenseCode?.trim()?.uppercase(),
-                expectedLength = 32,
-                maskLength = 4,
-            )
 
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(
@@ -247,43 +236,36 @@ private fun MobileEntitlementScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        text = stringResource(R.string.mobile_entitlement_license_code_label),
+                        text = stringResource(R.string.mobile_entitlement_activation_token_label),
                         style = MaterialTheme.typography.titleMedium,
                     )
-                    if (isActivated) {
+                    if (!isActivated) {
                         OutlinedTextField(
-                            value = displayCode.orEmpty(),
-                            onValueChange = {},
-                            readOnly = true,
-                            enabled = false,
-                            label = { Text(stringResource(R.string.mobile_entitlement_license_code_label)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            ),
-                            singleLine = true,
-                        )
-                    } else {
-                        OutlinedTextField(
-                            value = licenseCodeInput,
-                            onValueChange = { licenseCodeInput = it.trim().uppercase() },
-                            label = { Text(stringResource(R.string.mobile_entitlement_license_code_hint)) },
+                            value = activationTokenInput,
+                            onValueChange = { activationTokenInput = it.trim().uppercase() },
+                            label = { Text(stringResource(R.string.mobile_entitlement_activation_token_hint)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             enabled = busyAction == null,
                         )
                         Button(
-                            onClick = ::activateWithCode,
-                            enabled = busyAction == null && licenseCodeInput.trim().length == 32,
+                            onClick = ::activateWithToken,
+                            enabled = busyAction == null && activationTokenInput.trim().length == 32,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            if (busyAction == ActivationAction.LICENSE_CODE) {
+                            if (busyAction == ActivationAction.TOKEN) {
                                 CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
                             }
-                            Text(stringResource(R.string.mobile_entitlement_license_code_confirm))
+                            Text(stringResource(R.string.mobile_entitlement_activation_token_confirm))
                         }
                         Text(
-                            text = stringResource(R.string.mobile_entitlement_license_code_get_hint),
+                            text = stringResource(R.string.mobile_entitlement_activation_token_get_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.mobile_entitlement_activation_token_used),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -329,7 +311,7 @@ private fun MobileEntitlementScreen(
 
 private enum class ActivationAction {
     REFRESH,
-    LICENSE_CODE,
+    TOKEN,
     TELEGRAM,
 }
 
