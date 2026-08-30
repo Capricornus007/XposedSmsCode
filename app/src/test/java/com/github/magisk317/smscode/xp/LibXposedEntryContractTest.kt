@@ -34,6 +34,18 @@ class LibXposedEntryContractTest {
     }
 
     @Test
+    fun `sms code entry does not install relay notification ingress`() {
+        val entrySource = resolveProjectFile(
+            "hook/src/main/java/com/github/magisk317/smscode/xp/LibXposedEntry.kt",
+        ).readText()
+        val manifest = resolveProjectFile("app/src/main/AndroidManifest.xml").readText()
+
+        assertFalse("NotificationManagerHook()" in entrySource)
+        assertFalse("ForwardReceiver" in manifest)
+        assertFalse("ACTION_FORWARD_SMS" in manifest)
+    }
+
+    @Test
     fun `release shrinking preserves libxposed entry and hook contracts`() {
         val rules = resolveProjectFile("app/proguard-common.pro").readText()
 

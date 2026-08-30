@@ -9,7 +9,6 @@ import com.github.magisk317.smscode.xp.hook.telephony.SmsProviderHook
 import io.github.libxposed.api.XposedInterface
 import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.ModuleLoadedParam
-import io.github.magisk317.smscode.xposed.hook.notification.NotificationManagerHook
 import io.github.magisk317.smscode.xposed.hook.permission.PermissionGranterHook
 import io.github.magisk317.smscode.xposed.hook.system.SystemInputInjectorHook
 import io.github.magisk317.xposed.HookEnv
@@ -30,7 +29,6 @@ class LibXposedEntry : BaseLibXposedEntry {
     override val hooks: List<BaseHook> = listOf(
         SmsHandlerHook(),
         MmsMessagesHook(),
-        NotificationManagerHook(),
         ModuleUtilsHook(),
         PermissionGranterHook(),
         SystemInputInjectorHook(),
