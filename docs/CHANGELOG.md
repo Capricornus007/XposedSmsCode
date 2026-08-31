@@ -3,6 +3,13 @@
 本日志记录了项目重构后的主要变更。
 
 ---
+## [v3.3.3] - WIP
+- 版本：`versionCode 127` / `versionName 3.3.3`。
+- `[TODO]` 准备下一阶段开发。
+
+> Full Changelog: https://gitlab.com/magisk3171/XposedSmsCode/-/compare/v3.3.2...v3.3.3
+
+---
 
 ## [v3.3.2] - 2026-08-31
 - 版本：`versionCode 126` / `versionName 3.3.2`。

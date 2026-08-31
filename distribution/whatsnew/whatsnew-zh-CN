@@ -1,7 +1,4 @@
-- 升级至 3.3.2（126）。
-- 优化短信解析与分发。
-- 更新设备激活流程。
-- 优化通知转发与验证码自动输入。
-- 改进日志保存与导出。
-- 更新依赖与发布工具链。
+- 升级至 3.3.3（127）。
+- 准备下一阶段开发。
 - https://github.com/magisk3171/XposedSmsCode/releases
+- https://gitlab.com/magisk3171/XposedSmsCode/-/releases

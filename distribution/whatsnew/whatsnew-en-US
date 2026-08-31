@@ -1,7 +1,4 @@
-- Updated to 3.3.2 (126).
-- Improved SMS parsing and dispatch.
-- Updated the device activation flow.
-- Improved notification relay and code auto-input.
-- Improved log saving and export.
-- Updated dependencies and release tooling.
+- Updated to 3.3.3 (127).
+- Preparing the next development cycle.
 - https://github.com/magisk3171/XposedSmsCode/releases
+- https://gitlab.com/magisk3171/XposedSmsCode/-/releases
