@@ -1179,11 +1179,6 @@ fun CodeRecordItem(
         }
     }
     val displayLabel = appLabel ?: fallbackLabel
-    val iconLabel = if (smsMsg.packageName.isNullOrBlank()) {
-        fallbackLabel.replace(Regex("[【】\\[\\]]"), "").trim()
-    } else {
-        null
-    }
     val hasCode = !smsMsg.smsCode.isNullOrBlank()
     val codeOrSender = smsMsg.smsCode?.takeIf { it.isNotBlank() }
         ?: smsMsg.sender?.takeIf { it.isNotBlank() }
@@ -1215,7 +1210,6 @@ fun CodeRecordItem(
                     if (isActive) {
                         AppIconImage(
                             packageName = smsMsg.packageName,
-                            label = iconLabel,
                             contentDescription = stringResource(R.string.sms_icon_description),
                         )
                     } else {
