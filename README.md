@@ -1,12 +1,12 @@
 # XposedSmsCode
 
-![Star History Chart](https://api.star-history.com/svg?repos=magisk317/XposedSmsCode&type=Date)
+![Star History Chart](https://api.star-history.com/svg?repos=magisk3171/XposedSmsCode&type=Date)
 
 <div align="center">
     <a href="https://play.google.com/store/apps/details?id=com.github.tianma8023.xposed.smscode">
         <img src="https://play.google.com/intl/zh-CN/badges/static/images/badges/zh-cn_badge_web_generic.png" alt="Get it on Google Play" height="80"/>
     </a>
-    <a href="https://github.com/magisk317/XposedSmsCode/releases">
+    <a href="https://github.com/magisk3171/XposedSmsCode/releases">
         <img src="https://raw.githubusercontent.com/machiav3lli/oandbackupx/master/badge_github.png" alt="Get it on GitHub" height="80"/>
     </a>
 </div>
@@ -14,18 +14,18 @@
 <div align="center">
 
 <!-- badges:platform:start -->
-[![Commits](https://img.shields.io/github/commit-activity/y/magisk317/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/graphs/commit-activity) [![Last Commit](https://img.shields.io/github/last-commit/magisk317/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/commits) [![Contributors](https://img.shields.io/github/contributors/magisk317/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/graphs/contributors) [![CI](https://img.shields.io/github/actions/workflow/status/magisk317/XposedSmsCode/ci.yml?style=flat-square&label=Build&logo=github-actions&logoColor=white)](https://github.com/magisk317/XposedSmsCode/actions/workflows/ci.yml) [![Latest Release](https://img.shields.io/github/v/release/magisk317/XposedSmsCode?include_prereleases&style=flat-square&logo=github)](https://github.com/magisk317/XposedSmsCode/releases) [![Release Date](https://img.shields.io/github/release-date/magisk317/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/releases) [![Downloads](https://img.shields.io/github/downloads/magisk317/XposedSmsCode/total?style=flat-square&color=blue)](https://github.com/magisk317/XposedSmsCode/releases) [![License](https://img.shields.io/github/license/magisk317/XposedSmsCode?style=flat-square)](LICENSE)
+[![Commits](https://img.shields.io/github/commit-activity/y/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk3171/XposedSmsCode/graphs/commit-activity) [![Last Commit](https://img.shields.io/github/last-commit/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk3171/XposedSmsCode/commits) [![Contributors](https://img.shields.io/github/contributors/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk3171/XposedSmsCode/graphs/contributors) [![CI](https://img.shields.io/github/actions/workflow/status/magisk3171/XposedSmsCode/ci.yml?style=flat-square&label=Build&logo=github-actions&logoColor=white)](https://github.com/magisk3171/XposedSmsCode/actions/workflows/ci.yml) [![Latest Release](https://img.shields.io/github/v/release/magisk3171/XposedSmsCode?include_prereleases&style=flat-square&logo=github)](https://github.com/magisk3171/XposedSmsCode/releases) [![Release Date](https://img.shields.io/github/release-date/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk3171/XposedSmsCode/releases) [![Downloads](https://img.shields.io/github/downloads/magisk3171/XposedSmsCode/total?style=flat-square&color=blue)](https://github.com/magisk3171/XposedSmsCode/releases) [![License](https://img.shields.io/github/license/magisk3171/XposedSmsCode?style=flat-square)](LICENSE)
 <!-- badges:platform:end -->
 
 <!-- badges:tech:start -->
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Java](https://img.shields.io/badge/Java-26%2B-E76F00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.07.01-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.7.0-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.3.1-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-26-brightgreen?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Xposed API](https://img.shields.io/badge/Xposed_API-102-orange?style=flat-square)](https://github.com/libxposed/api) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Java](https://img.shields.io/badge/Java-26%2B-E76F00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.08.01-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.7.1-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.3.2-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-26-brightgreen?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Xposed API](https://img.shields.io/badge/Xposed_API-102-orange?style=flat-square)](https://github.com/libxposed/api) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
 <!-- badges:tech:end -->
 
 </div>
 
 识别短信验证码的Xposed模块，并将验证码拷贝到剪切板，亦可以自动输入验证码。
 
-如果你还需要将验证码、短信内容或应用通知进一步转发到 Telegram、Webhook、邮箱等通道，可以了解一下新项目 [信驿 Relay](https://github.com/magisk317/xinyi-relay)。它更偏向消息转发与验证码联动场景；若主要需求是验证码识别与自动输入，继续使用本项目会更合适。
+如果你还需要将验证码、短信内容或应用通知进一步转发到 Telegram、Webhook、邮箱等通道，可以了解一下新项目 [信驿 Relay](https://github.com/magisk3171/xinyi-relay)。它更偏向消息转发与验证码联动场景；若主要需求是验证码识别与自动输入，继续使用本项目会更合适。
 
 [English Version](./README-EN.md)
 
@@ -45,8 +45,8 @@
 
 # 注意
 - **此模块适用于偏原生的系统，其他第三方定制Rom可能不适用。**
-- **兼容性：最低 Android 7.0（API 24），目标 Android 16（API 37）。**
-- **支持 LSPosed / Xposed API 82+（具体取决于系统与框架实现）。**
+- **兼容性：最低 Android 8.0（API 26），目标 Android 16（API 37）。**
+- **支持 LibXposed API 102。**
 - **代码库：100% Kotlin + Jetpack Compose + Room + Coroutines**
 - **遇到问题请先阅读模块中的"常见问题"**
 - Play、GitHub 与预留的 F-Droid 配置仅表示发行渠道差异；项目不再提供独立 Lite APK 或用构建变体划分功能层级。
@@ -68,7 +68,7 @@
 
 # 发布元数据维护
 - 发版前编辑 `docs/CHANGELOG.md` 当前版本块。
-- 发版前校验版本、发布说明与标签：`scripts/check_release_guard.sh`
+- 发版前校验版本、发布说明与标签：`scripts/release/check_release_guard.sh`
 - GitHub Release、Xposed-Modules-Repo 与 Telegram 通知共用当前版本 changelog 块。
 
 # 自动化维护边界

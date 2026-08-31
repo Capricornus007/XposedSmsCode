@@ -22,7 +22,7 @@ jobs:
       (
         github.event.pull_request.user.login == 'github-actions[bot]' ||
         (
-          github.event.pull_request.user.login == 'magisk317' &&
+          github.event.pull_request.user.login == 'magisk3171' &&
           (
             startsWith(github.head_ref, 'renovate/') ||
             (

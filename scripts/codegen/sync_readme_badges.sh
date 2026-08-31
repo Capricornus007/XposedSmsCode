@@ -14,7 +14,7 @@ source "$TOOLKIT_DIR/codegen/badges.sh"
 
 TOML="gradle/libs.versions.toml"
 WRAPPER_PROPS="gradle/wrapper/gradle-wrapper.properties"
-REPO="magisk317/XposedSmsCode"
+REPO="magisk3171/XposedSmsCode"
 
 kotlin="$(read_toml_value kotlin "$TOML")"
 java="$(read_toml_value java "$TOML")"

@@ -1,6 +1,6 @@
 module.exports = {
   platform: "github",
-  repositories: ["magisk317/XposedSmsCode"],
+  repositories: ["magisk3171/XposedSmsCode"],
   onboarding: false,
   requireConfig: "required",
   allowedUnsafeExecutions: ["gradleWrapper"],

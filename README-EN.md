@@ -1,12 +1,12 @@
 # XposedSmsCode
 
-![Star History Chart](https://api.star-history.com/svg?repos=magisk317/XposedSmsCode&type=Date)
+![Star History Chart](https://api.star-history.com/svg?repos=magisk3171/XposedSmsCode&type=Date)
 
 <div align="center">
     <a href="https://play.google.com/store/apps/details?id=com.github.tianma8023.xposed.smscode">
         <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="80"/>
     </a>
-    <a href="https://github.com/magisk317/XposedSmsCode/releases">
+    <a href="https://github.com/magisk3171/XposedSmsCode/releases">
         <img src="https://raw.githubusercontent.com/machiav3lli/oandbackupx/master/badge_github.png" alt="Get it on GitHub" height="80"/>
     </a>
 </div>
@@ -14,18 +14,18 @@
 <div align="center">
 
 <!-- badges:platform:start -->
-[![Commits](https://img.shields.io/github/commit-activity/y/magisk317/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/graphs/commit-activity) [![Last Commit](https://img.shields.io/github/last-commit/magisk317/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/commits) [![Contributors](https://img.shields.io/github/contributors/magisk317/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/graphs/contributors) [![CI](https://img.shields.io/github/actions/workflow/status/magisk317/XposedSmsCode/ci.yml?style=flat-square&label=Build&logo=github-actions&logoColor=white)](https://github.com/magisk317/XposedSmsCode/actions/workflows/ci.yml) [![Latest Release](https://img.shields.io/github/v/release/magisk317/XposedSmsCode?include_prereleases&style=flat-square&logo=github)](https://github.com/magisk317/XposedSmsCode/releases) [![Release Date](https://img.shields.io/github/release-date/magisk317/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/releases) [![Downloads](https://img.shields.io/github/downloads/magisk317/XposedSmsCode/total?style=flat-square&color=blue)](https://github.com/magisk317/XposedSmsCode/releases) [![License](https://img.shields.io/github/license/magisk317/XposedSmsCode?style=flat-square)](LICENSE)
+[![Commits](https://img.shields.io/github/commit-activity/y/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk3171/XposedSmsCode/graphs/commit-activity) [![Last Commit](https://img.shields.io/github/last-commit/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk3171/XposedSmsCode/commits) [![Contributors](https://img.shields.io/github/contributors/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk3171/XposedSmsCode/graphs/contributors) [![CI](https://img.shields.io/github/actions/workflow/status/magisk3171/XposedSmsCode/ci.yml?style=flat-square&label=Build&logo=github-actions&logoColor=white)](https://github.com/magisk3171/XposedSmsCode/actions/workflows/ci.yml) [![Latest Release](https://img.shields.io/github/v/release/magisk3171/XposedSmsCode?include_prereleases&style=flat-square&logo=github)](https://github.com/magisk3171/XposedSmsCode/releases) [![Release Date](https://img.shields.io/github/release-date/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk3171/XposedSmsCode/releases) [![Downloads](https://img.shields.io/github/downloads/magisk3171/XposedSmsCode/total?style=flat-square&color=blue)](https://github.com/magisk3171/XposedSmsCode/releases) [![License](https://img.shields.io/github/license/magisk3171/XposedSmsCode?style=flat-square)](LICENSE)
 <!-- badges:platform:end -->
 
 <!-- badges:tech:start -->
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Java](https://img.shields.io/badge/Java-26%2B-E76F00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.07.01-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.7.0-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.3.1-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-26-brightgreen?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Xposed API](https://img.shields.io/badge/Xposed_API-102-orange?style=flat-square)](https://github.com/libxposed/api) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Java](https://img.shields.io/badge/Java-26%2B-E76F00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.08.01-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.7.1-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.3.2-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-26-brightgreen?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Xposed API](https://img.shields.io/badge/Xposed_API-102-orange?style=flat-square)](https://github.com/libxposed/api) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
 <!-- badges:tech:end -->
 
 </div>
 
 An Xposed module which can recognize, parse SMS code and copy it to clipboard when a new message arrives. It can also input SMS code automatically.
 
-If you also need to forward verification codes, SMS content, or app notifications to Telegram, Webhook, email, or other channels, you may also want to check out the newer project [Xinyi Relay](https://github.com/magisk317/xinyi-relay). It is more focused on message relay and verification-code workflows; if your main need is SMS code recognition and auto-fill, this project is still the better fit.
+If you also need to forward verification codes, SMS content, or app notifications to Telegram, Webhook, email, or other channels, you may also want to check out the newer project [Xinyi Relay](https://github.com/magisk3171/xinyi-relay). It is more focused on message relay and verification-code workflows; if your main need is SMS code recognition and auto-fill, this project is still the better fit.
 
 [中文版说明](./README.md)
 
@@ -44,8 +44,8 @@ Welcome any feedbacks.
 
 # Attention
 - **This module is designed for AOSP-like systems; it may not function correctly on heavily customized ROMs.**
-- **Compatibility: Minimum Android 7.0 (API 24), target Android 16 (API 37).**
-- **Supports LSPosed / Xposed API 82+ (depends on ROM and framework implementation).**
+- **Compatibility: Minimum Android 8.0 (API 26), target Android 16 (API 37).**
+- **Supports LibXposed API 102.**
 - **Tech Stack: 100% Kotlin + Jetpack Compose + Room + Coroutines**
 - **Please read the FAQ in the app first if you encounter any problems.**
 - Play, GitHub, and the reserved F-Droid configuration identify distribution channels only; the
@@ -61,7 +61,7 @@ Welcome any feedbacks.
 - Custom keywords about verification code message (regular expressions allowed).
 - Support official read-only SMS code rules plus custom match rules with user-rule import/export.
 - Auto-input SMS code.
-- **Compatible with Android 7+ and continuously optimized for newer Android versions**
+- **Compatible with Android 8.0+ (API 26+) and continuously optimized for newer Android versions**
 - **Material Design 3 (MD3) + Material You Dynamic Color**
 - **100% Kotlin + Coroutines + Room Database**
 - **Modern UI built with Jetpack Compose**
@@ -69,7 +69,7 @@ Welcome any feedbacks.
 
 # Release Metadata
 - Edit the current version block in `docs/CHANGELOG.md` before release.
-- Validate version, release notes, and tag consistency: `scripts/check_release_guard.sh`.
+- Validate version, release notes, and tag consistency: `scripts/release/check_release_guard.sh`.
 - GitHub Release, Xposed-Modules-Repo, and Telegram notification share the current changelog block.
 
 # Automation Ownership

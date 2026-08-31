@@ -4,7 +4,7 @@ plugins {
     id(libs.plugins.kotlin.parcelize.get().pluginId)
     id("magisk.android.room")
 }
-val relayDownloadUrl = "https://github.com/magisk317/xinyi-relay"
+val relayDownloadUrl = "https://github.com/magisk3171/xinyi-relay"
 
 android {
     namespace = "com.github.magisk317.smscode.runtime"

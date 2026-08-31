@@ -12,6 +12,7 @@ Core capabilities:
 - Forward verification codes extracted from app notifications.
 
 Stability and compatibility:
-- Android 7.0+ (API 24+).
+- Android 8.0+ (API 26+).
 - Designed for AOSP-like ROMs; compatibility may vary on heavily customized systems.
 - Requires root with Xposed/LSPosed module activation and reboot.
+- Requires LibXposed API 102.

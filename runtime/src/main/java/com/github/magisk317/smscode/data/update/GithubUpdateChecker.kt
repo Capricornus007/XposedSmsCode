@@ -7,8 +7,8 @@ import io.github.magisk317.smscode.runtime.contract.update.GithubUpdateConfig
 object GithubUpdateChecker {
 
     private val config = GithubUpdateConfig(
-        latestReleaseApiUrl = "https://smscode.usdt.edu.kg/repos/magisk317/XposedSmsCode/releases/latest",
-        defaultReleaseHtmlUrl = "https://github.com/magisk317/XposedSmsCode/releases/latest",
+        latestReleaseApiUrl = "https://smscode.usdt.edu.kg/repos/magisk3171/XposedSmsCode/releases/latest",
+        defaultReleaseHtmlUrl = "https://github.com/magisk3171/XposedSmsCode/releases/latest",
         userAgent = "XposedSmsCode",
     )
 
