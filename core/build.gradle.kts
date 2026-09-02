@@ -82,7 +82,7 @@ val verifyNoRuntimeStorageImplLeak = tasks.register("verifyNoRuntimeStorageImplL
         Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.runtime\.Runtime\w*Facade\b"""),
         Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.data\.db\.(AppDatabase|DBManager|DBProvider)\b"""),
         Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.data\.update\."""),
-        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.common\.utils\.PrefsReader\b"""),
+        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.common\.utils\.(PrefsReader|HookPrefsReader)\b"""),
         Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.common\.utils\.NotificationUtils\b"""),
         Regex("""\bcom\.github\.magisk317\.smscode\.feature\.backup\."""),
         Regex("""\bcom\.github\.magisk317\.smscode\.feature\.store\."""),

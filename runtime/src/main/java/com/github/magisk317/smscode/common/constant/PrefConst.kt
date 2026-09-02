@@ -7,6 +7,9 @@ import io.github.magisk317.smscode.rule.constant.SmsCodeConst
  */
 object PrefConst {
 
+    /** Xposed RemotePreferences group shared by the app and hook processes. */
+    const val REMOTE_PREFS_GROUP = "smscode_runtime_preferences"
+
     // General
     const val KEY_ENABLE = "pref_enable"
     const val KEY_HIDE_LAUNCHER_ICON = "pref_hide_launcher_icon"

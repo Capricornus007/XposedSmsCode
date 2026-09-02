@@ -12,7 +12,6 @@ import com.github.magisk317.smscode.common.constant.PrefConst
 import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
-import com.github.magisk317.smscode.runtime.RuntimePrefsFacade as PrefsReader
 import io.github.magisk317.smscode.xposed.utils.ModuleActivationStore
 import io.github.magisk317.smscode.xposed.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.RuntimeDiagnosticsBridge
@@ -141,7 +140,7 @@ class SmsCodeApplication : Application() {
     }
 
     private companion object {
-        const val TELEMETRY_PREFS_NAME = "xposed_prefs"
+        const val TELEMETRY_PREFS_NAME = "smscode_telemetry_prefs"
     }
 
     private fun importPendingCodeRecords() {
@@ -228,7 +227,7 @@ class SmsCodeApplication : Application() {
             context = this,
             frameworkName = frameworkName ?: "unknown",
             frameworkVersion = frameworkVersion ?: "unknown",
-            verboseLogging = PrefsReader.isVerboseLogMode(this),
+            verboseLogging = readVerboseLogMode(),
         )
         XLog.i(
             "Xposed service connected: framework=%s version=%s",
@@ -254,7 +253,7 @@ class SmsCodeApplication : Application() {
         ModuleUtils.setRuntimeActivated(false)
         ActivationDiagnosticsStore.recordServiceDied(
             context = this,
-            verboseLogging = PrefsReader.isVerboseLogMode(this),
+            verboseLogging = readVerboseLogMode(),
         )
         XLog.w("Xposed service disconnected")
         MagiskOtel.event(
@@ -283,6 +282,10 @@ class SmsCodeApplication : Application() {
             ),
             statusOk = false,
         )
+    }
+
+    private fun readVerboseLogMode(): Boolean = runBlocking(Dispatchers.IO) {
+        AppPreferencesDataStore.getBoolean(this@SmsCodeApplication, PrefConst.KEY_VERBOSE_LOG_MODE, false)
     }
 
     private fun registerLicenseActivityKiller() {

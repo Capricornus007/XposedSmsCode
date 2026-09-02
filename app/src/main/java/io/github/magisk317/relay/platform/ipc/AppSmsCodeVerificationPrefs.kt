@@ -1,35 +1,41 @@
 package io.github.magisk317.relay.platform.ipc
 
 import android.content.Context
-import com.github.magisk317.smscode.runtime.RuntimePrefsFacade
+import com.github.magisk317.smscode.runtime.AppPrefsFacade
 import io.github.magisk317.smscode.verification.VerificationPrefs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 
 internal class AppSmsCodeVerificationPrefs(
     private val context: Context,
 ) : VerificationPrefs {
-    override fun showNotification(): Boolean = RuntimePrefsFacade.showCodeNotification(context)
+    override fun showNotification(): Boolean = read { AppPrefsFacade.showCodeNotification(context) }
 
-    override fun autoCancelNotification(): Boolean = RuntimePrefsFacade.autoCancelCodeNotification(context)
+    override fun autoCancelNotification(): Boolean = read { AppPrefsFacade.autoCancelCodeNotification(context) }
 
-    override fun notificationRetentionMs(): Long = RuntimePrefsFacade.getNotificationRetentionTime(context) * 1000L
+    override fun notificationRetentionMs(): Long = read { AppPrefsFacade.getNotificationRetentionTime(context) } * 1000L
 
-    override fun autoInputEnabled(): Boolean = RuntimePrefsFacade.autoInputCodeEnabled(context)
+    override fun autoInputEnabled(): Boolean = read { AppPrefsFacade.autoInputCodeEnabled(context) }
 
-    override fun autoInputDelayMs(): Long = RuntimePrefsFacade.getAutoInputCodeDelay(context)
+    override fun autoInputDelayMs(): Long = read { AppPrefsFacade.getAutoInputCodeDelay(context) }
 
-    override fun inputIntervalMs(): Long = RuntimePrefsFacade.getAutoInputCodeIntervalMs(context)
+    override fun inputIntervalMs(): Long = read { AppPrefsFacade.getAutoInputCodeIntervalMs(context) }
 
-    override fun copyToClipboardEnabled(): Boolean = RuntimePrefsFacade.copyToClipboardEnabled(context)
+    override fun copyToClipboardEnabled(): Boolean = read { AppPrefsFacade.copyToClipboardEnabled(context) }
 
-    override fun showToast(): Boolean = RuntimePrefsFacade.shouldShowToast(context)
+    override fun showToast(): Boolean = read { AppPrefsFacade.shouldShowToast(context) }
 
-    override fun recordSmsEnabled(): Boolean = RuntimePrefsFacade.recordCodeSmsEnabled(context)
+    override fun recordSmsEnabled(): Boolean = read { AppPrefsFacade.recordCodeSmsEnabled(context) }
 
-    override fun blockSmsEnabled(): Boolean = RuntimePrefsFacade.blockSmsEnabled(context)
+    override fun blockSmsEnabled(): Boolean = read { AppPrefsFacade.blockSmsEnabled(context) }
 
-    override fun markAsReadEnabled(): Boolean = RuntimePrefsFacade.markAsReadEnabled(context)
+    override fun markAsReadEnabled(): Boolean = read { AppPrefsFacade.markAsReadEnabled(context) }
 
-    override fun deleteSmsEnabled(): Boolean = RuntimePrefsFacade.deleteSmsEnabled(context)
+    override fun deleteSmsEnabled(): Boolean = read { AppPrefsFacade.deleteSmsEnabled(context) }
 
-    override fun deduplicateSmsEnabled(): Boolean = RuntimePrefsFacade.deduplicateSms(context)
+    override fun deduplicateSmsEnabled(): Boolean = read { AppPrefsFacade.deduplicateSms(context) }
+
+    private fun <T> read(block: suspend () -> T): T = runBlocking(Dispatchers.IO) {
+        block()
+    }
 }

@@ -235,7 +235,16 @@ class SettingsViewModel(
                     if (TextUtils.isEmpty(msgBody)) {
                         null
                     } else {
-                        SmsCodeUtils.parseSmsCodeResultIfExists(getApplication(), msgBody)
+                        val keywords = AppPreferencesDataStore.getString(
+                            getApplication(),
+                            PrefConst.KEY_SMSCODE_KEYWORDS,
+                            PrefConst.SMSCODE_KEYWORDS_DEFAULT,
+                        )
+                        SmsCodeUtils.parseSmsCodeResultIfExists(
+                            context = getApplication(),
+                            content = msgBody,
+                            keywordsRegex = keywords,
+                        )
                     }
                 }
             } catch (e: Exception) {
@@ -245,7 +254,12 @@ class SettingsViewModel(
             }
             val code = result?.code.orEmpty()
             val matchedRuleLabel = result?.matchedRule?.let(::formatMatchedRuleLabel)
-            val safeCode = if (PrefsReader.isSensitiveDebugLogMode(getApplication())) {
+            val safeCode = if (AppPreferencesDataStore.getBoolean(
+                    getApplication(),
+                    PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE,
+                    false,
+                )
+            ) {
                 StringUtils.escape(code)
             } else {
                 StringUtils.summarizeCode(code)
@@ -356,18 +370,7 @@ class SettingsViewModel(
 
                 val prefs = if (includeConfig) {
                     withContext(Dispatchers.IO) {
-                        ensureDataStoreLoaded(context)
-                        val sharedPrefs = context.getSharedPreferences(
-                            "xposed_prefs",
-                            android.content.Context.MODE_PRIVATE,
-                        )
-                        val allPrefs = sharedPrefs.all
-                        val map = HashMap<String, String?>()
-                        for ((k, v) in allPrefs) {
-                            if (k.startsWith("internal_")) continue
-                            map[k] = v?.toString()
-                        }
-                        map
+                        AppPreferencesDataStore.snapshotForBackup(context)
                     }
                 } else {
                     null
@@ -581,10 +584,6 @@ class SettingsViewModel(
             PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL -> HookPreferenceSpecs.autoInputInterval
             else -> PreferenceSpec.string(key, restoredValue)
         }
-
-    private suspend fun ensureDataStoreLoaded(_context: android.content.Context) {
-        // Trigger read to ensure in-memory cache if needed; keep no-op for now.
-    }
 
     companion object {
         @JvmStatic

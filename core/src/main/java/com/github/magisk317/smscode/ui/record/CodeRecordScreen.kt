@@ -215,7 +215,7 @@ internal fun CodeRecordScreenShared(
     val prefs = koinInject<UiPrefsAccess>()
     val simSlot1Remark by produceState(initialValue = "", context, keepDataActive) {
         if (!keepDataActive) return@produceState
-        val fallback = withContext(Dispatchers.IO) { prefs.getSimSlotRemark(context, 0) }
+        val fallback = prefs.getSimSlotRemark(context, 0)
         value = fallback
         AppPreferencesDataStore.getStringFlow(
             context,
@@ -225,7 +225,7 @@ internal fun CodeRecordScreenShared(
     }
     val simSlot2Remark by produceState(initialValue = "", context, keepDataActive) {
         if (!keepDataActive) return@produceState
-        val fallback = withContext(Dispatchers.IO) { prefs.getSimSlotRemark(context, 1) }
+        val fallback = prefs.getSimSlotRemark(context, 1)
         value = fallback
         AppPreferencesDataStore.getStringFlow(
             context,
