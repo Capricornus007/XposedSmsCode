@@ -42,6 +42,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.magisk317.mobile.entitlement.MobileEntitlementCoordinator
+import com.magisk317.mobile.entitlement.MobileEntitlementStatus
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.ui.theme.AppTheme

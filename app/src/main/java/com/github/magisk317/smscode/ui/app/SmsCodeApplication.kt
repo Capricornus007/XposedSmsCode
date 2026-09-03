@@ -27,10 +27,11 @@ import io.github.magisk317.smscode.xposed.runtime.CoreRuntimeAccess
 import io.github.magisk317.smscode.xposed.utils.XLog
 import io.github.magisk317.xposed.logging.DefaultLogSanitizer
 import com.github.magisk317.smscode.di.appModule
-import com.github.magisk317.smscode.entitlement.MobileEntitlementCoordinator
 import com.github.magisk317.smscode.entitlement.mobileEntitlementGoogleSignInModule
 import com.magisk317.mobile.entitlement.MobileEntitlementBridge
 import com.magisk317.mobile.entitlement.MobileEntitlementConfig
+import com.magisk317.mobile.entitlement.MobileEntitlementCoordinator
+import com.magisk317.mobile.entitlement.MobileEntitlementPublishedState
 import com.magisk317.mobile.entitlement.MobileEntitlementRuntime
 import com.github.magisk317.smscode.runtime.RuntimeCodeRecordRestoreFacade
 import java.util.UUID
@@ -55,6 +56,7 @@ class SmsCodeApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        configureMobileEntitlement()
         android.util.Log.w("XSmsCode", "SmsCodeApplication.onCreate() START")
         val installationId = AnonymousInstallationId.getOrCreate(this, TELEMETRY_PREFS_NAME)
         runBlocking {
@@ -111,6 +113,10 @@ class SmsCodeApplication : Application() {
         importPendingCodeRecords()
         syncPreferences()
         registerLicenseActivityKiller()
+        MobileEntitlementCoordinator.initialize(this, applicationScope)
+    }
+
+    private fun configureMobileEntitlement() {
         MobileEntitlementRuntime.configure(
             MobileEntitlementConfig(
                 apiOrigin = BuildConfig.MOBILE_ENTITLEMENT_API_ORIGIN,
@@ -120,15 +126,18 @@ class SmsCodeApplication : Application() {
                 enforced = BuildConfig.MOBILE_ENTITLEMENT_ENFORCED,
             ),
             bridge = object : MobileEntitlementBridge {
-                override fun publish(context: Context, allowed: Boolean) {
-                    runBlocking {
-                        AppPreferencesDataStore.setBoolean(
-                            context,
+                override fun publish(context: Context, state: MobileEntitlementPublishedState): Boolean = runBlocking {
+                    AppPreferencesDataStore.batchEdit(context) {
+                        setBoolean(
                             PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
-                            allowed,
+                            state.automationAllowed,
                         )
-                        HookPreferenceMirror.publish(context)
+                        setString(
+                            PrefConst.KEY_MOBILE_ENTITLEMENT_TOKEN,
+                            state.entitlementToken.orEmpty(),
+                        )
                     }
+                    HookPreferenceMirror.publish(context)
                 }
 
                 override fun log(message: String, vararg args: Any?) {
@@ -136,7 +145,7 @@ class SmsCodeApplication : Application() {
                 }
             },
         )
-        MobileEntitlementCoordinator.initialize(this, applicationScope)
+        MobileEntitlementCoordinator.publishFailClosed(this)
     }
 
     private companion object {
