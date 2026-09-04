@@ -29,7 +29,7 @@ android {
     }
 
     defaultConfig {
-        buildConfigField("String", "LOG_TAG", "\"XSmsCode\"")
+        buildConfigField("String", "LOG_TAG", "\"smscode\"")
         buildConfigField("String", "APPLICATION_ID", "\"com.github.tianma8023.xposed.smscode\"")
         buildConfigField("String", "B_DOWNLOAD_URL", "\"$relayDownloadUrl\"")
         buildConfigField("String", "MOBILE_ENTITLEMENT_API_ORIGIN", buildConfigString(mobileEntitlementApiOrigin))

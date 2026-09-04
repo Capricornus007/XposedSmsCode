@@ -81,7 +81,7 @@ class LibXposedEntry : BaseLibXposedEntry {
     }
 
     private companion object {
-        private const val TAG = "XSmsCode"
+        private const val TAG = "smscode"
         private const val REMOTE_PREFS_GROUP = PrefConst.REMOTE_PREFS_GROUP
     }
 }

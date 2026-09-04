@@ -58,7 +58,7 @@ object XposedRuntimeInstaller {
         })
         XposedLogClient.configure(
             authority = RuntimeLogProvider.authority(BuildConfig.APPLICATION_ID),
-            source = "SmsCode",
+            source = "smscode",
         )
         val hookApp = runCatching {
             Class.forName("android.app.ActivityThread")
@@ -162,7 +162,7 @@ object XposedRuntimeInstaller {
         synchronized(this) {
             if (logSinkInstalled) return
             XposedLogClient.attachContext(moduleContext ?: return@synchronized)
-            android.util.Log.w("XSmsCode", "installLogSink: installing CoreLogSink, moduleContext=${moduleContext != null}")
+            android.util.Log.w("smscode", "installLogSink: installing CoreLogSink, moduleContext=${moduleContext != null}")
             syncLogSanitizerConfig()
             CoreLogSinkHolder.install(object : CoreLogSink {
                 override fun append(
@@ -172,6 +172,7 @@ object XposedRuntimeInstaller {
                     force: Boolean,
                     route: String?,
                     sensitive: Boolean,
+                    throwableText: String?,
                 ) {
                     // Cheap TTL re-sync so a settings-page toggle reaches this hook
                     // process within SANITIZER_SYNC_TTL_MS without reading prefs on
@@ -182,7 +183,7 @@ object XposedRuntimeInstaller {
                     } else {
                         message
                     }
-                    XposedLogClient.append(priority, tag, safeMessage, force, route, sensitive)
+                    XposedLogClient.append(priority, tag, safeMessage, force, route, sensitive, throwableText)
                 }
             })
             logSinkInstalled = true

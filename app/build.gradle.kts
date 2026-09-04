@@ -61,7 +61,7 @@ android {
         versionCode = versionCodeInt
         versionName = versionNameStr
 
-        buildConfigField("String", "LOG_TAG", "\"XSmsCode\"")
+        buildConfigField("String", "LOG_TAG", "\"smscode\"")
         buildConfigField("String", "COMMIT_HASH", "\"$gitCommitHash\"")
         buildConfigField("int", "MODULE_VERSION", "$versionCodeInt")
         buildConfigField("boolean", "ALLOW_CONFLICT_BYPASS", allowConflictBypass.toString())

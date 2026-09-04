@@ -57,7 +57,7 @@ class SmsCodeApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         configureMobileEntitlement()
-        android.util.Log.w("XSmsCode", "SmsCodeApplication.onCreate() START")
+        android.util.Log.w("smscode", "SmsCodeApplication.onCreate() START")
         val installationId = AnonymousInstallationId.getOrCreate(this, TELEMETRY_PREFS_NAME)
         runBlocking {
             AppPreferencesDataStore.setString(
@@ -200,6 +200,7 @@ class SmsCodeApplication : Application() {
                 force: Boolean,
                 route: String?,
                 sensitive: Boolean,
+                throwableText: String?,
             ) {
                 // sensitive=true means payload may contain secrets; honor shared switch
                 // Opening pref_sensitive_debug_log_mode disables sanitization and lets
@@ -210,7 +211,7 @@ class SmsCodeApplication : Application() {
                     message
                 }
                 RuntimeDiagnosticsBridge.ensureInstalled()
-                RuntimeLogStore.append(priority, tag, safeMessage, force, route)
+                RuntimeLogStore.append(priority, tag, safeMessage, force, route, throwableText)
             }
         })
         CoreHookPolicyHolder.install(object : CoreHookPolicy {
