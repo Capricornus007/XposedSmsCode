@@ -89,6 +89,8 @@ android:check:
   extends:
     - .magisk_android_build
     - .xposed_android_rules
+  tags:
+    - magisk-amd64-linux
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - when: never
@@ -103,6 +105,37 @@ android:check:
       bash "$MAGISK_CI_TOOLKIT_DIR/gradle/run_gradle_with_retry.sh" \
         ${MAGISK_GRADLE_ARGS:---warning-mode all} "${selected_tasks[@]}" -PenableKover=true
 
+android:test:
+  extends:
+    - .magisk_android_base
+    - .xposed_android_rules
+  stage: quality
+  tags:
+    - magisk-amd64-linux
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
+    - when: never
+  needs: []
+  script:
+    - |
+      set -euo pipefail
+      mapfile -t selected_tasks < <(bash scripts/ci/select_android_test_tasks.sh "$MAGISK_CI_TOOLKIT_DIR")
+      if ((${#selected_tasks[@]} == 0)); then
+        echo "No Android test tasks selected for this change."
+        exit 0
+      fi
+      bash "$MAGISK_CI_TOOLKIT_DIR/gradle/run_gradle_with_retry.sh" \
+        ${MAGISK_GRADLE_ARGS:---warning-mode all} "${selected_tasks[@]}" -PenableKover=true
+  artifacts:
+    name: "XposedSmsCode-test-$CI_COMMIT_REF_SLUG"
+    when: always
+    expire_in: 14 days
+    reports:
+      junit:
+        - "**/build/test-results/test*/TEST-*.xml"
+    paths:
+      - "**/build/reports/kover/**"
+
 cancel:older:mr:pipelines:
   extends: .magisk_cancel_older_mr_pipelines
 
@@ -110,6 +143,8 @@ android:build:
   extends:
     - .magisk_android_build
     - .xposed_signed_android_rules
+  tags:
+    - magisk-arm64-linux
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: never
@@ -132,7 +167,7 @@ android:detekt:
     - .xposed_android_rules
   stage: quality
   tags:
-    - magisk-arm64-linux
+    - magisk-amd64-linux
   allow_failure: true
   needs: []
   artifacts:
@@ -240,7 +275,7 @@ android:ci:play-beta-bundle:
           -PversionName="$MAGISK_PLAY_VERSION_NAME" -PversionCode="$MAGISK_PLAY_VERSION_CODE"
   artifacts:
     when: always
-    expire_in: 1 day
+    expire_in: 7 days
     paths:
       - app/build/outputs/bundle/**/*.aab
       - app/build/outputs/mapping/**/mapping.txt
@@ -255,6 +290,8 @@ android:ci:play-beta:
     - magisk-arm64-linux
   rules:
     - if: '$CI_COMMIT_BRANCH == "beta" && $CI_PIPELINE_SOURCE == "push" && $MAGISK_ANDROID_RELEASE_PUBLISH_PLAY == "true" && $ANDROID_PUBLISHER_CREDENTIALS != ""'
+      when: manual
+      allow_failure: true
     - when: never
   needs:
     - job: android:ci:play-beta-bundle
@@ -311,6 +348,8 @@ telegram:ci:
   allow_failure: true
   rules:
     - if: '$CI_COMMIT_BRANCH == "beta" && $CI_PIPELINE_SOURCE == "push" && $RELEASE_KEYSTORE != "" && $STORE_PASSWORD != "" && $KEY_ALIAS != "" && $KEY_PASSWORD != ""'
+      when: manual
+      allow_failure: true
     - when: never
   tags:
     - magisk-arm64-linux
@@ -324,9 +363,6 @@ telegram:ci:
       optional: true
     - job: android:build
       artifacts: true
-      optional: true
-    - job: android:ci:play-beta
-      artifacts: false
       optional: true
 
 renovate:gitlab:
