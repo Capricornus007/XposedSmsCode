@@ -63,6 +63,7 @@ dependencies {
     implementation(libs.koin.compose.viewmodel)
     implementation(libs.timber)
     implementation(libs.kotlinx.collections.immutable)
+    implementation(libs.mobile.entitlement.android)
     add("playImplementation", libs.play.app.update)
     add("playImplementation", project(":magisk-ui-kit:billing"))
 

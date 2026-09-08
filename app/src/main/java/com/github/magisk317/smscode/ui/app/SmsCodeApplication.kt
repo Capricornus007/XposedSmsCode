@@ -145,7 +145,6 @@ class SmsCodeApplication : Application() {
                 }
             },
         )
-        MobileEntitlementCoordinator.publishFailClosed(this)
     }
 
     private companion object {
