@@ -63,6 +63,7 @@ import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import com.github.magisk317.smscode.common.utils.RuntimeDiagnosticsBridge
 import io.github.magisk317.smscode.runtime.common.diagnostics.LogBundleExporter
+import io.github.magisk317.smscode.runtime.common.diagnostics.VerboseLogEnableTracker
 import com.github.magisk317.smscode.runtime.RuntimeBackupImportStatus
 import com.github.magisk317.smscode.runtime.bridge.UiBackupAccess
 import com.github.magisk317.smscode.runtime.bridge.UiNotificationAccess
@@ -428,6 +429,13 @@ internal fun ComposeSettingsScreenShared(
     }
 
     fun saveRuntimeLogBundle() {
+        val blockReason = LogBundleExporter.checkPreExport(verboseLogEnabled.value)
+        if (blockReason != null) {
+            val resId = context.resources.getIdentifier(blockReason, "string", context.packageName)
+            val message = if (resId != 0) context.getString(resId) else blockReason
+            scope.launch { snackbarHostState.showSnackbar(message) }
+            return
+        }
         val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", java.util.Locale.US)
             .format(java.util.Date())
         saveRuntimeLogLauncher.launch("smscode_logs_$timestamp.zip")
@@ -1031,6 +1039,8 @@ internal fun ComposeSettingsScreenShared(
                         }
                         RuntimeLogDiagnosticsItems(
                             labels = RuntimeLogDiagnosticsLabels(
+                                shareLogTitle = stringResource(id = R.string.pref_share_log_title),
+                                shareLogSummary = stringResource(id = R.string.pref_share_log_summary),
                                 verboseLogTitle = stringResource(id = R.string.pref_verbose_log_mode_title),
                                 verboseLogSummary = stringResource(id = R.string.pref_verbose_log_mode_summary),
                                 retentionTitle = stringResource(id = R.string.pref_runtime_log_retention_days_title),
@@ -1041,8 +1051,8 @@ internal fun ComposeSettingsScreenShared(
                                 ),
                                 clearLogTitle = stringResource(id = R.string.runtime_log_clear_confirm_title),
                                 clearLogSummary = stringResource(id = R.string.runtime_log_clear_summary),
-                                sensitiveLogTitle = stringResource(id = R.string.pref_sensitive_debug_log_mode_title),
-                                sensitiveLogSummary = stringResource(id = R.string.pref_sensitive_debug_log_mode_summary),
+                                sensitiveLogTitle = stringResource(id = R.string.pref_log_sanitization_title),
+                                sensitiveLogSummary = stringResource(id = R.string.pref_log_sanitization_summary),
                             ),
                             state = RuntimeLogDiagnosticsState(
                                 verboseLogEnabled = verboseLogEnabled.value,
@@ -1052,6 +1062,7 @@ internal fun ComposeSettingsScreenShared(
                                 onShareLog = ::saveRuntimeLogBundle,
                                 onVerboseLogEnabledChange = { enabled ->
                                     verboseLogEnabled.value = enabled
+                                    VerboseLogEnableTracker.onVerboseLogToggled(enabled)
                                     scope.launch {
                                         AppPreferencesDataStore.setBoolean(
                                             context,
@@ -1085,12 +1096,13 @@ internal fun ComposeSettingsScreenShared(
                                 },
                             ),
                             layout = RuntimeLogDiagnosticsLayout(
-                                shareEntryMode = RuntimeLogShareEntryMode.VERBOSE_ROW,
+                                shareEntryMode = RuntimeLogShareEntryMode.SEPARATE_ITEM,
                                 itemOrder = listOf(
+                                    RuntimeLogDiagnosticsItem.SHARE_LOG,
                                     RuntimeLogDiagnosticsItem.VERBOSE_LOG,
+                                    RuntimeLogDiagnosticsItem.SENSITIVE_LOG,
                                     RuntimeLogDiagnosticsItem.RETENTION,
                                     RuntimeLogDiagnosticsItem.CLEAR_LOG,
-                                    RuntimeLogDiagnosticsItem.SENSITIVE_LOG,
                                 ),
                             ),
                         )

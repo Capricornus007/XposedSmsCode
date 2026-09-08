@@ -199,8 +199,10 @@
 
 
     <!-- preference others -->
+    <string name="pref_share_log_title">Save logs</string>
+    <string name="pref_share_log_summary">Save log bundle for debugging</string>
     <string name="pref_verbose_log_mode_title">Detailed log</string>
-    <string name="pref_verbose_log_mode_summary">Tap to view, share, or clear logs</string>
+    <string name="pref_verbose_log_mode_summary">Print verbose runtime logs</string>
     <string name="pref_enable_analytics_title">Analytics</string>
     <string name="pref_enable_analytics_summary">Allow anonymous analytics for channel usage, success rates, crashes and technical diagnostics.</string>
     <string name="pref_runtime_log_retention_days_title">Runtime log retention</string>
@@ -219,6 +221,8 @@
     <string name="runtime_log_clear_summary">Clear all runtime logs and crash files</string>
     <string name="pref_sensitive_debug_log_mode_title">Sensitive debug log</string>
     <string name="pref_sensitive_debug_log_mode_summary">Debug builds only. Allows plaintext sender, body, and code in logs.</string>
+    <string name="pref_log_sanitization_title">Sanitize logs</string>
+    <string name="pref_log_sanitization_summary">Hide sensitive information in logs</string>
     <string name="pref_auto_update_on_start_title">Auto update on launch</string>
     <string name="pref_auto_update_on_start_summary">Run update strategy once when app starts</string>
     <string name="pref_auto_update_wifi_only_title">Wi-Fi only for auto update</string>
