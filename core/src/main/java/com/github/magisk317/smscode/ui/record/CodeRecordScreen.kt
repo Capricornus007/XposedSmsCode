@@ -611,6 +611,7 @@ internal fun CodeRecordScreenShared(
                             simSlotRemarkResolver = simSlotRemarkResolver,
                             scrollChromeState = scrollChromeState,
                             isActive = isActive,
+                            scrollToTopSignal = refreshTrigger,
                             onRowSwipeGestureActiveChanged = swipeGestureCoordinator::update,
                         )
                     }
@@ -959,10 +960,12 @@ private fun RecordSplitColumn(
     simSlotRemarkResolver: (Int) -> String,
     scrollChromeState: io.github.magisk317.uikit.scroll.ScrollChromeState? = null,
     isActive: Boolean = true,
+    scrollToTopSignal: Int = 0,
     onRowSwipeGestureActiveChanged: (rowKey: Any, active: Boolean) -> Unit = { _, _ -> },
 ) {
     val listState = rememberLazyListState()
     io.github.magisk317.uikit.scroll.ReportLazyListScrollToChrome(listState, scrollChromeState)
+    io.github.magisk317.uikit.surface.ScrollToTopEffect(listState, scrollToTopSignal)
     val isMiuix = currentUiKitStyle() == UiKitStyle.Miuix
     Surface(
         modifier = modifier,

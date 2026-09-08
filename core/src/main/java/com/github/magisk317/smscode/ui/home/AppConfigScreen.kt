@@ -256,6 +256,7 @@ internal fun AppConfigScreenShared(
 
     val listState = rememberLazyListState()
     io.github.magisk317.uikit.scroll.ReportLazyListScrollToChrome(listState, scrollChromeState)
+    io.github.magisk317.uikit.surface.ScrollToTopEffect(listState, refreshTrigger)
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val pullToRefreshState = rememberPullToRefreshState()
     val isMiuix = io.github.magisk317.uikit.theme.currentUiKitStyle() ==
