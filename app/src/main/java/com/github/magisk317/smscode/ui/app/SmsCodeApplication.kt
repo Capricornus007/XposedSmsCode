@@ -173,7 +173,7 @@ class SmsCodeApplication : Application() {
                 false,
             )
             io.github.magisk317.xposed.logging.LogSanitizerConfig
-                .syncSanitizationEnabled(!sensitiveDebugMode)
+                .syncFromVerboseMode(sensitiveDebugMode)
             StorageUtils.ensureExternalAppDataPermissions(this@SmsCodeApplication)
         }
     }

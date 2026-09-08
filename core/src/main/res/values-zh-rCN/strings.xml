@@ -212,6 +212,7 @@
     <string name="pref_runtime_log_retention_days_hint">单位：天，最小值 1，默认 2。</string>
     <string name="pref_runtime_log_retention_days_error">请输入大于等于 1 的整数。</string>
     <string name="runtime_log_export_failed">导出失败：%1$s</string>
+    <string name="runtime_log_saved">日志已保存</string>
     <string name="runtime_log_share_failed">分享失败：%1$s</string>
     <string name="runtime_log_cleared">日志与崩溃文件已清空</string>
     <string name="runtime_log_clear_partial_failed">部分清空失败：%1$s</string>

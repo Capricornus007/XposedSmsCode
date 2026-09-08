@@ -212,7 +212,6 @@ internal fun ComposeSettingsScreenShared(
     var runtimeLogRetentionDays by remember { mutableIntStateOf(PrefConst.RUNTIME_LOG_RETENTION_DAYS_DEFAULT) }
     val verboseLogEnabled = rememberPrefBoolean(PrefConst.KEY_VERBOSE_LOG_MODE, false)
     val analyticsEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE_ANALYTICS, true)
-    val sensitiveDebugLogEnabled = rememberPrefBoolean(PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE, false)
     var showRuntimeLogRetentionDialog by remember { mutableStateOf(false) }
     var showClearLogConfirmDialog by remember { mutableStateOf(false) }
 
@@ -424,6 +423,8 @@ internal fun ComposeSettingsScreenShared(
             }
             if (result.isNotBlank()) {
                 snackbarHostState.showSnackbar(context.getString(R.string.runtime_log_export_failed, result))
+            } else {
+                snackbarHostState.showSnackbar(context.getString(R.string.runtime_log_saved))
             }
         }
     }
@@ -1051,18 +1052,17 @@ internal fun ComposeSettingsScreenShared(
                                 ),
                                 clearLogTitle = stringResource(id = R.string.runtime_log_clear_confirm_title),
                                 clearLogSummary = stringResource(id = R.string.runtime_log_clear_summary),
-                                sensitiveLogTitle = stringResource(id = R.string.pref_log_sanitization_title),
-                                sensitiveLogSummary = stringResource(id = R.string.pref_log_sanitization_summary),
                             ),
                             state = RuntimeLogDiagnosticsState(
                                 verboseLogEnabled = verboseLogEnabled.value,
-                                sensitiveLogEnabled = sensitiveDebugLogEnabled.value,
                             ),
                             callbacks = RuntimeLogDiagnosticsCallbacks(
                                 onShareLog = ::saveRuntimeLogBundle,
                                 onVerboseLogEnabledChange = { enabled ->
                                     verboseLogEnabled.value = enabled
                                     VerboseLogEnableTracker.onVerboseLogToggled(enabled)
+                                    io.github.magisk317.xposed.logging.LogSanitizerConfig
+                                        .syncFromVerboseMode(enabled)
                                     scope.launch {
                                         AppPreferencesDataStore.setBoolean(
                                             context,
@@ -1080,20 +1080,7 @@ internal fun ComposeSettingsScreenShared(
                                 },
                                 onRetentionClick = { showRuntimeLogRetentionDialog = true },
                                 onClearLogClick = { showClearLogConfirmDialog = true },
-                                onSensitiveLogEnabledChange = { enabled ->
-                                    sensitiveDebugLogEnabled.value = enabled
-                                    scope.launch {
-                                        AppPreferencesDataStore.setBoolean(
-                                            context,
-                                            PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE,
-                                            enabled,
-                                        )
-                                        HookPreferenceMirror.publish(context)
-                                        markPrefsSaved()
-                                    }
-                                    io.github.magisk317.xposed.logging.LogSanitizerConfig
-                                        .syncSanitizationEnabled(!enabled)
-                                },
+
                             ),
                             layout = RuntimeLogDiagnosticsLayout(
                                 shareEntryMode = RuntimeLogShareEntryMode.SEPARATE_ITEM,

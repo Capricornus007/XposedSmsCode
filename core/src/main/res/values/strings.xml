@@ -213,6 +213,7 @@
     <string name="pref_runtime_log_retention_days_hint">Retention in days, minimum 1. Default is 2.</string>
     <string name="pref_runtime_log_retention_days_error">Please enter an integer greater than or equal to 1.</string>
     <string name="runtime_log_export_failed">Export failed: %1$s</string>
+    <string name="runtime_log_saved">Logs saved</string>
     <string name="runtime_log_share_failed">Share failed: %1$s</string>
     <string name="runtime_log_cleared">Logs and crash files cleared</string>
     <string name="runtime_log_clear_partial_failed">Partially cleared: %1$s</string>
