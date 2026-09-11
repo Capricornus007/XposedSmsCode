@@ -27,12 +27,6 @@ import io.github.magisk317.smscode.xposed.runtime.CoreRuntimeAccess
 import io.github.magisk317.smscode.xposed.utils.XLog
 import io.github.magisk317.xposed.logging.DefaultLogSanitizer
 import com.github.magisk317.smscode.di.appModule
-import com.github.magisk317.smscode.entitlement.mobileEntitlementGoogleSignInModule
-import com.magisk317.mobile.entitlement.MobileEntitlementBridge
-import com.magisk317.mobile.entitlement.MobileEntitlementConfig
-import com.magisk317.mobile.entitlement.MobileEntitlementCoordinator
-import com.magisk317.mobile.entitlement.MobileEntitlementPublishedState
-import com.magisk317.mobile.entitlement.MobileEntitlementRuntime
 import com.github.magisk317.smscode.runtime.RuntimeCodeRecordRestoreFacade
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
@@ -52,11 +46,9 @@ class SmsCodeApplication : Application() {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var startedActivityCount: Int = 0
-    private var entitlementForegroundPrimed = false
 
     override fun onCreate() {
         super.onCreate()
-        configureMobileEntitlement()
         android.util.Log.w("smscode", "SmsCodeApplication.onCreate() START")
         val installationId = AnonymousInstallationId.getOrCreate(this, TELEMETRY_PREFS_NAME)
         runBlocking {
@@ -102,7 +94,7 @@ class SmsCodeApplication : Application() {
         startKoin {
             androidLogger()
             androidContext(this@SmsCodeApplication)
-            modules(appModule, com.github.magisk317.smscode.di.billingModule, mobileEntitlementGoogleSignInModule)
+            modules(appModule, com.github.magisk317.smscode.di.billingModule)
         }
         
         org.koin.core.context.GlobalContext.get().getAll<io.github.magisk317.uikit.shell.AppInitializer>().forEach {
@@ -113,38 +105,11 @@ class SmsCodeApplication : Application() {
         importPendingCodeRecords()
         syncPreferences()
         registerLicenseActivityKiller()
-        MobileEntitlementCoordinator.initialize(this, applicationScope)
     }
 
+    @SuppressLint("UnusedVariables")
     private fun configureMobileEntitlement() {
-        MobileEntitlementRuntime.configure(
-            MobileEntitlementConfig(
-                apiOrigin = BuildConfig.MOBILE_ENTITLEMENT_API_ORIGIN,
-                signingPublicJwk = BuildConfig.MOBILE_ENTITLEMENT_SIGNING_PUBLIC_JWK,
-                appId = "xposed-sms-code",
-                channel = BuildConfig.MOBILE_ENTITLEMENT_CHANNEL,
-                enforced = BuildConfig.MOBILE_ENTITLEMENT_ENFORCED,
-            ),
-            bridge = object : MobileEntitlementBridge {
-                override fun publish(context: Context, state: MobileEntitlementPublishedState): Boolean = runBlocking {
-                    AppPreferencesDataStore.batchEdit(context) {
-                        setBoolean(
-                            PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
-                            state.automationAllowed,
-                        )
-                        setString(
-                            PrefConst.KEY_MOBILE_ENTITLEMENT_TOKEN,
-                            state.entitlementToken.orEmpty(),
-                        )
-                    }
-                    HookPreferenceMirror.publish(context)
-                }
-
-                override fun log(message: String, vararg args: Any?) {
-                    XLog.i(message, *args)
-                }
-            },
-        )
+        // Entitlement disabled - kept for future use if needed
     }
 
     private companion object {
@@ -299,18 +264,8 @@ class SmsCodeApplication : Application() {
 
     private fun registerLicenseActivityKiller() {
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
-            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle) {}
             override fun onActivityStarted(activity: Activity) {
-                if (startedActivityCount == 0) {
-                    if (entitlementForegroundPrimed) {
-                        applicationScope.launch {
-                            runCatching { MobileEntitlementCoordinator.refresh(this@SmsCodeApplication) }
-                        }
-                    } else {
-                        // initialize() covers the first process start.
-                        entitlementForegroundPrimed = true
-                    }
-                }
                 startedActivityCount += 1
             }
             override fun onActivityResumed(activity: Activity) {

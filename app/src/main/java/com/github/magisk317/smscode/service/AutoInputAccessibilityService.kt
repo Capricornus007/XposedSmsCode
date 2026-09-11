@@ -11,13 +11,10 @@ import androidx.core.content.ContextCompat
 import io.github.magisk317.smscode.runtime.verification.AutoInputAccessibilityNodeHelper
 import io.github.magisk317.smscode.runtime.verification.AutoInputAccessibilityNodeHelper.Result as AutoInputResult
 import io.github.magisk317.smscode.runtime.verification.AutoInputAccessibilityRequestHandler
-import com.github.magisk317.smscode.common.constant.PrefConst
-import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import io.github.magisk317.smscode.xposed.hook.system.SystemInputInjectorHook
 import io.github.magisk317.smscode.xposed.utils.XLog
 import io.github.magisk317.xposed.logging.MagiskOtel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.launch
 
 class AutoInputAccessibilityService : AccessibilityService() {
 
@@ -185,20 +182,17 @@ class AutoInputAccessibilityService : AccessibilityService() {
         code: String,
         autoEnter: Boolean,
     ): AutoInputResult {
-        if (!isMobileAutomationAllowed()) {
-            XLog.i("Mobile entitlement gate skipped accessibility execution")
-            return AutoInputResult(false, "none", "mobile_entitlement", packageName)
-        }
         return AutoInputAccessibilityNodeHelper.performAutoInput(rootInActiveWindow, code, autoEnter)
     }
 
-    private fun isMobileAutomationAllowed(): Boolean = runBlocking(Dispatchers.IO) {
-        AppPreferencesDataStore.getBoolean(
-            applicationContext,
-            PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
-            PrefConst.DEFAULT_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
-        )
-    }
+    // Mobile entitlement disabled - always allow automation
+    // private fun isMobileAutomationAllowed(): Boolean = runBlocking(Dispatchers.IO) {
+    //     AppPreferencesDataStore.getBoolean(
+    //         applicationContext,
+    //         PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
+    //         PrefConst.DEFAULT_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
+    //     )
+    // }
 
 
     private fun emitA11y(stage: String, result: String = "ok", statusOk: Boolean = true) {

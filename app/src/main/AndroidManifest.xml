@@ -86,10 +86,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name="com.github.magisk317.smscode.entitlement.MobileEntitlementActivity"
-            android:exported="false" />
-
         <provider
             android:name="com.github.magisk317.smscode.data.db.DBProvider"
             android:authorities="${applicationId}.db.provider"

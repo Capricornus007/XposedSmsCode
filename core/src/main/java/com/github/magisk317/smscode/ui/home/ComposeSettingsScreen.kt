@@ -731,18 +731,7 @@ internal fun ComposeSettingsScreenShared(
                         modifier = Modifier.padding(horizontal = Const.PADDING_SMALL.dp),
                         onSaved = markPrefsSaved,
                     )
-                    Item(
-                        title = stringResource(id = R.string.mobile_entitlement_settings_title),
-                        summary = stringResource(id = R.string.mobile_entitlement_settings_summary),
-                        modifier = Modifier.padding(horizontal = Const.PADDING_SMALL.dp),
-                    ) {
-                        context.startActivity(
-                            Intent().setClassName(
-                                context,
-                                "com.github.magisk317.smscode.entitlement.MobileEntitlementActivity",
-                            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                        )
-                    }
+                    // MobileEntitlementActivity removed - entitlement system disabled
 
                     ExpandableSettingsSection(
                         title = stringResource(id = R.string.settings_group_general),

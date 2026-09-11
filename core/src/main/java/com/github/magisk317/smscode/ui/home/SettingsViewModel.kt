@@ -518,12 +518,6 @@ class SettingsViewModel(
         var launcherVisible: Boolean? = null
         val result = AppPreferenceTransactions.commit(context) {
             for ((key, rawValue) in prefsMap) {
-                if (key == PrefConst.KEY_MOBILE_ENTITLEMENT_TOKEN ||
-                    key == PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED
-                ) {
-                    XLog.w("Restore preference skipped: entitlement state is runtime-derived")
-                    continue
-                }
                 if (rawValue == null) continue
                 val coerced = coerceRestoreValue(key, rawValue)
                 if (!coerced.shouldWrite) {

@@ -92,9 +92,6 @@ object PrefConst {
     const val KEY_BACKUP_COMPAT_TIP_SHOWN = "pref_backup_compat_tip_shown"
     const val KEY_ABOUT_COMPOSE = "pref_about_compose"
     const val KEY_IPC_TOKEN = "ipc_token"
-    const val KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED = "mobile_entitlement_automation_allowed"
-    const val KEY_MOBILE_ENTITLEMENT_TOKEN = "entitlement_token"
-    const val DEFAULT_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED = false
     const val KEY_SIM_SLOT1_REMARK = "pref_sim_slot1_remark"
     const val KEY_SIM_SLOT2_REMARK = "pref_sim_slot2_remark"
 }
