@@ -4,8 +4,10 @@
 
 ---
 ## [v3.3.3] - WIP
-- 版本：`versionCode 127` / `versionName 3.3.3`。
-- `[TODO]` 准备下一阶段开发。
+- 版本：`versionCode 128` / `versionName 3.3.3`。
+- `[donation]` 移除捐赠系统，删除 Alipay/WeChat/Google Play 捐赠入口与相关字符串资源。
+- `[entitlement]` 移除服務鑑權（Mobile Entitlement）系統，設置 `mobileEntitlementEnforced = false`。
+- `[ui]` 優化概覽頁面，移除捐赠對話框與 QR 碼對話框。
 
 > Full Changelog: https://gitlab.com/magisk3171/XposedSmsCode/-/compare/v3.3.2...v3.3.3
 

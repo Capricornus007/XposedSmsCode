@@ -99,11 +99,4 @@ Welcome any feedbacks.
 - [Jetpack Compose](https://developer.android.com/jetpack/compose)
 
 # License
-All code is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt) 
-
-# Donation
-If you find this project helpful, please consider rewarding the developer with a cup of coffee. Your support is the greatest motivation for my persistent maintenance!
-
-| Alipay Receipt | WeChat Appreciation | WeChat Collect |
-| :---: | :---: | :---: |
-| ![Alipay](./art/sponsorship/alipay.png) | ![WeChat Appreciation](./art/sponsorship/wx.png) | ![WeChat Collect](./art/sponsorship/wx_collect.png) |
+All code is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt)
