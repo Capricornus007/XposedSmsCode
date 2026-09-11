@@ -1,7 +1,7 @@
 [versions]
-compileSdk = "37"
+compileSdk = "37.2-beta3"
 minSdk = "28"
-targetSdk = "37"
+targetSdk = "37.2-beta3"
 java = "26"
 javaBytecode = "26"
 kotlin = "2.4.20"
