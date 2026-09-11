@@ -40,11 +40,6 @@ import com.github.magisk317.smscode.core.BuildConfig
 import io.github.magisk317.uikit.R as UiKitR
 import io.github.magisk317.smscode.runtime.contract.diagnostics.ActivationStatusState
 import com.github.magisk317.smscode.common.constant.Const
-import com.github.magisk317.smscode.common.constant.PrefConst
-import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
-import io.github.magisk317.smscode.runtime.contract.diagnostics.ActivationDiagnosticsSnapshot
-import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsStore
-import io.github.magisk317.uikit.entitlement.rememberEntitlementState
 import com.github.magisk317.smscode.common.utils.PackageUtils
 import io.github.magisk317.smscode.runtime.common.utils.BrowserUtils
 import io.github.magisk317.uikit.common.showLatestSnackbar
@@ -63,18 +58,6 @@ import org.koin.compose.viewmodel.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import android.widget.Toast
-import io.github.magisk317.uikit.surface.DonateDialog
-import io.github.magisk317.uikit.surface.QRCodeDialog
-import io.github.magisk317.uikit.surface.startAlipayPlatformDonate
-import io.github.magisk317.uikit.surface.saveImageToGalleryAsync
-
-private suspend fun readEntitlementAutomationAllowed(context: Context): Boolean =
-    AppPreferencesDataStore.getBoolean(
-        context,
-        PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
-        false,
-    )
 
 private data class OverviewPageRuntime(
     val isActive: Boolean = true,
@@ -130,16 +113,9 @@ internal fun OverviewScreenShared() {
     } else {
         null
     }
-    var showDonateDialog by remember { mutableStateOf(false) }
-    val billingProvider: com.github.magisk317.smscode.billing.BillingProvider = org.koin.compose.koinInject()
-    var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var statusTapCount by remember { mutableStateOf(0) }
     var statusTapStartedAtMs by remember { mutableStateOf(0L) }
     var showStatusDiagnostics by remember { mutableStateOf(false) }
-    val mobileAutomationAllowed = rememberEntitlementState(
-        isActive = isActive,
-        dataStoreReader = ::readEntitlementAutomationAllowed,
-    )
     val snackbarHostState = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
 
@@ -252,7 +228,6 @@ internal fun OverviewScreenShared() {
             item {
                 StatusCard(
                     isEnabled = activationStatus.isEnabled,
-                    isEntitled = mobileAutomationAllowed,
                     showDiagnostics = showStatusDiagnostics,
                     diagnostics = buildStatusDiagnostics(
                         context = context,
@@ -312,7 +287,6 @@ internal fun OverviewScreenShared() {
                             R.string.browser_install_or_enable_prompt,
                         )?.let(::showMessage)
                     },
-                    onDonate = { showDonateDialog = true },
                 )
             }
         }
@@ -325,56 +299,11 @@ internal fun OverviewScreenShared() {
                 .align(Alignment.TopCenter),
         )
     }
-
-    if (showDonateDialog) {
-        DonateDialog(
-            onDismiss = { showDonateDialog = false },
-            onAlipay = {
-                showDonateDialog = false
-                Toast.makeText(
-                    context,
-                    UiKitR.string.alipay_platform_opening,
-                    Toast.LENGTH_SHORT,
-                ).show()
-                scope.launch {
-                    val error = startAlipayPlatformDonate(context)
-                    if (error != null) {
-                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
-                        showQRCodeDialog = Pair(UiKitR.drawable.alipay, "alipay")
-                    }
-                }
-            },
-            onWechat = {
-                showDonateDialog = false
-                showQRCodeDialog = Pair(UiKitR.drawable.wx, "wechat")
-            },
-            showPlayDonations = com.github.magisk317.smscode.core.BuildConfig.HAS_BILLING,
-            onDonate099 = { activityOwner?.let { billingProvider.launchDonation(it, "donate_099") } },
-            onDonate200 = { activityOwner?.let { billingProvider.launchDonation(it, "donate_200") } },
-            onDonate999 = { activityOwner?.let { billingProvider.launchDonation(it, "donate_999") } },
-            onDonate1999 = { activityOwner?.let { billingProvider.launchDonation(it, "donate_1999") } },
-        )
-    }
-
-    showQRCodeDialog?.let { pair ->
-        QRCodeDialog(
-            resId = pair.first,
-            type = pair.second,
-            onDismiss = { showQRCodeDialog = null },
-            onSave = {
-                scope.launch {
-                    saveImageToGalleryAsync(context, pair.first, "${pair.second}_qrcode")
-                        .forEach(::showMessage)
-                }
-            },
-        )
-    }
 }
 
 @Composable
 fun StatusCard(
     isEnabled: Boolean,
-    isEntitled: Boolean,
     showDiagnostics: Boolean,
     diagnostics: List<Pair<String, String>>,
     onClick: (() -> Unit)? = null,
@@ -384,14 +313,9 @@ fun StatusCard(
     } else {
         stringResource(id = R.string.status_module_not_activated)
     }
-    val entitlementStatusText = if (isEntitled) {
-        stringResource(id = R.string.status_entitlement_verified)
-    } else {
-        stringResource(id = R.string.status_entitlement_unverified)
-    }
-    val title = "$moduleStatusText\n$entitlementStatusText"
+    val title = moduleStatusText
 
-    val isAllOk = isEnabled && isEntitled
+    val isAllOk = isEnabled
     val summary = if (!isEnabled) {
         stringResource(id = R.string.status_activate_hint)
     } else {

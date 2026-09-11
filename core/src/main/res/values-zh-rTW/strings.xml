@@ -251,11 +251,6 @@
     <string name="pref_source_code_title">專案源碼</string>
     <string name="browser_install_or_enable_prompt">請先安裝或啟用瀏覽器</string>
     <string name="pref_source_code_summary">歡迎 Star</string>
-    <string name="pref_donate_by_alipay_title">打賞感謝</string>
-    <string name="alipay_install_prompt">請先安裝支付寶</string>
-    <string name="alipay_enable_prompt">請先啟用支付寶</string>
-    <string name="wechat_install_prompt">請先安裝 WeChat</string>
-    <string name="wechat_enable_prompt">請先啟用 WeChat</string>
     <string name="pref_privacy_policy_title">隱私政策</string>
     <!-- preference about end -->
 
@@ -400,28 +395,6 @@
     <!-- faq end -->
 
     <!-- alipay packet start -->
-
-
-
-    <string name="dialog_donate_title">買杯咖啡吧 T_T</string>
-    <string name="dialog_donate_summary">感謝開發者</string>
-    <string name="dialog_donate_content">開發者已經餓得快寫不動代碼了，求各位大發慈悲賞口飯吃吧！不管是微信還是支付寶，哪怕是一分錢也是對我的巨大救贖 ✿✿ヽ(°▽°)ノ✿</string>
-    <string name="dialog_donate_wechat">咖啡 (微信)</string>
-    <string name="dialog_donate_alipay">咖啡 (支付寶)</string>
-
-    <string name="dialog_donate_alipay_qrcode">查看收款碼</string>
-
-    <!-- donate via Google Play -->
-    <string name="donate_one_time_title">透過 Google Play 贊助</string>
-    <string name="donate_one_time_099">\$0.99</string>
-    <string name="donate_one_time_200">\$2.00</string>
-    <string name="donate_one_time_999">\$9.99</string>
-    <string name="donate_one_time_1999">\$19.99</string>
-
-    <string name="save_to_gallery_success">圖片已保存到相簿，正在打開 %s…</string>
-    <string name="save_to_gallery_failed">保存失敗，請檢查文件權限</string>
-    <string name="save_to_gallery">保存到相簿</string>
-    <!-- alipay packet end -->
 
 
     <!-- check update -->
