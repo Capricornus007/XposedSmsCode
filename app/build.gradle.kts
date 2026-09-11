@@ -17,7 +17,7 @@ val versionCodeInt = providers.gradleProperty("versionCode")
     .orElse(libs.versions.versionCode.map { it.toInt() })
     .get()
 val ndkVersionStr = libs.versions.ndk.get()
-val relayDownloadUrl = "https://github.com/magisk3171/xinyi-relay"
+val relayDownloadUrl = "https://github.com/Capricornus007/xinyi-relay"
 val allowConflictBypass = findProperty("allowConflictBypass")
     ?.toString()
     ?.toBooleanStrictOrNull()

@@ -4,7 +4,7 @@ plugins {
     id(libs.plugins.kotlin.parcelize.get().pluginId)
     id("magisk.android.room")
 }
-val relayDownloadUrl = "https://github.com/magisk3171/xinyi-relay"
+val relayDownloadUrl = "https://github.com/Capricornus007/xinyi-relay"
 fun buildConfigString(value: String): String =
     "\"${value.replace("\\", "\\\\").replace("\"", "\\\"")}\""
 

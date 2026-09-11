@@ -1,8 +1,8 @@
 module.exports = {
   platform: "github",
-  repositories: ["magisk3171/XposedSmsCode"],
+  repositories: ["Capricornus007/XposedSmsCode"],
   onboarding: false,
   requireConfig: "required",
   allowedUnsafeExecutions: ["gradleWrapper"],
-  gitAuthor: "magisk317 <93979778+magisk317@users.noreply.github.com>",
+  gitAuthor: "Capricornus007 <contact@capricornus007.com>",
 };

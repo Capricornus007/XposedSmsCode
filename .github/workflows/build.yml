@@ -8,7 +8,7 @@ on:
     branches:
       - master
   schedule:
-    - cron: '0 22 * * 1'  # Weekly on Monday 22:00 UTC
+    - cron: '0 10 * * *'  # Daily at 10:00 UTC
   workflow_dispatch:
 
 jobs:

@@ -16,12 +16,12 @@ object Const {
     const val ACTION_OPEN_RULES = "smscode_rules"
     const val ACTION_OPEN_SETTINGS = "smscode_settings"
 
-    const val PROJECT_SOURCE_CODE_URL = "https://gitlab.com/magisk3171/XposedSmsCode"
+    const val PROJECT_SOURCE_CODE_URL = "https://github.com/Capricornus007/XposedSmsCode"
     const val PROJECT_GITHUB_LATEST_RELEASE_URL =
-        "https://github.com/magisk3171/XposedSmsCode/releases/latest"
-    const val PROJECT_DOC_BASE_URL = "https://magisk3171.github.io/SmsCode"
+        "https://github.com/Capricornus007/XposedSmsCode/releases/latest"
+    const val PROJECT_DOC_BASE_URL = "https://Capricornus007.github.io/XposedSmsCode"
     const val PRIVACY_POLICY_URL =
-        "https://gitlab.com/magisk3171/XposedSmsCode/-/blob/beta/docs/PRIVACY.md"
+        "https://github.com/Capricornus007/XposedSmsCode/blob/master/docs/PRIVACY.md"
     const val DOC_SMS_CODE_RULE_HELP = "sms_code_rule_help"
     /* Xposed SmsCode end */
 

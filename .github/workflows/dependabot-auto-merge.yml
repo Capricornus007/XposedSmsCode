@@ -17,12 +17,12 @@ jobs:
   auto-merge:
     runs-on: ubuntu-latest
     if: |
-      github.event.pull_request.base.ref == 'beta' &&
+      github.event.pull_request.base.ref == 'master' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       (
         github.event.pull_request.user.login == 'github-actions[bot]' ||
         (
-          github.event.pull_request.user.login == 'magisk3171' &&
+          github.event.pull_request.user.login == 'Capricornus007' &&
           (
             startsWith(github.head_ref, 'renovate/') ||
             (
