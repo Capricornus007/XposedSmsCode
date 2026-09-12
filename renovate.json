@@ -1,0 +1,34 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+        "config:recommended"
+    ],
+    "forkProcessing": "enabled",
+    "autoclose": true,
+    "pruneStaleBranches": true,
+    "pruneBranchAfterAutomerge": true,
+    "baseBranchPatterns": [
+        "beta"
+    ],
+    "packageRules": [
+        {
+            "matchUpdateTypes": [
+                "minor",
+                "patch"
+            ],
+            "automerge": true,
+            "automergeType": "pr",
+            "groupName": "all non-major dependencies",
+            "groupSlug": "all-minor-patch",
+            "matchPackageNames": [
+                "*"
+            ]
+        },
+        {
+            "matchPackageNames": [
+                "int:LOG_LEVEL"
+            ],
+            "enabled": false
+        }
+    ]
+}

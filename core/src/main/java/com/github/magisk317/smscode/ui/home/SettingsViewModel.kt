@@ -19,22 +19,12 @@ import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import android.content.Intent
 import com.github.magisk317.smscode.core.R
-import com.github.magisk317.smscode.runtime.RuntimeBackupExportResult
-import com.github.magisk317.smscode.runtime.RuntimeBackupImportResult
-import com.github.magisk317.smscode.runtime.RuntimeBackupImportStatus
-import com.github.magisk317.smscode.runtime.RuntimeBackupRule
-import com.github.magisk317.smscode.runtime.RuntimeBackupSmsRecord
-import com.github.magisk317.smscode.runtime.bridge.UiBackupAccess
-import com.github.magisk317.smscode.runtime.bridge.UiStorageAccess
-import com.github.magisk317.smscode.common.utils.XLog
-import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
-import io.github.magisk317.smscode.runtime.common.utils.StringUtils
-import io.github.magisk317.smscode.runtime.common.utils.BrowserUtils
-import io.github.magisk317.smscode.rule.model.SmsCodeMatchedRule
-import io.github.magisk317.smscode.rule.model.SmsCodeMatchedRuleSource
-import io.github.magisk317.smscode.runtime.contract.prefs.PreferenceCommitResult
-import io.github.magisk317.smscode.runtime.contract.prefs.PreferenceSpec
-import io.github.magisk317.uikit.theme.UiKitStyle
+import com.github.magisk317.smscode.data.db.DBManager
+import com.github.magisk317.smscode.feature.backup.BackupImportResult
+import com.github.magisk317.smscode.feature.backup.BackupManager
+import com.github.magisk317.smscode.feature.backup.BackupRule
+import com.github.magisk317.smscode.feature.backup.BackupSmsRecord
+import com.github.magisk317.smscode.feature.backup.ExportResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -52,28 +42,21 @@ import java.util.Locale
 
 sealed class SettingsEvent {
     data object ShowPrivacyPolicy : SettingsEvent()
-    data class SmsCodeTestResult(
-        val code: String,
-        val matchedRuleLabel: String? = null,
-    ) : SettingsEvent()
+    data object ShowAlipayPacket : SettingsEvent()
+    data class SmsCodeTestResult(val code: String) : SettingsEvent()
     data object NavigateToRules : SettingsEvent()
     data object NavigateToRecords : SettingsEvent()
-    data object NavigateToSettings : SettingsEvent()
     data object StartPlayUpdate : SettingsEvent()
-    data class ShowSnackbar(val message: String) : SettingsEvent()
+    data object StartGithubUpdateCheck : SettingsEvent()
     data class BackupResultEvent(val success: Boolean) : SettingsEvent()
-    data class RestoreResultEvent(val result: RuntimeBackupImportResult) : SettingsEvent()
+    data class RestoreResultEvent(val result: BackupImportResult) : SettingsEvent()
     data class ImportDialogConfirm(val uri: android.net.Uri) : SettingsEvent()
 }
 
-fun resolvePreferredUpdateEvent(isPlayFlavor: Boolean): SettingsEvent? =
-    SettingsEvent.StartPlayUpdate.takeIf { isPlayFlavor }
+fun resolvePreferredUpdateEvent(installedFromPlay: Boolean): SettingsEvent =
+    if (installedFromPlay) SettingsEvent.StartPlayUpdate else SettingsEvent.StartGithubUpdateCheck
 
-class SettingsViewModel(
-    application: Application,
-    private val storage: UiStorageAccess,
-    private val backup: UiBackupAccess,
-) : AndroidViewModel(application) {
+class SettingsViewModel(application: Application) : AndroidViewModel(application) {
     data class CoercedRestoreValue(
         val type: PrefValueType,
         val booleanValue: Boolean? = null,
@@ -96,17 +79,12 @@ class SettingsViewModel(
     )
     val eventsFlow = _eventsFlow.asSharedFlow()
 
-    data class ThemeState(
-        val mode: Int,
-        val uiKitStyle: Int = UiKitStyle.Expressive.value,
-        val centerX: Float = -1f,
-        val centerY: Float = -1f,
-    )
+    data class ThemeState(val mode: Int, val centerX: Float = -1f, val centerY: Float = -1f)
 
-    private val _themeState = MutableStateFlow(ThemeState(0, UiKitStyle.Expressive.value))
+    private val _themeState = MutableStateFlow(ThemeState(0))
     val themeState: StateFlow<ThemeState> = _themeState.asStateFlow()
 
-    val smsRecordCount: StateFlow<Long> = storage.dbManager(application)
+    val smsRecordCount: StateFlow<Long> = DBManager.get(application)
         .queryAllSmsMsgCountFlow()
         .stateIn(
             scope = viewModelScope,
@@ -117,26 +95,22 @@ class SettingsViewModel(
     init {
         viewModelScope.launch {
             val mode = SPUtils.getThemeMode(getApplication())
-            val uiKitStyle = SPUtils.getUiKitStyle(getApplication())
-            _themeState.value = ThemeState(mode = mode, uiKitStyle = uiKitStyle)
+            _themeState.value = ThemeState(mode)
         }
         viewModelScope.launch {
-            HookPreferenceMirror.publish(getApplication())
+            AppPreferencesDataStore.syncToSharedPrefs(getApplication())
         }
     }
 
     fun setThemeMode(mode: Int, x: Float = -1f, y: Float = -1f) {
         viewModelScope.launch {
             SPUtils.setThemeMode(getApplication(), mode)
-            _themeState.value = _themeState.value.copy(mode = mode, centerX = x, centerY = y)
+            _themeState.value = ThemeState(mode, x, y)
         }
     }
 
-    fun setUiKitStyle(style: Int) {
-        viewModelScope.launch {
-            SPUtils.setUiKitStyle(getApplication(), style)
-            _themeState.value = _themeState.value.copy(uiKitStyle = style)
-        }
+    override fun onCleared() {
+        super.onCleared()
     }
 
     fun handleArguments(args: Bundle?) {
@@ -147,13 +121,13 @@ class SettingsViewModel(
                 _eventsFlow.tryEmit(SettingsEvent.ShowPrivacyPolicy)
             } else {
                 val extraAction = args.getString(Const.EXTRA_ACTION)
-                if (Const.ACTION_OPEN_RECORDS == extraAction) {
+                if (Const.ACTION_DONATE_BY_ALIPAY == extraAction) {
+                    args.remove(Const.EXTRA_ACTION)
+                    _eventsFlow.tryEmit(SettingsEvent.ShowAlipayPacket)
+                } else if ("smscode_records" == extraAction) {
                     args.remove(Const.EXTRA_ACTION)
                     _eventsFlow.tryEmit(SettingsEvent.NavigateToRecords)
-                } else if (Const.ACTION_OPEN_SETTINGS == extraAction) {
-                    args.remove(Const.EXTRA_ACTION)
-                    _eventsFlow.tryEmit(SettingsEvent.NavigateToSettings)
-                } else if (Const.ACTION_OPEN_RULES == extraAction) {
+                } else if ("smscode_rules" == extraAction) {
                     args.remove(Const.EXTRA_ACTION)
                     _eventsFlow.tryEmit(SettingsEvent.NavigateToRules)
                 }
@@ -177,13 +151,7 @@ class SettingsViewModel(
                 .build()
             ShortcutManagerCompat.requestPinShortcut(context, shortcut, null)
         } else {
-            _eventsFlow.tryEmit(SettingsEvent.ShowSnackbar("当前系统不支持创建快捷方式"))
-        }
-    }
-
-    fun openSmsCodeRules() {
-        viewModelScope.launch {
-            _eventsFlow.tryEmit(SettingsEvent.NavigateToRules)
+            android.widget.Toast.makeText(context, "当前系统不支持创建快捷方式", android.widget.Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -229,81 +197,39 @@ class SettingsViewModel(
 
     fun performSmsCodeTest(msgBody: String) {
         viewModelScope.launch {
-            val result = try {
-                XLog.i("Sms code test start: length=%d", msgBody.length)
+            val code = try {
                 withContext(Dispatchers.IO) {
                     if (TextUtils.isEmpty(msgBody)) {
-                        null
+                        ""
                     } else {
-                        val keywords = AppPreferencesDataStore.getString(
-                            getApplication(),
-                            PrefConst.KEY_SMSCODE_KEYWORDS,
-                            PrefConst.SMSCODE_KEYWORDS_DEFAULT,
-                        )
-                        SmsCodeUtils.parseSmsCodeResultIfExists(
-                            context = getApplication(),
-                            content = msgBody,
-                            keywordsRegex = keywords,
-                        )
+                        SmsCodeUtils.parseSmsCodeIfExists(getApplication(), msgBody)
                     }
                 }
             } catch (e: Exception) {
-                XLog.e("Sms code test failed", e)
                 e.printStackTrace()
-                null
+                ""
             }
-            val code = result?.code.orEmpty()
-            val matchedRuleLabel = result?.matchedRule?.let(::formatMatchedRuleLabel)
-            val safeCode = if (AppPreferencesDataStore.getBoolean(
-                    getApplication(),
-                    PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE,
-                    false,
-                )
-            ) {
-                StringUtils.escape(code)
-            } else {
-                StringUtils.summarizeCode(code)
-            }
-            XLog.i("Sms code test finished: code=%s", safeCode)
-            _eventsFlow.tryEmit(SettingsEvent.SmsCodeTestResult(code, matchedRuleLabel))
+            _eventsFlow.tryEmit(SettingsEvent.SmsCodeTestResult(code))
         }
     }
 
-    private fun formatMatchedRuleLabel(matchedRule: SmsCodeMatchedRule): String {
-        val app = getApplication<Application>()
-        return when (matchedRule.source) {
-            SmsCodeMatchedRuleSource.BUILTIN ->
-                app.getString(R.string.builtin_rule_badge_format, matchedRule.ordinal)
-
-            SmsCodeMatchedRuleSource.OFFICIAL ->
-                app.getString(R.string.official_rule_badge_format, matchedRule.ordinal)
-
-            SmsCodeMatchedRuleSource.CUSTOM ->
-                app.getString(R.string.user_rule_badge_format, matchedRule.ordinal)
-        }
+    fun joinQQGroup() {
+        PackageUtils.joinQQGroup(getApplication())
     }
 
     fun showSourceProject() {
-        BrowserUtils.openWebPage(
-            getApplication(),
-            Const.PROJECT_SOURCE_CODE_URL,
-            R.string.browser_install_or_enable_prompt,
-        )
+        Utils.showWebPage(getApplication(), Const.PROJECT_SOURCE_CODE_URL)
     }
 
     fun setInternalFilesWritable() {
-        // Repair releases that widened Android/data/<package> and files/ to
-        // 0777. Hook IPC now goes through the app-owned provider.
-        StorageUtils.repairExternalAppDataPermissions(getApplication())
-        viewModelScope.launch {
-            HookPreferenceMirror.publish(getApplication())
-        }
+        StorageUtils.setFileWorldWritable(StorageUtils.getFilesDir(getApplication()), 1)
+        AppPreferencesDataStore.ensureReadable(getApplication())
     }
 
     fun requestPreferredUpdate() {
         viewModelScope.launch {
-            val event = resolvePreferredUpdateEvent(BuildConfig.HAS_BILLING)
-            event?.let(_eventsFlow::tryEmit)
+            val event = resolvePreferredUpdateEvent(PackageUtils.isInstalledFromPlay(getApplication()))
+            _eventsFlow.tryEmit(event)
         }
     }
 
@@ -334,8 +260,8 @@ class SettingsViewModel(
                 )
                 val rules = if (includeRules) {
                     withContext(Dispatchers.IO) {
-                        storage.dbManager(context).queryAllSmsCodeRules()
-                            .map { RuntimeBackupRule(it.company, it.codeKeyword, it.codeRegex) }
+                        DBManager.get(context).queryAllSmsCodeRules()
+                            .map { BackupRule(it.company, it.codeKeyword, it.codeRegex) }
                     }
                 } else {
                     emptyList()
@@ -343,18 +269,15 @@ class SettingsViewModel(
 
                 val records = if (includeRecords) {
                     withContext(Dispatchers.IO) {
-                        storage.dbManager(context).queryAllSmsMsg()
+                        DBManager.get(context).queryAllSmsMsg()
                             .map {
-                                RuntimeBackupSmsRecord(
+                                BackupSmsRecord(
                                     sender = it.sender,
                                     body = it.body,
                                     date = it.date,
-                                    processedTime = it.processedTime,
                                     company = it.company,
                                     smsCode = it.smsCode,
                                     packageName = it.packageName,
-                                    simSlot = it.simSlot,
-                                    subId = it.subId,
                                     msgType = it.msgType,
                                     callType = it.callType,
                                     forwardStatus = it.forwardStatus,
@@ -370,7 +293,18 @@ class SettingsViewModel(
 
                 val prefs = if (includeConfig) {
                     withContext(Dispatchers.IO) {
-                        AppPreferencesDataStore.snapshotForBackup(context)
+                        ensureDataStoreLoaded(context)
+                        val sharedPrefs = context.getSharedPreferences(
+                            "xposed_prefs",
+                            android.content.Context.MODE_PRIVATE,
+                        )
+                        val allPrefs = sharedPrefs.all
+                        val map = HashMap<String, String?>()
+                        for ((k, v) in allPrefs) {
+                            if (k.startsWith("internal_")) continue
+                            map[k] = v?.toString()
+                        }
+                        map
                     }
                 } else {
                     null
@@ -383,7 +317,7 @@ class SettingsViewModel(
                     prefs?.size ?: 0,
                 )
                 val result = withContext(Dispatchers.IO) {
-                    backup.exportBackup(
+                    BackupManager.exportBackup(
                         context = context,
                         uri = uri,
                         ruleList = rules,
@@ -394,7 +328,7 @@ class SettingsViewModel(
                     )
                 }
                 XLog.i("Backup finished: result=%s", result.name)
-                _eventsFlow.tryEmit(SettingsEvent.BackupResultEvent(result == RuntimeBackupExportResult.SUCCESS))
+                _eventsFlow.tryEmit(SettingsEvent.BackupResultEvent(result == ExportResult.SUCCESS))
             } catch (e: Exception) {
                 XLog.e("Backup failed", e)
                 _eventsFlow.tryEmit(SettingsEvent.BackupResultEvent(false))
@@ -421,7 +355,7 @@ class SettingsViewModel(
                     restoreDatabase,
                 )
                 val importResult = withContext(Dispatchers.IO) {
-                    backup.importRuleList(context, uri, BuildConfig.VERSION_NAME)
+                    BackupManager.importRuleList(context, uri, BuildConfig.VERSION_NAME)
                 }
                 XLog.i(
                     "Restore import result=%s rules=%d records=%d prefs=%d warning=%s",
@@ -432,10 +366,10 @@ class SettingsViewModel(
                     importResult.warning?.name ?: "none",
                 )
 
-                if (importResult.result == RuntimeBackupImportStatus.SUCCESS) {
+                if (importResult.result == com.github.magisk317.smscode.feature.backup.ImportResult.SUCCESS) {
                     withContext(Dispatchers.IO) {
                         if (restoreDatabase) {
-                            val restored = backup.restoreDatabaseFromBackup(context, uri)
+                            val restored = BackupManager.restoreDatabaseFromBackup(context, uri)
                             if (!restored) {
                                 throw IllegalStateException("Restore database failed: backup zip has no database files")
                             }
@@ -456,28 +390,28 @@ class SettingsViewModel(
                 }
                 _eventsFlow.tryEmit(SettingsEvent.RestoreResultEvent(importResult))
             } catch (e: Exception) {
-                    XLog.e("Restore failed", e)
-                    // Return failed event
-                    _eventsFlow.tryEmit(
-                        SettingsEvent.RestoreResultEvent(
-                            RuntimeBackupImportResult(RuntimeBackupImportStatus.READ_FAILED),
-                        ),
-                    )
+                XLog.e("Restore failed", e)
+                // Return failed event
+                _eventsFlow.tryEmit(
+                    SettingsEvent.RestoreResultEvent(
+                        BackupImportResult(com.github.magisk317.smscode.feature.backup.ImportResult.READ_FAILED),
+                    ),
+                )
             }
         }
     }
 
-    private suspend fun restoreRules(context: Context, rules: List<RuntimeBackupRule>) {
+    private suspend fun restoreRules(context: Context, rules: List<BackupRule>) {
         if (rules.isEmpty()) return
-        val dbManager = storage.dbManager(context)
+        val dbManager = DBManager.get(context)
         val entities = rules.map {
             com.github.magisk317.smscode.data.db.entity.SmsCodeRule(it.company, it.codeKeyword, it.codeRegex)
         }
         dbManager.addSmsCodeRules(entities)
     }
 
-    private suspend fun restoreRecords(context: Context, records: List<RuntimeBackupSmsRecord>) {
-        val dbManager = storage.dbManager(context)
+    private suspend fun restoreRecords(context: Context, records: List<BackupSmsRecord>) {
+        val dbManager = DBManager.get(context)
         if (records.isEmpty()) {
             XLog.w("Restore records skipped: empty list")
             return
@@ -488,12 +422,9 @@ class SettingsViewModel(
                 sender = it.sender,
                 body = it.body,
                 date = it.date,
-                processedTime = it.processedTime,
                 company = it.company,
                 smsCode = it.smsCode,
                 packageName = it.packageName,
-                simSlot = it.simSlot,
-                subId = it.subId,
                 msgType = it.msgType,
                 callType = it.callType,
                 forwardStatus = it.forwardStatus,
@@ -515,75 +446,48 @@ class SettingsViewModel(
 
     private suspend fun restorePreferences(context: Context, prefsMap: Map<String, String?>) {
         if (prefsMap.isEmpty()) return
-        var launcherVisible: Boolean? = null
-        val result = AppPreferenceTransactions.commit(context) {
-            for ((key, rawValue) in prefsMap) {
-                if (rawValue == null) continue
-                val coerced = coerceRestoreValue(key, rawValue)
-                if (!coerced.shouldWrite) {
-                    XLog.w(
-                        "Restore preference skipped: key=%s raw=%s expectedType=%s",
-                        key,
-                        rawValue,
-                        coerced.type.name,
-                    )
-                    continue
-                }
-                when (coerced.type) {
-                    PrefValueType.BOOLEAN -> {
-                        val value = coerced.booleanValue ?: continue
-                        set(resolveBooleanRestoreSpec(key, value), value)
-                        if (key == PrefConst.KEY_SHOW_LAUNCHER_ICON) launcherVisible = value
-                    }
-
-                    PrefValueType.INT -> {
-                        val value = coerced.intValue ?: continue
-                        set(PreferenceSpec.int(key, value), value)
-                    }
-
-                    PrefValueType.FLOAT -> {
-                        val value = coerced.floatValue ?: continue
-                        set(PreferenceSpec.float(key, value), value)
-                    }
-
-                    PrefValueType.STRING -> {
-                        val value = coerced.stringValue ?: rawValue
-                        set(resolveStringRestoreSpec(key, value), value)
-                    }
-                }
+        for ((k, v) in prefsMap) {
+            if (v == null) continue
+            val strV = v
+            val coerced = coerceRestoreValue(k, strV)
+            if (!coerced.shouldWrite) {
+                XLog.w(
+                    "Restore preference skipped: key=%s raw=%s expectedType=%s",
+                    k,
+                    strV,
+                    coerced.type.name,
+                )
+                continue
             }
-        }
-        when (result) {
-            is PreferenceCommitResult.Persisted -> {
-                result.postCommitFailures.forEach { failure ->
-                    XLog.e(
-                        "Restore preference post-commit hook failed: hook=%s error=%s",
-                        failure.hookName,
-                        failure.error.message ?: failure.error.javaClass.simpleName,
-                    )
+            when (coerced.type) {
+                PrefValueType.BOOLEAN -> {
+                    val boolValue = coerced.booleanValue ?: continue
+                    AppPreferencesDataStore.setBoolean(context, k, boolValue)
+                    if (k == PrefConst.KEY_SHOW_LAUNCHER_ICON) {
+                        setLauncherIconVisible(boolValue)
+                    }
                 }
-                launcherVisible?.let(::setLauncherIconVisible)
-            }
-            is PreferenceCommitResult.NoChanges -> Unit
-            is PreferenceCommitResult.NotPersisted -> {
-                throw IllegalStateException("Restored preferences were not persisted", result.error)
+
+                PrefValueType.INT -> {
+                    val intValue = coerced.intValue ?: continue
+                    AppPreferencesDataStore.setInt(context, k, intValue)
+                }
+
+                PrefValueType.FLOAT -> {
+                    val floatValue = coerced.floatValue ?: continue
+                    AppPreferencesDataStore.setFloat(context, k, floatValue)
+                }
+
+                PrefValueType.STRING -> {
+                    AppPreferencesDataStore.setString(context, k, coerced.stringValue ?: strV)
+                }
             }
         }
     }
 
-    private fun resolveBooleanRestoreSpec(key: String, restoredValue: Boolean): PreferenceSpec<Boolean> =
-        when (key) {
-            PrefConst.KEY_ENABLE_AUTO_INPUT_CODE -> HookPreferenceSpecs.autoInputEnabled
-            PrefConst.KEY_ENABLE_AUTO_ENTER_CODE -> HookPreferenceSpecs.autoEnterEnabled
-            else -> PreferenceSpec.boolean(key, restoredValue)
-        }
-
-    private fun resolveStringRestoreSpec(key: String, restoredValue: String): PreferenceSpec<String> =
-        when (key) {
-            PrefConst.KEY_AUTO_INPUT_CODE_DELAY -> HookPreferenceSpecs.autoInputDelay
-            PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL -> HookPreferenceSpecs.autoInputInterval
-            else -> PreferenceSpec.string(key, restoredValue)
-        }
+    private suspend fun ensureDataStoreLoaded(_context: android.content.Context) {
+        // Trigger read to ensure in-memory cache if needed; keep no-op for now.
+    }
 
     companion object {
         @JvmStatic

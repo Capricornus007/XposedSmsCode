@@ -1,30 +1,24 @@
-@file:Suppress("LocalContextGetResourceValueCall")
-
 package com.github.magisk317.smscode.ui.home
 
-import android.annotation.SuppressLint
-import android.content.Context
-import android.os.SystemClock
+import android.content.Intent
+import android.os.Build
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,179 +30,72 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.magisk317.smscode.core.R
-import com.github.magisk317.smscode.core.BuildConfig
-import io.github.magisk317.uikit.R as UiKitR
-import io.github.magisk317.smscode.runtime.contract.diagnostics.ActivationStatusState
 import com.github.magisk317.smscode.common.constant.Const
+import com.github.magisk317.smscode.common.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
-import io.github.magisk317.smscode.runtime.common.utils.BrowserUtils
-import io.github.magisk317.uikit.common.showLatestSnackbar
-import io.github.magisk317.uikit.foundation.LocalSnackbarHostState
-import io.github.magisk317.uikit.surface.AppTopBar
-import io.github.magisk317.uikit.surface.StatusHeroCard
-import io.github.magisk317.uikit.surface.SummaryRow
-import io.github.magisk317.uikit.surface.SummarySectionCard
-import io.github.magisk317.uikit.theme.UiKitStyle
-import io.github.magisk317.uikit.theme.currentUiKitStyle
+import com.github.magisk317.smscode.common.utils.Utils
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-
-private data class OverviewPageRuntime(
-    val isActive: Boolean = true,
-    val keepDataActive: Boolean = isActive,
-    val onPageDataReady: (cacheHit: Boolean) -> Unit = {},
-)
-
-private data class FrameworkDiagnostics(
-    val moduleInfo: Pair<String, String>? = null,
-    val managerVersion: Pair<String, Long>? = null,
-    val managerInstalled: Boolean = false,
-)
-
-private val LocalOverviewPageRuntime = staticCompositionLocalOf { OverviewPageRuntime() }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun OverviewScreen(
-    isActive: Boolean = true,
-    keepDataActive: Boolean = isActive,
-    onPageDataReady: (cacheHit: Boolean) -> Unit = {},
-) {
-    CompositionLocalProvider(
-        LocalOverviewPageRuntime provides OverviewPageRuntime(
-            isActive = isActive,
-            keepDataActive = keepDataActive,
-            onPageDataReady = onPageDataReady,
-        ),
-    ) {
-        when (currentUiKitStyle()) {
-            UiKitStyle.Miuix -> OverviewScreenMiuix()
-            UiKitStyle.Expressive -> OverviewScreenMaterial()
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-@SuppressLint("AutoboxingStateCreation")
-internal fun OverviewScreenShared() {
-    val pageRuntime = LocalOverviewPageRuntime.current
-    val isActive = pageRuntime.isActive
-    val keepDataActive = pageRuntime.keepDataActive
-    val currentOnPageDataReady by rememberUpdatedState(pageRuntime.onPageDataReady)
+fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
     val context = LocalContext.current
     val activityOwner = context as? ComponentActivity
-    val settingsViewModel = if (keepDataActive) {
-        if (activityOwner != null) {
-            koinViewModel<SettingsViewModel>(viewModelStoreOwner = activityOwner)
-        } else {
-            koinViewModel()
-        }
+    val settingsViewModel = if (activityOwner != null) {
+        koinViewModel<SettingsViewModel>(viewModelStoreOwner = activityOwner)
     } else {
-        null
+        koinViewModel()
     }
-    var statusTapCount by remember { mutableStateOf(0) }
-    var statusTapStartedAtMs by remember { mutableStateOf(0L) }
-    var showStatusDiagnostics by remember { mutableStateOf(false) }
-    val snackbarHostState = LocalSnackbarHostState.current
-    val scope = rememberCoroutineScope()
+    var showDonateDialog by remember { mutableStateOf(false) }
+    var showAlipayChoiceDialog by remember { mutableStateOf(false) }
+    var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
 
-    fun showMessage(message: String) {
-        scope.launch {
-            snackbarHostState.showLatestSnackbar(message)
-        }
-    }
+    val isEnabled = ModuleUtils.isModuleActivated(context)
 
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    var activationStatus by remember { mutableStateOf(ActivationStatusState()) }
-    var frameworkDiagnostics by remember { mutableStateOf(FrameworkDiagnostics()) }
-    var hasRootAccessState by remember { mutableStateOf(false) }
-    var appVersionState by remember { mutableStateOf<Pair<String, Long>?>(null) }
-    var hasActivationSnapshot by remember { mutableStateOf(false) }
-    var hasFrameworkSnapshot by remember { mutableStateOf(false) }
-    var hasRootSnapshot by remember { mutableStateOf(false) }
-    var hasAppVersionSnapshot by remember { mutableStateOf(false) }
-    val hasDiagnosticsSnapshot = hasActivationSnapshot && hasFrameworkSnapshot &&
-        hasRootSnapshot && hasAppVersionSnapshot
-
-    LaunchedEffect(context, keepDataActive) {
-        if (!keepDataActive) return@LaunchedEffect
-        launch {
-            ActivationDiagnosticsStore.observeStatus(context).collect {
-                activationStatus = it
-                hasActivationSnapshot = true
-            }
-        }
-        if (!hasFrameworkSnapshot) {
-            launch {
-                frameworkDiagnostics = withContext(Dispatchers.IO) {
-                    val moduleInfo = PackageUtils.getLsposedModuleInfo(context)
-                    FrameworkDiagnostics(
-                        moduleInfo = moduleInfo,
-                        managerVersion = if (moduleInfo == null) {
-                            PackageUtils.getPackageVersion(context, Const.LSPOSED_MANAGER_PACKAGE_NAME)
-                        } else {
-                            null
-                        },
-                        managerInstalled = moduleInfo != null || PackageUtils.isPackageInstalled(
-                            context,
-                            Const.LSPOSED_MANAGER_PACKAGE_NAME,
-                        ),
-                    )
-                }
-                hasFrameworkSnapshot = true
-            }
-        }
-        if (!hasRootSnapshot) {
-            launch {
-                hasRootAccessState = withContext(Dispatchers.IO) { PackageUtils.hasRootAccess() }
-                hasRootSnapshot = true
-            }
-        }
-        if (!hasAppVersionSnapshot) {
-            launch {
-                appVersionState = withContext(Dispatchers.IO) {
-                    PackageUtils.getPackageVersion(context, context.packageName)
-                }
-                hasAppVersionSnapshot = true
-            }
+    val frameworkInfoState by produceState<Pair<String, String>?>(
+        initialValue = null,
+    ) {
+        value = withContext(Dispatchers.IO) {
+            PackageUtils.getLsposedModuleInfo()
         }
     }
-
-    LaunchedEffect(isActive) {
-        if (!isActive) return@LaunchedEffect
-        val cacheHit = hasDiagnosticsSnapshot
-        if (!cacheHit) {
-            snapshotFlow {
-                hasActivationSnapshot && hasFrameworkSnapshot && hasRootSnapshot && hasAppVersionSnapshot
-            }.first { it }
-        }
-        currentOnPageDataReady(cacheHit)
-    }
-
-    val frameworkType = frameworkDiagnostics.moduleInfo?.first ?: stringResource(id = R.string.unknown)
-    val frameworkVersion = frameworkDiagnostics.moduleInfo?.second ?: run {
-        val lsposedVersion = frameworkDiagnostics.managerVersion
+    val frameworkType = frameworkInfoState?.first ?: stringResource(id = R.string.unknown)
+    val frameworkVersion = frameworkInfoState?.second ?: run {
+        val lsposedVersion = PackageUtils.getPackageVersion(context, Const.LSPOSED_MANAGER_PACKAGE_NAME)
         when {
             lsposedVersion != null && lsposedVersion.first.isNotBlank() ->
                 "${lsposedVersion.first} (${lsposedVersion.second})"
 
-            frameworkDiagnostics.managerInstalled ->
+            PackageUtils.isPackageInstalled(context, Const.LSPOSED_MANAGER_PACKAGE_NAME) ->
                 stringResource(id = R.string.unknown)
 
             else -> stringResource(id = R.string.not_installed)
         }
     }
+    val hasRootAccessState by produceState(
+        initialValue = false,
+    ) {
+        value = withContext(Dispatchers.IO) {
+            PackageUtils.hasRootAccess()
+        }
+    }
+    val appVersionState by produceState<Pair<String, Long>?>(
+        initialValue = null,
+    ) {
+        value = withContext(Dispatchers.IO) {
+            PackageUtils.getPackageVersion(context, context.packageName)
+        }
+    }
     val appVersionName = appVersionState?.first?.takeIf { it.isNotBlank() } ?: stringResource(id = R.string.unknown)
-    val appVersionCode = BuildConfig.COMMIT_HASH.takeIf { it.isNotBlank() && it != "unknown" }
-        ?: (appVersionState?.second?.toString() ?: stringResource(id = R.string.unknown))
+    val appVersionCode = appVersionState?.second?.toString() ?: stringResource(id = R.string.unknown)
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -216,6 +103,7 @@ internal fun OverviewScreenShared() {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
+                .hazeSource(state = hazeState)
                 .nestedScroll(scrollBehavior.nestedScrollConnection)
                 .padding(horizontal = 16.dp),
             state = listState,
@@ -227,158 +115,250 @@ internal fun OverviewScreenShared() {
         ) {
             item {
                 StatusCard(
-                    isEnabled = activationStatus.isEnabled,
-                    showDiagnostics = showStatusDiagnostics,
-                    diagnostics = buildStatusDiagnostics(
-                        context = context,
-                        snapshot = activationStatus.diagnostics,
-                        runtimeConnected = activationStatus.runtimeConnected,
-                    ),
-                    onClick = {
-                        val now = SystemClock.uptimeMillis()
-                        val withinWindow = now - statusTapStartedAtMs <= 1800L
-                        statusTapCount = if (withinWindow) statusTapCount + 1 else 1
-                        statusTapStartedAtMs = now
-                        if (statusTapCount >= 5) {
-                            showStatusDiagnostics = !showStatusDiagnostics
-                            statusTapCount = 0
-                            statusTapStartedAtMs = 0L
-                            showMessage(
-                                if (showStatusDiagnostics) {
-                                    context.getString(R.string.status_diag_shown)
-                                } else {
-                                    context.getString(R.string.status_diag_hidden)
-                                },
-                            )
+                    isEnabled = isEnabled,
+                    onClick = if (isEnabled) {
+                        null
+                    } else {
+                        {
+                            val intent = Intent().apply {
+                                setClassName(
+                                    "org.lsposed.manager",
+                                    "org.lsposed.manager.ui.activity.MainActivity",
+                                )
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            try {
+                                context.startActivity(intent)
+                            } catch (ignored: Exception) {
+                                // Ignore if LSPosed manager is not installed.
+                            }
                         }
                     },
                 )
             }
             item {
-                val rootHint = stringResource(id = R.string.root_permission_hint)
-                io.github.magisk317.uikit.surface.OverviewAppInfoCard(
-                    appVersionName = appVersionName,
-                    appVersionCode = appVersionCode,
-                    appVersionCodeLabel = stringResource(id = UiKitR.string.uikit_version_code),
-                    frameworkType = frameworkType,
-                    frameworkVersion = frameworkVersion,
-                    interactive = true,
-                    onRootHint = if (hasRootAccessState) null else { { showMessage(rootHint) } },
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 12.dp)) {
+                        InfoItem(Icons.AutoMirrored.Filled.Label, stringResource(id = R.string.version_name), appVersionName)
+                        InfoItem(Icons.Default.Numbers, stringResource(id = R.string.version_code), appVersionCode)
+                        val rootHint = stringResource(id = R.string.root_permission_hint)
+                        InfoItem(
+                            Icons.Default.Extension,
+                            stringResource(id = R.string.framework_type),
+                            frameworkType,
+                            onClick = if (hasRootAccessState) {
+                                null
+                            } else {
+                                { Toast.makeText(context, rootHint, Toast.LENGTH_SHORT).show() }
+                            },
+                        )
+                        InfoItem(
+                            Icons.Default.Verified,
+                            stringResource(id = R.string.framework_version),
+                            frameworkVersion,
+                            onClick = if (hasRootAccessState) {
+                                null
+                            } else {
+                                { Toast.makeText(context, rootHint, Toast.LENGTH_SHORT).show() }
+                            },
+                        )
+                    }
+                }
             }
 
             item {
-                io.github.magisk317.uikit.surface.OverviewDeviceInfoCard()
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 12.dp)) {
+                        InfoItem(Icons.Default.Android, stringResource(id = R.string.android_version), Build.VERSION.RELEASE)
+                        InfoItem(Icons.Default.Terminal, stringResource(id = R.string.android_codename), Build.VERSION.CODENAME)
+                        InfoItem(Icons.Default.Code, stringResource(id = R.string.api_level), Build.VERSION.SDK_INT.toString())
+                        InfoItem(Icons.Default.Business, stringResource(id = R.string.manufacturer), Build.MANUFACTURER)
+                        InfoItem(Icons.Default.Smartphone, stringResource(id = R.string.model), Build.MODEL)
+                    }
+                }
             }
 
             item {
-                io.github.magisk317.uikit.surface.OverviewLinksCard(
-                    onJoinTelegram = {
-                        BrowserUtils.openWebPage(
-                            context,
-                            Const.TELEGRAM_GROUP_URL,
-                            R.string.browser_install_or_enable_prompt,
-                        )?.let(::showMessage)
-                    },
-                    onSourceCode = {
-                        BrowserUtils.openWebPage(
-                            context,
-                            Const.PROJECT_SOURCE_CODE_URL,
-                            R.string.browser_install_or_enable_prompt,
-                        )?.let(::showMessage)
-                    },
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
+                ) {
+                    Column(modifier = Modifier.padding(vertical = 12.dp)) {
+                        InfoItem(
+                            icon = Icons.Default.Info,
+                            label = stringResource(id = R.string.check_update_title),
+                            value = stringResource(id = R.string.check_update_summary),
+                            onClick = {
+                                settingsViewModel.requestPreferredUpdate()
+                            },
+                        )
+                        InfoItem(
+                            icon = Icons.AutoMirrored.Filled.Chat,
+                            label = stringResource(id = R.string.pref_join_qq_group_title),
+                            value = stringResource(id = R.string.pref_join_qq_group_summary),
+                            onClick = { PackageUtils.joinQQGroup(context) },
+                        )
+                        InfoItem(
+                            icon = Icons.AutoMirrored.Filled.Send,
+                            label = stringResource(id = R.string.pref_join_telegram_group_title),
+                            value = stringResource(id = R.string.pref_join_telegram_group_summary),
+                            onClick = { Utils.showWebPage(context, Const.TELEGRAM_GROUP_URL) },
+                        )
+                        InfoItem(
+                            icon = Icons.Default.Code,
+                            label = stringResource(id = R.string.pref_source_code_title),
+                            value = stringResource(id = R.string.pref_source_code_summary),
+                            onClick = { Utils.showWebPage(context, Const.PROJECT_SOURCE_CODE_URL) },
+                        )
+                        InfoItem(
+                            icon = Icons.Default.Favorite,
+                            label = stringResource(id = R.string.pref_donate_by_alipay_title),
+                            value = stringResource(id = R.string.dialog_donate_summary),
+                            onClick = { showDonateDialog = true },
+                        )
+                    }
+                }
             }
         }
 
-        AppTopBar(
-            title = stringResource(id = R.string.app_name),
+        TopAppBar(
+            title = { Text(text = stringResource(id = R.string.app_name)) },
             scrollBehavior = scrollBehavior,
             windowInsets = WindowInsets.statusBars,
             modifier = Modifier
-                .align(Alignment.TopCenter),
+                .align(Alignment.TopCenter)
+                .hazeEffect(hazeState, hazeStyle) {
+                    forceInvalidateOnPreDraw = true
+                },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent,
+            ),
+        )
+    }
+
+    if (showDonateDialog) {
+        DonateDialog(
+            onDismiss = { showDonateDialog = false },
+            onAlipay = {
+                showDonateDialog = false
+                showAlipayChoiceDialog = true
+            },
+            onWechat = {
+                showDonateDialog = false
+                showQRCodeDialog = Pair(R.drawable.wx, "wechat")
+            },
+        )
+    }
+
+    if (showAlipayChoiceDialog) {
+        AlipayChoiceDialog(
+            onDismiss = { showAlipayChoiceDialog = false },
+            onQRCode = {
+                showAlipayChoiceDialog = false
+                showQRCodeDialog = Pair(R.drawable.alipay, "alipay")
+            },
+            onToken = {
+                showAlipayChoiceDialog = false
+                PackageUtils.copyAlipayPocketToken(context)
+                PackageUtils.startAlipayActivity(context)
+            },
+        )
+    }
+
+    showQRCodeDialog?.let { pair ->
+        QRCodeDialog(
+            resId = pair.first,
+            type = pair.second,
+            onDismiss = { showQRCodeDialog = null },
+            onSave = { Utils.saveImageToGallery(context, pair.first, "${pair.second}_qrcode") },
         )
     }
 }
 
 @Composable
-fun StatusCard(
-    isEnabled: Boolean,
-    showDiagnostics: Boolean,
-    diagnostics: List<Pair<String, String>>,
-    onClick: (() -> Unit)? = null,
-) {
-    val moduleStatusText = if (isEnabled) {
-        stringResource(id = R.string.status_module_activated)
-    } else {
-        stringResource(id = R.string.status_module_not_activated)
-    }
-    val title = moduleStatusText
+fun StatusCard(isEnabled: Boolean, onClick: (() -> Unit)? = null) {
+    val containerColor = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.errorContainer
+    val contentColor = if (isEnabled) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onErrorContainer
 
-    val isAllOk = isEnabled
-    val summary = if (!isEnabled) {
-        stringResource(id = R.string.status_activate_hint)
-    } else {
-        null
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor,
+            contentColor = contentColor,
+        ),
+        onClick = { onClick?.invoke() },
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Icon(
+                imageVector = if (isEnabled) Icons.Default.CheckCircle else Icons.Default.Error,
+                contentDescription = null,
+                modifier = Modifier.size(48.dp),
+            )
+            Column {
+                Text(
+                    text = if (isEnabled) stringResource(id = R.string.status_working) else stringResource(id = R.string.status_not_active),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                if (!isEnabled) {
+                    Text(
+                        text = stringResource(id = R.string.status_tip),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
     }
-
-    StatusHeroCard(
-        title = title,
-        summary = summary,
-        icon = if (isAllOk) Icons.Default.CheckCircle else Icons.Default.Warning,
-        highlighted = isAllOk,
-        diagnostics = if (showDiagnostics) diagnostics else emptyList(),
-        onClick = onClick,
-    )
 }
 
-private fun buildStatusDiagnostics(
-    context: android.content.Context,
-    snapshot: ActivationDiagnosticsSnapshot,
-    runtimeConnected: Boolean,
-): List<Pair<String, String>> {
-    val serviceValue = buildString {
-        append(
-            context.getString(
-                if (runtimeConnected) {
-                    R.string.status_diag_connected
-                } else {
-                    R.string.status_diag_disconnected
-                },
-            ),
-        )
-        if (snapshot.lastServiceBindAtMs > 0L) {
-            append(" · ")
-            append(context.getString(R.string.status_diag_last_service_prefix))
-            append(" ")
-            append(formatStatusDiagnosticTime(context, snapshot.lastServiceBindAtMs))
-        }
-        if (snapshot.lastServiceFrameworkName.isNotBlank() || snapshot.lastServiceFrameworkVersion.isNotBlank()) {
-            append(" · ")
-            append(snapshot.lastServiceFrameworkName.ifBlank { context.getString(R.string.unknown) })
-            append(" ")
-            append(snapshot.lastServiceFrameworkVersion.ifBlank { context.getString(R.string.unknown) })
-        }
-    }
-    val hookProcess = listOf(
-        snapshot.lastHookPackage.ifBlank { context.getString(R.string.status_diag_none) },
-        snapshot.lastHookProcess.ifBlank { context.getString(R.string.status_diag_none) },
-    ).joinToString(" / ")
-    val hookTime = buildString {
-        append(formatStatusDiagnosticTime(context, snapshot.lastHookAtMs))
-        if (snapshot.lastHookSource.isNotBlank()) {
-            append(" · ")
-            append(snapshot.lastHookSource)
-        }
-    }
-    return listOf(
-        context.getString(R.string.status_diag_service_title) to serviceValue,
-        context.getString(R.string.status_diag_hook_process_title) to hookProcess,
-        context.getString(R.string.status_diag_hook_time_title) to hookTime,
+@Composable
+fun InfoItem(icon: ImageVector, label: String, value: String, onClick: (() -> Unit)? = null) {
+    ListItem(
+        leadingContent = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+        headlineContent = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        },
+        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
     )
-}
-
-private fun formatStatusDiagnosticTime(context: android.content.Context, timestampMs: Long): String {
-    if (timestampMs <= 0L) return context.getString(R.string.status_diag_none)
-    return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date(timestampMs))
 }

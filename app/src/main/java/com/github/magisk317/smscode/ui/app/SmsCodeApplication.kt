@@ -1,47 +1,36 @@
 package com.github.magisk317.smscode.ui.app
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.content.Context
-import android.content.SharedPreferences
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
+import android.media.AudioManager
+import android.os.Build
 import android.os.Bundle
-import com.github.magisk317.smscode.runtime.BuildConfig as RuntimeBuildConfig
+import android.telephony.TelephonyManager
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.constant.PrefConst
-import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
-import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
-import io.github.magisk317.smscode.xposed.utils.ModuleActivationStore
-import io.github.magisk317.smscode.xposed.utils.ModuleUtils
-import com.github.magisk317.smscode.common.utils.RuntimeDiagnosticsBridge
-import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogStore
-import com.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
-import io.github.magisk317.smscode.xposed.runtime.CoreHookPolicy
-import io.github.magisk317.smscode.xposed.runtime.CoreHookPolicyHolder
-import io.github.magisk317.smscode.xposed.runtime.CoreLogSink
-import io.github.magisk317.smscode.xposed.runtime.CoreLogSinkHolder
-import io.github.magisk317.smscode.xposed.runtime.CoreRuntime
-import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
-import io.github.magisk317.smscode.xposed.runtime.CoreRuntimeAccess
-import io.github.magisk317.smscode.xposed.utils.XLog
-import io.github.magisk317.xposed.logging.DefaultLogSanitizer
+import com.github.magisk317.smscode.common.utils.ModuleActivationStore
+import com.github.magisk317.smscode.common.utils.ModuleUtils
+import com.github.magisk317.smscode.common.utils.RuntimeLogStore
+import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.di.appModule
-import com.github.magisk317.smscode.runtime.RuntimeCodeRecordRestoreFacade
+import com.github.magisk317.smscode.ui.record.CodeRecordRestoreManager
+import io.github.libxposed.service.XposedService
+import io.github.libxposed.service.XposedServiceHelper
+import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 import org.koin.core.context.startKoin
 import timber.log.Timber
-import io.github.magisk317.xposed.logging.MagiskOtel
-import io.github.magisk317.xposed.logging.AnonymousInstallationId
 
-@SuppressLint("LogNotTimber")
 class SmsCodeApplication : Application() {
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -49,44 +38,8 @@ class SmsCodeApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        android.util.Log.w("smscode", "SmsCodeApplication.onCreate() START")
-        val installationId = AnonymousInstallationId.getOrCreate(this, TELEMETRY_PREFS_NAME)
-        runBlocking {
-            AppPreferencesDataStore.setString(
-                this@SmsCodeApplication,
-                AnonymousInstallationId.PREFERENCE_KEY,
-                installationId,
-            )
-        }
-        MagiskOtel.configureForInstallation(
-            this,
-            MagiskOtel.Config(
-                enabled = BuildConfig.DEBUG || runBlocking {
-                    AppPreferencesDataStore.getBoolean(
-                        this@SmsCodeApplication,
-                        PrefConst.KEY_ENABLE_ANALYTICS,
-                        true,
-                    )
-                },
-                serviceName = "xposedsmscode",
-                serviceVersion = BuildConfig.VERSION_NAME,
-                projectId = "83955172",
-                projectName = "XposedSmsCode",
-                environment = if (BuildConfig.DEBUG) "debug" else "release",
-            ),
-            TELEMETRY_PREFS_NAME,
-        )
-        MagiskOtel.event(
-            name = "app.boot",
-            attributes = mapOf(
-                "result" to "ok",
-                "process" to "main",
-            ),
-        )
         ensureIpcToken()
-        RuntimeDiagnosticsBridge.ensureInstalled()
         RuntimeLogStore.initialize(this, enableDetailedLogs = false)
-        installCoreRuntime()
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
@@ -94,177 +47,62 @@ class SmsCodeApplication : Application() {
         startKoin {
             androidLogger()
             androidContext(this@SmsCodeApplication)
-            modules(appModule, com.github.magisk317.smscode.di.billingModule)
+            modules(appModule)
         }
-        
-        org.koin.core.context.GlobalContext.get().getAll<io.github.magisk317.uikit.shell.AppInitializer>().forEach {
-            it.init(this)
-        }
-
         initXposedServiceActivationMonitor()
         importPendingCodeRecords()
         syncPreferences()
+        handlePhoneProcessRestartIfNeeded()
         registerLicenseActivityKiller()
-    }
-
-    @SuppressLint("UnusedVariables")
-    private fun configureMobileEntitlement() {
-        // Entitlement disabled - kept for future use if needed
-    }
-
-    private companion object {
-        const val TELEMETRY_PREFS_NAME = "smscode_telemetry_prefs"
     }
 
     private fun importPendingCodeRecords() {
         applicationScope.launch {
-            RuntimeCodeRecordRestoreFacade.importToDatabase(this@SmsCodeApplication)
+            CodeRecordRestoreManager.importToDatabase(this@SmsCodeApplication)
         }
     }
 
     private fun syncPreferences() {
         applicationScope.launch {
-            HookPreferenceMirror.publish(this@SmsCodeApplication)
+            AppPreferencesDataStore.syncToSharedPrefs(this@SmsCodeApplication)
+            AppPreferencesDataStore.ensureReadable(this@SmsCodeApplication)
             val verboseLog = AppPreferencesDataStore.getBoolean(
                 this@SmsCodeApplication,
                 PrefConst.KEY_VERBOSE_LOG_MODE,
                 false,
             )
-            RuntimeDiagnosticsBridge.ensureInstalled()
             RuntimeLogStore.setEnabled(verboseLog)
-            val sensitiveDebugMode = AppPreferencesDataStore.getBoolean(
-                this@SmsCodeApplication,
-                PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE,
-                false,
-            )
-            io.github.magisk317.xposed.logging.LogSanitizerConfig
-                .syncFromVerboseMode(sensitiveDebugMode)
-            StorageUtils.ensureExternalAppDataPermissions(this@SmsCodeApplication)
         }
     }
 
     private fun initXposedServiceActivationMonitor() {
-        XposedServiceBridge.initialize(this, applicationScope)
-    }
+        runCatching<Unit> {
+            XposedServiceHelper.registerListener(
+                object : XposedServiceHelper.OnServiceListener {
+                    override fun onServiceBind(service: XposedService) {
+                        ModuleUtils.setRuntimeActivated(true)
+                        ModuleActivationStore.markActivated(this@SmsCodeApplication)
+                        XLog.i(
+                            "Xposed service connected: framework=%s version=%s",
+                            service.frameworkName,
+                            service.frameworkVersion,
+                        )
+                    }
 
-    private fun installCoreRuntime() {
-        CoreRuntime.install(object : CoreRuntimeAccess {
-            override val logTag: String = BuildConfig.LOG_TAG
-            override val logLevel: Int = RuntimeBuildConfig.LOG_LEVEL
-            override val logToXposed: Boolean = RuntimeBuildConfig.LOG_TO_XPOSED
-            override val debug: Boolean = BuildConfig.DEBUG
-            override val applicationId: String = BuildConfig.APPLICATION_ID
-            override val actionNamespace: String = "com.github.magisk317.smscode"
-        })
-        CoreLogSinkHolder.install(object : CoreLogSink {
-            override fun append(
-                priority: Int,
-                tag: String,
-                message: String,
-                force: Boolean,
-                route: String?,
-                sensitive: Boolean,
-                throwableText: String?,
-            ) {
-                // sensitive=true means payload may contain secrets; honor shared switch
-                // Opening pref_sensitive_debug_log_mode disables sanitization and lets
-                // plaintext through for debugging.
-                val safeMessage = if (sensitive) {
-                    DefaultLogSanitizer.sanitizeIfEnabled(message)
-                } else {
-                    message
-                }
-                RuntimeDiagnosticsBridge.ensureInstalled()
-                RuntimeLogStore.append(priority, tag, safeMessage, force, route, throwableText)
-            }
-        })
-        CoreHookPolicyHolder.install(object : CoreHookPolicy {
-            override fun shouldSuppressSystemHooks(context: Context?, source: String): Boolean {
-                return ModuleConflictArbiter.shouldSuppressByRelay(context, source)
-            }
-        })
-        AppShellRuntimeBridge.install(this)
-    }
-
-    internal fun handleXposedServiceBound(
-        remotePrefsProvider: (() -> SharedPreferences?)?,
-        frameworkName: String?,
-        frameworkVersion: String?,
-    ) {
-        XLog.i(
-            "handleXposedServiceBound() called: framework=$frameworkName version=$frameworkVersion provider=${remotePrefsProvider != null}",
-        )
-        AppPreferencesDataStore.setRemotePrefsProvider(remotePrefsProvider)
-        ModuleUtils.setRuntimeActivated(true)
-        ModuleActivationStore.markActivated(this)
-        ActivationDiagnosticsStore.recordServiceBind(
-            context = this,
-            frameworkName = frameworkName ?: "unknown",
-            frameworkVersion = frameworkVersion ?: "unknown",
-            verboseLogging = readVerboseLogMode(),
-        )
-        XLog.i(
-            "Xposed service connected: framework=%s version=%s",
-            frameworkName ?: "unknown",
-            frameworkVersion ?: "unknown",
-        )
-        MagiskOtel.event(
-            name = "app.lifecycle",
-            attributes = mapOf(
-                "result" to "ok",
-                "duration_ms" to "0",
-                "process" to "app",
-                "stage" to "xposed_service_bind",
-                "reason" to "connected",
-                "source" to (frameworkName ?: "unknown"),
-            ),
-            statusOk = true,
-        )
-    }
-
-    internal fun handleXposedServiceDied() {
-        AppPreferencesDataStore.setRemotePrefsProvider(null)
-        ModuleUtils.setRuntimeActivated(false)
-        ActivationDiagnosticsStore.recordServiceDied(
-            context = this,
-            verboseLogging = readVerboseLogMode(),
-        )
-        XLog.w("Xposed service disconnected")
-        MagiskOtel.event(
-            name = "app.lifecycle",
-            attributes = mapOf(
-                "result" to "error",
-                "duration_ms" to "0",
-                "process" to "app",
-                "stage" to "xposed_service_died",
-                "reason" to "disconnected",
-            ),
-            statusOk = false,
-        )
-    }
-
-    internal fun logXposedServiceBridgeFailure(throwable: Throwable) {
-        XLog.w("Failed to register Xposed service listener: %s", throwable.message ?: "unknown")
-        MagiskOtel.event(
-            name = "app.lifecycle",
-            attributes = mapOf(
-                "result" to "error",
-                "duration_ms" to "0",
-                "process" to "app",
-                "stage" to "xposed_service_bridge",
-                "reason" to throwable.javaClass.simpleName,
-            ),
-            statusOk = false,
-        )
-    }
-
-    private fun readVerboseLogMode(): Boolean = runBlocking(Dispatchers.IO) {
-        AppPreferencesDataStore.getBoolean(this@SmsCodeApplication, PrefConst.KEY_VERBOSE_LOG_MODE, false)
+                    override fun onServiceDied(service: XposedService) {
+                        ModuleUtils.setRuntimeActivated(false)
+                        XLog.w("Xposed service disconnected")
+                    }
+                },
+            )
+        }.onFailure {
+            XLog.w("Failed to register Xposed service listener: %s", it.message ?: "unknown")
+        }
     }
 
     private fun registerLicenseActivityKiller() {
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
-            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle) {}
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
             override fun onActivityStarted(activity: Activity) {
                 startedActivityCount += 1
             }
@@ -287,23 +125,127 @@ class SmsCodeApplication : Application() {
     }
 
     private fun ensureIpcToken() {
-        runBlocking(Dispatchers.IO) {
-            AppIpcTokenStore.ensurePublished(
-                existingToken = {
-                    AppPreferencesDataStore.getString(this@SmsCodeApplication, PrefConst.KEY_IPC_TOKEN, "")
-                },
-                generateToken = { UUID.randomUUID().toString() },
-                persistToken = { generated ->
-                    AppPreferencesDataStore.setString(
-                        this@SmsCodeApplication,
-                        PrefConst.KEY_IPC_TOKEN,
-                        generated,
-                    )
-                    Timber.i("Generated new IPC Security Token via DataStore")
-                },
-            )
-            HookPreferenceMirror.publish(this@SmsCodeApplication)
+        applicationScope.launch {
+            val token = AppPreferencesDataStore.getString(this@SmsCodeApplication, PrefConst.KEY_IPC_TOKEN, "")
+            if (token.isEmpty()) {
+                val newToken = UUID.randomUUID().toString()
+                AppPreferencesDataStore.setString(this@SmsCodeApplication, PrefConst.KEY_IPC_TOKEN, newToken)
+                Timber.i("Generated new IPC Security Token via DataStore")
+            }
+            AppPreferencesDataStore.ensureReadable(this@SmsCodeApplication)
         }
     }
 
+    private fun handlePhoneProcessRestartIfNeeded() {
+        applicationScope.launch {
+            val installToken = buildInstallToken() ?: return@launch
+            val prefs = getSharedPreferences(INSTALL_GUARD_PREFS, MODE_PRIVATE)
+            val lastHandledToken = prefs.getString(KEY_LAST_HANDLED_INSTALL_TOKEN, null)
+            if (lastHandledToken == installToken) {
+                return@launch
+            }
+
+            val now = System.currentTimeMillis()
+            val lastAttemptAt = prefs.getLong(KEY_LAST_RESTART_ATTEMPT_AT, 0L)
+            if (now - lastAttemptAt < RESTART_ATTEMPT_COOLDOWN_MS) {
+                return@launch
+            }
+            prefs.edit().putLong(KEY_LAST_RESTART_ATTEMPT_AT, now).apply()
+
+            if (isPhoneCallActive()) {
+                return@launch
+            }
+
+            val hasRootAccess = canUseRoot()
+            if (hasRootAccess) {
+                restartPhoneProcessViaRoot()
+            }
+
+            // Mark token handled even when root is unavailable to avoid repeated noisy attempts.
+            prefs.edit().putString(KEY_LAST_HANDLED_INSTALL_TOKEN, installToken).apply()
+        }
+    }
+
+    private fun buildInstallToken(): String? {
+        val packageInfo = runCatching { getSelfPackageInfo() }.getOrNull() ?: return null
+        val apkFile = runCatching { File(applicationInfo.sourceDir) }.getOrNull() ?: return null
+        val apkSize = runCatching { apkFile.length() }.getOrDefault(0L)
+        val apkModified = runCatching { apkFile.lastModified() }.getOrDefault(0L)
+        return listOf(
+            packageInfo.firstInstallTime,
+            packageInfo.lastUpdateTime,
+            apkSize,
+            apkModified,
+        ).joinToString(separator = ":")
+    }
+
+    private fun getSelfPackageInfo(): PackageInfo {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION")
+            packageManager.getPackageInfo(packageName, 0)
+        }
+    }
+
+    private fun canUseRoot(): Boolean {
+        val result = runSuCommand("id -u")
+        return result.exitCode == 0 && result.output.trim() == "0"
+    }
+
+    private fun isPhoneCallActive(): Boolean {
+        val telephonyInCall = runCatching {
+            val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as? TelephonyManager
+            @Suppress("DEPRECATION")
+            val state = telephonyManager?.callState ?: TelephonyManager.CALL_STATE_IDLE
+            state == TelephonyManager.CALL_STATE_OFFHOOK || state == TelephonyManager.CALL_STATE_RINGING
+        }.getOrDefault(false)
+        if (telephonyInCall) {
+            return true
+        }
+
+        // Fallback without runtime permission dependency.
+        return runCatching {
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+            val mode = audioManager?.mode ?: AudioManager.MODE_NORMAL
+            mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION
+        }.getOrDefault(false)
+    }
+
+    private fun restartPhoneProcessViaRoot() {
+        val command =
+            "PIDS=\$(pidof com.android.phone 2>/dev/null); " +
+                "if [ -n \"${'$'}PIDS\" ]; then kill -9 ${'$'}PIDS; exit 0; fi; " +
+                "pkill -f com.android.phone >/dev/null 2>&1 && exit 0; " +
+                "exit 1"
+        val result = runSuCommand(command)
+        if (result.exitCode == 0) {
+            Timber.i("Phone process restart requested after install/update change.")
+        }
+    }
+
+    private fun runSuCommand(command: String): SuCommandResult {
+        return try {
+            val process = ProcessBuilder("su", "-c", command)
+                .redirectErrorStream(true)
+                .start()
+            val output = process.inputStream.bufferedReader().use { it.readText() }
+            val exitCode = process.waitFor()
+            SuCommandResult(exitCode = exitCode, output = output)
+        } catch (_: Throwable) {
+            SuCommandResult(exitCode = -1, output = "")
+        }
+    }
+
+    private data class SuCommandResult(
+        val exitCode: Int,
+        val output: String,
+    )
+
+    companion object {
+        private const val INSTALL_GUARD_PREFS = "install_guard_prefs"
+        private const val KEY_LAST_HANDLED_INSTALL_TOKEN = "last_handled_install_token"
+        private const val KEY_LAST_RESTART_ATTEMPT_AT = "last_restart_attempt_at"
+        private const val RESTART_ATTEMPT_COOLDOWN_MS = 60_000L
+    }
 }

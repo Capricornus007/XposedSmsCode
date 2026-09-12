@@ -1,21 +1,17 @@
 package com.github.magisk317.smscode.ui.home.update
 
-import androidx.activity.ComponentActivity
-import com.github.magisk317.smscode.runtime.bridge.UiUpdateAccess
-import io.github.magisk317.uikit.shell.PlayUpdateDelegate
+import androidx.appcompat.app.AppCompatActivity
 
-class FlavorPlayUpdateDelegate(
-    @Suppress("UNUSED_PARAMETER") updateAccess: UiUpdateAccess,
-) : PlayUpdateDelegate {
+class FlavorPlayUpdateDelegate : PlayUpdateDelegate {
 
-    override fun onCreate(activity: ComponentActivity, onFallbackToStore: () -> Unit) = Unit
+    override fun onCreate(activity: AppCompatActivity, onFallbackToStore: () -> Unit) = Unit
 
-    override fun onResume(activity: ComponentActivity, onFallbackToStore: () -> Unit) = Unit
+    override fun onResume(activity: AppCompatActivity, onFallbackToStore: () -> Unit) = Unit
 
     override fun onDestroy() = Unit
 
     override fun requestUpdate(
-        activity: ComponentActivity,
+        activity: AppCompatActivity,
         silentIfNoUpdate: Boolean,
         fallbackOnQueryFailure: Boolean,
         onFallbackToStore: () -> Unit,

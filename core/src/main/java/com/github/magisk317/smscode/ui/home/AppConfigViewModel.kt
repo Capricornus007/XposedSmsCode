@@ -1,6 +1,5 @@
 package com.github.magisk317.smscode.ui.home
 
-import android.annotation.SuppressLint
 import android.app.Application
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
@@ -8,18 +7,16 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.github.magisk317.smscode.common.utils.XLog
+import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.AppInfo
-import com.github.magisk317.smscode.runtime.bridge.UiStorageAccess
-import com.github.magisk317.smscode.runtime.bridge.UiStoreAccess
+import com.github.magisk317.smscode.feature.store.EntityStoreManager
+import com.github.magisk317.smscode.feature.store.EntityType
+import com.github.magisk317.smscode.common.utils.StorageUtils
 import com.github.magisk317.smscode.ui.block.AppInfoHelper
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -31,26 +28,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.Comparator
+import java.io.File
 
 private const val APP_LIST_PAGE_SIZE = 80
 
-internal class LatestRequestGeneration {
-    private var current = 0L
-
-    fun next(): Long = ++current
-
-    fun invalidate() {
-        current += 1
-    }
-
-    fun isCurrent(generation: Long): Boolean = generation == current
-}
-
-class AppConfigViewModel(
-    application: Application,
-    private val storage: UiStorageAccess,
-    private val store: UiStoreAccess,
-) : AndroidViewModel(application) {
+class AppConfigViewModel(application: Application) : AndroidViewModel(application) {
     private val _appsFlow = MutableStateFlow<ImmutableList<AppInfo>>(persistentListOf())
     val appsFlow: StateFlow<ImmutableList<AppInfo>> = _appsFlow.asStateFlow()
 
@@ -83,17 +65,8 @@ class AppConfigViewModel(
     private var filteredApps: ImmutableList<AppInfo> = persistentListOf()
     private var visibleAppCount = 0
     private var isLoadSucceed = false
-    private var systemApps: Set<String> = emptySet()
+    private val systemApps = HashSet<String>()
     private val persistMutex = Mutex()
-
-    private val _hasLoadedDataFlow = MutableStateFlow(false)
-    val hasLoadedDataFlow: StateFlow<Boolean> = _hasLoadedDataFlow.asStateFlow()
-
-    private var isActive = false
-    private var refreshJob: Job? = null
-    private var filterJob: Job? = null
-    private val refreshGeneration = LatestRequestGeneration()
-    private val filterGeneration = LatestRequestGeneration()
 
     private var filter = ""
     private var currentSortOption = SortOption.LABEL
@@ -108,107 +81,86 @@ class AppConfigViewModel(
 
     private val usageStatsMap = java.util.concurrent.ConcurrentHashMap<String, Long>()
 
-    fun setActive(active: Boolean) {
-        if (isActive == active) return
-        isActive = active
-        if (!active) {
-            refreshGeneration.invalidate()
-            filterGeneration.invalidate()
-            refreshJob?.cancel()
-            refreshJob = null
-            filterJob?.cancel()
-            filterJob = null
-            _loadingFlow.value = false
-        }
-    }
-
-    @SuppressLint("QueryPermissionsNeeded")
     fun refreshData(force: Boolean = false) {
-        if (!isActive) return
         if (isLoadSucceed && !force) {
             applyFilterAndSort(resetVisibleWindow = true)
             return
         }
 
-        val generation = refreshGeneration.next()
-        refreshJob?.cancel()
-        filterJob?.cancel()
-        refreshJob = viewModelScope.launch {
+        viewModelScope.launch {
             _loadingFlow.value = true
             try {
-                val (usageStats, catalog) = coroutineScope {
-                    val usageDeferred = async { loadUsageStats() }
-                    val catalogDeferred = async(Dispatchers.IO) {
-                        val context = getApplication<Application>()
-                        val pm = context.packageManager
-                        // Load app blocked configs from DB.
-                        val configs = storage.dbManager(context).queryAllAppInfosSuspend()
-                        store.persistAppConfigs(context, configs.filter(::hasEffectiveConfig))
+                refreshUsageStats()
 
-                        val installedApps = pm.getInstalledApplications(PackageManager.MATCH_ALL)
-                        val configMap = configs.associateBy { it.packageName }
-                        val loadedSystemApps = HashSet<String>()
-                        val loadedApps = installedApps.asSequence()
-                            .map { app ->
-                                val appInfoBase = AppInfoHelper.getAppInfo(pm, app)
-                                val isSystemApp = (app.flags and ApplicationInfo.FLAG_SYSTEM) != 0 ||
-                                    (app.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
-                                if (isSystemApp) {
-                                    loadedSystemApps.add(appInfoBase.packageName)
-                                }
-
-                                val config = configMap[appInfoBase.packageName]
-                                if (config != null) {
-                                    appInfoBase.copy(
-                                        blocked = config.blocked,
-                                    )
-                                } else {
-                                    appInfoBase
-                                }
-                            }
-                            .toImmutableList()
-                        AppCatalog(loadedApps, loadedSystemApps)
+                val appList = withContext(Dispatchers.IO) {
+                    val context = getApplication<Application>()
+                    val pm = getApplication<Application>().packageManager
+                    // Load app blocked configs from DB.
+                    var configs = DBManager.get(getApplication()).queryAllAppInfosSuspend()
+                    
+                    if (configs.isEmpty()) {
+                        configs = performMigrationIfNeeded()
                     }
-                    usageDeferred.await() to catalogDeferred.await()
+                    EntityStoreManager.storeEntitiesToFile(
+                        context,
+                        EntityType.APP_CONFIG,
+                        configs.filter(::hasEffectiveConfig),
+                        AppInfo::class.java,
+                    )
+
+                    val installedApps = pm.getInstalledApplications(PackageManager.MATCH_ALL)
+                    val configMap = configs.associateBy { it.packageName }
+
+                    systemApps.clear()
+                    installedApps.asSequence()
+                        .map { app ->
+                            val appInfoBase = AppInfoHelper.getAppInfo(pm, app)
+                            val isSystemApp = (app.flags and ApplicationInfo.FLAG_SYSTEM) != 0 ||
+                                (app.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+                            if (isSystemApp) {
+                                systemApps.add(appInfoBase.packageName)
+                            }
+                            
+                            val config = configMap[appInfoBase.packageName]
+                            if (config != null) {
+                                appInfoBase.copy(
+                                    blocked = config.blocked,
+                                )
+                            } else {
+                                appInfoBase
+                            }
+                        }
+                        .toImmutableList()
                 }
 
-                if (!isActive || !refreshGeneration.isCurrent(generation)) return@launch
-                usageStatsMap.clear()
-                usageStatsMap.putAll(usageStats)
-                apps = catalog.apps
-                systemApps = catalog.systemApps
+                apps = appList
                 isLoadSucceed = true
                 applyFilterAndSort(resetVisibleWindow = true)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
+                _loadingFlow.value = false
             } catch (t: Throwable) {
-                if (!isActive || !refreshGeneration.isCurrent(generation)) return@launch
                 XLog.e("Unified AppConfig load failed", t)
-                _events.emit(AppConfigEvent.Error(t))
-            } finally {
-                if (refreshGeneration.isCurrent(generation)) {
-                    _loadingFlow.value = false
-                    refreshJob = null
-                }
+                _loadingFlow.value = false
+                viewModelScope.launch { _events.emit(AppConfigEvent.Error(t)) }
+                isLoadSucceed = false
             }
         }
     }
 
-    @SuppressLint("MissingPermission")
-    private suspend fun loadUsageStats(): Map<String, Long> = withContext(Dispatchers.IO) {
+    private fun refreshUsageStats() {
         try {
-            if (!hasUsageStatsPermission()) {
-                return@withContext emptyMap()
-            }
             val context = getApplication<Application>()
             val usageStatsManager = context.getSystemService(android.app.usage.UsageStatsManager::class.java)
             val endTime = System.currentTimeMillis()
             val startTime = endTime - 1000 * 3600 * 24 * 30L // Last 30 days
             val stats = usageStatsManager.queryAndAggregateUsageStats(startTime, endTime)
-            stats?.mapValues { (_, usage) -> usage.totalTimeInForeground }.orEmpty()
+            usageStatsMap.clear()
+            if (stats != null) {
+                for ((pkg, usage) in stats) {
+                    usageStatsMap[pkg] = usage.totalTimeInForeground
+                }
+            }
         } catch (ignored: Exception) {
             XLog.e("Failed to load usage stats", ignored)
-            emptyMap()
         }
     }
 
@@ -259,40 +211,30 @@ class AppConfigViewModel(
     }
 
     fun loadMoreApps() {
-        if (_loadingFlow.value || filterJob?.isActive == true || !_hasMoreAppsFlow.value) return
+        if (_loadingFlow.value || !_hasMoreAppsFlow.value) return
         visibleAppCount = minOf(visibleAppCount + APP_LIST_PAGE_SIZE, filteredApps.size)
         publishVisibleApps()
     }
 
     private fun applyFilterAndSort(resetVisibleWindow: Boolean) {
-        if (!isActive) return
-        val generation = filterGeneration.next()
-        filterJob?.cancel()
-        val sourceApps = apps
-        val sourceSystemApps = systemApps
-        val query = filter
-        val sortOption = currentSortOption
-        val ascending = isAscending
-        val usageStats = usageStatsMap.toMap()
-        filterJob = viewModelScope.launch {
+        viewModelScope.launch {
             val filteredList = withContext(Dispatchers.Default) {
-                sourceApps.asSequence()
+                apps.asSequence()
                     .filter { appInfo ->
-                        if (_hideSystemAppsFlow.value && sourceSystemApps.contains(appInfo.packageName)) {
+                        if (_hideSystemAppsFlow.value && systemApps.contains(appInfo.packageName)) {
                             return@filter false
                         }
-                        if (query.isEmpty()) {
+                        if (filter.isEmpty()) {
                             true
                         } else {
                             val lowerLabel = appInfo.label?.lowercase() ?: ""
                             val lowerPkg = appInfo.packageName.lowercase()
-                            lowerLabel.contains(query) || lowerPkg.contains(query)
+                            lowerLabel.contains(filter) || lowerPkg.contains(filter)
                         }
                     }
-                    .sortedWith(appComparator(sortOption, ascending, usageStats))
+                    .sortedWith(mComparator)
                     .toImmutableList()
             }
-            if (!isActive || !filterGeneration.isCurrent(generation)) return@launch
             filteredApps = filteredList
             if (resetVisibleWindow || visibleAppCount <= 0) {
                 visibleAppCount = minOf(APP_LIST_PAGE_SIZE, filteredApps.size)
@@ -300,10 +242,6 @@ class AppConfigViewModel(
                 visibleAppCount = minOf(visibleAppCount, filteredApps.size)
             }
             publishVisibleApps()
-            if (isLoadSucceed) {
-                _hasLoadedDataFlow.value = true
-            }
-            filterJob = null
         }
     }
 
@@ -326,12 +264,6 @@ class AppConfigViewModel(
     }
 
     private fun updateApp(packageName: String, updater: (AppInfo) -> AppInfo) {
-        if (refreshJob != null) {
-            refreshGeneration.invalidate()
-            refreshJob?.cancel()
-            refreshJob = null
-            _loadingFlow.value = false
-        }
         apps = apps.map { app ->
             if (app.packageName == packageName) updater(app) else app
         }.toImmutableList()
@@ -347,7 +279,7 @@ class AppConfigViewModel(
             try {
                 withContext(Dispatchers.IO) {
                     persistMutex.withLock {
-                        val dbManager = storage.dbManager(getApplication())
+                        val dbManager = DBManager.get(getApplication())
                         if (target != null) {
                             if (hasEffectiveConfig(target)) {
                                 dbManager.upsertAppInfo(target)
@@ -355,7 +287,12 @@ class AppConfigViewModel(
                                 dbManager.removeAppInfosByPackage(listOf(target.packageName))
                             }
                         }
-                        store.persistAppConfigs(getApplication(), changedConfigs)
+                        EntityStoreManager.storeEntitiesToFile(
+                            getApplication(),
+                            EntityType.APP_CONFIG,
+                            changedConfigs,
+                            AppInfo::class.java,
+                        )
                     }
                 }
             } catch (t: Throwable) {
@@ -369,29 +306,25 @@ class AppConfigViewModel(
         return appInfo.blocked
     }
 
-    private fun appComparator(
-        sortOption: SortOption,
-        ascending: Boolean,
-        usageStats: Map<String, Long>,
-    ) = Comparator<AppInfo> { o1, o2 ->
+    private val mComparator = Comparator<AppInfo> { o1, o2 ->
         // Keep configured apps pinned on top regardless of selected sort mode.
         val configCompare = compareConfigPriority(o1, o2)
         if (configCompare != 0) {
             return@Comparator configCompare
         }
 
-        val result = when (sortOption) {
+        val result = when (currentSortOption) {
             SortOption.LABEL -> compareString(o1.label, o2.label)
             SortOption.PACKAGE -> compareString(o1.packageName, o2.packageName)
             SortOption.USAGE -> {
-                val u1 = usageStats[o1.packageName] ?: 0L
-                val u2 = usageStats[o2.packageName] ?: 0L
+                val u1 = usageStatsMap[o1.packageName] ?: 0L
+                val u2 = usageStatsMap[o2.packageName] ?: 0L
                 u1.compareTo(u2)
             }
             SortOption.SELECTION -> compareString(o1.label, o2.label) // Fallback for equal priority
         }
 
-        if (ascending) result else -result
+        if (isAscending) result else -result
     }
 
     private fun compareConfigPriority(o1: AppInfo, o2: AppInfo): Int {
@@ -412,9 +345,76 @@ class AppConfigViewModel(
         return s1.compareTo(s2, ignoreCase = true)
     }
 
-    private data class AppCatalog(
-        val apps: ImmutableList<AppInfo>,
-        val systemApps: Set<String>,
-    )
+    private suspend fun performMigrationIfNeeded(): List<AppInfo> = withContext(Dispatchers.IO) {
+        val context = getApplication<Application>()
+        
+        // Check both internal and external files directories
+        val internalDir = StorageUtils.getInternalFilesDir(context)
+        val externalDir = StorageUtils.getFilesDir(context)
+        
+        XLog.i("Internal dir files: ${internalDir.listFiles()?.map { it.name } ?: "null"}")
+        XLog.i("External dir files: ${externalDir.listFiles()?.map { it.name } ?: "null"}")
+        
+        // Check SharedPreferences and other dirs
+        val dataDir = context.dataDir
+        XLog.i("Data dir subfolders: ${dataDir.listFiles()?.map { it.name } ?: "null"}")
+        val prefsDir = File(dataDir, "shared_prefs")
+        if (prefsDir.exists()) {
+            XLog.i("SharedPrefs files: ${prefsDir.listFiles()?.map { it.name } ?: "null"}")
+        }
 
+        val dbFile = context.getDatabasePath("xsmscode_room.db")
+        if (dbFile.exists()) {
+            XLog.i("Database file found: ${dbFile.absolutePath}, size: ${dbFile.length()} bytes")
+        } else {
+            XLog.i("Database file NOT found at expected path: ${dbFile.absolutePath}")
+        }
+
+        val blockedFiles = listOf(File(internalDir, "blocked_apps"), File(externalDir, "blocked_apps"))
+
+        XLog.i("Checking for legacy app configs (blocked_apps)...")
+        val mergedMap = mutableMapOf<String, AppInfo>()
+        var migrationTriggered = false
+
+        // 1. Migrate blocked apps
+        blockedFiles.forEach { file ->
+            if (file.exists()) {
+                XLog.i("Found legacy blocked apps file: ${file.absolutePath}")
+                try {
+                    val blockedApps = EntityStoreManager.loadEntitiesFromFile(file, AppInfo::class.java)
+                    blockedApps.forEach { app ->
+                        mergedMap[app.packageName] = app.copy(blocked = true)
+                    }
+                    migrationTriggered = true
+                } catch (e: Exception) {
+                    XLog.e("Failed to migrate blocked apps from ${file.absolutePath}", e)
+                }
+            }
+        }
+
+        if (!migrationTriggered) {
+            XLog.i("No legacy configs found in internal or external storage.")
+            return@withContext emptyList<AppInfo>()
+        }
+
+        val migratedList = mergedMap.values.toList()
+        if (migratedList.isNotEmpty()) {
+            val dbManager = DBManager.get(context)
+            dbManager.insertOrReplaceInTxSuspend(AppInfo::class.java, migratedList)
+            EntityStoreManager.storeEntitiesToFile(context, EntityType.APP_CONFIG, migratedList, AppInfo::class.java)
+
+            // Rename old files to avoid repeated migration attempts
+            blockedFiles.forEach { file ->
+                if (file.exists()) {
+                    try {
+                        file.renameTo(File(file.absolutePath + ".bak"))
+                    } catch (ignored: Exception) {}
+                }
+            }
+
+            XLog.i("Migration completed. Migrated ${migratedList.size} apps.")
+        }
+
+        migratedList
+    }
 }

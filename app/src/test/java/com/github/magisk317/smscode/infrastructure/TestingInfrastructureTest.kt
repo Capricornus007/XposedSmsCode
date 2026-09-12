@@ -15,12 +15,15 @@ class TestingInfrastructureTest {
 
     @Test
     @DisplayName("JUnit 5 and MockK should work together")
-    fun testMockKIntegration() {
+    fun testMockkIntegration() {
+        // Arrange
         val service = mockk<SimpleService>()
         every { service.getValue() } returns "mocked value"
 
+        // Act
         val result = service.getValue()
 
+        // Assert
         assertEquals("mocked value", result)
         verify(exactly = 1) { service.getValue() }
     }

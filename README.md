@@ -1,31 +1,25 @@
 # XposedSmsCode
 
-![Star History Chart](https://api.star-history.com/svg?repos=Capricornus007/XposedSmsCode&type=Date)
+![Star History Chart](https://api.star-history.com/svg?repos=Capricornus007/xposedsmscode&type=Date)
 
 <div align="center">
     <a href="https://play.google.com/store/apps/details?id=com.github.tianma8023.xposed.smscode">
         <img src="https://play.google.com/intl/zh-CN/badges/static/images/badges/zh-cn_badge_web_generic.png" alt="Get it on Google Play" height="80"/>
     </a>
-    <a href="https://github.com/Capricornus007/XposedSmsCode/releases">
+    <a href="https://github.com/Capricornus007/xposedsmscode/releases">
         <img src="https://raw.githubusercontent.com/machiav3lli/oandbackupx/master/badge_github.png" alt="Get it on GitHub" height="80"/>
     </a>
 </div>
 
 <div align="center">
 
-<!-- badges:platform:start -->
-[![Commits](https://img.shields.io/github/commit-activity/y/Capricornus007/XposedSmsCode?style=flat-square)](https://github.com/Capricornus007/XposedSmsCode/graphs/commit-activity) [![Last Commit](https://img.shields.io/github/last-commit/Capricornus007/XposedSmsCode?style=flat-square)](https://github.com/Capricornus007/XposedSmsCode/commits) [![Contributors](https://img.shields.io/github/contributors/Capricornus007/XposedSmsCode?style=flat-square)](https://github.com/Capricornus007/XposedSmsCode/graphs/contributors) [![CI](https://img.shields.io/github/actions/workflow/status/Capricornus007/XposedSmsCode/ci.yml?style=flat-square&label=Build&logo=github-actions&logoColor=white)](https://github.com/Capricornus007/XposedSmsCode/actions/workflows/ci.yml) [![Latest Release](https://img.shields.io/github/v/release/Capricornus007/XposedSmsCode?include_prereleases&style=flat-square&logo=github)](https://github.com/Capricornus007/XposedSmsCode/releases) [![Release Date](https://img.shields.io/github/release-date/Capricornus007/XposedSmsCode?style=flat-square)](https://github.com/Capricornus007/XposedSmsCode/releases) [![Downloads](https://img.shields.io/github/downloads/Capricornus007/XposedSmsCode/total?style=flat-square&color=blue)](https://github.com/Capricornus007/XposedSmsCode/releases) [![License](https://img.shields.io/github/license/Capricornus007/XposedSmsCode?style=flat-square)](LICENSE)
-<!-- badges:platform:end -->
+[![Commits](https://img.shields.io/github/commit-activity/y/Capricornus007/xposedsmscode?style=flat-square)](https://github.com/Capricornus007/xposedsmscode/graphs/commit-activity) [![Last Commit](https://img.shields.io/github/last-commit/Capricornus007/xposedsmscode?style=flat-square)](https://github.com/Capricornus007/xposedsmscode/commits) [![Contributors](https://img.shields.io/github/contributors/Capricornus007/xposedsmscode?style=flat-square)](https://github.com/Capricornus007/xposedsmscode/graphs/contributors) [![CI](https://img.shields.io/github/actions/workflow/status/Capricornus007/xposedsmscode/ci.yml?style=flat-square&label=Build&logo=github-actions&logoColor=white)](https://github.com/Capricornus007/xposedsmscode/actions/workflows/ci.yml) [![Latest Release](https://img.shields.io/github/v/release/Capricornus007/xposedsmscode?include_prereleases&style=flat-square&logo=github)](https://github.com/Capricornus007/xposedsmscode/releases) [![Release Date](https://img.shields.io/github/release-date/Capricornus007/xposedsmscode?style=flat-square)](https://github.com/Capricornus007/xposedsmscode/releases) [![Downloads](https://img.shields.io/github/downloads/Capricornus007/xposedsmscode/total?style=flat-square&color=blue)](https://github.com/Capricornus007/xposedsmscode/releases) [![License](https://img.shields.io/github/license/Capricornus007/xposedsmscode?style=flat-square)](LICENSE)
 
-<!-- badges:tech:start -->
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Java](https://img.shields.io/badge/Java-26%2B-E76F00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.08.01-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.7.1-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.3.2-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-26-brightgreen?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Xposed API](https://img.shields.io/badge/Xposed_API-102-orange?style=flat-square)](https://github.com/libxposed/api) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
-<!-- badges:tech:end -->
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.03.00-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.5.0--nightly-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.2.0--alpha04-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-26-brightgreen?style=flat-square&logo=android)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-36-blue?style=flat-square&logo=android)](https://developer.android.com/about/versions) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
 
 </div>
 
 识别短信验证码的Xposed模块，并将验证码拷贝到剪切板，亦可以自动输入验证码。
-
-如果你还需要将验证码、短信内容或应用通知进一步转发到 Telegram、Webhook、邮箱等通道，可以了解一下新项目 [信驿 Relay](https://github.com/Capricornus007/xinyi-relay)。它更偏向消息转发与验证码联动场景；若主要需求是验证码识别与自动输入，继续使用本项目会更合适。
 
 [English Version](./README-EN.md)
 
@@ -45,11 +39,11 @@
 
 # 注意
 - **此模块适用于偏原生的系统，其他第三方定制Rom可能不适用。**
-- **兼容性：最低 Android 8.0（API 26），目标 Android 16（API 37）。**
-- **支持 LibXposed API 102。**
+- **兼容性：最低 Android 7.0（API 24），目标 Android 16（API 36）。**
+- **支援 LibXposed API 102；不依赖 magisk317 的 GitLab 私有子模块。**
+- **使用 `META-INF/xposed/module.prop` 与 `java_init.list`，可在 API 102 框架上直接载入。**
 - **代码库：100% Kotlin + Jetpack Compose + Room + Coroutines**
 - **遇到问题请先阅读模块中的"常见问题"**
-- Play、GitHub 与预留的 F-Droid 配置仅表示发行渠道差异；项目不再提供独立 Lite APK 或用构建变体划分功能层级。
 
 # 功能
 - 收到验证码短信后将验证码提取并复制到系统剪贴板
@@ -59,7 +53,7 @@
 - 验证码提取成功后，自动删除该验证码短信（实验性）
 - 拦截并屏蔽特定的验证码短信
 - 支持自定义验证码短信关键字（支持正则表达式）
-- 支持官方只读验证码规则与自定义验证码匹配提取规则（支持导入与导出用户规则表）
+- 支持自定义验证码匹配提取规则（支持导入与导出规则表）
 - 在支持的应用中自动输入提取的验证码
 - 提取并转发应用通知消息中的验证码
 
@@ -67,22 +61,16 @@
 - 定时发送短信
 
 # 发布元数据维护
-- 发版前编辑 `docs/CHANGELOG.md` 当前版本块。
-- 发版前校验版本、发布说明与标签：`scripts/release/check_release_guard.sh`
-- GitHub Release、Xposed-Modules-Repo 与 Telegram 通知共用当前版本 changelog 块。
-
-# 自动化维护边界
-- CI 公共逻辑固定到 `magisk-ci-toolkit` 的不可变提交；GitLab `include.ref`、作业变量和
-  本地/GitHub resolver 必须保持同一 SHA。resolver 使用 exact fetch，因此仍可由维护者
-  显式覆盖为 branch/tag，但仓库默认值不得回退到浮动 `main`。
-- Telegram CI 通知：GitHub 侧由 `.github/workflows/notification.yml` 处理，GitLab 侧由 `.gitlab-ci.yml` 的 `telegram:ci` 处理；tag/release 通知仍由 release workflow 完成后触发。
-- Renovate：GitLab 已配置定时 pipeline，使用 `.gitlab/renovate-config.js` 和隐藏变量 `RENOVATE_TOKEN`；手动 web/API pipeline 需要设置 `DEPENDENCY_OWNER=gitlab` 才会只跑 Renovate；GitLab MR 使用 Renovate 原生 automerge。
-- Dependabot：依赖 GitHub Dependency Graph / alerts，本轮不迁移，现有 GitHub dependency workflow 保持不变。
+- Fastlane 元数据目录：`fastlane/metadata/android`
+- 发版前同步 Fastlane 更新日志与截图：`scripts/sync_fastlane_metadata.sh`
+- 发版前校验版本与发布元数据：`scripts/check_release_guard.sh`
+- Fastlane 的 `changelogs/{versionCode}.txt` 由 `distribution/whatsnew` 自动同步生成。
 
 # 文档
 - [更新日志 (Changelog)](docs/CHANGELOG.md)
 - [重构汇总 (Refactoring Summary)](docs/REFACTORING.md)
 - [隐私政策 (Privacy Policy)](docs/PRIVACY.md)
+- [赞助与捐赠 (Donations)](docs/DONATIONS.md)
 
 # 感谢
 - [原始项目 (tianma8023/XposedSmsCode)](https://github.com/tianma8023/XposedSmsCode)
@@ -101,3 +89,12 @@
 
 # 协议
 所有的源码均遵循 [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt) 协议
+
+# 赞助与捐赠
+如果本项目对你有帮助，欢迎支持开发者。你的支持会直接用于项目维护与持续迭代。
+
+赞助名单与说明请见：[赞助与捐赠文档](docs/DONATIONS.md)。
+
+| 支付宝收款码 | 微信赞赏码 | 微信收款码 |
+| :---: | :---: | :---: |
+| ![Alipay](./art/sponsorship/alipay.png) | ![WeChat Appreciation](./art/sponsorship/wx.png) | ![WeChat Collect](./art/sponsorship/wx_collect.png) |

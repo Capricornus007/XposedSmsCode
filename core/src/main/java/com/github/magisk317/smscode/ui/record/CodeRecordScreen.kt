@@ -1,9 +1,8 @@
-@file:Suppress("LocalContextGetResourceValueCall")
-
 package com.github.magisk317.smscode.ui.record
 
 import android.content.ClipData
 import android.os.SystemClock
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,8 +13,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,14 +33,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalResources
-import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
@@ -57,146 +50,39 @@ import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import com.github.magisk317.smscode.runtime.bridge.UiPrefsAccess
-import org.koin.compose.koinInject
-import io.github.magisk317.smscode.runtime.contract.sim.SimSlotLabelFormatter
-import io.github.magisk317.smscode.rule.utils.CodeRecordSimilarityUtils
-import io.github.magisk317.uikit.surface.AppIconImage
-import io.github.magisk317.uikit.foundation.LoadingIndicatorTokens
-import io.github.magisk317.uikit.foundation.LocalSnackbarHostState
-import io.github.magisk317.uikit.common.showLatestSnackbar
-import io.github.magisk317.uikit.foundation.PolygonMorphLoadingIndicator
-import io.github.magisk317.uikit.foundation.SessionLoadingRegistry
-import io.github.magisk317.uikit.foundation.rememberMinDurationLoading
+import com.github.magisk317.smscode.ui.common.AppIconImage
+import com.github.magisk317.smscode.ui.common.LoadingIndicatorTokens
+import com.github.magisk317.smscode.ui.common.PolygonMorphLoadingIndicator
+import com.github.magisk317.smscode.ui.common.SessionLoadingRegistry
+import com.github.magisk317.smscode.ui.common.rememberMinDurationLoading
 import com.github.magisk317.smscode.ui.home.Item
-import com.github.magisk317.smscode.ui.home.PageRefreshAction
-import com.github.magisk317.smscode.ui.home.PageRefreshTriggerConsumer
 import com.github.magisk317.smscode.ui.home.RetentionDialog
+import com.github.magisk317.smscode.ui.home.SectionHeader
 import com.github.magisk317.smscode.ui.home.SwitchItem
-import io.github.magisk317.uikit.preference.AppCheckbox
-import io.github.magisk317.uikit.preference.TextInputDialog
-import io.github.magisk317.uikit.surface.AppTopBar
-import io.github.magisk317.uikit.surface.WorkspaceEmptyState
-import io.github.magisk317.uikit.surface.WorkspaceListItem
-import io.github.magisk317.uikit.theme.UiKitStyle
-import io.github.magisk317.uikit.theme.currentUiKitStyle
-import kotlinx.coroutines.Dispatchers
+import com.github.magisk317.smscode.ui.home.TextInputDialog
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
 private const val RECORD_ENABLE_KEY = PrefConst.KEY_ENABLE_CODE_RECORDS_CODE
 private const val RECORD_HISTORY_LIMIT_KEY = PrefConst.KEY_HISTORY_LIMIT_CODE
-private const val CODE_RECORD_DEDUP_WINDOW_MS = CodeRecordSimilarityUtils.DEFAULT_WINDOW_MS
-
-private data class CodeRecordPageRuntime(
-    val isActive: Boolean = true,
-    val keepDataActive: Boolean = isActive,
-    val onPageDataReady: (cacheHit: Boolean) -> Unit = {},
-    val onRecordSwipeGestureActiveChanged: (Boolean) -> Unit = {},
-)
-
-private val LocalCodeRecordPageRuntime = staticCompositionLocalOf { CodeRecordPageRuntime() }
-
-internal class RecordSwipeGestureCoordinator(
-    private val onActiveChanged: (Boolean) -> Unit,
-) {
-    private val activeRows = mutableSetOf<Any>()
-
-    fun update(rowKey: Any, active: Boolean) {
-        val wasActive = activeRows.isNotEmpty()
-        if (active) {
-            activeRows.add(rowKey)
-        } else {
-            activeRows.remove(rowKey)
-        }
-        val isActive = activeRows.isNotEmpty()
-        if (wasActive != isActive) onActiveChanged(isActive)
-    }
-
-    fun releaseAll() {
-        if (activeRows.isEmpty()) return
-        activeRows.clear()
-        onActiveChanged(false)
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Suppress("CyclomaticComplexMethod")
 @Composable
 fun CodeRecordScreen(
-    onBack: (() -> Unit)? = null,
-    refreshTrigger: Int = 0,
-    isActive: Boolean = true,
-    keepDataActive: Boolean = isActive,
-    onPageDataReady: (cacheHit: Boolean) -> Unit = {},
-    onRecordSwipeGestureActiveChanged: (Boolean) -> Unit = {},
-    viewModel: CodeRecordViewModel = koinViewModel(),
-    scrollChromeState: io.github.magisk317.uikit.scroll.ScrollChromeState? = null,
-) {
-    CompositionLocalProvider(
-        LocalCodeRecordPageRuntime provides CodeRecordPageRuntime(
-            isActive = isActive,
-            keepDataActive = keepDataActive,
-            onPageDataReady = onPageDataReady,
-            onRecordSwipeGestureActiveChanged = onRecordSwipeGestureActiveChanged,
-        ),
-    ) {
-        when (currentUiKitStyle()) {
-            UiKitStyle.Miuix -> CodeRecordScreenMiuix(
-                onBack = onBack,
-                refreshTrigger = refreshTrigger,
-                viewModel = viewModel,
-                scrollChromeState = scrollChromeState,
-            )
-
-            UiKitStyle.Expressive -> CodeRecordScreenMaterial(
-                onBack = onBack,
-                refreshTrigger = refreshTrigger,
-                viewModel = viewModel,
-                scrollChromeState = scrollChromeState,
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
-@Suppress("CyclomaticComplexMethod")
-@Composable
-internal fun CodeRecordScreenShared(
+    hazeState: HazeState,
+    hazeStyle: HazeStyle,
     onBack: (() -> Unit)? = null,
     refreshTrigger: Int = 0,
     viewModel: CodeRecordViewModel = koinViewModel(),
-    scrollChromeState: io.github.magisk317.uikit.scroll.ScrollChromeState? = null,
 ) {
-    val pageRuntime = LocalCodeRecordPageRuntime.current
-    val isActive = pageRuntime.isActive
-    val keepDataActive = pageRuntime.keepDataActive
-    val currentOnPageDataReady by rememberUpdatedState(pageRuntime.onPageDataReady)
-    val currentOnRecordSwipeGestureActiveChanged by rememberUpdatedState(
-        pageRuntime.onRecordSwipeGestureActiveChanged,
-    )
-    val swipeGestureCoordinator = remember {
-        RecordSwipeGestureCoordinator { active ->
-            currentOnRecordSwipeGestureActiveChanged(active)
-        }
-    }
-    DisposableEffect(viewModel, keepDataActive) {
-        viewModel.setActive(keepDataActive)
-        onDispose {
-            if (keepDataActive) viewModel.setActive(false)
-        }
-    }
-    DisposableEffect(swipeGestureCoordinator, isActive) {
-        if (!isActive) swipeGestureCoordinator.releaseAll()
-        onDispose {
-            if (isActive) swipeGestureCoordinator.releaseAll()
-        }
-    }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val smsList = uiState.smsList
     val isLoading = uiState.isLoading
@@ -205,46 +91,15 @@ internal fun CodeRecordScreenShared(
     var manualRefreshing by remember { mutableStateOf(false) }
     var manualRefreshStartedAt by remember { mutableLongStateOf(0L) }
     val showLoading = rememberMinDurationLoading(
-        actualLoading = isActive && isLoading && shouldShowInitialLoading,
+        actualLoading = isLoading && shouldShowInitialLoading,
         minDurationMillis = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
     )
-    val snackbarHostState = LocalSnackbarHostState.current
+    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    val resources = LocalResources.current
-    val prefs = koinInject<UiPrefsAccess>()
-    val simSlot1Remark by produceState(initialValue = "", context, keepDataActive) {
-        if (!keepDataActive) return@produceState
-        val fallback = prefs.getSimSlotRemark(context, 0)
-        value = fallback
-        AppPreferencesDataStore.getStringFlow(
-            context,
-            PrefConst.KEY_SIM_SLOT1_REMARK,
-            fallback,
-        ).collect { value = it }
-    }
-    val simSlot2Remark by produceState(initialValue = "", context, keepDataActive) {
-        if (!keepDataActive) return@produceState
-        val fallback = prefs.getSimSlotRemark(context, 1)
-        value = fallback
-        AppPreferencesDataStore.getStringFlow(
-            context,
-            PrefConst.KEY_SIM_SLOT2_REMARK,
-            fallback,
-        ).collect { value = it }
-    }
-    val simSlotRemarkResolver: (Int) -> String = remember(simSlot1Remark, simSlot2Remark) {
-        { slot ->
-            when (slot) {
-                0 -> simSlot1Remark
-                1 -> simSlot2Remark
-                else -> ""
-            }
-        }
-    }
 
-    LaunchedEffect(isActive, isLoading, shouldShowInitialLoading, initialLoadingStarted) {
-        if (!isActive || !shouldShowInitialLoading) return@LaunchedEffect
+    LaunchedEffect(isLoading, shouldShowInitialLoading, initialLoadingStarted) {
+        if (!shouldShowInitialLoading) return@LaunchedEffect
         if (isLoading) {
             initialLoadingStarted = true
         } else if (initialLoadingStarted) {
@@ -252,12 +107,7 @@ internal fun CodeRecordScreenShared(
         }
     }
 
-    LaunchedEffect(isActive, isLoading, manualRefreshing) {
-        if (!isActive) {
-            manualRefreshing = false
-            manualRefreshStartedAt = 0L
-            return@LaunchedEffect
-        }
+    LaunchedEffect(isLoading, manualRefreshing) {
         if (manualRefreshing && !isLoading) {
             val elapsed = if (manualRefreshStartedAt > 0L) {
                 SystemClock.elapsedRealtime() - manualRefreshStartedAt
@@ -271,9 +121,8 @@ internal fun CodeRecordScreenShared(
         }
     }
 
-    val refreshTriggerConsumer = remember { PageRefreshTriggerConsumer() }
-    LaunchedEffect(isActive, refreshTrigger) {
-        if (refreshTriggerConsumer.consume(isActive, refreshTrigger) == PageRefreshAction.FORCE_REFRESH) {
+    LaunchedEffect(refreshTrigger) {
+        if (refreshTrigger > 0) {
             manualRefreshStartedAt = SystemClock.elapsedRealtime()
             manualRefreshing = true
             viewModel.refreshData()
@@ -285,17 +134,14 @@ internal fun CodeRecordScreenShared(
     fun copyWithFeedback(label: String, text: String, toastText: String, snackbarText: String) {
         scope.launch {
             clipboard.setClipEntry(ClipData.newPlainText(label, text).toClipEntry())
-            snackbarHostState.showSnackbar(snackbarText.ifBlank { toastText })
+            Toast.makeText(context, toastText, Toast.LENGTH_SHORT).show()
+            snackbarHostState.showSnackbar(snackbarText)
         }
     }
 
-    LaunchedEffect(isActive) {
-        if (!isActive) return@LaunchedEffect
-        val cacheHit = viewModel.hasRecordSnapshot.value
-        if (!cacheHit) {
-            viewModel.hasRecordSnapshot.first { it }
-        }
-        currentOnPageDataReady(cacheHit)
+    // Initial Load
+    LaunchedEffect(Unit) {
+        viewModel.loadData()
     }
 
     // Selection State
@@ -306,12 +152,14 @@ internal fun CodeRecordScreenShared(
     var fixedTopHeightPx by remember { mutableIntStateOf(0) }
 
     var historyLimitCode by remember { mutableStateOf("0") }
+    var legacyRecordEnabled by remember { mutableStateOf(true) }
     var showHistoryLimitDialog by remember { mutableStateOf(false) }
     var showHistoryLimitInput by remember { mutableStateOf(false) }
 
-    LaunchedEffect(keepDataActive) {
-        if (!keepDataActive) return@LaunchedEffect
-        historyLimitCode = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT_CODE, "0")
+    LaunchedEffect(Unit) {
+        legacyRecordEnabled = AppPreferencesDataStore.getBoolean(context, PrefConst.KEY_ENABLE_CODE_RECORDS, true)
+        val legacyLimit = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT, "0")
+        historyLimitCode = AppPreferencesDataStore.getString(context, PrefConst.KEY_HISTORY_LIMIT_CODE, legacyLimit)
     }
 
     // Detail Dialog State
@@ -338,16 +186,12 @@ internal fun CodeRecordScreenShared(
     }
 
     // Move deleteAndUndo outside items block and remember it
-    val deleteAndUndo = remember(viewModel, scope, context, resources, snackbarHostState) {
+    val deleteAndUndo = remember(viewModel, scope, context, snackbarHostState) {
         { target: SmsMsg ->
             viewModel.removeSmsMsg(listOf(target))
             scope.launch {
-                val result = snackbarHostState.showLatestSnackbar(
-                    message = resources.getQuantityString(
-                        R.plurals.some_items_removed,
-                        1,
-                        1,
-                    ),
+                val result = snackbarHostState.showSnackbar(
+                    message = context.getString(R.string.some_items_removed, 1),
                     actionLabel = context.getString(R.string.revoke),
                     duration = SnackbarDuration.Long,
                 )
@@ -367,12 +211,8 @@ internal fun CodeRecordScreenShared(
         selectedIds = emptySet()
 
         scope.launch {
-            val result = snackbarHostState.showLatestSnackbar(
-                message = resources.getQuantityString(
-                    R.plurals.some_items_removed,
-                    deleteList.size,
-                    deleteList.size,
-                ),
+            val result = snackbarHostState.showSnackbar(
+                message = context.getString(R.string.some_items_removed, deleteList.size),
                 actionLabel = context.getString(R.string.revoke),
                 duration = SnackbarDuration.Long,
             )
@@ -392,39 +232,47 @@ internal fun CodeRecordScreenShared(
     if (showSettingsSheet) {
         val currentTabName = stringResource(R.string.record_settings_target_code)
         val currentHistoryLimit = historyLimitCode
-        io.github.magisk317.uikit.surface.AppBottomSheet(
-            show = true,
+        ModalBottomSheet(
             onDismissRequest = { showSettingsSheet = false },
-            title = stringResource(
-                id = R.string.record_settings_title_with_target,
-                currentTabName,
-            ),
         ) {
-            SwitchItem(
-                title = stringResource(id = R.string.pref_enable_code_records_title),
-                summary = "",
-                key = RECORD_ENABLE_KEY,
-                defaultValue = true,
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                SectionHeader(
+                    text = stringResource(
+                        id = R.string.record_settings_title_with_target,
+                        currentTabName,
+                    ),
+                )
+                SwitchItem(
+                    title = stringResource(id = R.string.pref_enable_code_records_title),
+                    summary = "",
+                    key = RECORD_ENABLE_KEY,
+                    defaultValue = legacyRecordEnabled,
+                )
 
-            Item(
-                title = stringResource(
-                    id = R.string.pref_history_limit_title_with_target,
-                    currentTabName,
-                ),
-                summary = run {
-                    val entries = stringArrayResource(id = R.array.history_limit_entry_list)
-                    val values = stringArrayResource(id = R.array.history_limit_value_list)
-                    val index = values.indexOf(currentHistoryLimit)
-                    if (index >= 0) {
-                        entries[index]
-                    } else {
-                        "$currentHistoryLimit $currentTabName"
-                    }
-                },
-            ) { showHistoryLimitDialog = true }
+                Item(
+                    title = stringResource(
+                        id = R.string.pref_history_limit_title_with_target,
+                        currentTabName,
+                    ),
+                    summary = run {
+                        val entries = stringArrayResource(id = R.array.history_limit_entry_list)
+                        val values = stringArrayResource(id = R.array.history_limit_value_list)
+                        val index = values.indexOf(currentHistoryLimit)
+                        if (index >= 0) {
+                            entries[index]
+                        } else {
+                            "$currentHistoryLimit $currentTabName"
+                        }
+                    },
+                ) { showHistoryLimitDialog = true }
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
     }
 
@@ -443,7 +291,7 @@ internal fun CodeRecordScreenShared(
                 historyLimitCode = value
                 scope.launch {
                     AppPreferencesDataStore.setString(context, RECORD_HISTORY_LIMIT_KEY, value)
-                    HookPreferenceMirror.publish(context)
+                    AppPreferencesDataStore.syncToSharedPrefs(context)
                 }
             }
             showHistoryLimitDialog = false
@@ -459,15 +307,13 @@ internal fun CodeRecordScreenShared(
             } else {
                 currentHistoryLimit
             },
-            selectAllOnOpen = true,
             onDismiss = { showHistoryLimitInput = false },
-            showClearButton = true,
         ) { value ->
             if (value.all { it.isDigit() } && value.isNotEmpty()) {
                 historyLimitCode = value
                 scope.launch {
                     AppPreferencesDataStore.setString(context, RECORD_HISTORY_LIMIT_KEY, value)
-                    HookPreferenceMirror.publish(context)
+                    AppPreferencesDataStore.syncToSharedPrefs(context)
                 }
             }
             showHistoryLimitInput = false
@@ -476,15 +322,14 @@ internal fun CodeRecordScreenShared(
 
     if (showExportDialog) {
         val currentTabName = stringResource(R.string.record_settings_target_code)
-        io.github.magisk317.uikit.surface.AppAlertDialog(
+        AlertDialog(
             onDismissRequest = { showExportDialog = false },
             title = { Text(stringResource(R.string.record_export_dialog_title)) },
             text = {
                 Text(text = stringResource(R.string.record_export_current_tab_option, currentTabName))
             },
             confirmButton = {
-                io.github.magisk317.uikit.surface.AppPrimaryButton(
-                    text = stringResource(R.string.confirm),
+                TextButton(
                     onClick = {
                         val suffix = "code"
                         val filename = "Records_${suffix}_${SimpleDateFormat(
@@ -494,13 +339,14 @@ internal fun CodeRecordScreenShared(
                         showExportDialog = false
                         exportLauncher.launch(filename)
                     },
-                )
+                ) {
+                    Text(stringResource(R.string.confirm))
+                }
             },
             dismissButton = {
-                io.github.magisk317.uikit.surface.AppSecondaryButton(
-                    text = stringResource(R.string.cancel),
-                    onClick = { showExportDialog = false },
-                )
+                TextButton(onClick = { showExportDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
             },
         )
     }
@@ -508,24 +354,17 @@ internal fun CodeRecordScreenShared(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val pullToRefreshState = rememberPullToRefreshState()
     val density = LocalDensity.current
-    val headerOffset = with(density) {
-        (scrollChromeState?.animatedHeaderOffsetY ?: 0f).coerceAtMost(0f).toDp()
-    }
 
-    val codeSmsList = deduplicateCodeRecords(
-        smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() },
-    )
+    val codeSmsList = smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() }
     val activeSmsList = codeSmsList
     val activeTitle = context.getString(R.string.records_column_code_title)
     val activeEmptyHint = context.getString(R.string.records_column_code_empty)
 
-    CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-        ) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+    ) {
         val defaultTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 120.dp
-        val measuredTopHeight = if (fixedTopHeightPx > 0) with(density) { fixedTopHeightPx.toDp() } else defaultTopPadding
-        val fixedTopHeight = (measuredTopHeight + headerOffset).coerceAtLeast(0.dp)
+        val fixedTopHeight = if (fixedTopHeightPx > 0) with(density) { fixedTopHeightPx.toDp() } else defaultTopPadding
         val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
 
         PullToRefreshBox(
@@ -550,7 +389,8 @@ internal fun CodeRecordScreenShared(
         ) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize(),
+                    .fillMaxSize()
+                    .hazeSource(state = hazeState),
             ) {
                 AnimatedContent(
                     targetState = Pair(showLoading, activeSmsList),
@@ -568,19 +408,24 @@ internal fun CodeRecordScreenShared(
                             )
                         }
                     } else if (list.isEmpty() && !loading) {
-                        WorkspaceEmptyState(
-                            title = stringResource(R.string.list_empty_prompt),
-                            summary = stringResource(R.string.record_empty_summary),
+                        // Empty View
+                        Column(
                             modifier = Modifier.fillMaxSize(),
-                            icon = {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(64.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            },
-                        )
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Email,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = stringResource(R.string.list_empty_prompt),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     } else {
                         RecordSplitColumn(
                             title = activeTitle,
@@ -608,11 +453,6 @@ internal fun CodeRecordScreenShared(
                             scrollBehavior = scrollBehavior,
                             showHeader = false,
                             listContentPadding = PaddingValues(top = fixedTopHeight, bottom = bottomPadding),
-                            simSlotRemarkResolver = simSlotRemarkResolver,
-                            scrollChromeState = scrollChromeState,
-                            isActive = isActive,
-                            scrollToTopSignal = refreshTrigger,
-                            onRowSwipeGestureActiveChanged = swipeGestureCoordinator::update,
                         )
                     }
                 }
@@ -623,21 +463,18 @@ internal fun CodeRecordScreenShared(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
-                .offset(y = headerOffset)
-                .onSizeChanged {
-                    fixedTopHeightPx = it.height
-                    scrollChromeState?.headerHeightPx = it.height.toFloat()
+                .onSizeChanged { fixedTopHeightPx = it.height }
+                .hazeEffect(hazeState, hazeStyle) {
+                    forceInvalidateOnPreDraw = true
                 },
         ) {
-            AppTopBar(
-                title = if (isSelectionMode) {
-                    resources.getQuantityString(
-                        R.plurals.selected_count,
-                        selectedIds.size,
-                        selectedIds.size,
-                    )
-                } else {
-                    context.getString(R.string.pref_code_records_title)
+            TopAppBar(
+                title = {
+                    if (isSelectionMode) {
+                        Text(stringResource(R.string.selected_count, selectedIds.size))
+                    } else {
+                        Text(stringResource(R.string.pref_code_records_title))
+                    }
                 },
                 navigationIcon = {
                     if (isSelectionMode) {
@@ -696,64 +533,57 @@ internal fun CodeRecordScreenShared(
                         }
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
+                ),
                 scrollBehavior = scrollBehavior,
                 windowInsets = WindowInsets.statusBars,
             )
         }
 
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
+        )
+
         val sms = detailSmsMsg
         if (sms != null) {
             RecordDetailOverlay(
+                hazeState = hazeState,
+                hazeStyle = hazeStyle,
                 sms = sms,
                 onDismiss = { detailSmsMsg = null },
                 onCopy = { label, value, toast ->
                     copyWithFeedback(label, value, toast, toast)
                 },
                 onDelete = {
+                    Toast.makeText(
+                        context,
+                        context.getString(R.string.some_items_removed, 1),
+                        Toast.LENGTH_SHORT,
+                    ).show()
                     deleteAndUndo(sms)
                 },
-                simSlotRemarkResolver = simSlotRemarkResolver,
             )
-        }
         }
     }
-}
-
-private fun deduplicateCodeRecords(records: List<SmsMsg>): List<SmsMsg> {
-    return CodeRecordSimilarityUtils.deduplicateRecords(
-        records = records,
-        projection = { record ->
-            CodeRecordSimilarityUtils.Projection(
-                code = record.smsCode,
-                body = record.body,
-                company = record.company,
-                sender = record.sender,
-                packageName = record.packageName,
-                date = record.date,
-            )
-        },
-        systemPackages = setOf("com.android.mms"),
-        windowMs = CODE_RECORD_DEDUP_WINDOW_MS,
-    )
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun RecordDetailOverlay(
+    hazeState: HazeState,
+    hazeStyle: HazeStyle,
     sms: SmsMsg,
     onDismiss: () -> Unit,
     onCopy: (label: String, value: String, toast: String) -> Unit,
     onDelete: () -> Unit,
-    simSlotRemarkResolver: (Int) -> String,
 ) {
     val context = LocalContext.current
     val detailDateFormatter = remember { SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()) }
     val sender = sms.sender ?: sms.company ?: context.getString(R.string.unknown)
-    val originalTime = formatDetailTime(detailDateFormatter, sms.date)
-    val processedTime = formatDetailTime(detailDateFormatter, sms.processedTime)
-    val receiverSimLabel = remember(sms.simSlot, simSlotRemarkResolver) {
-        SimSlotLabelFormatter.format(sms.simSlot, simSlotRemarkResolver)
-    }
+    val time = detailDateFormatter.format(Date(sms.date))
     val content = sms.body.orEmpty()
     val dismissInteraction = remember { MutableInteractionSource() }
     val detailTitleRes = R.string.message_details
@@ -765,6 +595,7 @@ private fun RecordDetailOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .hazeEffect(hazeState, hazeStyle) { forceInvalidateOnPreDraw = true }
             .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.28f))
             .clickable(
                 interactionSource = dismissInteraction,
@@ -772,7 +603,7 @@ private fun RecordDetailOverlay(
             ) { onDismiss() },
         contentAlignment = Alignment.Center,
     ) {
-        Box(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 20.dp)
@@ -780,163 +611,157 @@ private fun RecordDetailOverlay(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
                 ) {},
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 6.dp,
+            shadowElevation = 12.dp,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
-            io.github.magisk317.uikit.surface.AppDialogSurface(
-                title = stringResource(detailTitleRes),
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Column(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    Text(
+                        text = stringResource(detailTitleRes),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
                     Text(
                         text = stringResource(R.string.detail_click_copy_hint),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Text(
-                            text = "${stringResource(R.string.detail_sender)}:",
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        Text(
-                            text = sender,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.clickable {
-                                val message = context.getString(
-                                    R.string.prompt_field_copied,
-                                    context.getString(R.string.detail_sender),
-                                )
-                                onCopy("sms_sender", sender, message)
-                            },
-                        )
-                    }
-                    if (receiverSimLabel.isNotBlank()) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Text(
-                                text = "${stringResource(R.string.detail_receiver_sim)}:",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                            Text(
-                                text = receiverSimLabel,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Text(
-                            text = "${stringResource(R.string.detail_original_time)}:",
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        Text(
-                            text = originalTime,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = if (sms.date > 0L) {
-                                Modifier.clickable {
-                                    val message = context.getString(
-                                        R.string.prompt_field_copied,
-                                        context.getString(R.string.detail_original_time),
-                                    )
-                                    onCopy("sms_original_time", originalTime, message)
-                                }
-                            } else {
-                                Modifier
-                            },
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        Text(
-                            text = "${stringResource(R.string.detail_processed_time)}:",
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        Text(
-                            text = processedTime,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = if (sms.processedTime > 0L) {
-                                Modifier.clickable {
-                                    val message = context.getString(
-                                        R.string.prompt_field_copied,
-                                        context.getString(R.string.detail_processed_time),
-                                    )
-                                    onCopy("sms_processed_time", processedTime, message)
-                                }
-                            } else {
-                                Modifier
-                            },
-                        )
-                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                     Text(
-                        text = "${stringResource(R.string.detail_content)}:",
+                        text = "${stringResource(R.string.detail_sender)}:",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                     Text(
-                        text = content,
+                        text = sender,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable {
-                            if (content.isNotEmpty()) {
-                                val message = context.getString(
-                                    R.string.prompt_field_copied,
-                                    context.getString(R.string.detail_content),
-                                )
-                                onCopy("sms_body", content, message)
-                            }
+                            val message = context.getString(
+                                R.string.prompt_field_copied,
+                                context.getString(R.string.detail_sender),
+                            )
+                            onCopy("sms_sender", sender, message)
                         },
                     )
-                    HorizontalDivider()
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        io.github.magisk317.uikit.surface.AppSecondaryButton(
-                            text = stringResource(copyTextRes),
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                if (content.isNotEmpty()) {
-                                    val message = context.getString(copyToastRes)
-                                    onCopy(copyLabel, content, message)
-                                }
-                                onDismiss()
-                            },
-                        )
-                        io.github.magisk317.uikit.surface.AppPrimaryButton(
-                            text = stringResource(deleteTextRes),
-                            modifier = Modifier.weight(1f),
-                            onClick = {
-                                onDelete()
-                                onDismiss()
-                            },
-                        )
-                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = "${stringResource(R.string.detail_time)}:",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Text(
+                        text = time,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable {
+                            val message = context.getString(
+                                R.string.prompt_field_copied,
+                                context.getString(R.string.detail_time),
+                            )
+                            onCopy("sms_time", time, message)
+                        },
+                    )
+                }
+                Text(
+                    text = "${stringResource(R.string.detail_content)}:",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                Text(
+                    text = content,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable {
+                        if (content.isNotEmpty()) {
+                            val message = context.getString(
+                                R.string.prompt_field_copied,
+                                context.getString(R.string.detail_content),
+                            )
+                            onCopy("sms_body", content, message)
+                        }
+                    },
+                )
+                HorizontalDivider()
+                ButtonGroup(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    overflowIndicator = { menuState ->
+                        ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
+                    },
+                ) {
+                    customItem(
+                        buttonGroupContent = {
+                            OutlinedButton(
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    if (content.isNotEmpty()) {
+                                        val message = context.getString(copyToastRes)
+                                        onCopy(copyLabel, content, message)
+                                    }
+                                    onDismiss()
+                                },
+                            ) {
+                                Text(stringResource(copyTextRes))
+                            }
+                        },
+                        menuContent = { menuState ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(copyTextRes)) },
+                                onClick = {
+                                    if (content.isNotEmpty()) {
+                                        val message = context.getString(copyToastRes)
+                                        onCopy(copyLabel, content, message)
+                                    }
+                                    menuState.dismiss()
+                                    onDismiss()
+                                },
+                            )
+                        },
+                    )
+                    customItem(
+                        buttonGroupContent = {
+                            Button(
+                                modifier = Modifier.weight(1f),
+                                onClick = {
+                                    onDelete()
+                                    onDismiss()
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.errorContainer,
+                                    contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                ),
+                            ) {
+                                Text(stringResource(deleteTextRes))
+                            }
+                        },
+                        menuContent = { menuState ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(deleteTextRes)) },
+                                onClick = {
+                                    onDelete()
+                                    menuState.dismiss()
+                                    onDismiss()
+                                },
+                            )
+                        },
+                    )
                 }
             }
         }
-    }
-}
-
-private fun formatDetailTime(
-    formatter: SimpleDateFormat,
-    timestamp: Long,
-): String {
-    return if (timestamp > 0L) {
-        formatter.format(Date(timestamp))
-    } else {
-        "-"
     }
 }
 
@@ -957,16 +782,8 @@ private fun RecordSplitColumn(
     scrollBehavior: TopAppBarScrollBehavior,
     showHeader: Boolean = true,
     listContentPadding: PaddingValues = PaddingValues(0.dp),
-    simSlotRemarkResolver: (Int) -> String,
-    scrollChromeState: io.github.magisk317.uikit.scroll.ScrollChromeState? = null,
-    isActive: Boolean = true,
-    scrollToTopSignal: Int = 0,
-    onRowSwipeGestureActiveChanged: (rowKey: Any, active: Boolean) -> Unit = { _, _ -> },
 ) {
     val listState = rememberLazyListState()
-    io.github.magisk317.uikit.scroll.ReportLazyListScrollToChrome(listState, scrollChromeState)
-    io.github.magisk317.uikit.surface.ScrollToTopEffect(listState, scrollToTopSignal)
-    val isMiuix = currentUiKitStyle() == UiKitStyle.Miuix
     Surface(
         modifier = modifier,
         shape = MaterialTheme.shapes.large,
@@ -1016,7 +833,6 @@ private fun RecordSplitColumn(
                         .fillMaxSize()
                         .nestedScroll(scrollBehavior.nestedScrollConnection),
                     state = listState,
-                    verticalArrangement = Arrangement.spacedBy(if (isMiuix) 12.dp else 0.dp),
                     contentPadding = listContentPadding,
                 ) {
                     items(list, key = { it.id ?: 0 }) { smsMsg ->
@@ -1030,89 +846,37 @@ private fun RecordSplitColumn(
                                 onLongClick = {},
                                 onDetailClick = { onShowDetail(smsMsg) },
                                 modifier = Modifier.animateItem(),
-                                simSlotRemarkResolver = simSlotRemarkResolver,
-                                isActive = isActive,
                             )
                         } else {
-                            // Track whether this page has completed its first frame. During the
-                            // first frame, render a lightweight card without SwipeToDismissBox to
-                            // avoid the per-item state + effect + pointerInput cost on the initial
-                            // composition pass. The swipe gesture becomes available on the next frame.
-                            var swipeReady by remember { mutableStateOf(false) }
-                            LaunchedEffect(Unit) {
-                                withFrameNanos { }
-                                swipeReady = true
-                            }
-                            if (!swipeReady) {
-                                CodeRecordItem(
-                                    smsMsg = smsMsg,
-                                    isSelectionMode = false,
-                                    isSelected = false,
-                                    onClick = { onCopyCode(smsMsg) },
-                                    onLongClick = { onActivateSelection(smsMsg.id ?: 0) },
-                                    onDetailClick = { onShowDetail(smsMsg) },
-                                    modifier = Modifier.animateItem(),
-                                    simSlotRemarkResolver = simSlotRemarkResolver,
-                                    isActive = false,
-                                )
-                            } else {
                             val dismissState = rememberSwipeToDismissBoxState()
-                            val rowGestureKey: Any = smsMsg.id ?: System.identityHashCode(smsMsg)
-                            LaunchedEffect(dismissState.currentValue, isActive) {
-                                if (isActive && dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
+                            LaunchedEffect(dismissState.currentValue) {
+                                if (dismissState.currentValue != SwipeToDismissBoxValue.Settled) {
                                     onDelete(smsMsg)
                                 }
                             }
                             SwipeToDismissBox(
-                                modifier = Modifier.pointerInput(rowGestureKey, isActive) {
-                                    if (!isActive) return@pointerInput
-                                    awaitEachGesture {
-                                        awaitFirstDown(requireUnconsumed = false)
-                                        onRowSwipeGestureActiveChanged(rowGestureKey, true)
-                                        try {
-                                            do {
-                                                val event = awaitPointerEvent(PointerEventPass.Final)
-                                            } while (event.changes.any { it.pressed })
-                                        } finally {
-                                            onRowSwipeGestureActiveChanged(rowGestureKey, false)
-                                        }
-                                    }
-                                },
                                 state = dismissState,
                                 enableDismissFromStartToEnd = true,
                                 enableDismissFromEndToStart = true,
                                 backgroundContent = {
-                                    val dismissDirection = dismissState.dismissDirection
-                                    val isDismissing = dismissDirection != SwipeToDismissBoxValue.Settled
-                                    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                                        val revealWidth = with(LocalDensity.current) {
-                                            val offset = runCatching { dismissState.requireOffset() }.getOrDefault(0f)
-                                            (if (offset < 0f) -offset else offset).toDp()
-                                        }.coerceAtMost(maxWidth)
-                                        if (isDismissing && revealWidth > 0.dp) {
-                                            val revealAlignment = if (dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
-                                                Alignment.CenterStart
-                                            } else {
-                                                Alignment.CenterEnd
-                                            }
-                                            Box(
-                                                modifier = Modifier
-                                                    .align(revealAlignment)
-                                                    .fillMaxHeight()
-                                                    .width(revealWidth)
-                                                    .background(MaterialTheme.colorScheme.errorContainer)
-                                                    .padding(horizontal = 24.dp),
-                                                contentAlignment = revealAlignment,
-                                            ) {
-                                                if (revealWidth >= 56.dp) {
-                                                    Icon(
-                                                        imageVector = Icons.Default.Delete,
-                                                        contentDescription = stringResource(R.string.remove),
-                                                        tint = MaterialTheme.colorScheme.onErrorContainer,
-                                                    )
-                                                }
-                                            }
-                                        }
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(MaterialTheme.colorScheme.errorContainer)
+                                            .padding(horizontal = 24.dp),
+                                        contentAlignment = if (dismissState.dismissDirection ==
+                                            SwipeToDismissBoxValue.StartToEnd
+                                        ) {
+                                            Alignment.CenterStart
+                                        } else {
+                                            Alignment.CenterEnd
+                                        },
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = stringResource(R.string.remove),
+                                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                                        )
                                     }
                                 },
                                 content = {
@@ -1124,16 +888,11 @@ private fun RecordSplitColumn(
                                         onLongClick = { onActivateSelection(smsMsg.id ?: 0) },
                                         onDetailClick = { onShowDetail(smsMsg) },
                                         modifier = Modifier.animateItem(),
-                                        simSlotRemarkResolver = simSlotRemarkResolver,
-                                        isActive = isActive,
                                     )
                                 },
                             )
-                            } // swipeReady else
                         }
-                        if (!isMiuix) {
-                            HorizontalDivider()
-                        }
+                        HorizontalDivider()
                     }
                 }
             }
@@ -1151,28 +910,40 @@ fun CodeRecordItem(
     onLongClick: () -> Unit,
     onDetailClick: () -> Unit,
     modifier: Modifier = Modifier,
-    simSlotRemarkResolver: (Int) -> String,
-    isActive: Boolean = true,
 ) {
     val dateFormatter = remember { SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()) }
     val context = LocalContext.current
-    val itemBackground = if (isSelected) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        Color.Transparent
-    }
 
-    val fallbackLabel = (smsMsg.company ?: smsMsg.sender ?: stringResource(R.string.unknown))
-        .trim()
-        .trim('【', '】', '[', ']')
-    var appLabel by remember(smsMsg.packageName) { mutableStateOf<String?>(null) }
-    LaunchedEffect(smsMsg.packageName, isActive, appLabel == null) {
-        if (!isActive || appLabel != null) return@LaunchedEffect
-        val pkg = smsMsg.packageName
-        appLabel = if (pkg.isNullOrBlank()) {
-            null
-        } else {
-            withContext(Dispatchers.IO) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            )
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+            )
+            .padding(vertical = 12.dp, horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (isSelectionMode) {
+            Checkbox(
+                checked = isSelected,
+                onCheckedChange = { onClick() },
+                modifier = Modifier.padding(end = 16.dp),
+            )
+        }
+
+        // Left Side: Icon + App Name
+        val fallbackLabel = (smsMsg.company ?: smsMsg.sender ?: stringResource(R.string.unknown))
+            .trim()
+            .trim('【', '】', '[', ']')
+        val appLabel = remember(smsMsg.packageName) {
+            val pkg = smsMsg.packageName
+            if (pkg.isNullOrBlank()) {
+                null
+            } else {
                 runCatching {
                     val pm = context.packageManager
                     val appInfo = pm.getApplicationInfo(pkg, 0)
@@ -1180,110 +951,86 @@ fun CodeRecordItem(
                 }.getOrNull()
             }
         }
-    }
-    val displayLabel = appLabel ?: fallbackLabel
-    val hasCode = !smsMsg.smsCode.isNullOrBlank()
-    val codeOrSender = smsMsg.smsCode?.takeIf { it.isNotBlank() }
-        ?: smsMsg.sender?.takeIf { it.isNotBlank() }
-        ?: fallbackLabel
-    val receiverSimLabel = remember(smsMsg.simSlot, simSlotRemarkResolver) {
-        SimSlotLabelFormatter.format(smsMsg.simSlot, simSlotRemarkResolver)
-    }
-
-    WorkspaceListItem(
-        modifier = modifier.fillMaxWidth(),
-        containerColor = itemBackground,
-        onClick = onClick,
-        onLongClick = if (isSelectionMode) null else onLongClick,
-        leadingContent = {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (isSelectionMode) {
-                    AppCheckbox(
-                        checked = isSelected,
-                        onCheckedChange = { onClick() },
-                        modifier = Modifier.padding(end = 12.dp),
-                    )
-                }
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.width(64.dp),
-                ) {
-                    if (isActive) {
-                        AppIconImage(
-                            packageName = smsMsg.packageName,
-                            contentDescription = stringResource(R.string.sms_icon_description),
-                        )
-                    } else {
-                        Spacer(modifier = Modifier.size(40.dp))
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = displayLabel,
-                        style = MaterialTheme.typography.labelSmall,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .basicMarquee(),
-                    )
-                }
-            }
-        },
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = codeOrSender,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                maxLines = 1,
-                overflow = if (hasCode) TextOverflow.Ellipsis else TextOverflow.Clip,
-                modifier = if (hasCode) {
-                    Modifier
-                        .weight(1f)
-                        .padding(end = 8.dp)
-                        .basicMarquee()
-                } else {
-                    Modifier
-                        .width(120.dp)
-                        .basicMarquee()
-                },
-            )
-            if (!hasCode) {
-                Spacer(modifier = Modifier.weight(1f))
-            }
-            Text(
-                text = dateFormatter.format(Date(smsMsg.date)),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        val displayLabel = appLabel ?: fallbackLabel
+        val iconLabel = if (smsMsg.packageName.isNullOrBlank()) {
+            fallbackLabel.replace(Regex("[【】\\[\\]]"), "").trim()
+        } else {
+            null
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        if (receiverSimLabel.isNotBlank()) {
-            Text(
-                text = stringResource(R.string.detail_receiver_sim_with_value, receiverSimLabel),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .width(92.dp)
+                .padding(end = 16.dp),
+        ) {
+            AppIconImage(
+                packageName = smsMsg.packageName,
+                label = iconLabel,
+                contentDescription = stringResource(R.string.sms_icon_description),
             )
             Spacer(modifier = Modifier.height(4.dp))
-        }
-        val body = smsMsg.body
-        if (!body.isNullOrEmpty()) {
             Text(
-                text = body,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
+                text = displayLabel,
+                style = MaterialTheme.typography.labelMedium,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.clickable { onDetailClick() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .basicMarquee(),
             )
+        }
+
+        // Right Side
+        Column(modifier = Modifier.weight(1f)) {
+            val hasCode = !smsMsg.smsCode.isNullOrBlank()
+            val codeOrSender = smsMsg.smsCode?.takeIf { it.isNotBlank() }
+                ?: smsMsg.sender?.takeIf { it.isNotBlank() }
+                ?: fallbackLabel
+            // Top Row: Code + Time
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = codeOrSender,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = if (hasCode) TextOverflow.Ellipsis else TextOverflow.Clip,
+                    modifier = if (hasCode) {
+                        Modifier
+                            .weight(1f)
+                            .padding(end = 8.dp)
+                    } else {
+                        // Keep a fixed 10-char-like viewport for phone number marquee.
+                        Modifier
+                            .width(120.dp)
+                            .basicMarquee()
+                    },
+                )
+                if (!hasCode) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+                Text(
+                    text = dateFormatter.format(Date(smsMsg.date)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            val body = smsMsg.body
+            if (!body.isNullOrEmpty()) {
+                Text(
+                    text = body,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.clickable { onDetailClick() },
+                )
+            }
         }
     }
 }

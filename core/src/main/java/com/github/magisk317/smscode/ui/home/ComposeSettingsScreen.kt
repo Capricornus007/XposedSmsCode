@@ -1,24 +1,13 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
-@file:Suppress("LocalContextGetResourceValueCall")
-
 package com.github.magisk317.smscode.ui.home
 
-import android.annotation.SuppressLint
-import android.Manifest
 import android.app.Activity
-import android.content.ComponentName
 import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.os.Bundle
 import android.os.SystemClock
-import android.provider.Settings
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -29,131 +18,67 @@ import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
-import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import com.github.magisk317.smscode.common.utils.ModuleUtils
 import com.github.magisk317.smscode.core.BuildConfig
-import io.github.magisk317.xposed.logging.MagiskOtel
-import io.github.magisk317.xposed.diagnostics.DiagnosticExportMode
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
-import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsStore
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
+import com.github.magisk317.smscode.common.utils.ModuleUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
-import com.github.magisk317.smscode.common.utils.RuntimeDiagnosticsBridge
-import io.github.magisk317.smscode.runtime.common.diagnostics.LogBundleExporter
-import io.github.magisk317.smscode.runtime.common.diagnostics.VerboseLogEnableTracker
-import com.github.magisk317.smscode.runtime.RuntimeBackupImportStatus
-import com.github.magisk317.smscode.runtime.bridge.UiBackupAccess
-import com.github.magisk317.smscode.runtime.bridge.UiNotificationAccess
-import org.koin.compose.koinInject
-import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogStore
+import com.github.magisk317.smscode.common.utils.LogBundleExporter
+import com.github.magisk317.smscode.common.utils.RuntimeLogStore
 import com.github.magisk317.smscode.common.utils.SPUtils
+import com.github.magisk317.smscode.common.utils.Utils
 import com.github.magisk317.smscode.common.utils.XLog
-import io.github.magisk317.uikit.foundation.LoadingIndicatorTokens
-import io.github.magisk317.uikit.foundation.LocalSnackbarHostState
-import io.github.magisk317.uikit.common.DismissibleSnackbarHost
-import io.github.magisk317.uikit.foundation.PolygonMorphLoadingIndicator
-import io.github.magisk317.uikit.foundation.SessionLoadingRegistry
-import io.github.magisk317.uikit.foundation.rememberMinDurationLoading
-import io.github.magisk317.uikit.preference.NonNegativeIntegerInputDialog
-import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsCallbacks
-import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsItem
-import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsItems
-import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsLabels
-import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsLayout
-import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsState
-import io.github.magisk317.uikit.preference.RuntimeLogShareEntryMode
-import io.github.magisk317.uikit.surface.ConfirmActionDialog
-import io.github.magisk317.uikit.preference.SingleChoiceOptionDialog
-import io.github.magisk317.uikit.preference.SingleChoiceValueDialog
-import io.github.magisk317.uikit.preference.TextInputDialog
+import com.github.magisk317.smscode.ui.common.LoadingIndicatorTokens
+import com.github.magisk317.smscode.ui.common.PolygonMorphLoadingIndicator
+import com.github.magisk317.smscode.ui.common.SessionLoadingRegistry
+import com.github.magisk317.smscode.ui.common.rememberMinDurationLoading
 import com.github.magisk317.smscode.ui.privacy.PrivacyPolicyPage
-import io.github.magisk317.uikit.theme.UiKitStyle
-import io.github.magisk317.uikit.theme.currentUiKitStyle
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
 
-private data class SettingsPageRuntime(
-    val isActive: Boolean = true,
-    val keepDataActive: Boolean = isActive,
-    val onPageDataReady: (cacheHit: Boolean) -> Unit = {},
-)
-
-private val LocalSettingsPageRuntime = staticCompositionLocalOf { SettingsPageRuntime() }
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
-@Suppress("CyclomaticComplexMethod")
 @Composable
 fun ComposeSettingsScreen(
-    viewModel: SettingsViewModel? = null,
-    refreshTrigger: Int = 0,
-    isActive: Boolean = true,
-    keepDataActive: Boolean = isActive,
-    onPageDataReady: (cacheHit: Boolean) -> Unit = {},
-    onExit: () -> Unit = {},
-) {
-    CompositionLocalProvider(
-        LocalSettingsPageRuntime provides SettingsPageRuntime(
-            isActive = isActive,
-            keepDataActive = keepDataActive,
-            onPageDataReady = onPageDataReady,
-        ),
-    ) {
-        when (currentUiKitStyle()) {
-            UiKitStyle.Miuix -> ComposeSettingsScreenMiuix(
-                viewModel = viewModel,
-                refreshTrigger = refreshTrigger,
-                onExit = onExit,
-            )
-
-            UiKitStyle.Expressive -> ComposeSettingsScreenMaterial(
-                viewModel = viewModel,
-                refreshTrigger = refreshTrigger,
-                onExit = onExit,
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
-@Suppress("CyclomaticComplexMethod")
-@SuppressLint("InlinedApi")
-@Composable
-internal fun ComposeSettingsScreenShared(
+    hazeState: HazeState,
+    hazeStyle: HazeStyle,
     viewModel: SettingsViewModel? = null,
     refreshTrigger: Int = 0,
     onExit: () -> Unit = {},
 ) {
-    val pageRuntime = LocalSettingsPageRuntime.current
-    val isActive = pageRuntime.isActive
-    val keepDataActive = pageRuntime.keepDataActive
-    val currentOnPageDataReady by rememberUpdatedState(pageRuntime.onPageDataReady)
     val context = LocalContext.current
     val activityOwner = context as? ComponentActivity
     val settingsViewModel = viewModel ?: if (activityOwner != null) {
@@ -161,45 +86,31 @@ internal fun ComposeSettingsScreenShared(
     } else {
         koinViewModel()
     }
-    val backupAccess = koinInject<UiBackupAccess>()
-    val notificationAccess = koinInject<UiNotificationAccess>()
     val scope = rememberCoroutineScope()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val themeState by produceState(
-        initialValue = SettingsViewModel.ThemeState(mode = 0),
-        settingsViewModel,
-        keepDataActive,
-    ) {
-        if (!keepDataActive) return@produceState
-        settingsViewModel.themeState.collect { value = it }
-    }
+    val themeState by settingsViewModel.themeState.collectAsStateWithLifecycle()
     val themeMode = themeState.mode
-    val uiKitStyle = themeState.uiKitStyle
 
     var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
     var autoInputInterval by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL_DEFAULT) }
     var retentionTime by remember { mutableStateOf(PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT) }
     val showCodeNotificationEnabled = remember { mutableStateOf(true) }
-    val autoCancelNotificationEnabled = remember { mutableStateOf(false) }
     var smsCodeKeywords by remember { mutableStateOf(PrefConst.SMSCODE_KEYWORDS_DEFAULT) }
-    var simSlot1Remark by remember { mutableStateOf("") }
-    var simSlot2Remark by remember { mutableStateOf("") }
     var showAutoInputDialog by remember { mutableStateOf(false) }
     var showAutoInputIntervalDialog by remember { mutableStateOf(false) }
     var showRetentionDialog by remember { mutableStateOf(false) }
     var showSmsTestDialog by remember { mutableStateOf(false) }
     var smsTestInput by remember { mutableStateOf("") }
     var showThemeDialog by remember { mutableStateOf(false) }
-    var showUiKitStyleDialog by remember { mutableStateOf(false) }
+    var showDonateDialog by remember { mutableStateOf(false) }
+    var showAlipayChoiceDialog by remember { mutableStateOf(false) }
+    var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
     var showPrivacyPolicyPage by remember { mutableStateOf(false) }
     var showKeywordsDialog by remember { mutableStateOf(false) }
-    var showSimSlotRemarkDialog by remember { mutableStateOf<Int?>(null) }
     var showLanguageDialog by remember { mutableStateOf(false) }
-    var isActivated by remember { mutableStateOf(false) }
-    val supportsAccessibilityAutoInput = BuildConfig.ENABLE_ACCESSIBILITY_AUTO_INPUT
-    var autoInputAccessibilityEnabled by remember { mutableStateOf(false) }
+    var isActivated by remember { mutableStateOf(ModuleUtils.isModuleActivated(context)) }
     var settingsDataLoaded by remember { mutableStateOf(false) }
     var manualRefreshing by remember { mutableStateOf(false) }
     var expandGeneral by remember { mutableStateOf(false) }
@@ -208,26 +119,14 @@ internal fun ComposeSettingsScreenShared(
     var expandNotification by remember { mutableStateOf(false) }
     var expandExperimental by remember { mutableStateOf(false) }
     var expandOthers by remember { mutableStateOf(false) }
-    val launcherIconVisible = remember { mutableStateOf(true) }
-    var runtimeLogRetentionDays by remember { mutableIntStateOf(PrefConst.RUNTIME_LOG_RETENTION_DAYS_DEFAULT) }
-    val verboseLogEnabled = rememberPrefBoolean(PrefConst.KEY_VERBOSE_LOG_MODE, false)
-    val analyticsEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE_ANALYTICS, true)
-    var showRuntimeLogRetentionDialog by remember { mutableStateOf(false) }
-    var showClearLogConfirmDialog by remember { mutableStateOf(false) }
+    val launcherIconVisible = remember { mutableStateOf(settingsViewModel.isLauncherIconVisible()) }
 
     val reloadSettingsData: suspend () -> Unit = {
         autoInputDelay = AppPreferencesDataStore.getString(
             context,
             PrefConst.KEY_AUTO_INPUT_CODE_DELAY,
-            "",
-        ).ifEmpty {
-            val legacySeconds = AppPreferencesDataStore.getString(
-                context,
-                PrefConst.KEY_AUTO_INPUT_CODE_DELAY_LEGACY,
-                PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT,
-            ).toLongOrNull()?.coerceAtLeast(0L) ?: 0L
-            (legacySeconds * 1000L).toString()
-        }
+            PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT,
+        )
         autoInputInterval = AppPreferencesDataStore.getString(
             context,
             PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL,
@@ -238,54 +137,16 @@ internal fun ComposeSettingsScreenShared(
             PrefConst.KEY_NOTIFICATION_RETENTION_TIME,
             PrefConst.NOTIFICATION_RETENTION_TIME_DEFAULT,
         )
-        runtimeLogRetentionDays = AppPreferencesDataStore.getInt(
-            context,
-            PrefConst.KEY_RUNTIME_LOG_RETENTION_DAYS,
-            PrefConst.RUNTIME_LOG_RETENTION_DAYS_DEFAULT,
-        ).coerceAtLeast(PrefConst.RUNTIME_LOG_RETENTION_DAYS_MIN)
-        val storedShowCodeNotification = AppPreferencesDataStore.getBoolean(
+        showCodeNotificationEnabled.value = AppPreferencesDataStore.getBoolean(
             context,
             PrefConst.KEY_SHOW_CODE_NOTIFICATION,
             true,
-        )
-        // The switch only shows on when the system can actually deliver notifications.
-        // If the user revoked permission (or the master switch is off) after enabling it,
-        // reflect off and persist false so the runtime does not attempt to post.
-        val canDeliverNotification = NotificationManagerCompat.from(context).areNotificationsEnabled() &&
-            notificationAccess.hasPostNotificationsPermission(context)
-        if (storedShowCodeNotification && !canDeliverNotification) {
-            AppPreferencesDataStore.setBoolean(
-                context,
-                PrefConst.KEY_SHOW_CODE_NOTIFICATION,
-                false,
-            )
-            HookPreferenceMirror.publish(context)
-            showCodeNotificationEnabled.value = false
-        } else {
-            showCodeNotificationEnabled.value = storedShowCodeNotification
-        }
-        autoCancelNotificationEnabled.value = AppPreferencesDataStore.getBoolean(
-            context,
-            PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
-            false,
         )
         smsCodeKeywords = AppPreferencesDataStore.getString(
             context,
             PrefConst.KEY_SMSCODE_KEYWORDS,
             PrefConst.SMSCODE_KEYWORDS_DEFAULT,
         )
-        simSlot1Remark = AppPreferencesDataStore.getString(
-            context,
-            PrefConst.KEY_SIM_SLOT1_REMARK,
-            "",
-        ).trim()
-        simSlot2Remark = AppPreferencesDataStore.getString(
-            context,
-            PrefConst.KEY_SIM_SLOT2_REMARK,
-            "",
-        ).trim()
-        autoInputAccessibilityEnabled =
-            supportsAccessibilityAutoInput && isAutoInputAccessibilityServiceEnabled(context)
         val launcherVisible = settingsViewModel.isLauncherIconVisible()
         launcherIconVisible.value = launcherVisible
         val storedLauncherVisible = AppPreferencesDataStore.getBoolean(
@@ -299,7 +160,7 @@ internal fun ComposeSettingsScreenShared(
                 PrefConst.KEY_SHOW_LAUNCHER_ICON,
                 launcherVisible,
             )
-            HookPreferenceMirror.publish(context)
+            AppPreferencesDataStore.syncToSharedPrefs(context)
         }
         settingsViewModel.setInternalFilesWritable()
         settingsDataLoaded = true
@@ -358,7 +219,6 @@ internal fun ComposeSettingsScreenShared(
             runCatching {
                 if ((dataFlags and Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION) != 0) {
                     val flagsToPersist = if (grantFlags != 0) grantFlags else Intent.FLAG_GRANT_READ_URI_PERMISSION
-                    @SuppressLint("WrongConstant")
                     context.contentResolver.takePersistableUriPermission(pickedUri, flagsToPersist)
                 } else {
                     XLog.w(
@@ -384,247 +244,24 @@ internal fun ComposeSettingsScreenShared(
         }
     }
 
-    val refreshTriggerConsumer = remember { PageRefreshTriggerConsumer() }
-    LaunchedEffect(isActive, refreshTrigger) {
-        val action = refreshTriggerConsumer.consume(isActive, refreshTrigger)
-            ?: return@LaunchedEffect
-        when (action) {
-            PageRefreshAction.FORCE_REFRESH -> runManualRefresh()
-            PageRefreshAction.INITIAL_LOAD -> {
-                if (!settingsDataLoaded) reloadSettingsData()
-            }
-            PageRefreshAction.NO_OP -> Unit
+    LaunchedEffect(Unit) {
+        reloadSettingsData()
+    }
+
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
+            isActivated = ModuleUtils.isModuleActivated(context)
+            delay(1000L)
+            isActivated = ModuleUtils.isModuleActivated(context)
         }
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
-    val markPrefsSaved: () -> Unit = {
-        scope.launch {
-            snackbarHostState.showSnackbar(context.getString(R.string.pref_sync_toast))
-        }
+    val markPrefsSaved = {
+        Toast.makeText(context, context.getString(R.string.pref_sync_toast), Toast.LENGTH_SHORT).show()
     }
 
-    val saveRuntimeLogLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/zip"),
-    ) { destination ->
-        if (destination == null) return@rememberLauncherForActivityResult
-        scope.launch {
-            val result = withContext(Dispatchers.IO) {
-                RuntimeDiagnosticsBridge.ensureInstalled()
-                val bundle = LogBundleExporter.buildLogBundle(
-                    context = context,
-                    mode = DiagnosticExportMode.fromDebugLogging(verboseLogEnabled.value),
-                )
-                val file = bundle.file ?: return@withContext bundle.details
-                context.contentResolver.openOutputStream(destination, "wt")?.use { output ->
-                    file.inputStream().use { input -> input.copyTo(output) }
-                } ?: return@withContext "log_export_destination_open_failed"
-                ""
-            }
-            if (result.isNotBlank()) {
-                snackbarHostState.showSnackbar(context.getString(R.string.runtime_log_export_failed, result))
-            } else {
-                snackbarHostState.showSnackbar(context.getString(R.string.runtime_log_saved))
-            }
-        }
-    }
-
-    fun saveRuntimeLogBundle() {
-        val blockReason = LogBundleExporter.checkPreExport(verboseLogEnabled.value)
-        if (blockReason != null) {
-            val resId = context.resources.getIdentifier(blockReason, "string", context.packageName)
-            val message = if (resId != 0) context.getString(resId) else blockReason
-            scope.launch { snackbarHostState.showSnackbar(message) }
-            return
-        }
-        val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", java.util.Locale.US)
-            .format(java.util.Date())
-        saveRuntimeLogLauncher.launch("smscode_logs_$timestamp.zip")
-    }
-
-    fun clearRuntimeLogFolders() {
-        scope.launch {
-            val result = withContext(Dispatchers.IO) {
-                RuntimeDiagnosticsBridge.ensureInstalled()
-                LogBundleExporter.clearLogFolders(context)
-            }
-            snackbarHostState.showSnackbar(
-                if (result.success) {
-                    context.getString(R.string.runtime_log_cleared)
-                } else {
-                    context.getString(R.string.runtime_log_clear_partial_failed, result.details)
-                },
-            )
-        }
-    }
-
-    LaunchedEffect(lifecycleOwner, keepDataActive) {
-        if (!keepDataActive) return@LaunchedEffect
-        lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.RESUMED) {
-            isActivated = ActivationDiagnosticsStore.isModuleActivated(context)
-            autoInputAccessibilityEnabled =
-                supportsAccessibilityAutoInput && isAutoInputAccessibilityServiceEnabled(context)
-            // Reconcile the notification switch with the real system delivery state:
-            // if the permission (or the master switch) was revoked outside the app,
-            // turn the preference back off.
-            if (showCodeNotificationEnabled.value &&
-                !(NotificationManagerCompat.from(context).areNotificationsEnabled() &&
-                    notificationAccess.hasPostNotificationsPermission(context))
-            ) {
-                showCodeNotificationEnabled.value = false
-                AppPreferencesDataStore.setBoolean(
-                    context,
-                    PrefConst.KEY_SHOW_CODE_NOTIFICATION,
-                    false,
-                )
-                HookPreferenceMirror.publish(context)
-            }
-            delay(1000L)
-            isActivated = ActivationDiagnosticsStore.isModuleActivated(context)
-            autoInputAccessibilityEnabled =
-                supportsAccessibilityAutoInput && isAutoInputAccessibilityServiceEnabled(context)
-        }
-    }
-    val accessibilitySettingsLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult(),
-    ) {
-        autoInputAccessibilityEnabled =
-            supportsAccessibilityAutoInput && isAutoInputAccessibilityServiceEnabled(context)
-    }
-
-    suspend fun toggleAccessibilityServiceViaRoot(context: android.content.Context, enable: Boolean): Boolean {
-        return kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-            try {
-                val component = ComponentName(
-                    context,
-                    "com.github.magisk317.smscode.service.AutoInputAccessibilityService",
-                ).flattenToString()
-                val currentServices = Settings.Secure.getString(
-                    context.contentResolver,
-                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-                ).orEmpty()
-                val newServices = if (enable) {
-                    if (currentServices.contains(component)) return@withContext true
-                    if (currentServices.isEmpty()) component else "$currentServices:$component"
-                } else {
-                    if (!currentServices.contains(component)) return@withContext true
-                    currentServices.split(":").filter { it.isNotEmpty() && it != component }.joinToString(":")
-                }
-
-                val process = Runtime.getRuntime().exec("su")
-                val os = java.io.DataOutputStream(process.outputStream)
-                os.writeBytes("settings put secure enabled_accessibility_services $newServices\n")
-                if (enable) {
-                    os.writeBytes("settings put secure accessibility_enabled 1\n")
-                }
-                os.writeBytes("exit\n")
-                os.flush()
-                process.waitFor() == 0
-            } catch (e: java.io.IOException) {
-                XLog.w("Root accessibility toggle failed: %s", e.message ?: e.javaClass.simpleName)
-                false
-            } catch (e: SecurityException) {
-                XLog.w("Root accessibility toggle denied: %s", e.message ?: e.javaClass.simpleName)
-                false
-            } catch (e: InterruptedException) {
-                Thread.currentThread().interrupt()
-                XLog.w("Root accessibility toggle interrupted: %s", e.message ?: e.javaClass.simpleName)
-                false
-            }
-        }
-    }
-
-    fun openAccessibilitySettings() {
-        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-        val componentName = ComponentName(context, "com.github.magisk317.smscode.service.AutoInputAccessibilityService").flattenToString()
-        intent.putExtra(":settings:fragment_args_key", componentName)
-        intent.putExtra(":settings:show_fragment_args", Bundle())
-        if (activityOwner != null) {
-            runCatching {
-                accessibilitySettingsLauncher.launch(intent)
-            }.onFailure {
-                scope.launch {
-                    snackbarHostState.showSnackbar(
-                        context.getString(R.string.pref_auto_input_accessibility_service_open_failed),
-                    )
-                }
-            }
-            return
-        }
-        runCatching {
-            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        }.onFailure {
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    context.getString(R.string.pref_auto_input_accessibility_service_open_failed),
-                )
-            }
-        }
-    }
-    // Enables the code-notification preference once the system permission is available.
-    val enableCodeNotificationPref: () -> Unit = {
-        showCodeNotificationEnabled.value = true
-        scope.launch {
-            AppPreferencesDataStore.setBoolean(
-                context,
-                PrefConst.KEY_SHOW_CODE_NOTIFICATION,
-                true,
-            )
-            HookPreferenceMirror.publish(context)
-            markPrefsSaved()
-        }
-    }
-    val notificationSettingsLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult(),
-    ) {
-        // Returning from system notification settings: re-check the real delivery state.
-        // Only flip the preference on when notifications can actually be posted now.
-        if (NotificationManagerCompat.from(context).areNotificationsEnabled() &&
-            notificationAccess.hasPostNotificationsPermission(context)
-        ) {
-            enableCodeNotificationPref()
-        }
-    }
-    // Opens the system notification settings page for this app as a fallback when the
-    // runtime permission dialog can no longer be shown.
-    val openAppNotificationSettings: () -> Unit = {
-        val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-            .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-        runCatching { notificationSettingsLauncher.launch(intent) }.onFailure {
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    context.getString(R.string.pref_code_notification_owner_permission_settings_hint),
-                )
-            }
-        }
-    }
-    val requestNotificationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { granted ->
-        if (granted) {
-            enableCodeNotificationPref()
-            return@rememberLauncherForActivityResult
-        }
-        // Denied. If the system will no longer show the runtime dialog
-        // (permanently denied or master switch off), fall back to the settings page.
-        val activity = activityOwner ?: (context as? Activity)
-        val canAskAgain = activity != null && ActivityCompat.shouldShowRequestPermissionRationale(
-            activity,
-            Manifest.permission.POST_NOTIFICATIONS,
-        )
-        if (!canAskAgain) {
-            openAppNotificationSettings()
-        } else {
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    context.getString(R.string.pref_code_notification_owner_permission_settings_hint),
-                )
-            }
-        }
-    }
-
-    LaunchedEffect(settingsViewModel, lifecycleOwner, keepDataActive) {
-        if (!keepDataActive) return@LaunchedEffect
+    LaunchedEffect(settingsViewModel, lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
             settingsViewModel.eventsFlow.collect { event ->
                 handleSettingsEvent(
@@ -632,8 +269,8 @@ internal fun ComposeSettingsScreenShared(
                     context = context,
                     activity = activityOwner ?: (context as? Activity),
                     scope = scope,
-                    snackbarHostState = snackbarHostState,
                     onShowPrivacyPolicy = {},
+                    onShowDonate = { showDonateDialog = true },
                     onShowRestoreConfirm = { uri ->
                         restoreUri = uri
                         showRestoreDialog = true
@@ -650,37 +287,35 @@ internal fun ComposeSettingsScreenShared(
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val shouldShowInitialLoading = remember { SessionLoadingRegistry.shouldShowInitial("settings") }
     val showLoading = rememberMinDurationLoading(
-        actualLoading = isActive && shouldShowInitialLoading && !settingsDataLoaded,
+        actualLoading = shouldShowInitialLoading && !settingsDataLoaded,
         minDurationMillis = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
     )
     val pullToRefreshState = rememberPullToRefreshState()
+    val blurRadius = rememberPrefInt(PrefConst.KEY_HAZE_BLUR_RADIUS, 25)
+    val tintAlpha = rememberPrefFloat(PrefConst.KEY_HAZE_TINT_ALPHA, 0.2f)
+    var showBlurRadiusDialog by remember { mutableStateOf(false) }
+    var showTintAlphaDialog by remember { mutableStateOf(false) }
     val autoInputEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, true)
     val autoUpdateEnabled = rememberPrefBoolean(PrefConst.KEY_AUTO_UPDATE_ON_START, true)
     val moduleEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE, true)
     val accordionMode = rememberPrefBoolean(PrefConst.KEY_SETTINGS_ACCORDION_MODE, true)
 
-    LaunchedEffect(isActive, settingsDataLoaded, showLoading, shouldShowInitialLoading) {
-        if (isActive && shouldShowInitialLoading && settingsDataLoaded && !showLoading) {
+    LaunchedEffect(settingsDataLoaded, showLoading, shouldShowInitialLoading) {
+        if (shouldShowInitialLoading && settingsDataLoaded && !showLoading) {
             SessionLoadingRegistry.markShown("settings")
         }
     }
 
-    LaunchedEffect(isActive) {
-        if (!isActive) return@LaunchedEffect
-        val cacheHit = settingsDataLoaded
-        if (!cacheHit) {
-            snapshotFlow { settingsDataLoaded }.first { it }
+    LaunchedEffect(refreshTrigger) {
+        if (refreshTrigger > 0) {
+            runManualRefresh()
         }
-        currentOnPageDataReady(cacheHit)
     }
 
-    CompositionLocalProvider(LocalSnackbarHostState provides snackbarHostState) {
-        Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize()) {
         val topPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() +
             Const.TOP_BAR_HEIGHT.dp // TopBar height
-        val isCompact = with(LocalDensity.current) {
-            LocalWindowInfo.current.containerSize.width.toDp() < 600.dp
-        }
+        val isCompact = LocalConfiguration.current.screenWidthDp < 600
         val bottomPadding =
             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
                 if (isCompact) Const.BOTTOM_SPACE_HEIGHT.dp else 0.dp
@@ -715,6 +350,7 @@ internal fun ComposeSettingsScreenShared(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .hazeSource(hazeState)
                         .padding(bottom = bottomPadding)
                         .nestedScroll(scrollBehavior.nestedScrollConnection)
                         .verticalScroll(scrollState),
@@ -731,7 +367,15 @@ internal fun ComposeSettingsScreenShared(
                         modifier = Modifier.padding(horizontal = Const.PADDING_SMALL.dp),
                         onSaved = markPrefsSaved,
                     )
-                    // MobileEntitlementActivity removed - entitlement system disabled
+                    SwitchItem(
+                        title = stringResource(id = R.string.pref_settings_display_mode_title),
+                        summary = stringResource(id = R.string.pref_settings_display_mode_summary),
+                        key = PrefConst.KEY_SETTINGS_ACCORDION_MODE,
+                        defaultValue = true,
+                        stateOverride = accordionMode,
+                        modifier = Modifier.padding(horizontal = Const.PADDING_SMALL.dp),
+                        onSaved = markPrefsSaved,
+                    )
 
                     ExpandableSettingsSection(
                         title = stringResource(id = R.string.settings_group_general),
@@ -739,14 +383,6 @@ internal fun ComposeSettingsScreenShared(
                         onExpandedChange = { expandGeneral = !expandGeneral },
                         accordionMode = accordionMode.value,
                     ) {
-                        SwitchItem(
-                            title = stringResource(id = R.string.pref_settings_display_mode_title),
-                            summary = stringResource(id = R.string.pref_settings_display_mode_summary),
-                            key = PrefConst.KEY_SETTINGS_ACCORDION_MODE,
-                            defaultValue = true,
-                            stateOverride = accordionMode,
-                            onSaved = markPrefsSaved,
-                        )
                         SwitchItem(
                             title = stringResource(id = R.string.pref_show_launcher_icon_title),
                             summary = stringResource(id = R.string.pref_show_launcher_icon_summary),
@@ -763,21 +399,33 @@ internal fun ComposeSettingsScreenShared(
                                             PrefConst.KEY_SHOW_LAUNCHER_ICON,
                                             !visible,
                                         )
-                                        HookPreferenceMirror.publish(context)
+                                        AppPreferencesDataStore.syncToSharedPrefs(context)
                                     }
-                                    scope.launch {
-                                        snackbarHostState.showSnackbar(
-                                            context.getString(R.string.pref_show_launcher_icon_failed),
-                                        )
-                                    }
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.pref_show_launcher_icon_failed),
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
                                 }
                             },
                             onSaved = markPrefsSaved,
                         )
                         Item(
+                            title = stringResource(id = R.string.pref_choose_theme_title),
+                            summary = stringResource(id = R.string.pref_choose_theme_summary),
+                        ) { showThemeDialog = true }
+                        Item(
                             title = stringResource(id = R.string.pref_language_title),
                             summary = stringResource(id = R.string.pref_language_summary),
                         ) { showLanguageDialog = true }
+                        Item(
+                            title = stringResource(id = R.string.pref_haze_blur_radius_title),
+                            summary = "${blurRadius.intValue}dp",
+                        ) { showBlurRadiusDialog = true }
+                        Item(
+                            title = stringResource(id = R.string.pref_haze_tint_alpha_title),
+                            summary = "%.2f".format(tintAlpha.floatValue),
+                        ) { showTintAlphaDialog = true }
                     }
 
                     ExpandableSettingsSection(
@@ -801,20 +449,6 @@ internal fun ComposeSettingsScreenShared(
                             title = stringResource(id = R.string.pref_smscode_test_title),
                             summary = stringResource(id = R.string.pref_smscode_test_summary),
                         ) { showSmsTestDialog = true }
-                        Item(
-                            title = stringResource(id = R.string.pref_sim_slot1_remark_title),
-                            summary = simSlotRemarkSummary(simSlot1Remark),
-                        ) { showSimSlotRemarkDialog = 0 }
-                        Item(
-                            title = stringResource(id = R.string.pref_sim_slot2_remark_title),
-                            summary = simSlotRemarkSummary(simSlot2Remark),
-                        ) { showSimSlotRemarkDialog = 1 }
-                        Item(
-                            title = stringResource(id = R.string.pref_code_rules_title),
-                            summary = stringResource(id = R.string.pref_code_rules_summary),
-                        ) {
-                            settingsViewModel.openSmsCodeRules()
-                        }
                     }
 
                     ExpandableSettingsSection(
@@ -823,33 +457,6 @@ internal fun ComposeSettingsScreenShared(
                         onExpandedChange = { expandAutoInput = !expandAutoInput },
                         accordionMode = accordionMode.value,
                     ) {
-                        if (supportsAccessibilityAutoInput) {
-                            io.github.magisk317.uikit.preference.ActionSwitchItem(
-                                title = stringResource(id = R.string.pref_auto_input_accessibility_service_title),
-                                summary = stringResource(id = R.string.pref_auto_input_accessibility_service_summary),
-                                checked = autoInputAccessibilityEnabled,
-                                onClick = {
-                                    scope.launch {
-                                        val success = toggleAccessibilityServiceViaRoot(context, !autoInputAccessibilityEnabled)
-                                        if (success) {
-                                            autoInputAccessibilityEnabled = !autoInputAccessibilityEnabled
-                                        } else {
-                                            openAccessibilitySettings()
-                                        }
-                                    }
-                                },
-                                onCheckedChange = { isChecked ->
-                                    scope.launch {
-                                        val success = toggleAccessibilityServiceViaRoot(context, isChecked)
-                                        if (success) {
-                                            autoInputAccessibilityEnabled = isChecked
-                                        } else {
-                                            openAccessibilitySettings()
-                                        }
-                                    }
-                                },
-                            )
-                        }
                         SwitchItem(
                             title = stringResource(id = R.string.pref_enable_auto_input_code_title),
                             summary = stringResource(id = R.string.pref_enable_auto_input_code_summary),
@@ -891,72 +498,6 @@ internal fun ComposeSettingsScreenShared(
                             defaultValue = true,
                             onSaved = markPrefsSaved,
                         )
-                        val handleCodeNotificationToggle: (Boolean) -> Unit = { enabled ->
-                            if (!enabled) {
-                                // Turning off: no system interaction required.
-                                showCodeNotificationEnabled.value = false
-                                scope.launch {
-                                    AppPreferencesDataStore.setBoolean(
-                                        context,
-                                        PrefConst.KEY_SHOW_CODE_NOTIFICATION,
-                                        false,
-                                    )
-                                    HookPreferenceMirror.publish(context)
-                                    markPrefsSaved()
-                                }
-                            } else {
-                                // Turning on: only commit the preference once the system
-                                // will actually deliver notifications. Otherwise request the
-                                // permission first and let the callback flip it on.
-                                val notificationsEnabled =
-                                    NotificationManagerCompat.from(context).areNotificationsEnabled()
-                                val permissionGranted =
-                                    notificationAccess.hasPostNotificationsPermission(context)
-                                when {
-                                    notificationsEnabled && permissionGranted -> {
-                                        enableCodeNotificationPref()
-                                    }
-                                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                                        !permissionGranted -> {
-                                        requestNotificationPermissionLauncher.launch(
-                                            Manifest.permission.POST_NOTIFICATIONS,
-                                        )
-                                    }
-                                    else -> {
-                                        // Permission is granted but the master switch is off
-                                        // (or pre-Tiramisu with notifications disabled): the
-                                        // runtime dialog won't help, jump to settings.
-                                        openAppNotificationSettings()
-                                    }
-                                }
-                            }
-                        }
-                        io.github.magisk317.uikit.preference.ActionSwitchItem(
-                            title = stringResource(id = R.string.pref_show_code_notification_title),
-                            summary = stringResource(id = R.string.pref_show_code_notification_summary),
-                            checked = showCodeNotificationEnabled.value,
-                            onClick = {
-                                handleCodeNotificationToggle(!showCodeNotificationEnabled.value)
-                            },
-                            onCheckedChange = handleCodeNotificationToggle,
-                        )
-                        if (showCodeNotificationEnabled.value) {
-                            SwitchItem(
-                                title = stringResource(id = R.string.pref_auto_cancel_notification_title),
-                                summary = stringResource(id = R.string.pref_auto_cancel_notification_summary),
-                                key = PrefConst.KEY_AUTO_CANCEL_CODE_NOTIFICATION,
-                                defaultValue = false,
-                                stateOverride = autoCancelNotificationEnabled,
-                                onToggle = { autoCancelNotificationEnabled.value = it },
-                                onSaved = markPrefsSaved,
-                            )
-                            if (autoCancelNotificationEnabled.value) {
-                                Item(
-                                    title = stringResource(id = R.string.pref_notification_retention_time_title),
-                                    summary = notificationRetentionEntryLabel(retentionTime),
-                                ) { showRetentionDialog = true }
-                            }
-                        }
                     }
 
                     ExpandableSettingsSection(
@@ -995,92 +536,36 @@ internal fun ComposeSettingsScreenShared(
                             title = stringResource(id = R.string.pref_restore_title),
                             summary = stringResource(id = R.string.pref_restore_summary),
                         ) {
-                            val intent = backupAccess.getImportRuleListSAFIntent(context)
+                            val intent = com.github.magisk317.smscode.feature.backup.BackupManager.getImportRuleListSAFIntent(context)
                             restoreLauncher.launch(intent)
                         }
-                        if (!BuildConfig.DEBUG) {
-                            io.github.magisk317.uikit.preference.StateSwitchItem(
-                                title = stringResource(id = R.string.pref_enable_analytics_title),
-                                summary = stringResource(id = R.string.pref_enable_analytics_summary),
-                                checked = analyticsEnabled.value,
-                                onCheckedChange = { enabled ->
-                                    analyticsEnabled.value = enabled
-                                    scope.launch {
-                                        AppPreferencesDataStore.setBoolean(
-                                            context,
-                                            PrefConst.KEY_ENABLE_ANALYTICS,
-                                            enabled,
-                                        )
-                                        HookPreferenceMirror.publish(context)
-                                        markPrefsSaved()
+                        SwitchItem(
+                            title = stringResource(id = R.string.pref_verbose_log_mode_title),
+                            summary = stringResource(id = R.string.pref_verbose_log_mode_summary),
+                            key = PrefConst.KEY_VERBOSE_LOG_MODE,
+                            defaultValue = false,
+                            onItemClick = {
+                                scope.launch {
+                                    val result = withContext(Dispatchers.IO) {
+                                        LogBundleExporter.buildLogBundle(context)
                                     }
-                                    MagiskOtel.configure(
-                                        MagiskOtel.Config(
-                                            enabled = BuildConfig.DEBUG || enabled,
-                                            serviceName = "xposedsmscode",
-                                            serviceVersion = BuildConfig.VERSION_NAME,
-                                            projectId = "83955172",
-                                            projectName = "XposedSmsCode",
-                                            environment = if (BuildConfig.DEBUG) "debug" else "release",
-                                        ),
-                                    )
-                                },
-                            )
-                        }
-                        RuntimeLogDiagnosticsItems(
-                            labels = RuntimeLogDiagnosticsLabels(
-                                shareLogTitle = stringResource(id = R.string.pref_share_log_title),
-                                shareLogSummary = stringResource(id = R.string.pref_share_log_summary),
-                                verboseLogTitle = stringResource(id = R.string.pref_verbose_log_mode_title),
-                                verboseLogSummary = stringResource(id = R.string.pref_verbose_log_mode_summary),
-                                retentionTitle = stringResource(id = R.string.pref_runtime_log_retention_days_title),
-                                retentionSummary = pluralStringResource(
-                                    id = R.plurals.pref_runtime_log_retention_days_summary,
-                                    count = runtimeLogRetentionDays,
-                                    runtimeLogRetentionDays,
-                                ),
-                                clearLogTitle = stringResource(id = R.string.runtime_log_clear_confirm_title),
-                                clearLogSummary = stringResource(id = R.string.runtime_log_clear_summary),
-                            ),
-                            state = RuntimeLogDiagnosticsState(
-                                verboseLogEnabled = verboseLogEnabled.value,
-                            ),
-                            callbacks = RuntimeLogDiagnosticsCallbacks(
-                                onShareLog = ::saveRuntimeLogBundle,
-                                onVerboseLogEnabledChange = { enabled ->
-                                    verboseLogEnabled.value = enabled
-                                    VerboseLogEnableTracker.onVerboseLogToggled(enabled)
-                                    io.github.magisk317.xposed.logging.LogSanitizerConfig
-                                        .syncFromVerboseMode(enabled)
-                                    scope.launch {
-                                        AppPreferencesDataStore.setBoolean(
-                                            context,
-                                            PrefConst.KEY_VERBOSE_LOG_MODE,
-                                            enabled,
-                                        )
-                                        HookPreferenceMirror.publish(context)
-                                        markPrefsSaved()
+                                    val file = result.file
+                                    if (file == null) {
+                                        Toast.makeText(context, "导出失败: ${result.details}", Toast.LENGTH_LONG).show()
+                                        return@launch
                                     }
-                                    RuntimeDiagnosticsBridge.ensureInstalled()
-                                    RuntimeLogStore.setEnabled(enabled)
-                                    XLog.setLogLevel(
-                                        if (enabled) Log.VERBOSE else com.github.magisk317.smscode.runtime.BuildConfig.LOG_LEVEL,
-                                    )
-                                },
-                                onRetentionClick = { showRuntimeLogRetentionDialog = true },
-                                onClearLogClick = { showClearLogConfirmDialog = true },
-
-                            ),
-                            layout = RuntimeLogDiagnosticsLayout(
-                                shareEntryMode = RuntimeLogShareEntryMode.SEPARATE_ITEM,
-                                itemOrder = listOf(
-                                    RuntimeLogDiagnosticsItem.SHARE_LOG,
-                                    RuntimeLogDiagnosticsItem.VERBOSE_LOG,
-                                    RuntimeLogDiagnosticsItem.SENSITIVE_LOG,
-                                    RuntimeLogDiagnosticsItem.RETENTION,
-                                    RuntimeLogDiagnosticsItem.CLEAR_LOG,
-                                ),
-                            ),
+                                    runCatching {
+                                        LogBundleExporter.shareLogBundle(context, file)
+                                    }.onFailure {
+                                        Toast.makeText(context, "分享失败: ${it.message}", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            },
+                            onToggle = { on ->
+                                RuntimeLogStore.setEnabled(on)
+                                XLog.setLogLevel(if (on) Log.VERBOSE else com.github.magisk317.smscode.storage.BuildConfig.LOG_LEVEL)
+                            },
+                            onSaved = markPrefsSaved,
                         )
                         SwitchItem(
                             title = stringResource(id = R.string.pref_auto_update_on_start_title),
@@ -1114,20 +599,24 @@ internal fun ComposeSettingsScreenShared(
             modifier = Modifier
                 .align(Alignment.TopCenter),
         ) {
-            io.github.magisk317.uikit.surface.AppTopBar(
-                title = stringResource(id = R.string.pref_general_title),
+            TopAppBar(
+                title = { Text(text = stringResource(id = R.string.pref_general_title)) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
+                ),
                 scrollBehavior = scrollBehavior,
                 windowInsets = WindowInsets.statusBars,
-                modifier = Modifier,
+                modifier = Modifier
+                    .hazeEffect(hazeState, hazeStyle) {
+                        forceInvalidateOnPreDraw = true
+                    },
             )
         }
 
-        DismissibleSnackbarHost(
+        SnackbarHost(
             hostState = snackbarHostState,
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = if (isCompact) Const.BOTTOM_SPACE_HEIGHT.dp else 0.dp)
-                .navigationBarsPadding(),
+            modifier = Modifier.align(Alignment.BottomCenter).navigationBarsPadding(),
         )
     }
 
@@ -1135,7 +624,6 @@ internal fun ComposeSettingsScreenShared(
         context = context,
         scope = scope,
         themeMode = themeMode,
-        uiKitStyle = uiKitStyle,
         autoInputDelay = autoInputDelay,
         autoInputInterval = autoInputInterval,
         retentionTime = retentionTime,
@@ -1147,7 +635,9 @@ internal fun ComposeSettingsScreenShared(
         showSmsTestDialog = showSmsTestDialog,
         showKeywordsDialog = showKeywordsDialog,
         showThemeDialog = showThemeDialog,
-        showUiKitStyleDialog = showUiKitStyleDialog,
+        showDonateDialog = showDonateDialog,
+        showAlipayChoiceDialog = showAlipayChoiceDialog,
+        showQRCodeDialog = showQRCodeDialog,
         showPrivacyPolicyDialog = showPrivacyPolicyDialog,
         showPrivacyPolicyPage = showPrivacyPolicyPage,
         showBackupDialog = showBackupDialog,
@@ -1164,7 +654,9 @@ internal fun ComposeSettingsScreenShared(
         onShowSmsTestDialogChange = { showSmsTestDialog = it },
         onShowKeywordsDialogChange = { showKeywordsDialog = it },
         onShowThemeDialogChange = { showThemeDialog = it },
-        onShowUiKitStyleDialogChange = { showUiKitStyleDialog = it },
+        onShowDonateDialogChange = { showDonateDialog = it },
+        onShowAlipayChoiceDialogChange = { showAlipayChoiceDialog = it },
+        onShowQrCodeDialogChange = { showQRCodeDialog = it },
         onShowPrivacyPolicyDialogChange = { showPrivacyPolicyDialog = it },
         onShowPrivacyPolicyPageChange = { showPrivacyPolicyPage = it },
         onShowBackupDialogChange = { showBackupDialog = it },
@@ -1175,97 +667,63 @@ internal fun ComposeSettingsScreenShared(
         settingsViewModel = settingsViewModel,
         onExit = onExit,
         onSetTheme = { mode, x, y -> settingsViewModel.setThemeMode(mode, x, y) },
-        onSetUiKitStyle = { style -> settingsViewModel.setUiKitStyle(style) },
     )
-
-    showSimSlotRemarkDialog?.let { simSlot ->
-        val isFirstSlot = simSlot == 0
-        val key = if (isFirstSlot) PrefConst.KEY_SIM_SLOT1_REMARK else PrefConst.KEY_SIM_SLOT2_REMARK
-        TextInputDialog(
-            title = stringResource(
-                id = if (isFirstSlot) {
-                    R.string.pref_sim_slot1_remark_title
-                } else {
-                    R.string.pref_sim_slot2_remark_title
-                },
-            ),
-            initialValue = if (isFirstSlot) simSlot1Remark else simSlot2Remark,
-            selectAllOnOpen = true,
-            onDismiss = { showSimSlotRemarkDialog = null },
-            supportingText = stringResource(id = R.string.pref_sim_slot_remark_summary),
-            showClearButton = true,
-        ) { value ->
-            val updated = value.trim()
-            if (isFirstSlot) {
-                simSlot1Remark = updated
-            } else {
-                simSlot2Remark = updated
-            }
-            scope.launch {
-                AppPreferencesDataStore.setString(context, key, updated)
-                HookPreferenceMirror.publish(context)
-                markPrefsSaved()
-            }
-            showSimSlotRemarkDialog = null
-        }
-    }
-
-
-    if (showClearLogConfirmDialog) {
-        ConfirmActionDialog(
-            title = stringResource(id = R.string.runtime_log_clear_confirm_title),
-            message = stringResource(id = R.string.runtime_log_clear_confirm_message),
-            confirmText = stringResource(id = R.string.action_clear),
-            cancelText = stringResource(id = R.string.cancel),
-            onDismissRequest = { showClearLogConfirmDialog = false },
-            onConfirm = {
-                showClearLogConfirmDialog = false
-                clearRuntimeLogFolders()
-            },
-        )
-    }
-
-    if (showRuntimeLogRetentionDialog) {
-        val runtimeLogRetentionDaysError = stringResource(id = R.string.pref_runtime_log_retention_days_error)
-        NonNegativeIntegerInputDialog(
-            title = stringResource(id = R.string.pref_runtime_log_retention_days_title),
-            initialValue = runtimeLogRetentionDays,
-            errorText = runtimeLogRetentionDaysError,
-            onDismiss = { showRuntimeLogRetentionDialog = false },
-            minimumValue = PrefConst.RUNTIME_LOG_RETENTION_DAYS_MIN,
-            supportingText = stringResource(id = R.string.pref_runtime_log_retention_days_hint),
-            showClearButton = true,
-        ) { days ->
-            showRuntimeLogRetentionDialog = false
-            scope.launch {
-                runtimeLogRetentionDays = days
-                AppPreferencesDataStore.setInt(context, PrefConst.KEY_RUNTIME_LOG_RETENTION_DAYS, days)
-                RuntimeDiagnosticsBridge.ensureInstalled()
-                RuntimeLogStore.setRetentionDays(days)
-                HookPreferenceMirror.publish(context)
-                markPrefsSaved()
-            }
-        }
-    }
 
     if (showLanguageDialog) {
         LanguageChooserDialog(
             onDismiss = { showLanguageDialog = false },
             onLanguageSelected = { tag ->
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                    val localeManager = context.getSystemService(android.app.LocaleManager::class.java)
-                    localeManager?.applicationLocales = if (tag.isEmpty()) {
-                        android.os.LocaleList.getEmptyLocaleList()
-                    } else {
-                        android.os.LocaleList.forLanguageTags(tag)
-                    }
+                val locales = if (tag.isEmpty()) {
+                    androidx.core.os.LocaleListCompat.getEmptyLocaleList()
+                } else {
+                    androidx.core.os.LocaleListCompat.forLanguageTags(tag)
                 }
+                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(locales)
                 showLanguageDialog = false
             },
         )
     }
 
+    if (showBlurRadiusDialog) {
+        SliderDialog(
+            title = stringResource(id = R.string.pref_haze_blur_radius_title),
+            value = blurRadius.intValue.toFloat(),
+            valueRange = 0f..100f,
+            steps = 0,
+            onDismiss = { showBlurRadiusDialog = false },
+            onValueChange = {
+                val newVal = it.toInt()
+                blurRadius.intValue = newVal
+                scope.launch {
+                    AppPreferencesDataStore.setInt(context, PrefConst.KEY_HAZE_BLUR_RADIUS, newVal)
+                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                    markPrefsSaved()
+                }
+                showBlurRadiusDialog = false
+            },
+            valueFormatter = { "${it.toInt()}dp" },
+        )
     }
+
+    if (showTintAlphaDialog) {
+        SliderDialog(
+            title = stringResource(id = R.string.pref_haze_tint_alpha_title),
+            value = tintAlpha.floatValue,
+            valueRange = 0f..1f,
+            steps = 0,
+            onDismiss = { showTintAlphaDialog = false },
+            onValueChange = {
+                tintAlpha.floatValue = it
+                scope.launch {
+                    AppPreferencesDataStore.setFloat(context, PrefConst.KEY_HAZE_TINT_ALPHA, it)
+                    AppPreferencesDataStore.syncToSharedPrefs(context)
+                    markPrefsSaved()
+                }
+                showTintAlphaDialog = false
+            },
+        )
+    }
+
 }
 
 private fun handleSettingsEvent(
@@ -1273,31 +731,38 @@ private fun handleSettingsEvent(
     context: android.content.Context,
     activity: Activity?,
     scope: kotlinx.coroutines.CoroutineScope,
-    snackbarHostState: SnackbarHostState,
     onShowPrivacyPolicy: () -> Unit,
+    onShowDonate: () -> Unit,
     onShowRestoreConfirm: (android.net.Uri) -> Unit,
 ) {
     when (event) {
+        is SettingsEvent.SmsCodeTestResult -> {
+            val text = if (event.code.isBlank()) {
+                context.getString(R.string.cannot_parse_smscode)
+            } else {
+                context.getString(R.string.current_sms_code, event.code)
+            }
+            android.widget.Toast.makeText(context, text, android.widget.Toast.LENGTH_LONG).show()
+        }
+
         is SettingsEvent.ShowPrivacyPolicy -> onShowPrivacyPolicy()
+        is SettingsEvent.ShowAlipayPacket -> onShowDonate()
         is SettingsEvent.BackupResultEvent -> {
             val msg = if (event.success) R.string.backup_success else R.string.backup_failed
-            scope.launch {
-                snackbarHostState.showSnackbar(context.getString(msg))
-            }
+            android.widget.Toast.makeText(context, context.getString(msg), android.widget.Toast.LENGTH_SHORT).show()
         }
 
         is SettingsEvent.RestoreResultEvent -> {
             val msg = when (event.result.result) {
-                RuntimeBackupImportStatus.SUCCESS -> R.string.restore_success
-                RuntimeBackupImportStatus.VERSION_TOO_NEW -> R.string.import_failed_version_too_new
-                RuntimeBackupImportStatus.VERSION_TOO_OLD -> R.string.import_failed_version_too_old
+                com.github.magisk317.smscode.feature.backup.ImportResult.SUCCESS -> R.string.restore_success
+                com.github.magisk317.smscode.feature.backup.ImportResult.VERSION_TOO_NEW -> R.string.import_failed_version_too_new
+                com.github.magisk317.smscode.feature.backup.ImportResult.VERSION_TOO_OLD -> R.string.import_failed_version_too_old
                 else -> R.string.restore_failed
             }
-            scope.launch {
-                snackbarHostState.showSnackbar(context.getString(msg))
-            }
+            android.widget.Toast.makeText(context, context.getString(msg), android.widget.Toast.LENGTH_SHORT).show()
 
-            if (event.result.result == RuntimeBackupImportStatus.SUCCESS) {
+            if (event.result.result == com.github.magisk317.smscode.feature.backup.ImportResult.SUCCESS) {
+                Toast.makeText(context, context.getString(R.string.restore_success), Toast.LENGTH_SHORT).show()
                 scope.launch {
                     delay(1200L)
                     if (activity != null) {
@@ -1323,7 +788,6 @@ private fun SettingsDialogs(
     context: android.content.Context,
     scope: kotlinx.coroutines.CoroutineScope,
     themeMode: Int,
-    uiKitStyle: Int,
     autoInputDelay: String,
     autoInputInterval: String,
     retentionTime: String,
@@ -1335,7 +799,9 @@ private fun SettingsDialogs(
     showSmsTestDialog: Boolean,
     showKeywordsDialog: Boolean,
     showThemeDialog: Boolean,
-    showUiKitStyleDialog: Boolean,
+    showDonateDialog: Boolean,
+    showAlipayChoiceDialog: Boolean,
+    showQRCodeDialog: Pair<Int, String>?,
     showPrivacyPolicyDialog: Boolean,
     showPrivacyPolicyPage: Boolean,
     showBackupDialog: Boolean,
@@ -1352,7 +818,9 @@ private fun SettingsDialogs(
     onShowSmsTestDialogChange: (Boolean) -> Unit,
     onShowKeywordsDialogChange: (Boolean) -> Unit,
     onShowThemeDialogChange: (Boolean) -> Unit,
-    onShowUiKitStyleDialogChange: (Boolean) -> Unit,
+    onShowDonateDialogChange: (Boolean) -> Unit,
+    onShowAlipayChoiceDialogChange: (Boolean) -> Unit,
+    onShowQrCodeDialogChange: (Pair<Int, String>?) -> Unit,
     onShowPrivacyPolicyDialogChange: (Boolean) -> Unit,
     onShowPrivacyPolicyPageChange: (Boolean) -> Unit,
     onShowBackupDialogChange: (Boolean) -> Unit,
@@ -1363,28 +831,17 @@ private fun SettingsDialogs(
     settingsViewModel: SettingsViewModel,
     onExit: () -> Unit,
     onSetTheme: (Int, Float, Float) -> Unit,
-    onSetUiKitStyle: (Int) -> Unit,
 ) {
-    val activityOwner = context as? Activity
-    val backupAccess = koinInject<UiBackupAccess>()
-    val snackbarHostState = LocalSnackbarHostState.current
     if (showAutoInputDialog) {
-        val nonNegativeNumberError = stringResource(id = R.string.pref_number_non_negative_error)
         TextInputDialog(
             title = stringResource(id = R.string.pref_auto_input_code_delay_title),
-            initialValue = normalizeNumericInput(autoInputDelay),
-            selectAllOnOpen = true,
+            initialValue = autoInputDelay,
             onDismiss = { onShowAutoInputDialogChange(false) },
-            showClearButton = true,
-            validator = {
-                if (parseNonNegativeLong(it) != null) null else nonNegativeNumberError
-            },
         ) { value ->
-            val normalized = normalizeNumericInput(value)
-            onAutoInputDelayChange(normalized)
+            onAutoInputDelayChange(value)
             scope.launch {
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, normalized)
-                HookPreferenceMirror.publish(context)
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_DELAY, value)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
                 onPendingSavedToast()
             }
             onShowAutoInputDialogChange(false)
@@ -1392,22 +849,15 @@ private fun SettingsDialogs(
     }
 
     if (showAutoInputIntervalDialog) {
-        val nonNegativeNumberError = stringResource(id = R.string.pref_number_non_negative_error)
         TextInputDialog(
             title = stringResource(id = R.string.pref_auto_input_code_interval_title),
-            initialValue = normalizeNumericInput(autoInputInterval),
-            selectAllOnOpen = true,
+            initialValue = autoInputInterval,
             onDismiss = { onShowAutoInputIntervalDialogChange(false) },
-            showClearButton = true,
-            validator = {
-                if (parseNonNegativeLong(it) != null) null else nonNegativeNumberError
-            },
         ) { value ->
-            val normalized = normalizeNumericInput(value)
-            onAutoInputIntervalChange(normalized)
+            onAutoInputIntervalChange(value)
             scope.launch {
-                AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL, normalized)
-                HookPreferenceMirror.publish(context)
+                AppPreferencesDataStore.setString(context, PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL, value)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
                 onPendingSavedToast()
             }
             onShowAutoInputIntervalDialogChange(false)
@@ -1422,7 +872,7 @@ private fun SettingsDialogs(
             onRetentionTimeChange(value)
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_NOTIFICATION_RETENTION_TIME, value)
-                HookPreferenceMirror.publish(context)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
                 onPendingSavedToast()
             }
             onShowRetentionDialogChange(false)
@@ -1436,10 +886,9 @@ private fun SettingsDialogs(
             onDismiss = { onShowSmsTestDialogChange(false) },
             singleLine = false,
             maxLines = 8,
-            showClearButton = true,
         ) { value ->
+            onSmsTestInputChange(value)
             settingsViewModel.performSmsCodeTest(value)
-            onSmsTestInputChange("")
             onShowSmsTestDialogChange(false)
         }
     }
@@ -1448,18 +897,16 @@ private fun SettingsDialogs(
         TextInputDialog(
             title = stringResource(id = R.string.pref_smscode_keywords_title),
             initialValue = smsCodeKeywords,
-            selectAllOnOpen = true,
             onDismiss = { onShowKeywordsDialogChange(false) },
             singleLine = false,
             maxLines = 10,
             resetValue = PrefConst.SMSCODE_KEYWORDS_DEFAULT,
-            showClearButton = true,
         ) { value ->
             val updated = if (value.isBlank()) PrefConst.SMSCODE_KEYWORDS_DEFAULT else value
             onSmsKeywordsChange(updated)
             scope.launch {
                 AppPreferencesDataStore.setString(context, PrefConst.KEY_SMSCODE_KEYWORDS, updated)
-                HookPreferenceMirror.publish(context)
+                AppPreferencesDataStore.syncToSharedPrefs(context)
                 onPendingSavedToast()
             }
             onShowKeywordsDialogChange(false)
@@ -1477,14 +924,41 @@ private fun SettingsDialogs(
         )
     }
 
-    if (BuildConfig.ENABLE_UI_KIT_STYLE_SWITCH && showUiKitStyleDialog) {
-        UiKitStyleChooserDialog(
-            currentStyle = uiKitStyle,
-            onDismiss = { onShowUiKitStyleDialogChange(false) },
-            onStyleSelected = {
-                onSetUiKitStyle(it)
-                onShowUiKitStyleDialogChange(false)
+    if (showDonateDialog) {
+        DonateDialog(
+            onDismiss = { onShowDonateDialogChange(false) },
+            onAlipay = {
+                onShowDonateDialogChange(false)
+                onShowAlipayChoiceDialogChange(true)
             },
+            onWechat = {
+                onShowDonateDialogChange(false)
+                onShowQrCodeDialogChange(Pair(R.drawable.wx, "wechat"))
+            },
+        )
+    }
+
+    if (showAlipayChoiceDialog) {
+        AlipayChoiceDialog(
+            onDismiss = { onShowAlipayChoiceDialogChange(false) },
+            onQRCode = {
+                onShowAlipayChoiceDialogChange(false)
+                onShowQrCodeDialogChange(Pair(R.drawable.alipay, "alipay"))
+            },
+            onToken = {
+                onShowAlipayChoiceDialogChange(false)
+                PackageUtils.copyAlipayPocketToken(context)
+                PackageUtils.startAlipayActivity(context)
+            },
+        )
+    }
+
+    showQRCodeDialog?.let { pair ->
+        QRCodeDialog(
+            resId = pair.first,
+            type = pair.second,
+            onDismiss = { onShowQrCodeDialogChange(null) },
+            onSave = { Utils.saveImageToGallery(context, pair.first, "${pair.second}_qrcode") },
         )
     }
 
@@ -1517,7 +991,7 @@ private fun SettingsDialogs(
             onConfirm = { flags ->
                 onBackupFlagsChange(flags)
                 onShowBackupDialogChange(false)
-                val intent = backupAccess.getExportRuleListSAFIntent(
+                val intent = com.github.magisk317.smscode.feature.backup.BackupManager.getExportRuleListSAFIntent(
                     context,
                     includeDatabase = flags.includeDatabase,
                 )
@@ -1543,6 +1017,18 @@ private fun SettingsDialogs(
     }
 }
 
+// Helper Composables (extracted and made standalone)
+
+@Composable
+fun SectionHeader(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier.padding(horizontal = Const.PADDING_MEDIUM.dp, vertical = Const.SPACING_SMALL.dp),
+    )
+}
+
 @Composable
 private fun ExpandableSettingsSection(
     title: String,
@@ -1553,53 +1039,64 @@ private fun ExpandableSettingsSection(
 ) {
     val sectionExpanded = if (accordionMode) expanded else true
 
-    Box(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Const.PADDING_SMALL.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
     ) {
-        io.github.magisk317.uikit.preference.SectionCard(
-            title = title,
-            accordionMode = accordionMode,
-            sectionExpanded = sectionExpanded,
-            onExpandedChange = onExpandedChange,
-            content = content,
-        )
-    }
-}
+        Column(modifier = Modifier.fillMaxWidth()) {
+            ListItem(
+                headlineContent = {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                },
+                trailingContent = {
+                    if (accordionMode) {
+                        Icon(
+                            imageVector = if (sectionExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = accordionMode, onClick = onExpandedChange),
+            )
 
-private const val AUTO_INPUT_ACCESSIBILITY_SERVICE_CLASS_NAME =
-    "com.github.magisk317.smscode.service.AutoInputAccessibilityService"
-
-private fun isAutoInputAccessibilityServiceEnabled(context: android.content.Context): Boolean {
-    val expectedService = ComponentName(
-        context.packageName,
-        AUTO_INPUT_ACCESSIBILITY_SERVICE_CLASS_NAME,
-    ).flattenToString()
-    val enabledServices = Settings.Secure.getString(
-        context.contentResolver,
-        Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-    ).orEmpty()
-    if (enabledServices.isBlank()) return false
-    return enabledServices.split(':').any { candidate ->
-        candidate.equals(expectedService, ignoreCase = true)
+            AnimatedVisibility(visible = sectionExpanded) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    content()
+                }
+            }
+        }
     }
 }
 
 @Composable
-fun Item(
-    title: String,
-    summary: String,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    io.github.magisk317.uikit.preference.Item(
-        title = title,
-        summary = summary,
-        modifier = modifier,
-        enabled = enabled,
-        onClick = onClick,
+fun Item(title: String, summary: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    ListItem(
+        headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = if (summary.isNotEmpty()) {
+            {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            null
+        },
+        modifier = modifier.clickable(onClick = onClick),
     )
 }
 
@@ -1618,7 +1115,6 @@ fun SwitchItem(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val snackbarHostState = LocalSnackbarHostState.current
     val checkedState = stateOverride ?: rememberPrefBoolean(key, defaultValue)
     val defaultSavedToast = context.getString(R.string.pref_sync_toast)
 
@@ -1627,94 +1123,172 @@ fun SwitchItem(
         checkedState.value = checked
         scope.launch {
             AppPreferencesDataStore.setBoolean(context, key, checked)
-            HookPreferenceMirror.publish(context)
+            AppPreferencesDataStore.syncToSharedPrefs(context)
             if (onSaved != null) {
                 onSaved()
             } else {
-                snackbarHostState.showSnackbar(defaultSavedToast)
+                Toast.makeText(context, defaultSavedToast, Toast.LENGTH_SHORT).show()
             }
         }
         onToggle?.invoke(checked)
     }
 
-    if (onItemClick != null) {
-        io.github.magisk317.uikit.preference.ActionSwitchItem(
-            title = title,
-            summary = summary,
-            checked = checkedState.value,
-            enabled = enabled,
-            modifier = modifier,
-            onClick = onItemClick,
-            onCheckedChange = { toggle(it) },
-        )
-    } else {
-        io.github.magisk317.uikit.preference.StateSwitchItem(
-            title = title,
-            summary = summary,
-            checked = checkedState.value,
-            enabled = enabled,
-            modifier = modifier,
-            onCheckedChange = { toggle(it) },
-        )
-    }
-}
-
-private val booleanPreferenceStateCache =
-    io.github.magisk317.uikit.state.RetainedValueCache<String, Boolean>()
-
-@Composable
-fun rememberPrefBoolean(key: String, defaultValue: Boolean): MutableState<Boolean> {
-    val context = LocalContext.current
-    val isActive = LocalSettingsPageRuntime.current.keepDataActive
-    val flow = remember(context, key, defaultValue) {
-        AppPreferencesDataStore.getBooleanFlow(context, key, defaultValue)
-    }
-    return io.github.magisk317.uikit.state.rememberRetainedFlowState(
-        cache = booleanPreferenceStateCache,
-        key = key,
-        initialValue = defaultValue,
-        isActive = isActive,
-        flow = flow,
+    ListItem(
+        headlineContent = { Text(text = title, style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = if (summary.isNotEmpty()) {
+            {
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            null
+        },
+        trailingContent = {
+            Switch(
+                checked = checkedState.value,
+                onCheckedChange = { toggle(it) },
+                enabled = enabled,
+            )
+        },
+        modifier = modifier.clickable(enabled = enabled) {
+            if (onItemClick != null) {
+                onItemClick()
+            } else {
+                toggle(!checkedState.value)
+            }
+        },
     )
 }
 
 @Composable
-private fun notificationRetentionEntryLabel(value: String): String {
-    val entries = stringArrayResource(id = R.array.notification_retention_time_entry_list)
-    val values = stringArrayResource(id = R.array.notification_retention_time_list)
-    val index = values.indexOf(value)
-    if (index >= 0) {
-        return entries[index]
+fun rememberPrefBoolean(key: String, defaultValue: Boolean): MutableState<Boolean> {
+    val context = LocalContext.current
+    val state = remember { mutableStateOf(defaultValue) }
+    LaunchedEffect(key) {
+        state.value = AppPreferencesDataStore.getBoolean(context, key, defaultValue)
     }
-    return value.takeIf { it.isNotBlank() } ?: "0"
+    return state
 }
 
-private fun normalizeNumericInput(raw: String): String {
-    val normalized = StringBuilder(raw.length)
-    raw.forEach { ch ->
-        when {
-            ch.isWhitespace() || Character.getType(ch) == Character.FORMAT.toInt() -> Unit
-            ch.digitToIntOrNull() != null -> normalized.append(ch.digitToInt())
-            ch in setOf('-', '－', '﹣', '—', '–') && normalized.isEmpty() -> normalized.append('-')
-            else -> normalized.append(ch)
-        }
-    }
-    return normalized.toString()
-}
-
-private fun parseNonNegativeLong(raw: String): Long? {
-    return normalizeNumericInput(raw)
-        .toLongOrNull()
-        ?.takeIf { it >= 0L }
-}
-
-/**
- * Migrates legacy seconds-formatted delay values to milliseconds.
- * Stored values ≤ 60 are legacy seconds from before the unit change; convert to ms.
- */
 @Composable
-private fun simSlotRemarkSummary(remark: String): String {
-    return remark.takeIf { it.isNotBlank() } ?: stringResource(id = R.string.pref_sim_slot_remark_empty)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+fun TextInputDialog(
+    title: String,
+    initialValue: String,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    singleLine: Boolean = true,
+    maxLines: Int = if (singleLine) 1 else 6,
+    supportingText: String? = null,
+    resetValue: String? = null,
+    validator: ((String) -> String?)? = null,
+    onFocusLost: ((String) -> Unit)? = null,
+    onDismissWithValue: ((String) -> Unit)? = null,
+    onConfirm: (String) -> Unit,
+) {
+    var text by remember { mutableStateOf(initialValue) }
+    var hadFocus by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    val cancelLabel = stringResource(id = R.string.cancel)
+    val confirmLabel = stringResource(id = R.string.confirm)
+    AlertDialog(
+        onDismissRequest = {
+            onDismissWithValue?.invoke(text)
+            onDismiss()
+        },
+        modifier = modifier,
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title,
+                    modifier = Modifier.weight(1f),
+                )
+                if (resetValue != null) {
+                    TextButton(
+                        onClick = {
+                            text = resetValue
+                            errorMessage = validator?.invoke(resetValue)
+                        },
+                    ) {
+                        Text(text = stringResource(id = R.string.reset))
+                    }
+                }
+            }
+        },
+        text = {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = {
+                        text = it
+                        if (validator != null) {
+                        errorMessage = validator(it)
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { state ->
+                        if (state.isFocused) {
+                            hadFocus = true
+                        } else if (hadFocus) {
+                            onFocusLost?.invoke(text)
+                        }
+                    },
+                singleLine = singleLine,
+                maxLines = maxLines,
+                isError = errorMessage != null,
+                trailingIcon = {
+                    if (text.isNotEmpty()) {
+                        IconButton(onClick = { text = "" }) {
+                            Icon(imageVector = Icons.Filled.Clear, contentDescription = null)
+                        }
+                    }
+                },
+                supportingText = if (errorMessage != null || supportingText != null) {
+                    { Text(text = errorMessage ?: supportingText!!) }
+                } else null,
+            )
+        },
+        confirmButton = {
+            ButtonGroup(
+                overflowIndicator = { menuState ->
+                    ButtonGroupDefaults.OverflowIndicator(menuState = menuState)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                clickableItem(
+                    onClick = onDismiss,
+                    label = cancelLabel,
+                    weight = 1f,
+                )
+                clickableItem(
+                    onClick = {
+                        var hasError = false
+                        if (validator != null) {
+                            val error = validator(text)
+                            if (error != null) {
+                                errorMessage = error
+                                hasError = true
+                            }
+                        }
+                        if (!hasError) {
+                            onConfirm(text)
+                        }
+                    },
+                    label = confirmLabel,
+                    weight = 1f,
+                )
+            }
+        },
+        dismissButton = {},
+    )
 }
 
 @Composable
@@ -1729,14 +1303,28 @@ fun RetentionDialog(
 ) {
     val entries = stringArrayResource(id = entriesId)
     val values = stringArrayResource(id = valuesId)
-    SingleChoiceValueDialog(
-        title = stringResource(id = titleId),
-        options = entries.toList(),
-        values = values.toList(),
-        selectedValue = selectedValue,
-        onValueChange = onConfirm,
+    AlertDialog(
         onDismissRequest = onDismiss,
         modifier = modifier,
+        title = { Text(stringResource(id = titleId)) },
+        text = {
+            Column {
+                entries.forEachIndexed { index, entry ->
+                    val value = values.getOrNull(index) ?: return@forEachIndexed
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onConfirm(value) }
+                            .padding(vertical = Const.PADDING_MEDIUM.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = value == selectedValue, onClick = { onConfirm(value) })
+                        Text(text = entry, modifier = Modifier.padding(start = Const.SPACING_MEDIUM.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {},
     )
 }
 
@@ -1748,12 +1336,10 @@ fun ThemeChooserDialog(currentMode: Int, onDismiss: () -> Unit, onThemeSelected:
         stringResource(id = R.string.theme_dark) to 2,
         stringResource(id = R.string.theme_black) to 3,
     )
-    io.github.magisk317.uikit.surface.AppBasicDialog(
+    AlertDialog(
         onDismissRequest = onDismiss,
-    ) {
-        io.github.magisk317.uikit.surface.AppDialogSurface(
-            title = stringResource(id = R.string.pref_choose_theme_title),
-        ) {
+        title = { Text(stringResource(id = R.string.pref_choose_theme_title)) },
+        text = {
             Column {
                 modes.forEach { (label, mode) ->
                     var rowCoords: LayoutCoordinates? by remember { mutableStateOf(null) }
@@ -1783,57 +1369,21 @@ fun ThemeChooserDialog(currentMode: Int, onDismiss: () -> Unit, onThemeSelected:
                             },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        io.github.magisk317.uikit.preference.AppRadioButton(
-                            selected = mode == currentMode,
-                            onClick = null,
-                        )
+                        RadioButton(selected = mode == currentMode, onClick = null)
                         Text(text = label, modifier = Modifier.padding(start = 16.dp))
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun UiKitStyleChooserDialog(
-    currentStyle: Int,
-    onDismiss: () -> Unit,
-    onStyleSelected: (Int) -> Unit,
-) {
-    val styles = listOf(
-        stringResource(id = R.string.ui_kit_style_expressive) to UiKitStyle.Expressive.value,
-        stringResource(id = R.string.ui_kit_style_miuix) to UiKitStyle.Miuix.value,
-    )
-    SingleChoiceOptionDialog(
-        title = stringResource(id = R.string.pref_ui_kit_style_title),
-        options = styles.map { it.first },
-        selectedIndex = styles.indexOfFirst { it.second == currentStyle }.coerceAtLeast(0),
-        onSelectionChange = { index ->
-            styles.getOrNull(index)?.second?.let(onStyleSelected)
         },
-        onDismissRequest = onDismiss,
+        confirmButton = {},
     )
-}
-
-@Composable
-private fun uiKitStyleLabel(style: Int): String {
-    return when (UiKitStyle.fromValue(style)) {
-        UiKitStyle.Miuix -> stringResource(id = R.string.ui_kit_style_miuix)
-        UiKitStyle.Expressive -> stringResource(id = R.string.ui_kit_style_expressive)
-    }
 }
 
 @Composable
 fun LanguageChooserDialog(onDismiss: () -> Unit, onLanguageSelected: (String) -> Unit) {
     val context = LocalContext.current
-    val currentTag = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-        val localeManager = context.getSystemService(android.app.LocaleManager::class.java)
-        val appLocales = localeManager?.applicationLocales ?: android.os.LocaleList.getEmptyLocaleList()
-        if (appLocales.isEmpty) "" else appLocales.get(0)?.toLanguageTag() ?: ""
-    } else {
-        ""
-    }
+    val currentLocales = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales()
+    val currentTag = if (currentLocales.isEmpty) "" else currentLocales.get(0)?.toLanguageTag() ?: ""
 
     val languages = listOf(
         stringResource(id = R.string.language_follow_system) to "",
@@ -1842,17 +1392,94 @@ fun LanguageChooserDialog(onDismiss: () -> Unit, onLanguageSelected: (String) ->
         stringResource(id = R.string.language_zh_tw) to "zh-TW",
     )
 
-    val selectedIndex = languages.indexOfFirst { (_, tag) ->
-        if (tag.isEmpty()) currentTag.isEmpty() else currentTag.startsWith(tag)
-    }.coerceAtLeast(0)
-    SingleChoiceOptionDialog(
-        title = stringResource(id = R.string.pref_language_title),
-        options = languages.map { it.first },
-        selectedIndex = selectedIndex,
-        onSelectionChange = { index ->
-            languages.getOrNull(index)?.second?.let(onLanguageSelected)
-        },
+    AlertDialog(
         onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.pref_language_title)) },
+        text = {
+            Column {
+                languages.forEach { (label, tag) ->
+                    val selected = if (tag.isEmpty()) currentTag.isEmpty() else currentTag.startsWith(tag)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onLanguageSelected(tag) }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(
+                            selected = selected,
+                            onClick = { onLanguageSelected(tag) },
+                        )
+                        Text(text = label, modifier = Modifier.padding(start = 16.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+    )
+}
+
+@Composable
+fun DonateDialog(onDismiss: () -> Unit, onAlipay: () -> Unit, onWechat: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.dialog_donate_title)) },
+        text = { Text(stringResource(id = R.string.dialog_donate_content)) },
+        confirmButton = {
+            FilledTonalButton(onClick = onAlipay) { Text(stringResource(id = R.string.dialog_donate_alipay)) }
+            OutlinedButton(onClick = onWechat) { Text(stringResource(id = R.string.dialog_donate_wechat)) }
+        },
+    )
+}
+
+@Composable
+fun AlipayChoiceDialog(onDismiss: () -> Unit, onQRCode: () -> Unit, onToken: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(id = R.string.dialog_donate_alipay)) },
+        confirmButton = {
+            FilledTonalButton(onClick = onQRCode) { Text(stringResource(id = R.string.dialog_donate_alipay_qrcode)) }
+            OutlinedButton(onClick = onToken) { Text(stringResource(id = R.string.dialog_donate_alipay_token)) }
+        },
+    )
+}
+
+@Composable
+fun QRCodeDialog(resId: Int, type: String, onDismiss: () -> Unit, onSave: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                if (type == "alipay") {
+                    stringResource(
+                        id = R.string.dialog_donate_alipay,
+                    )
+                } else {
+                    stringResource(id = R.string.dialog_donate_wechat)
+                },
+            )
+        },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                androidx.compose.foundation.Image(
+                    painter = painterResource(id = resId),
+                    contentDescription = if (type == "alipay") {
+                        stringResource(
+                            id = R.string.dialog_donate_alipay,
+                        )
+                    } else {
+                        stringResource(id = R.string.dialog_donate_wechat)
+                    },
+                    modifier = Modifier.size(200.dp),
+                )
+            }
+        },
+        confirmButton = {
+            FilledTonalButton(onClick = onSave) { Text(stringResource(id = R.string.save_to_gallery)) }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) { Text(stringResource(id = R.string.cancel)) }
+        },
     )
 }
 
@@ -1865,7 +1492,7 @@ fun PrivacyPolicyDialog(
     dismissOnBackPress: Boolean = true,
     dismissOnClickOutside: Boolean = true,
 ) {
-    io.github.magisk317.uikit.surface.AppAlertDialog(
+    AlertDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
             dismissOnBackPress = dismissOnBackPress,
@@ -1876,25 +1503,23 @@ fun PrivacyPolicyDialog(
             Column {
                 Text(stringResource(id = R.string.privacy_dialog_content))
                 Spacer(modifier = Modifier.height(16.dp))
-                Box(modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                    io.github.magisk317.uikit.surface.AppSecondaryButton(
-                        text = stringResource(id = R.string.privacy_policy_button),
-                        onClick = onViewPolicy,
-                    )
+                OutlinedButton(
+                    onClick = onViewPolicy,
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                ) {
+                    Text(stringResource(id = R.string.privacy_policy_button))
                 }
             }
         },
         confirmButton = {
-            io.github.magisk317.uikit.surface.AppPrimaryButton(
-                text = stringResource(id = R.string.privacy_dialog_confirm),
-                onClick = onConfirm,
-            )
+            FilledTonalButton(onClick = onConfirm) {
+                Text(stringResource(id = R.string.privacy_dialog_confirm))
+            }
         },
         dismissButton = {
-            io.github.magisk317.uikit.surface.AppSecondaryButton(
-                text = stringResource(id = R.string.privacy_dialog_cancel),
-                onClick = onCancel,
-            )
+            OutlinedButton(onClick = onCancel) {
+                Text(stringResource(id = R.string.privacy_dialog_cancel))
+            }
         },
     )
 }
@@ -1916,7 +1541,7 @@ private fun BackupDialog(onDismiss: () -> Unit, onConfirm: (BackupSelectionFlags
     val cancelLabel = stringResource(id = R.string.cancel)
     val confirmLabel = stringResource(id = R.string.confirm)
 
-    io.github.magisk317.uikit.surface.AppAlertDialog(
+    AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.dialog_backup_title)) },
         text = {
@@ -1926,40 +1551,28 @@ private fun BackupDialog(onDismiss: () -> Unit, onConfirm: (BackupSelectionFlags
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig },
                 ) {
-                    io.github.magisk317.uikit.preference.AppCheckbox(
-                        checked = checkConfig,
-                        onCheckedChange = { checkConfig = it },
-                    )
+                    Checkbox(checked = checkConfig, onCheckedChange = { checkConfig = it })
                     Text(stringResource(id = R.string.item_config))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkRules = !checkRules },
                 ) {
-                    io.github.magisk317.uikit.preference.AppCheckbox(
-                        checked = checkRules,
-                        onCheckedChange = { checkRules = it },
-                    )
+                    Checkbox(checked = checkRules, onCheckedChange = { checkRules = it })
                     Text(stringResource(id = R.string.item_rules))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkRecords = !checkRecords },
                 ) {
-                    io.github.magisk317.uikit.preference.AppCheckbox(
-                        checked = checkRecords,
-                        onCheckedChange = { checkRecords = it },
-                    )
+                    Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
                     Text(stringResource(id = R.string.item_records))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkDatabase = !checkDatabase },
                 ) {
-                    io.github.magisk317.uikit.preference.AppCheckbox(
-                        checked = checkDatabase,
-                        onCheckedChange = { checkDatabase = it },
-                    )
+                    Checkbox(checked = checkDatabase, onCheckedChange = { checkDatabase = it })
                     Text(stringResource(id = R.string.item_database_with_note))
                 }
             }
@@ -2007,7 +1620,7 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (BackupSelect
     val cancelLabel = stringResource(id = R.string.cancel)
     val confirmLabel = stringResource(id = R.string.confirm)
 
-    io.github.magisk317.uikit.surface.AppAlertDialog(
+    AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(id = R.string.dialog_restore_title)) },
         text = {
@@ -2017,40 +1630,28 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (BackupSelect
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig },
                 ) {
-                    io.github.magisk317.uikit.preference.AppCheckbox(
-                        checked = checkConfig,
-                        onCheckedChange = { checkConfig = it },
-                    )
+                    Checkbox(checked = checkConfig, onCheckedChange = { checkConfig = it })
                     Text(stringResource(id = R.string.item_config))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkRules = !checkRules },
                 ) {
-                    io.github.magisk317.uikit.preference.AppCheckbox(
-                        checked = checkRules,
-                        onCheckedChange = { checkRules = it },
-                    )
+                    Checkbox(checked = checkRules, onCheckedChange = { checkRules = it })
                     Text(stringResource(id = R.string.item_rules))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkRecords = !checkRecords },
                 ) {
-                    io.github.magisk317.uikit.preference.AppCheckbox(
-                        checked = checkRecords,
-                        onCheckedChange = { checkRecords = it },
-                    )
+                    Checkbox(checked = checkRecords, onCheckedChange = { checkRecords = it })
                     Text(stringResource(id = R.string.item_records))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkDatabase = !checkDatabase },
                 ) {
-                    io.github.magisk317.uikit.preference.AppCheckbox(
-                        checked = checkDatabase,
-                        onCheckedChange = { checkDatabase = it },
-                    )
+                    Checkbox(checked = checkDatabase, onCheckedChange = { checkDatabase = it })
                     Text(stringResource(id = R.string.item_database_with_note))
                 }
                 Text(
@@ -2097,10 +1698,8 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (BackupSelect
 @Composable
 fun rememberPrefInt(key: String, defaultValue: Int): MutableIntState {
     val context = LocalContext.current
-    val isActive = LocalSettingsPageRuntime.current.keepDataActive
     val state = remember { mutableIntStateOf(defaultValue) }
-    LaunchedEffect(key, isActive) {
-        if (!isActive) return@LaunchedEffect
+    LaunchedEffect(key) {
         state.intValue = AppPreferencesDataStore.getInt(context, key, defaultValue)
     }
     return state
@@ -2109,10 +1708,8 @@ fun rememberPrefInt(key: String, defaultValue: Int): MutableIntState {
 @Composable
 fun rememberPrefFloat(key: String, defaultValue: Float): MutableFloatState {
     val context = LocalContext.current
-    val isActive = LocalSettingsPageRuntime.current.keepDataActive
     val state = remember { mutableFloatStateOf(defaultValue) }
-    LaunchedEffect(key, isActive) {
-        if (!isActive) return@LaunchedEffect
+    LaunchedEffect(key) {
         state.floatValue = AppPreferencesDataStore.getFloat(context, key, defaultValue)
     }
     return state
@@ -2132,7 +1729,7 @@ fun SliderDialog(
     var sliderValue by remember { mutableFloatStateOf(value) }
     val cancelLabel = stringResource(id = R.string.cancel)
     val confirmLabel = stringResource(id = R.string.confirm)
-    io.github.magisk317.uikit.surface.AppAlertDialog(
+    AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = title) },
         text = {

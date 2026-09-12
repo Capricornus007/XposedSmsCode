@@ -4,7 +4,7 @@ import android.app.Activity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import com.google.android.play.core.appupdate.AppUpdateInfo
 import com.google.android.play.core.appupdate.AppUpdateManager
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
@@ -13,19 +13,15 @@ import com.google.android.play.core.install.InstallStateUpdatedListener
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
-import com.github.magisk317.smscode.runtime.RuntimePlayAction
-import com.github.magisk317.smscode.runtime.bridge.UiUpdateAccess
-import io.github.magisk317.uikit.shell.PlayUpdateDelegate
+import com.github.magisk317.smscode.data.update.UpdateCoordinator
 
-class FlavorPlayUpdateDelegate(
-    private val updateAccess: UiUpdateAccess,
-) : PlayUpdateDelegate {
+class FlavorPlayUpdateDelegate : PlayUpdateDelegate {
 
     private var appUpdateManager: AppUpdateManager? = null
     private var updateLauncher: ActivityResultLauncher<IntentSenderRequest>? = null
     private var installStateUpdatedListener: InstallStateUpdatedListener? = null
 
-    override fun onCreate(activity: ComponentActivity, onFallbackToStore: () -> Unit) {
+    override fun onCreate(activity: AppCompatActivity, onFallbackToStore: () -> Unit) {
         val manager = AppUpdateManagerFactory.create(activity)
         appUpdateManager = manager
         updateLauncher = activity.registerForActivityResult(
@@ -45,7 +41,7 @@ class FlavorPlayUpdateDelegate(
         manager.registerListener(listener)
     }
 
-    override fun onResume(activity: ComponentActivity, onFallbackToStore: () -> Unit) {
+    override fun onResume(activity: AppCompatActivity, onFallbackToStore: () -> Unit) {
         val manager = appUpdateManager ?: return
         manager.appUpdateInfo.addOnSuccessListener { info ->
             if (info.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
@@ -68,27 +64,27 @@ class FlavorPlayUpdateDelegate(
     }
 
     override fun requestUpdate(
-        activity: ComponentActivity,
+        activity: AppCompatActivity,
         silentIfNoUpdate: Boolean,
         fallbackOnQueryFailure: Boolean,
         onFallbackToStore: () -> Unit,
     ) {
         val manager = appUpdateManager ?: return
         manager.appUpdateInfo.addOnSuccessListener { info ->
-            val action = updateAccess.decidePlayAction(
+            val action = UpdateCoordinator.decidePlayAction(
                 updateAvailable = info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE,
                 flexibleAllowed = info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE),
                 inProgress = info.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS,
                 silentIfNoUpdate = silentIfNoUpdate,
             )
             when (action) {
-                RuntimePlayAction.START_UPDATE_FLOW -> startUpdateFlow(manager, info, onFallbackToStore)
-                RuntimePlayAction.OPEN_STORE_OR_GITHUB -> onFallbackToStore()
-                RuntimePlayAction.NO_OP -> Unit
+                UpdateCoordinator.PlayAction.START_UPDATE_FLOW -> startUpdateFlow(manager, info, onFallbackToStore)
+                UpdateCoordinator.PlayAction.OPEN_STORE_OR_GITHUB -> onFallbackToStore()
+                UpdateCoordinator.PlayAction.NO_OP -> Unit
             }
         }.addOnFailureListener {
-            when (updateAccess.decidePlayFailureAction(fallbackOnQueryFailure)) {
-                RuntimePlayAction.OPEN_STORE_OR_GITHUB -> onFallbackToStore()
+            when (UpdateCoordinator.decidePlayFailureAction(fallbackOnQueryFailure)) {
+                UpdateCoordinator.PlayAction.OPEN_STORE_OR_GITHUB -> onFallbackToStore()
                 else -> Unit
             }
         }

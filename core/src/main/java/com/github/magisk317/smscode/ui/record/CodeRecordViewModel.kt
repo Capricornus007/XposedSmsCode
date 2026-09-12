@@ -6,118 +6,52 @@ import android.net.Uri
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.github.magisk317.smscode.common.constant.Const
+import com.github.magisk317.smscode.common.utils.JsonUtils
 import com.github.magisk317.smscode.common.utils.XLog
+import com.github.magisk317.smscode.data.db.DBManager
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
-import com.github.magisk317.smscode.runtime.bridge.UiCodeRecordAccess
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.OutputStreamWriter
+import java.nio.charset.StandardCharsets
 
 @Immutable
 data class CodeRecordUiState(val smsList: ImmutableList<SmsMsg> = persistentListOf(), val isLoading: Boolean = false)
 
-internal class RecordRequestGeneration {
-    private var current = 0L
-
-    fun next(): Long = ++current
-
-    fun invalidate() {
-        current += 1
-    }
-
-    fun isCurrent(generation: Long): Boolean = generation == current
-}
-
-class CodeRecordViewModel(
-    application: Application,
-    private val codeRecord: UiCodeRecordAccess,
-) : AndroidViewModel(application) {
+class CodeRecordViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _loading = MutableStateFlow(false)
-    private val _records = MutableStateFlow<ImmutableList<SmsMsg>>(persistentListOf())
-    private val _hasRecordSnapshot = MutableStateFlow(false)
-    val hasRecordSnapshot: StateFlow<Boolean> = _hasRecordSnapshot.asStateFlow()
-    private val _isActive = MutableStateFlow(false)
-    private var recordsJob: Job? = null
-    private var refreshJob: Job? = null
-    private var activationGeneration = 0L
-    private val refreshGeneration = RecordRequestGeneration()
 
-    val uiState: StateFlow<CodeRecordUiState> = combine(
-        _records,
-        _loading,
-        _hasRecordSnapshot,
-        _isActive,
-    ) { smsList, loading, hasSnapshot, isActive ->
-        CodeRecordUiState(smsList, loading || (isActive && !hasSnapshot))
-    }
+    val uiState: StateFlow<CodeRecordUiState> = DBManager.get(application)
+        .queryAllSmsMsgFlow()
+        .combine(_loading) { smsList, loading ->
+            CodeRecordUiState(smsList.toImmutableList(), loading)
+        }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.Eagerly,
+            started = SharingStarted.WhileSubscribed(Const.FLOW_STOP_TIMEOUT_MS),
             initialValue = CodeRecordUiState(isLoading = true),
         )
 
     fun loadData() {
-        setActive(true)
-    }
-
-    fun setActive(active: Boolean) {
-        if (_isActive.value == active) return
-        _isActive.value = active
-        val generation = ++activationGeneration
-        recordsJob?.cancel()
-        recordsJob = null
-        if (!active) {
-            refreshGeneration.invalidate()
-            refreshJob?.cancel()
-            refreshJob = null
-            _loading.value = false
-            return
-        }
-        recordsJob = viewModelScope.launch {
-            try {
-                codeRecord.recordsFlow(getApplication()).collect { smsList ->
-                    if (generation != activationGeneration || !_isActive.value) return@collect
-                    _records.value = smsList.toImmutableList()
-                    _hasRecordSnapshot.value = true
-                }
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (t: Throwable) {
-                XLog.e("Code record stream failed", t)
-            }
-        }
+        // Data is automatically loaded via queryAllSmsMsgFlow() in uiState
     }
 
     fun refreshData() {
-        if (!_isActive.value) return
-        val activation = activationGeneration
-        val refresh = refreshGeneration.next()
-        refreshJob?.cancel()
-        refreshJob = viewModelScope.launch {
+        viewModelScope.launch {
             _loading.value = true
             try {
-                val records = withContext(Dispatchers.IO) {
-                    codeRecord.queryRecords(getApplication())
-                }
-                if (activation == activationGeneration &&
-                    refreshGeneration.isCurrent(refresh) &&
-                    _isActive.value
-                ) {
-                    _records.value = records.toImmutableList()
-                    _hasRecordSnapshot.value = true
+                withContext(Dispatchers.IO) {
+                    DBManager.get(getApplication()).queryAllSmsMsg()
                 }
             } finally {
-                if (activation == activationGeneration && refreshGeneration.isCurrent(refresh)) {
-                    _loading.value = false
-                    refreshJob = null
-                }
+                _loading.value = false
             }
         }
     }
@@ -125,7 +59,8 @@ class CodeRecordViewModel(
     fun removeSmsMsg(smsMsgList: List<SmsMsg>) {
         viewModelScope.launch {
             try {
-                codeRecord.removeRecords(getApplication(), smsMsgList)
+                DBManager.get(getApplication())
+                    .removeSmsMsgListSuspend(smsMsgList)
             } catch (ignored: Throwable) {
                 XLog.e("Error occurs when remove SMS records", ignored)
             }
@@ -135,7 +70,8 @@ class CodeRecordViewModel(
     fun restoreSmsMsgList(smsMsgList: List<SmsMsg>) {
         viewModelScope.launch {
             try {
-                codeRecord.restoreRecords(getApplication(), smsMsgList)
+                DBManager.get(getApplication())
+                    .insertSmsMsgListSuspend(smsMsgList)
             } catch (ignored: Throwable) {
                 XLog.e("Error occurs when restore SMS records", ignored)
             }
@@ -147,8 +83,15 @@ class CodeRecordViewModel(
             _loading.value = true
             try {
                 val allRecords = uiState.value.smsList.toList()
+                val codeRecords = allRecords.filter {
+                    it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank()
+                }
                 withContext(Dispatchers.IO) {
-                    codeRecord.exportCodeRecords(context, uri, allRecords)
+                    context.contentResolver.openOutputStream(uri)?.use { os ->
+                        OutputStreamWriter(os, StandardCharsets.UTF_8).use { osw ->
+                            JsonUtils.toJson(codeRecords, osw, true)
+                        }
+                    }
                 }
                 // We might want an event for success/failure
             } catch (ignored: Throwable) {

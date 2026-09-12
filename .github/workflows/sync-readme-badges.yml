@@ -2,31 +2,24 @@ name: Sync README Badges
 
 on:
   push:
-    branches:
-      - beta
     paths:
       - gradle/libs.versions.toml
-      - gradle/wrapper/gradle-wrapper.properties
-      - scripts/codegen/sync_readme_badges.sh
+      - scripts/sync_readme_badges.sh
       - .github/workflows/sync-readme-badges.yml
   workflow_dispatch:
 
 permissions:
   contents: write
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   sync-readme-badges:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@v6
 
       - name: Sync badges
-        run: ./scripts/codegen/sync_readme_badges.sh
+        run: ./scripts/sync_readme_badges.sh
 
       - name: Commit and push if changed
         run: |

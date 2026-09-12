@@ -1,5 +1,3 @@
-@file:Suppress("LocalContextGetResourceValueCall")
-
 package com.github.magisk317.smscode.ui.home
 
 import android.content.Intent
@@ -7,7 +5,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.compose.setContent
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
@@ -17,32 +15,33 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
-import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.core.graphics.createBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.SpanStyle
@@ -52,66 +51,46 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.rememberNavController
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.runtime.CompositionLocalProvider
 import com.github.magisk317.smscode.core.BuildConfig
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.common.constant.Const
 import com.github.magisk317.smscode.common.constant.PrefConst
 import com.github.magisk317.smscode.common.constant.TransitionConst
 import com.github.magisk317.smscode.common.utils.AppPreferencesDataStore
-import io.github.magisk317.smscode.runtime.common.utils.FrameworkCompatibilityMonitor
-import com.github.magisk317.smscode.runtime.bridge.UiPrefsAccess
-import com.github.magisk317.smscode.runtime.bridge.UiUpdateAccess
 import com.github.magisk317.smscode.common.utils.XLog
 import com.github.magisk317.smscode.common.utils.SPUtils
 import com.github.magisk317.smscode.common.utils.PackageUtils
-import io.github.magisk317.smscode.runtime.common.utils.StringUtils
-import io.github.magisk317.smscode.runtime.common.utils.BrowserUtils
-import com.github.magisk317.smscode.runtime.RuntimeGithubReleaseInfo
-import com.github.magisk317.smscode.runtime.RuntimeStartupTarget
-import com.github.magisk317.smscode.runtime.RuntimeUpgradeApkAsset
-import com.github.magisk317.smscode.runtime.RuntimeUpgradeCheckResult
-import com.github.magisk317.smscode.runtime.RuntimeUpgradeInfo
-import com.github.magisk317.smscode.runtime.RuntimeUpgradeDownloadProgress
-import io.github.magisk317.uikit.theme.UpdateSystemBars
-import io.github.magisk317.uikit.theme.applyEdgeToEdge
-import io.github.magisk317.uikit.common.DismissibleSnackbarHost
-import io.github.magisk317.uikit.foundation.LocalSnackbarHostState
+import com.github.magisk317.smscode.common.utils.Utils
+import com.github.magisk317.smscode.data.update.ApkSecurityVerifier
+import com.github.magisk317.smscode.data.update.GithubReleaseInfo
+import com.github.magisk317.smscode.data.update.GithubUpdateChecker
+import com.github.magisk317.smscode.data.update.UpgradeApkAsset
+import com.github.magisk317.smscode.data.update.UpgradeCheckResult
+import com.github.magisk317.smscode.data.update.UpgradeDownloader
+import com.github.magisk317.smscode.data.update.UpgradeInfo
+import com.github.magisk317.smscode.data.update.UpgradeInstaller
+import com.github.magisk317.smscode.data.update.UpdatePolicy
+import com.github.magisk317.smscode.ui.app.base.UpdateSystemBars
+import com.github.magisk317.smscode.ui.app.base.applyEdgeToEdge
+import com.github.magisk317.smscode.ui.app.base.rememberHazeStyle
 import com.github.magisk317.smscode.ui.home.update.FlavorPlayUpdateDelegate
-import java.util.Locale
-import io.github.magisk317.uikit.shell.PlayUpdateDelegate
+import com.github.magisk317.smscode.ui.home.update.PlayUpdateDelegate
 import com.github.magisk317.smscode.ui.nav.SmsCodeNavHost
 import com.github.magisk317.smscode.ui.privacy.PrivacyPolicyPage
 import com.github.magisk317.smscode.ui.theme.AppTheme
-import io.github.magisk317.uikit.surface.AppAlertDialog
-import io.github.magisk317.uikit.surface.AppLinearProgressIndicator
-import io.github.magisk317.uikit.surface.AppPrimaryButton
-import io.github.magisk317.uikit.surface.AppSecondaryButton
-import io.github.magisk317.uikit.surface.AppTextButton
+import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
-import org.koin.android.ext.android.inject
 import org.koin.androidx.compose.koinViewModel
 import java.io.File
 import kotlin.math.hypot
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
-    private val updateAccess: UiUpdateAccess by inject()
-    private val prefsAccess: UiPrefsAccess by inject()
-    private val playUpdateDelegate: PlayUpdateDelegate by lazy { FlavorPlayUpdateDelegate(updateAccess) }
+    private val playUpdateDelegate: PlayUpdateDelegate = FlavorPlayUpdateDelegate()
     private var autoUpdateChecked = false
-    private val snackbarMessages = MutableSharedFlow<String>(extraBufferCapacity = 8)
-
-    private fun enqueueSnackbar(message: String) {
-        snackbarMessages.tryEmit(message)
-    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -121,10 +100,9 @@ class MainActivity : ComponentActivity() {
     @Suppress("CyclomaticComplexMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        XLog.w("MainActivity.onCreate() called pid=%d", android.os.Process.myPid())
         applyEdgeToEdge(this)
         playUpdateDelegate.onCreate(this) {
-            PackageUtils.openPlayStoreOrGithub(this)?.let(::enqueueSnackbar)
+            PackageUtils.openPlayStoreOrGithub(this)
         }
         triggerAutoUpdateIfEnabled()
 
@@ -134,23 +112,20 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val appSnackbarHostState = remember { SnackbarHostState() }
             var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
             var showPrivacyPolicyPage by remember { mutableStateOf(false) }
-            var blockingStartupDialog by remember { mutableStateOf<BlockingStartupDialog?>(null) }
-            var startupBlockingCheckComplete by remember { mutableStateOf(false) }
+            var showRelayConflictDialog by remember { mutableStateOf(false) }
             var githubUpdateUiState by remember { mutableStateOf<GithubUpdateUiState?>(null) }
             var downloadState by remember { mutableStateOf<UpdateDownloadState>(UpdateDownloadState.Idle) }
             var unknownSourceApk by remember { mutableStateOf<File?>(null) }
             var downloadJob by remember { mutableStateOf<Job?>(null) }
-            var snackbarBottomOverlayPadding by remember { mutableStateOf(0.dp) }
 
             fun startStructuredDownload(update: GithubStructuredUpdate) {
                 downloadJob?.cancel()
                 downloadState = UpdateDownloadState.Downloading(progress = 0f, progressText = "0%")
                 downloadJob = scope.launch {
                     try {
-                        val downloadedFile = updateAccess.download(
+                        val downloadedFile = UpgradeDownloader.download(
                             context = this@MainActivity,
                             versionCode = update.info.versionCode,
                             asset = update.asset,
@@ -162,7 +137,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                         }
-                        val verifyResult = updateAccess.verifyDownloadedApk(
+                        val verifyResult = ApkSecurityVerifier.verifyDownloadedApk(
                             context = this@MainActivity,
                             apkFile = downloadedFile,
                             expectedSha256 = update.asset.sha256,
@@ -198,7 +173,6 @@ class MainActivity : ComponentActivity() {
 
             // Circular Reveal Animation State
             var currentThemeMode by remember { mutableIntStateOf(themeState.mode) }
-            var currentUiKitStyle by remember { mutableIntStateOf(themeState.uiKitStyle) }
             var screenshotBitmap by remember { mutableStateOf<Bitmap?>(null) }
             val revealAnim = remember { Animatable(0f) }
             var isAnimating by remember { mutableStateOf(false) }
@@ -221,30 +195,18 @@ class MainActivity : ComponentActivity() {
                 }
             }
             LaunchedEffect(Unit) {
-                startupBlockingCheckComplete = false
-                try {
-                    if (BuildConfig.ALLOW_CONFLICT_BYPASS) {
-                        XLog.w(
-                            "Relay conflict guard bypassed by build flag allowConflictBypass=true",
-                        )
-                    } else if (TransitionConst.isRelayInstalled(context)) {
-                        blockingStartupDialog = BlockingStartupDialog.RelayConflict
-                        return@LaunchedEffect
-                    }
-                    val frameworkIssue = withContext(Dispatchers.IO) {
-                        PackageUtils.inspectFrameworkIssue(context)
-                    }
-                    if (frameworkIssue != null) {
-                        blockingStartupDialog = BlockingStartupDialog.FrameworkIncompatibility(frameworkIssue)
-                    }
-                } finally {
-                    startupBlockingCheckComplete = true
+                if (BuildConfig.ALLOW_CONFLICT_BYPASS) {
+                    XLog.w(
+                        "Relay conflict guard bypassed by build flag allowConflictBypass=true",
+                    )
+                    return@LaunchedEffect
+                }
+                if (TransitionConst.isRelayInstalled(context)) {
+                    showRelayConflictDialog = true
                 }
             }
             LaunchedEffect(Unit) {
-                snackbarMessages.collect { message ->
-                    appSnackbarHostState.showSnackbar(message)
-                }
+                githubUpdateUiState = checkStartupGithubUpdateIfNeeded()
             }
 
             // Effect to trigger logic when ThemeState changes
@@ -273,7 +235,7 @@ class MainActivity : ComponentActivity() {
 
                     try {
                         clearScreenshotBitmap()
-                        val bitmap = createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
                         val canvas = android.graphics.Canvas(bitmap)
                         view.draw(canvas)
                         screenshotBitmap = bitmap
@@ -284,7 +246,6 @@ class MainActivity : ComponentActivity() {
 
                         isAnimating = true
                         currentThemeMode = themeState.mode
-                        currentUiKitStyle = themeState.uiKitStyle
 
                         revealAnim.snapTo(0f)
                         revealAnim.animateTo(
@@ -294,7 +255,6 @@ class MainActivity : ComponentActivity() {
                     } catch (oom: OutOfMemoryError) {
                         XLog.w("Theme capture OOM, fallback to direct mode switch", oom)
                         currentThemeMode = themeState.mode
-                        currentUiKitStyle = themeState.uiKitStyle
                     } catch (e: RuntimeException) {
                         if (e.message?.contains(LARGE_BITMAP_ERROR_KEYWORD, ignoreCase = true) == true) {
                             XLog.w("Theme capture too large bitmap, fallback to direct mode switch")
@@ -302,21 +262,16 @@ class MainActivity : ComponentActivity() {
                             XLog.w("Theme capture runtime exception: %s", e.message ?: "unknown")
                         }
                         currentThemeMode = themeState.mode
-                        currentUiKitStyle = themeState.uiKitStyle
                     } catch (t: Throwable) {
                         XLog.w("Theme capture failed: %s", t.message ?: "unknown")
                         currentThemeMode = themeState.mode
-                        currentUiKitStyle = themeState.uiKitStyle
                     } finally {
                         isAnimating = false
                         clearScreenshotBitmap()
                     }
-                } else if (themeState.uiKitStyle != currentUiKitStyle) {
-                    currentUiKitStyle = themeState.uiKitStyle
                 } else {
                     // Initial load
                     currentThemeMode = themeState.mode
-                    currentUiKitStyle = themeState.uiKitStyle
                 }
             }
 
@@ -325,51 +280,21 @@ class MainActivity : ComponentActivity() {
                 viewModel.eventsFlow.collect { event ->
                     when (event) {
                         is SettingsEvent.ShowPrivacyPolicy -> showPrivacyPolicyDialog = true
-                        is SettingsEvent.SmsCodeTestResult -> {
-                            val message = if (event.code.isBlank()) {
-                                context.getString(R.string.cannot_parse_smscode)
-                            } else {
-                                val base = context.getString(R.string.current_sms_code, event.code)
-                                val hitRule = event.matchedRuleLabel?.takeIf { it.isNotBlank() }?.let {
-                                    context.getString(R.string.hit_rule_label, it)
-                                }
-                                if (hitRule == null) {
-                                    base
-                                } else {
-                                    context.getString(R.string.sms_code_test_result_with_rule, base, hitRule)
-                                }
-                            }
-                            XLog.i(
-                                "Sms code test result delivered in MainActivity: code=%s matchedRule=%s",
-                                if (prefsAccess.isSensitiveDebugLogMode(context)) {
-                                    StringUtils.escape(event.code)
-                                } else {
-                                    StringUtils.summarizeCode(event.code)
-                                },
-                                event.matchedRuleLabel ?: "",
-                            )
-                            scope.launch { appSnackbarHostState.showSnackbar(message) }
-                        }
-                        is SettingsEvent.NavigateToRules -> {
-                            requestedTab = com.github.magisk317.smscode.ui.nav.SmsCodeRulesRoute()
-                        }
+                        is SettingsEvent.NavigateToRules -> requestedTab = com.github.magisk317.smscode.ui.nav.AppBlockRoute
                         is SettingsEvent.NavigateToRecords -> requestedTab = com.github.magisk317.smscode.ui.nav.RecordsRoute
-                        is SettingsEvent.NavigateToSettings -> requestedTab = com.github.magisk317.smscode.ui.nav.SettingsRoute
                         is SettingsEvent.StartPlayUpdate -> requestPlayUpdate()
-                        is SettingsEvent.ShowSnackbar -> {
-                            scope.launch { appSnackbarHostState.showSnackbar(event.message) }
+                        is SettingsEvent.StartGithubUpdateCheck -> {
+                            requestGithubUpdateCheck(showNoUpdateToast = true) { update ->
+                                githubUpdateUiState = update
+                            }
                         }
                         else -> {}
                     }
                 }
             }
 
-            CompositionLocalProvider(LocalSnackbarHostState provides appSnackbarHostState) {
-                AppTheme(
-                    themeMode = currentThemeMode,
-                    uiKitStyle = currentUiKitStyle,
-                ) {
-                    Surface(color = MaterialTheme.colorScheme.background) {
+            AppTheme(themeMode = currentThemeMode) {
+                Surface(color = MaterialTheme.colorScheme.background) {
                     LaunchedEffect(Unit) {
                         viewModel.setInternalFilesWritable()
                     }
@@ -378,19 +303,31 @@ class MainActivity : ComponentActivity() {
                     }
 
                     Box(modifier = Modifier.fillMaxSize()) {
-                        val shouldShowRegularUi = startupBlockingCheckComplete && blockingStartupDialog == null
-                        if (shouldShowRegularUi) {
-                            SmsCodeNavHost(
-                                navController = navController,
-                                onBack = { finish() },
-                                initialTab = requestedTab,
-                                onInitialTabConsumed = { requestedTab = null },
-                                onBottomOverlayPaddingChanged = { snackbarBottomOverlayPadding = it },
-                                modifier = Modifier,
-                            )
-                        }
+                        val hazeBlurRadius by AppPreferencesDataStore.getIntFlow(
+                            context,
+                            PrefConst.KEY_HAZE_BLUR_RADIUS,
+                            PrefConst.HAZE_BLUR_RADIUS_DEFAULT,
+                        ).collectAsStateWithLifecycle(initialValue = PrefConst.HAZE_BLUR_RADIUS_DEFAULT)
 
-                        if (shouldShowRegularUi && showPrivacyPolicyDialog) {
+                        val hazeTintAlpha by AppPreferencesDataStore.getFloatFlow(
+                            context,
+                            PrefConst.KEY_HAZE_TINT_ALPHA,
+                            PrefConst.HAZE_TINT_ALPHA_DEFAULT,
+                        ).collectAsStateWithLifecycle(initialValue = PrefConst.HAZE_TINT_ALPHA_DEFAULT)
+
+                        val hazeState = remember { HazeState() }
+                        val hazeStyle = rememberHazeStyle(blurRadius = hazeBlurRadius.dp, tintAlpha = hazeTintAlpha)
+                        SmsCodeNavHost(
+                            navController = navController,
+                            onBack = { finish() },
+                            initialTab = requestedTab,
+                            onInitialTabConsumed = { requestedTab = null },
+                            modifier = Modifier,
+                            hazeState = hazeState,
+                            hazeStyle = hazeStyle,
+                        )
+
+                        if (showPrivacyPolicyDialog) {
                             PrivacyPolicyDialog(
                                 onDismiss = {},
                                 onConfirm = {
@@ -411,7 +348,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        if (shouldShowRegularUi && showPrivacyPolicyPage) {
+                        if (showPrivacyPolicyPage) {
                             PrivacyPolicyPage(
                                 onDismiss = {
                                     showPrivacyPolicyPage = false
@@ -424,16 +361,12 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        blockingStartupDialog?.let { dialog ->
-                            ExitOnlyConflictDialog(
-                                title = when (dialog) {
-                                    BlockingStartupDialog.RelayConflict ->
-                                        getString(R.string.relay_conflict_dialog_title)
-                                    is BlockingStartupDialog.FrameworkIncompatibility ->
-                                        getString(R.string.framework_incompatibility_title)
-                                },
-                                text = when (dialog) {
-                                    BlockingStartupDialog.RelayConflict -> {
+                        if (showRelayConflictDialog) {
+                            AlertDialog(
+                                onDismissRequest = {},
+                                title = { Text(getString(R.string.relay_conflict_dialog_title)) },
+                                text = {
+                                    Text(
                                         buildAnnotatedString {
                                             append(getString(R.string.relay_conflict_dialog_prefix))
                                             withStyle(
@@ -459,31 +392,24 @@ class MainActivity : ComponentActivity() {
                                                 append(getString(R.string.app_name))
                                             }
                                             append(getString(R.string.relay_conflict_dialog_suffix))
-                                        }
-                                    }
-                                    is BlockingStartupDialog.FrameworkIncompatibility -> {
-                                        val issue = dialog.issue
-                                        buildAnnotatedString {
-                                            append(
-                                                when (issue.issueType) {
-                                                    FrameworkCompatibilityMonitor.FrameworkIssueType.HOOKER_ANNOTATION_INCOMPATIBLE ->
-                                                        getString(R.string.framework_incompatibility_hooker_annotation_message)
-                                                },
-                                            )
-                                        }
-                                    }
+                                        },
+                                    )
                                 },
-                                confirmText = getString(R.string.relay_conflict_dialog_exit),
-                                onExit = {
-                                    blockingStartupDialog = null
-                                    finish()
+                                confirmButton = {
+                                    FilledTonalButton(
+                                        onClick = {
+                                            showRelayConflictDialog = false
+                                            finish()
+                                        },
+                                    ) {
+                                        Text(getString(R.string.relay_conflict_dialog_exit))
+                                    }
                                 },
                             )
                         }
 
-                        if (shouldShowRegularUi) {
-                            githubUpdateUiState?.let { updateState ->
-                            AppAlertDialog(
+                        githubUpdateUiState?.let { updateState ->
+                            AlertDialog(
                                 onDismissRequest = { githubUpdateUiState = null },
                                 title = { Text(getString(R.string.github_update_dialog_title)) },
                                 text = {
@@ -496,16 +422,11 @@ class MainActivity : ComponentActivity() {
                                     )
                                 },
                                 confirmButton = {
-                                    AppPrimaryButton(
-                                        text = getString(R.string.github_update_download),
+                                    FilledTonalButton(
                                         onClick = {
                                             when (updateState) {
                                                 is GithubUpdateUiState.Legacy -> {
-                                                    BrowserUtils.openWebPage(
-                                                        this@MainActivity,
-                                                        updateState.release.htmlUrl,
-                                                        R.string.browser_install_or_enable_prompt,
-                                                    )?.let(::enqueueSnackbar)
+                                                    Utils.showWebPage(this@MainActivity, updateState.release.htmlUrl)
                                                     githubUpdateUiState = null
                                                 }
 
@@ -515,12 +436,13 @@ class MainActivity : ComponentActivity() {
                                                 }
                                             }
                                         },
-                                    )
+                                    ) {
+                                        Text(getString(R.string.github_update_download))
+                                    }
                                 },
                                 dismissButton = {
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        AppSecondaryButton(
-                                            text = getString(R.string.github_update_ignore_this_version),
+                                        OutlinedButton(
                                             onClick = {
                                                 val versionName = when (updateState) {
                                                     is GithubUpdateUiState.Legacy -> updateState.release.versionName
@@ -532,97 +454,99 @@ class MainActivity : ComponentActivity() {
                                                         PrefConst.KEY_GITHUB_IGNORED_VERSION,
                                                         versionName,
                                                     )
-                                                    HookPreferenceMirror.publish(this@MainActivity)
+                                                    AppPreferencesDataStore.syncToSharedPrefs(this@MainActivity)
                                                 }
                                                 githubUpdateUiState = null
                                             },
-                                        )
-                                        AppSecondaryButton(
-                                            text = getString(R.string.cancel),
-                                            onClick = { githubUpdateUiState = null },
-                                        )
+                                        ) {
+                                            Text(getString(R.string.github_update_ignore_this_version))
+                                        }
+                                        OutlinedButton(onClick = { githubUpdateUiState = null }) {
+                                            Text(getString(R.string.cancel))
+                                        }
                                     }
                                 },
                             )
                         }
-                        }
 
                         when (val state = downloadState) {
                             is UpdateDownloadState.Downloading -> {
-                                AppAlertDialog(
+                                AlertDialog(
                                     onDismissRequest = {},
                                     title = { Text(getString(R.string.update_download_in_progress_title)) },
                                     text = {
                                         Column {
-                                            AppLinearProgressIndicator(progress = state.progress, modifier = Modifier.fillMaxWidth())
+                                            LinearProgressIndicator(
+                                                progress = { state.progress },
+                                                modifier = Modifier.fillMaxWidth(),
+                                            )
                                             Text(state.progressText)
                                         }
                                     },
                                     confirmButton = {
-                                        AppTextButton(
-                                            text = getString(R.string.update_download_cancel),
+                                        TextButton(
                                             onClick = {
                                                 downloadJob?.cancel()
                                                 downloadState = UpdateDownloadState.Idle
                                             },
-                                        )
+                                        ) {
+                                            Text(getString(R.string.update_download_cancel))
+                                        }
                                     },
                                 )
                             }
 
                             is UpdateDownloadState.Failed -> {
-                                AppAlertDialog(
+                                AlertDialog(
                                     onDismissRequest = { downloadState = UpdateDownloadState.Idle },
                                     title = { Text(getString(R.string.update_download_failed_title)) },
                                     text = { Text(state.message) },
                                     dismissButton = {
-                                        AppSecondaryButton(
-                                            text = getString(R.string.cancel),
-                                            onClick = { downloadState = UpdateDownloadState.Idle },
-                                        )
+                                        OutlinedButton(onClick = { downloadState = UpdateDownloadState.Idle }) {
+                                            Text(getString(R.string.cancel))
+                                        }
                                     },
                                     confirmButton = {
                                         if (state.retry != null) {
-                                            AppPrimaryButton(
-                                                text = getString(R.string.update_retry),
-                                                onClick = { startStructuredDownload(state.retry) },
-                                            )
+                                            FilledTonalButton(onClick = { startStructuredDownload(state.retry) }) {
+                                                Text(getString(R.string.update_retry))
+                                            }
                                         }
                                     },
                                 )
                             }
 
                             is UpdateDownloadState.Downloaded -> {
-                                AppAlertDialog(
+                                AlertDialog(
                                     onDismissRequest = {},
                                     title = { Text(getString(R.string.update_download_completed_title)) },
                                     text = { Text(getString(R.string.update_download_completed_message)) },
                                     dismissButton = {
-                                        AppSecondaryButton(
-                                            text = getString(R.string.cancel),
-                                            onClick = { downloadState = UpdateDownloadState.Idle },
-                                        )
+                                        OutlinedButton(onClick = { downloadState = UpdateDownloadState.Idle }) {
+                                            Text(getString(R.string.cancel))
+                                        }
                                     },
                                     confirmButton = {
-                                        AppPrimaryButton(
-                                            text = getString(R.string.update_install),
+                                        FilledTonalButton(
                                             onClick = {
-                                                if (!updateAccess.canRequestPackageInstalls(this@MainActivity)) {
+                                                if (!UpgradeInstaller.canRequestPackageInstalls(this@MainActivity)) {
                                                     unknownSourceApk = state.file
+                                                    return@FilledTonalButton
+                                                }
+                                                val installResult = UpgradeInstaller.installApk(this@MainActivity, state.file)
+                                                if (installResult.isSuccess) {
+                                                    downloadState = UpdateDownloadState.Idle
                                                 } else {
-                                                    val installResult = updateAccess.installApk(this@MainActivity, state.file)
-                                                    if (installResult.isSuccess) {
-                                                        downloadState = UpdateDownloadState.Idle
-                                                    } else {
-                                                        downloadState = UpdateDownloadState.Failed(
-                                                            message = installResult.exceptionOrNull()?.message
-                                                                ?: "install_failed",
-                                                            retry = state.update,
-                                                        )
-                                                    }
+                                                    downloadState = UpdateDownloadState.Failed(
+                                                        message = installResult.exceptionOrNull()?.message
+                                                            ?: "install_failed",
+                                                        retry = state.update,
+                                                    )
                                                 }
                                             },
-                                        )
+                                        ) {
+                                            Text(getString(R.string.update_install))
+                                        }
                                     },
                                 )
                             }
@@ -631,24 +555,24 @@ class MainActivity : ComponentActivity() {
                         }
 
                         unknownSourceApk?.let {
-                            AppAlertDialog(
+                            AlertDialog(
                                 onDismissRequest = { unknownSourceApk = null },
                                 title = { Text(getString(R.string.update_unknown_source_title)) },
                                 text = { Text(getString(R.string.update_unknown_source_message)) },
                                 dismissButton = {
-                                    AppSecondaryButton(
-                                        text = getString(R.string.cancel),
-                                        onClick = { unknownSourceApk = null },
-                                    )
+                                    OutlinedButton(onClick = { unknownSourceApk = null }) {
+                                        Text(getString(R.string.cancel))
+                                    }
                                 },
                                 confirmButton = {
-                                    AppPrimaryButton(
-                                        text = getString(R.string.update_open_settings),
+                                    FilledTonalButton(
                                         onClick = {
-                                            startActivity(updateAccess.buildUnknownSourceSettingsIntent(this@MainActivity))
+                                            startActivity(UpgradeInstaller.buildUnknownSourceSettingsIntent(this@MainActivity))
                                             unknownSourceApk = null
                                         },
-                                    )
+                                    ) {
+                                        Text(getString(R.string.update_open_settings))
+                                    }
                                 },
                             )
                         }
@@ -682,20 +606,7 @@ class MainActivity : ComponentActivity() {
                                     },
                             )
                         }
-                        DismissibleSnackbarHost(
-                            hostState = appSnackbarHostState,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .then(
-                                    if (snackbarBottomOverlayPadding > 0.dp) {
-                                        Modifier.padding(bottom = snackbarBottomOverlayPadding)
-                                    } else {
-                                        Modifier.navigationBarsPadding()
-                                    },
-                                ),
-                        )
                     }
-                }
                 }
             }
         }
@@ -704,7 +615,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         playUpdateDelegate.onResume(this) {
-            PackageUtils.openPlayStoreOrGithub(this)?.let(::enqueueSnackbar)
+            PackageUtils.openPlayStoreOrGithub(this)
         }
     }
 
@@ -723,12 +634,12 @@ class MainActivity : ComponentActivity() {
             silentIfNoUpdate = silentIfNoUpdate,
             fallbackOnQueryFailure = fallbackOnQueryFailure,
         ) {
-            PackageUtils.openPlayStoreOrGithub(this)?.let(::enqueueSnackbar)
+            PackageUtils.openPlayStoreOrGithub(this)
         }
     }
 
     private fun triggerAutoUpdateIfEnabled() {
-        if (!BuildConfig.HAS_BILLING || autoUpdateChecked) return
+        if (autoUpdateChecked) return
         autoUpdateChecked = true
 
         lifecycleScope.launch {
@@ -745,9 +656,16 @@ class MainActivity : ComponentActivity() {
                 false,
             )
             val onWifi = PackageUtils.isOnWifi(this@MainActivity)
-            if (!updateAccess.shouldRunAutoCheck(enabled, wifiOnly, onWifi)) return@launch
+            if (!UpdatePolicy.shouldRunAutoCheck(enabled, wifiOnly, onWifi)) return@launch
 
-            requestPlayUpdateInternal(silentIfNoUpdate = true, fallbackOnQueryFailure = false)
+            when (UpdatePolicy.resolveStartupTarget(PackageUtils.isInstalledFromPlay(this@MainActivity))) {
+                UpdatePolicy.StartupTarget.PLAY -> {
+                requestPlayUpdateInternal(silentIfNoUpdate = true, fallbackOnQueryFailure = false)
+                }
+                UpdatePolicy.StartupTarget.GITHUB -> {
+                    // Startup GitHub check is handled by checkStartupGithubUpdateIfNeeded()
+                }
+            }
         }
     }
 
@@ -764,7 +682,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestGithubUpdateCheck(
-        showNoUpdateSnackbar: Boolean,
+        showNoUpdateToast: Boolean,
         onUpdateFound: (GithubUpdateUiState) -> Unit,
     ) {
         lifecycleScope.launch {
@@ -775,12 +693,20 @@ class MainActivity : ComponentActivity() {
                 )
             ) {
                 is GithubUpdateQueryResult.Failed -> {
-                    enqueueSnackbar(getString(R.string.check_update_failed))
+                    android.widget.Toast.makeText(
+                        this@MainActivity,
+                        getString(R.string.check_update_failed),
+                        android.widget.Toast.LENGTH_SHORT,
+                    ).show()
                 }
 
                 GithubUpdateQueryResult.NoUpdate -> {
-                    if (showNoUpdateSnackbar) {
-                        enqueueSnackbar(getString(R.string.app_already_newest))
+                    if (showNoUpdateToast) {
+                        android.widget.Toast.makeText(
+                            this@MainActivity,
+                            getString(R.string.app_already_newest),
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
                     }
                 }
 
@@ -810,23 +736,16 @@ class MainActivity : ComponentActivity() {
                 false,
             )
             val onWifi = PackageUtils.isOnWifi(this)
-            if (
-                updateAccess.shouldSkipGithubCheckOnStartup(
-                    installedFromPlay = installedFromPlay,
-                    autoCheckEnabled = enabled,
-                    wifiOnly = wifiOnly,
-                    onWifi = onWifi,
-                )
-            ) {
+            if (UpdatePolicy.shouldSkipGithubCheckOnStartup(installedFromPlay, enabled, wifiOnly, onWifi)) {
                 return GithubUpdateQueryResult.NoUpdate
             }
         } else if (installedFromPlay) {
             return GithubUpdateQueryResult.NoUpdate
         }
 
-        val checkResult = updateAccess.fetchUpgradeInfo()
+        val checkResult = GithubUpdateChecker.fetchUpgradeInfo()
         val updateState = when (checkResult) {
-            is RuntimeUpgradeCheckResult.CheckFailed -> {
+            is UpgradeCheckResult.CheckFailed -> {
                 return if (isAutoCheck) {
                     GithubUpdateQueryResult.NoUpdate
                 } else {
@@ -834,28 +753,26 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            RuntimeUpgradeCheckResult.NoUpdate -> return GithubUpdateQueryResult.NoUpdate
-            is RuntimeUpgradeCheckResult.LegacyLink -> {
-                if (!updateAccess.isNewer(BuildConfig.VERSION_NAME, checkResult.release.versionName)) {
+            UpgradeCheckResult.NoUpdate -> return GithubUpdateQueryResult.NoUpdate
+            is UpgradeCheckResult.LegacyLink -> {
+                if (!GithubUpdateChecker.isNewer(BuildConfig.VERSION_NAME, checkResult.release.versionName)) {
                     return GithubUpdateQueryResult.NoUpdate
                 }
                 GithubUpdateUiState.Legacy(checkResult.release)
             }
 
-            is RuntimeUpgradeCheckResult.Structured -> {
+            is UpgradeCheckResult.Structured -> {
                 val info = checkResult.info
                 val newer = if (info.versionCode > 0L) {
-                    updateAccess.isNewer(BuildConfig.VERSION_CODE.toLong(), info.versionCode)
+                    GithubUpdateChecker.isNewer(BuildConfig.VERSION_CODE.toLong(), info.versionCode)
                 } else {
-                    updateAccess.isNewer(BuildConfig.VERSION_NAME, info.versionName)
+                    GithubUpdateChecker.isNewer(BuildConfig.VERSION_NAME, info.versionName)
                 }
                 if (!newer) {
                     return GithubUpdateQueryResult.NoUpdate
                 }
 
-                val selectedApk = updateAccess.selectBestApkForDevice(
-                    apks = info.apks,
-                )
+                val selectedApk = GithubUpdateChecker.selectBestApkForDevice(info.apks)
                 if (selectedApk != null && selectedApk.sha256.isNotBlank() && info.signingCertSha256.isNotBlank()) {
                     GithubUpdateUiState.Structured(
                         update = GithubStructuredUpdate(
@@ -865,7 +782,7 @@ class MainActivity : ComponentActivity() {
                     )
                 } else {
                     GithubUpdateUiState.Legacy(
-                        RuntimeGithubReleaseInfo(
+                        GithubReleaseInfo(
                             versionName = info.versionName,
                             htmlUrl = info.htmlUrl.ifBlank { Const.PROJECT_GITHUB_LATEST_RELEASE_URL },
                         ),
@@ -884,13 +801,7 @@ class MainActivity : ComponentActivity() {
                 is GithubUpdateUiState.Legacy -> updateState.release.versionName
                 is GithubUpdateUiState.Structured -> updateState.update.info.versionName
             }
-            if (
-                updateAccess.shouldSkipIgnoredVersion(
-                    respectIgnoredVersion = respectIgnoredVersion,
-                    ignoredVersion = ignoredVersion,
-                    latestVersion = latestVersionName,
-                )
-            ) {
+            if (UpdatePolicy.shouldSkipIgnoredVersion(respectIgnoredVersion, ignoredVersion, latestVersionName)) {
                 return GithubUpdateQueryResult.NoUpdate
             }
         }
@@ -920,7 +831,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun formatDownloadProgress(progress: RuntimeUpgradeDownloadProgress): String {
+    private fun formatDownloadProgress(progress: UpgradeDownloader.Progress): String {
         val percent = (progress.percent * 100f).toInt().coerceIn(0, 100)
         val current = formatBytes(progress.bytesRead)
         val total = if (progress.totalBytes > 0L) formatBytes(progress.totalBytes) else "?"
@@ -939,46 +850,19 @@ class MainActivity : ComponentActivity() {
         return if (index == 0) {
             "${value.toInt()}${units[index]}"
         } else {
-            String.format(Locale.ROOT, "%.1f%s", value, units[index])
+            String.format("%.1f%s", value, units[index])
         }
     }
 
 }
 
-private sealed interface BlockingStartupDialog {
-    data object RelayConflict : BlockingStartupDialog
-    data class FrameworkIncompatibility(
-        val issue: FrameworkCompatibilityMonitor.FrameworkIssue,
-    ) : BlockingStartupDialog
-}
-
-@Composable
-private fun ExitOnlyConflictDialog(
-    title: String,
-    text: androidx.compose.ui.text.AnnotatedString,
-    confirmText: String,
-    onExit: () -> Unit,
-) {
-    AppAlertDialog(
-        onDismissRequest = {},
-        title = { Text(title) },
-        text = { Text(text) },
-        confirmButton = {
-            AppPrimaryButton(
-                text = confirmText,
-                onClick = onExit,
-            )
-        },
-    )
-}
-
 private data class GithubStructuredUpdate(
-    val info: RuntimeUpgradeInfo,
-    val asset: RuntimeUpgradeApkAsset,
+    val info: UpgradeInfo,
+    val asset: UpgradeApkAsset,
 )
 
 private sealed class GithubUpdateUiState {
-    data class Legacy(val release: RuntimeGithubReleaseInfo) : GithubUpdateUiState()
+    data class Legacy(val release: GithubReleaseInfo) : GithubUpdateUiState()
     data class Structured(val update: GithubStructuredUpdate) : GithubUpdateUiState()
 }
 

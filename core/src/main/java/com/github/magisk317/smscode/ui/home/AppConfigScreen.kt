@@ -1,9 +1,6 @@
-@file:Suppress("LocalContextGetResourceValueCall")
-
 package com.github.magisk317.smscode.ui.home
 
 import android.os.SystemClock
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,6 +8,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -23,6 +22,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -35,22 +35,21 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,109 +57,37 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.data.db.entity.AppInfo
-import io.github.magisk317.uikit.surface.AppIconImage
-import io.github.magisk317.uikit.foundation.LoadingIndicatorTokens
-import io.github.magisk317.uikit.foundation.PolygonMorphLoadingIndicator
-import io.github.magisk317.uikit.foundation.SessionLoadingRegistry
-import io.github.magisk317.uikit.foundation.rememberMinDurationLoading
-import io.github.magisk317.uikit.surface.OverlayHeaderScaffold
-import io.github.magisk317.uikit.surface.SearchOverlayContent
-import io.github.magisk317.uikit.surface.WorkspaceListItem
-import io.github.magisk317.uikit.surface.rememberSearchOverlayState
-import io.github.magisk317.uikit.theme.UiKitStyle
-import io.github.magisk317.uikit.theme.currentUiKitStyle
+import com.github.magisk317.smscode.ui.common.AppIconImage
+import com.github.magisk317.smscode.ui.common.LoadingIndicatorTokens
+import com.github.magisk317.smscode.ui.common.PolygonMorphLoadingIndicator
+import com.github.magisk317.smscode.ui.common.SessionLoadingRegistry
+import com.github.magisk317.smscode.ui.common.rememberMinDurationLoading
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import org.koin.compose.viewmodel.koinViewModel
 
 private const val APP_LIST_PREFETCH_DISTANCE = 12
 
-private data class AppConfigPageRuntime(
-    val isActive: Boolean = true,
-    val keepDataActive: Boolean = isActive,
-    val onPageDataReady: (cacheHit: Boolean) -> Unit = {},
-)
-
-private val LocalAppConfigPageRuntime = staticCompositionLocalOf { AppConfigPageRuntime() }
-
-internal enum class PageRefreshAction {
-    INITIAL_LOAD,
-    FORCE_REFRESH,
-    NO_OP,
-}
-
-internal class PageRefreshTriggerConsumer {
-    private var lastHandledRefreshTrigger = 0
-    private var hasActivated = false
-
-    fun consume(isActive: Boolean, refreshTrigger: Int): PageRefreshAction? {
-        if (!isActive) return null
-        val firstActivation = !hasActivated
-        hasActivated = true
-        val forceRefresh = refreshTrigger > 0 && refreshTrigger != lastHandledRefreshTrigger
-        if (forceRefresh) {
-            lastHandledRefreshTrigger = refreshTrigger
-            return PageRefreshAction.FORCE_REFRESH
-        }
-        return if (firstActivation) PageRefreshAction.INITIAL_LOAD else PageRefreshAction.NO_OP
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AppConfigScreen(
-    onBack: (() -> Unit)? = null,
-    refreshTrigger: Int = 0,
-    isActive: Boolean = true,
-    keepDataActive: Boolean = isActive,
-    onPageDataReady: (cacheHit: Boolean) -> Unit = {},
-    viewModel: AppConfigViewModel = koinViewModel(),
-    scrollChromeState: io.github.magisk317.uikit.scroll.ScrollChromeState? = null,
-) {
-    CompositionLocalProvider(
-        LocalAppConfigPageRuntime provides AppConfigPageRuntime(
-            isActive = isActive,
-            keepDataActive = keepDataActive,
-            onPageDataReady = onPageDataReady,
-        ),
-    ) {
-        when (currentUiKitStyle()) {
-            UiKitStyle.Miuix -> AppConfigScreenMiuix(
-                onBack = onBack,
-                refreshTrigger = refreshTrigger,
-                viewModel = viewModel,
-                scrollChromeState = scrollChromeState,
-            )
-
-            UiKitStyle.Expressive -> AppConfigScreenMaterial(
-                onBack = onBack,
-                refreshTrigger = refreshTrigger,
-                viewModel = viewModel,
-                scrollChromeState = scrollChromeState,
-            )
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-internal fun AppConfigScreenShared(
+    hazeState: HazeState,
+    hazeStyle: HazeStyle,
     onBack: (() -> Unit)? = null,
     refreshTrigger: Int = 0,
     viewModel: AppConfigViewModel = koinViewModel(),
-    scrollChromeState: io.github.magisk317.uikit.scroll.ScrollChromeState? = null,
 ) {
-    val pageRuntime = LocalAppConfigPageRuntime.current
-    val isActive = pageRuntime.isActive
-    val keepDataActive = pageRuntime.keepDataActive
-    val currentOnPageDataReady by rememberUpdatedState(pageRuntime.onPageDataReady)
     val apps by viewModel.appsFlow.collectAsStateWithLifecycle()
     val isLoading by viewModel.loadingFlow.collectAsStateWithLifecycle()
     val hasMoreApps by viewModel.hasMoreAppsFlow.collectAsStateWithLifecycle()
     val hideSystemApps by viewModel.hideSystemAppsFlow.collectAsStateWithLifecycle()
     val currentSortOption by viewModel.sortOptionFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val density = LocalDensity.current
     val shouldShowInitialLoading = remember { SessionLoadingRegistry.shouldShowInitial("app_config") }
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -168,28 +95,17 @@ internal fun AppConfigScreenShared(
     var manualRefreshing by remember { mutableStateOf(false) }
     var manualRefreshStartedAt by remember { mutableLongStateOf(0L) }
     var showUsagePermissionDialog by remember { mutableStateOf(false) }
-    val searchState = rememberSearchOverlayState(
-        onSearchChange = { viewModel.doFilter(it) },
-    )
+    val searchQuery by viewModel.filterFlow.collectAsStateWithLifecycle()
     var showSettingsMenu by remember { mutableStateOf(false) }
-
-    BackHandler(enabled = searchState.expanded) { searchState.close() }
-    LaunchedEffect(isActive) { if (!isActive) searchState.close() }
+    var fixedTopHeightPx by remember { mutableIntStateOf(0) }
 
     val showLoading = rememberMinDurationLoading(
-        actualLoading = isActive && isLoading && shouldShowInitialLoading,
+        actualLoading = isLoading && shouldShowInitialLoading,
         minDurationMillis = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
     )
 
-    DisposableEffect(viewModel, keepDataActive) {
-        viewModel.setActive(keepDataActive)
-        onDispose {
-            if (keepDataActive) viewModel.setActive(false)
-        }
-    }
-
-    LaunchedEffect(isActive, isLoading, shouldShowInitialLoading, initialLoadingStarted) {
-        if (!isActive || !shouldShowInitialLoading) return@LaunchedEffect
+    LaunchedEffect(isLoading, shouldShowInitialLoading, initialLoadingStarted) {
+        if (!shouldShowInitialLoading) return@LaunchedEffect
         if (isLoading) {
             initialLoadingStarted = true
         } else if (initialLoadingStarted) {
@@ -197,12 +113,7 @@ internal fun AppConfigScreenShared(
         }
     }
 
-    LaunchedEffect(isActive, isLoading, manualRefreshing) {
-        if (!isActive) {
-            manualRefreshing = false
-            manualRefreshStartedAt = 0L
-            return@LaunchedEffect
-        }
+    LaunchedEffect(isLoading, manualRefreshing) {
         if (manualRefreshing && !isLoading) {
             val elapsed = if (manualRefreshStartedAt > 0L) {
                 SystemClock.elapsedRealtime() - manualRefreshStartedAt
@@ -216,31 +127,19 @@ internal fun AppConfigScreenShared(
         }
     }
 
-    val refreshTriggerConsumer = remember { PageRefreshTriggerConsumer() }
-    LaunchedEffect(isActive, refreshTrigger) {
-        val action = refreshTriggerConsumer.consume(isActive, refreshTrigger)
-            ?: return@LaunchedEffect
-        val forceRefresh = action == PageRefreshAction.FORCE_REFRESH
-        if (action == PageRefreshAction.INITIAL_LOAD || forceRefresh) {
-            if (forceRefresh) {
-                manualRefreshStartedAt = SystemClock.elapsedRealtime()
-                manualRefreshing = true
-            }
-            viewModel.refreshData(force = forceRefresh)
+    LaunchedEffect(refreshTrigger) {
+        if (refreshTrigger > 0) {
+            manualRefreshStartedAt = SystemClock.elapsedRealtime()
+            manualRefreshing = true
+            viewModel.refreshData(force = true)
         }
     }
 
-    LaunchedEffect(isActive) {
-        if (!isActive) return@LaunchedEffect
-        val cacheHit = viewModel.hasLoadedDataFlow.value
-        if (!cacheHit) {
-            viewModel.hasLoadedDataFlow.first { it }
-        }
-        currentOnPageDataReady(cacheHit)
+    LaunchedEffect(Unit) {
+        viewModel.refreshData()
     }
 
-    LaunchedEffect(viewModel, isActive) {
-        if (!isActive) return@LaunchedEffect
+    LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is AppConfigViewModel.AppConfigEvent.Error -> {
@@ -255,17 +154,14 @@ internal fun AppConfigScreenShared(
     }
 
     val listState = rememberLazyListState()
-    io.github.magisk317.uikit.scroll.ReportLazyListScrollToChrome(listState, scrollChromeState)
-    io.github.magisk317.uikit.surface.ScrollToTopEffect(listState, refreshTrigger)
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     val pullToRefreshState = rememberPullToRefreshState()
-    val isMiuix = io.github.magisk317.uikit.theme.currentUiKitStyle() ==
-        io.github.magisk317.uikit.theme.UiKitStyle.Miuix
     val defaultTopPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + 156.dp
+    val fixedTopHeight = if (fixedTopHeightPx > 0) with(density) { fixedTopHeightPx.toDp() } else defaultTopPadding
     val bottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 80.dp
 
-    LaunchedEffect(isActive, listState, apps.size, hasMoreApps, manualRefreshing, showLoading) {
-        if (!isActive || manualRefreshing || showLoading) return@LaunchedEffect
+    LaunchedEffect(listState, apps.size, hasMoreApps, manualRefreshing, showLoading) {
+        if (manualRefreshing || showLoading) return@LaunchedEffect
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1 }
             .distinctUntilChanged()
             .collect { lastVisibleIndex ->
@@ -277,98 +173,181 @@ internal fun AppConfigScreenShared(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        OverlayHeaderScaffold(
-            fallbackTopPadding = defaultTopPadding,
-            bottomPadding = bottomPadding,
-            headerOffsetY = scrollChromeState?.animatedHeaderOffsetY ?: 0f,
-            onHeaderHeightChanged = { scrollChromeState?.headerHeightPx = it.toFloat() },
-            overlayModifier = Modifier
+        PullToRefreshBox(
+            state = pullToRefreshState,
+            isRefreshing = manualRefreshing,
+            onRefresh = {
+                manualRefreshStartedAt = SystemClock.elapsedRealtime()
+                manualRefreshing = true
+                viewModel.refreshData(force = true)
+            },
+            indicator = {
+                PullToRefreshDefaults.LoadingIndicator(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = fixedTopHeight + LoadingIndicatorTokens.OverlayTopSpacing),
+                    isRefreshing = manualRefreshing,
+                    state = pullToRefreshState,
+                )
+            },
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            if (showLoading && !manualRefreshing) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    PolygonMorphLoadingIndicator(
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = fixedTopHeight + LoadingIndicatorTokens.OverlayTopSpacing),
+                    )
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .hazeSource(state = hazeState)
+                        .nestedScroll(scrollBehavior.nestedScrollConnection),
+                    state = listState,
+                    contentPadding = PaddingValues(top = fixedTopHeight, bottom = bottomPadding),
+                ) {
+                    items(apps) { app ->
+                        AppConfigItem(
+                            app = app,
+                            onBlockedChange = { blocked -> viewModel.setBlocked(app.packageName, blocked) },
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                    }
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
                 .align(Alignment.TopCenter)
-                .fillMaxWidth(),
-            overlay = {
-                SearchOverlayContent(
-                    state = searchState,
-                    title = stringResource(R.string.app_config_settings),
-                    searchPlaceholder = stringResource(R.string.action_search),
-                    navigationIcon = if (onBack != null) {
-                        {
-                            IconButton(onClick = onBack) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.action_back),
-                                )
-                            }
+                .onSizeChanged { fixedTopHeightPx = it.height }
+                .hazeEffect(hazeState, hazeStyle) {
+                    forceInvalidateOnPreDraw = true
+                },
+        ) {
+            TopAppBar(
+                title = {
+                    Text(
+                        text = stringResource(R.string.app_config_settings),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+                scrollBehavior = scrollBehavior,
+                windowInsets = WindowInsets.statusBars,
+                navigationIcon = {
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.action_back),
+                            )
                         }
-                    } else {
-                        null
-                    },
-                    actions = {
+                    }
+                },
+                actions = {
+                    Box {
                         IconButton(onClick = { showSettingsMenu = true }) {
                             Icon(Icons.Default.Tune, contentDescription = null)
                         }
-                    },
-                )
-            },
-            content = { overlayPadding ->
-                val overlayTopPadding = overlayPadding.calculateTopPadding()
-                PullToRefreshBox(
-                    state = pullToRefreshState,
-                    isRefreshing = manualRefreshing,
-                    onRefresh = {
-                        manualRefreshStartedAt = SystemClock.elapsedRealtime()
-                        manualRefreshing = true
-                        viewModel.refreshData(force = true)
-                    },
-                    indicator = {
-                        PullToRefreshDefaults.LoadingIndicator(
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = overlayTopPadding + LoadingIndicatorTokens.OverlayTopSpacing),
-                            isRefreshing = manualRefreshing,
-                            state = pullToRefreshState,
-                        )
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    if (showLoading && !manualRefreshing) {
-                        Box(modifier = Modifier.fillMaxSize()) {
-                            PolygonMorphLoadingIndicator(
-                                modifier = Modifier
-                                    .align(Alignment.TopCenter)
-                                    .padding(top = overlayTopPadding + LoadingIndicatorTokens.OverlayTopSpacing),
+                        DropdownMenu(
+                            expanded = showSettingsMenu,
+                            onDismissRequest = { showSettingsMenu = false },
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_sort_by_label)) },
+                                trailingIcon = {
+                                    RadioButton(
+                                        selected = currentSortOption == AppConfigViewModel.SortOption.LABEL,
+                                        onClick = null,
+                                    )
+                                },
+                                onClick = {
+                                    viewModel.setSortOption(AppConfigViewModel.SortOption.LABEL)
+                                    showSettingsMenu = false
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_sort_by_selection)) },
+                                trailingIcon = {
+                                    RadioButton(
+                                        selected = currentSortOption == AppConfigViewModel.SortOption.SELECTION,
+                                        onClick = null,
+                                    )
+                                },
+                                onClick = {
+                                    viewModel.setSortOption(AppConfigViewModel.SortOption.SELECTION)
+                                    showSettingsMenu = false
+                                },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_sort_by_usage)) },
+                                trailingIcon = {
+                                    RadioButton(
+                                        selected = currentSortOption == AppConfigViewModel.SortOption.USAGE,
+                                        onClick = null,
+                                    )
+                                },
+                                onClick = {
+                                    viewModel.setSortOption(AppConfigViewModel.SortOption.USAGE)
+                                    showSettingsMenu = false
+                                },
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_hide_system_apps)) },
+                                trailingIcon = {
+                                    Checkbox(checked = hideSystemApps, onCheckedChange = null)
+                                },
+                                onClick = {
+                                    viewModel.setHideSystemApps(!hideSystemApps)
+                                    showSettingsMenu = false
+                                },
                             )
                         }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .nestedScroll(scrollBehavior.nestedScrollConnection),
-                            state = listState,
-                            verticalArrangement = Arrangement.spacedBy(if (isMiuix) 12.dp else 0.dp),
-                            contentPadding = PaddingValues(
-                                top = overlayTopPadding,
-                                bottom = overlayPadding.calculateBottomPadding(),
-                            ),
-                        ) {
-                            items(apps) { app ->
-                                AppConfigItem(
-                                    app = app,
-                                    isDataActive = keepDataActive,
-                                    onBlockedChange = { blocked -> viewModel.setBlocked(app.packageName, blocked) },
-                                )
-                                if (!isMiuix) {
-                                    HorizontalDivider(
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                        thickness = 0.5.dp,
-                                        color = MaterialTheme.colorScheme.outlineVariant,
-                                    )
-                                }
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = Color.Transparent,
+                ),
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = {
+                        viewModel.doFilter(it)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.extraLarge,
+                    singleLine = true,
+                    placeholder = { Text(stringResource(R.string.action_search)) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = {
+                                viewModel.doFilter("")
+                            }) {
+                                Icon(Icons.Default.Close, contentDescription = null)
                             }
                         }
-                    }
-                }
-            },
-        )
+                    },
+                )
+            }
+        }
 
         SnackbarHost(
             hostState = snackbarHostState,
@@ -376,91 +355,28 @@ internal fun AppConfigScreenShared(
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding(),
         )
-
-        io.github.magisk317.uikit.surface.AppBottomSheet(
-            show = showSettingsMenu,
-            onDismissRequest = { showSettingsMenu = false },
-            title = stringResource(R.string.app_config_settings),
-        ) {
-            io.github.magisk317.uikit.preference.Item(
-                title = stringResource(R.string.action_sort_by_label),
-                summary = "",
-                trailingContent = {
-                    io.github.magisk317.uikit.preference.AppRadioButton(
-                        selected = currentSortOption == AppConfigViewModel.SortOption.LABEL,
-                        onClick = null,
-                    )
-                },
-                onClick = {
-                    viewModel.setSortOption(AppConfigViewModel.SortOption.LABEL)
-                    showSettingsMenu = false
-                },
-            )
-            io.github.magisk317.uikit.preference.Item(
-                title = stringResource(R.string.action_sort_by_selection),
-                summary = "",
-                trailingContent = {
-                    io.github.magisk317.uikit.preference.AppRadioButton(
-                        selected = currentSortOption == AppConfigViewModel.SortOption.SELECTION,
-                        onClick = null,
-                    )
-                },
-                onClick = {
-                    viewModel.setSortOption(AppConfigViewModel.SortOption.SELECTION)
-                    showSettingsMenu = false
-                },
-            )
-            io.github.magisk317.uikit.preference.Item(
-                title = stringResource(R.string.action_sort_by_usage),
-                summary = "",
-                trailingContent = {
-                    io.github.magisk317.uikit.preference.AppRadioButton(
-                        selected = currentSortOption == AppConfigViewModel.SortOption.USAGE,
-                        onClick = null,
-                    )
-                },
-                onClick = {
-                    viewModel.setSortOption(AppConfigViewModel.SortOption.USAGE)
-                    showSettingsMenu = false
-                },
-            )
-            io.github.magisk317.uikit.preference.ActionSwitchItem(
-                title = stringResource(R.string.action_hide_system_apps),
-                summary = "",
-                checked = hideSystemApps,
-                onClick = {
-                    viewModel.setHideSystemApps(!hideSystemApps)
-                    showSettingsMenu = false
-                },
-                onCheckedChange = {
-                    viewModel.setHideSystemApps(it)
-                },
-            )
-        }
     }
 
     if (showUsagePermissionDialog) {
-        io.github.magisk317.uikit.surface.AppAlertDialog(
+        AlertDialog(
             onDismissRequest = { showUsagePermissionDialog = false },
             title = { Text(stringResource(R.string.action_sort_by_usage)) },
             text = { Text(stringResource(R.string.usage_permission_prompt)) },
             confirmButton = {
-                io.github.magisk317.uikit.surface.AppPrimaryButton(
-                    text = stringResource(R.string.confirm),
-                    onClick = {
-                        showUsagePermissionDialog = false
-                        try {
-                            context.startActivity(android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
-                        } catch (_: Exception) {
-                        }
-                    },
-                )
+                Button(onClick = {
+                    showUsagePermissionDialog = false
+                    try {
+                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                    } catch (_: Exception) {
+                    }
+                }) {
+                    Text(stringResource(R.string.confirm))
+                }
             },
             dismissButton = {
-                io.github.magisk317.uikit.surface.AppSecondaryButton(
-                    text = stringResource(R.string.cancel),
-                    onClick = { showUsagePermissionDialog = false },
-                )
+                TextButton(onClick = { showUsagePermissionDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
             },
         )
     }
@@ -469,7 +385,6 @@ internal fun AppConfigScreenShared(
 @Composable
 fun AppConfigItem(
     app: AppInfo,
-    isDataActive: Boolean = true,
     onBlockedChange: (Boolean) -> Unit,
 ) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
@@ -480,36 +395,40 @@ fun AppConfigItem(
         Color.Transparent
     }
 
-    WorkspaceListItem(
-        containerColor = bgColor,
-        leadingContent = {
-            if (isDataActive) {
-                AppIconImage(
-                    packageName = app.packageName,
-                    contentDescription = null,
+    Box(modifier = Modifier.background(bgColor)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 20.dp, top = 12.dp, bottom = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            AppIconImage(
+                packageName = app.packageName,
+                contentDescription = null,
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Text(
+                    text = app.label ?: app.packageName,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontWeight = FontWeight.Bold,
                 )
-            } else {
-                Spacer(modifier = Modifier.size(40.dp))
+                Text(
+                    text = app.packageName,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall,
+                )
             }
-        },
-        trailingContent = {
-            io.github.magisk317.uikit.preference.AppSwitch(
+            Spacer(modifier = Modifier.width(12.dp))
+            Switch(
                 checked = app.blocked,
                 onCheckedChange = onBlockedChange,
             )
-        },
-    ) {
-        Text(
-            text = app.label ?: app.packageName,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = app.packageName,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodySmall,
-        )
+        }
     }
 }

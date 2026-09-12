@@ -2,11 +2,12 @@ package com.github.magisk317.smscode.ui.nav
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.Dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.github.magisk317.smscode.ui.home.MainScreen
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -27,27 +28,15 @@ object AppBlockRoute
 @Serializable
 object AppConfigRoute
 
-@Serializable
-data class SmsCodeRulesRoute(
-    val fromShortcut: Boolean = false,
-)
-
-@Serializable
-data class SmsCodeRuleEditorRoute(
-    val id: Long = 0,
-)
-
-@Serializable
-object SmsCodeRuleSourceRoute
-
 @Composable
 fun SmsCodeNavHost(
     navController: NavHostController,
     onBack: () -> Unit,
-    modifier: Modifier = Modifier,
     initialTab: Any? = null,
     onInitialTabConsumed: (() -> Unit)? = null,
-    onBottomOverlayPaddingChanged: (Dp) -> Unit = {},
+    modifier: Modifier = Modifier,
+    hazeState: HazeState,
+    hazeStyle: HazeStyle,
 ) {
     NavHost(
         navController = navController,
@@ -58,7 +47,8 @@ fun SmsCodeNavHost(
             MainScreen(
                 initialTab = initialTab,
                 onInitialTabConsumed = onInitialTabConsumed,
-                onBottomOverlayPaddingChanged = onBottomOverlayPaddingChanged,
+                hazeState = hazeState,
+                hazeStyle = hazeStyle,
             )
         }
     }

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">XposedSmsCode</string>
+    <string name="xposed_description">Extract code from new SMS message and copy it to clipboard. It can also Auto-input SMS code</string>
 
     <!-- general -->
 
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
-    <string name="action_refresh">Refresh</string>
 
 
     <!-- general end -->
@@ -23,9 +23,6 @@
     <string name="pref_show_launcher_icon_failed">Failed to switch launcher icon visibility</string>
     <string name="pref_choose_theme_title">Theme</string>
     <string name="pref_choose_theme_summary">Follow System, Light, Dark or Pure Black</string>
-    <string name="pref_ui_kit_style_title">UI style</string>
-    <string name="ui_kit_style_expressive">Expressive</string>
-    <string name="ui_kit_style_miuix">Miuix</string>
     <string name="theme_follow_system">Automatic (Follow System)</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
@@ -37,6 +34,8 @@
     <string name="language_zh_cn">简体中文</string>
     <string name="language_zh_tw">繁體中文</string>
 
+    <string name="pref_haze_blur_radius_title">Background blur radius</string>
+    <string name="pref_haze_tint_alpha_title">Blur mask alpha</string>
     <!-- preferences general end -->
 
     <!-- preferences sms code -->
@@ -56,36 +55,19 @@
     <!-- preferences auto-input -->
     <string name="pref_enable_auto_input_code_title">Auto input SMS code</string>
     <string name="pref_enable_auto_input_code_summary">Try to input SMS code automatically</string>
-    <string name="pref_auto_input_accessibility_service_title">Accessibility service status</string>
-    <string name="pref_auto_input_accessibility_service_summary">Helps find the active verification field and fill the code directly.</string>
-    <string name="pref_auto_input_accessibility_service_status_enabled">Enabled</string>
-    <string name="pref_auto_input_accessibility_service_status_disabled">Not enabled</string>
-    <string name="pref_auto_input_accessibility_service_open_failed">Unable to open Accessibility settings</string>
-    <string name="pref_number_non_negative_error">Please enter a number greater than or equal to 0.</string>
-    <string name="accessibility_auto_input_service_label">XposedSmsCode</string>
-    <string name="accessibility_auto_input_service_description">Find the active verification code input box and fill it before falling back to simulated key input.</string>
     <string name="pref_enable_auto_enter_code_title">Auto-Enter/Submit</string>
     <string name="pref_enable_auto_enter_code_summary">Automatically trigger Enter after filling the code</string>
     <string name="pref_kill_me_title">Kill app after auto input</string>
     <string name="pref_kill_me_summary">After auto input finishes, kill the app process to reduce background residency</string>
     <string name="pref_auto_input_code_delay_title">Auto input delay</string>
-    <string name="pref_auto_input_code_delay_summary">Delay %sms</string>
+    <string name="pref_auto_input_code_delay_summary">Delay %ss</string>
     <string name="pref_auto_input_code_interval_title">Auto input interval</string>
     <string name="pref_auto_input_code_interval_summary">Interval %sms</string>
     <!-- preferences auto-input end -->
 
     <!-- preference code notification -->
     <string name="pref_show_code_notification_title">Show status bar notification</string>
-    <string name="pref_show_code_notification_summary">Show a status bar notification when an SMS code is extracted (shown as Phone Services when background is unavailable)</string>
-    <string name="pref_code_notification_owner_title">Notification owner</string>
-    <string name="pref_code_notification_owner_summary">Current: %1$s. App owner shows your module name; Phone Services may be steadier in some scenarios, but it will be shown as Phone Services.</string>
-    <string name="pref_code_notification_owner_app">App</string>
-    <string name="pref_code_notification_owner_phone">Phone Services</string>
-    <string name="pref_code_notification_owner_unselected">Not selected</string>
-    <string name="pref_code_notification_owner_permission_denied">Notification permission is still not granted. The App owner selection was not applied.</string>
-    <string name="pref_code_notification_owner_permission_settings_hint">App-owned notifications require notification permission. Please enable it in the system notification settings.</string>
-    <string name="pref_code_notification_owner_app_option">App: displayed as this app, but app force-stop may affect follow-up behavior</string>
-    <string name="pref_code_notification_owner_phone_option">Phone Services: steadier in some scenarios, but displayed as Phone Services</string>
+    <string name="pref_show_code_notification_summary">Show a status bar notification when an SMS code is extracted (some systems may label it as Phone Services)</string>
     <string name="pref_auto_cancel_notification_title">Auto cancel notification</string>
     <string name="pref_auto_cancel_notification_summary">Auto cancel SMS code notification</string>
     <!-- notification retention time -->
@@ -105,16 +87,10 @@
     <string name="prompt_sms_code_copied">SMS Code copied: %s</string>
     <string name="action_delete">Delete</string>
     <string name="action_select_all">Select All</string>
-    <plurals name="some_items_removed">
-        <item quantity="one">Removed %d record</item>
-        <item quantity="other">Removed %d records</item>
-    </plurals>
+    <string name="some_items_removed">Removed %d record(s)</string>
     <string name="message_details">Message Details</string>
     <string name="detail_sender">Sender</string>
-    <string name="detail_receiver_sim">Received by</string>
-    <string name="detail_receiver_sim_with_value">Received by %1$s</string>
-    <string name="detail_original_time">Original time</string>
-    <string name="detail_processed_time">Processed time</string>
+    <string name="detail_time">Time</string>
     <string name="detail_content">Content</string>
     <string name="detail_click_copy_hint">(Tap content to copy)</string>
     <string name="prompt_field_copied">%1$s copied</string>
@@ -124,10 +100,7 @@
     <string name="pref_enable_code_records_title">Reserve SMS code records</string>
 
 
-    <plurals name="selected_count">
-        <item quantity="one">%d selected</item>
-        <item quantity="other">%d selected</item>
-    </plurals>
+    <string name="selected_count">%d selected</string>
     <string name="pref_history_limit_title">History record limit</string>
     <string name="pref_history_limit_title_with_target">History record limit (%1$s)</string>
     <string name="record_settings_title_with_target">Record settings (%1$s)</string>
@@ -160,10 +133,6 @@
     <string name="reset">Reset</string>
     <string name="pref_smscode_test_title">SMS code test</string>
     <string name="pref_smscode_test_summary">Test whether SMS code can be recognized or not</string>
-    <string name="pref_sim_slot1_remark_title">SIM1 remark</string>
-    <string name="pref_sim_slot2_remark_title">SIM2 remark</string>
-    <string name="pref_sim_slot_remark_summary">Shown in records when this SIM receives a message. Leave empty to show SIM 1/SIM 2.</string>
-    <string name="pref_sim_slot_remark_empty">No remark, show SIM name</string>
 
 
 
@@ -199,31 +168,8 @@
 
 
     <!-- preference others -->
-    <string name="pref_share_log_title">Save logs</string>
-    <string name="pref_share_log_summary">Save log bundle for debugging</string>
     <string name="pref_verbose_log_mode_title">Detailed log</string>
-    <string name="pref_verbose_log_mode_summary">Print verbose runtime logs</string>
-    <string name="pref_enable_analytics_title">Analytics</string>
-    <string name="pref_enable_analytics_summary">Allow anonymous analytics for channel usage, success rates, crashes and technical diagnostics.</string>
-    <string name="pref_runtime_log_retention_days_title">Runtime log retention</string>
-    <plurals name="pref_runtime_log_retention_days_summary">
-        <item quantity="one">Daily rotation, keep the last %1$d day</item>
-        <item quantity="other">Daily rotation, keep the last %1$d days</item>
-    </plurals>
-    <string name="pref_runtime_log_retention_days_hint">Retention in days, minimum 1. Default is 2.</string>
-    <string name="pref_runtime_log_retention_days_error">Please enter an integer greater than or equal to 1.</string>
-    <string name="runtime_log_export_failed">Export failed: %1$s</string>
-    <string name="runtime_log_saved">Logs saved</string>
-    <string name="runtime_log_share_failed">Share failed: %1$s</string>
-    <string name="runtime_log_cleared">Logs and crash files cleared</string>
-    <string name="runtime_log_clear_partial_failed">Partially cleared: %1$s</string>
-    <string name="runtime_log_clear_confirm_title">Clear logs</string>
-    <string name="runtime_log_clear_confirm_message">Are you sure you want to clear all logs and crash files?</string>
-    <string name="runtime_log_clear_summary">Clear all runtime logs and crash files</string>
-    <string name="pref_sensitive_debug_log_mode_title">Sensitive debug log</string>
-    <string name="pref_sensitive_debug_log_mode_summary">Debug builds only. Allows plaintext sender, body, and code in logs.</string>
-    <string name="pref_log_sanitization_title">Sanitize logs</string>
-    <string name="pref_log_sanitization_summary">Hide sensitive information in logs</string>
+    <string name="pref_verbose_log_mode_summary">Tap to share logs</string>
     <string name="pref_auto_update_on_start_title">Auto update on launch</string>
     <string name="pref_auto_update_on_start_summary">Run update strategy once when app starts</string>
     <string name="pref_auto_update_wifi_only_title">Wi-Fi only for auto update</string>
@@ -250,11 +196,19 @@
     <!-- preference about -->
 
 
+    <string name="pref_join_qq_group_title">QQ</string>
+    <string name="pref_join_qq_group_summary">Tap to join</string>
+    <string name="prompt_join_qq_group_failed">Please install QQ first</string>
     <string name="pref_join_telegram_group_title">Telegram</string>
     <string name="pref_join_telegram_group_summary">Tap to join</string>
     <string name="pref_source_code_title">Source code</string>
     <string name="browser_install_or_enable_prompt">Please install or enable browser first</string>
     <string name="pref_source_code_summary">Welcome to star</string>
+    <string name="pref_donate_by_alipay_title">Donation Appreciation</string>
+    <string name="alipay_install_prompt">Please install Alipay</string>
+    <string name="alipay_enable_prompt">Please enable Alipay</string>
+    <string name="wechat_install_prompt">Please install Wechat</string>
+    <string name="wechat_enable_prompt">Please enable Wechat</string>
     <string name="pref_privacy_policy_title">Privacy Policy</string>
     <!-- preference about end -->
 
@@ -278,52 +232,10 @@
 
     <!-- code rules -->
 
+
+
+
     <string name="pref_code_rules_title">SMS code match rules</string>
-    <string name="pref_code_rules_summary">Custom code match rules for specific SMS</string>
-    <string name="rule_company_hint">Institution or company</string>
-    <string name="rule_keyword_hint">Code keyword</string>
-    <string name="rule_code_regex_hint">Code regular expression</string>
-    <string name="rule_company_empty_hint">Please enter institution or company name</string>
-    <string name="rule_keyword_empty_hint">Please enter code keyword</string>
-    <string name="rule_code_regex_empty_hint">Please enter code regular expression</string>
-    <string name="rule_duplicated_prompt">Rule exists, please reedit it or exit</string>
-    <string name="rule_list">Code Rule List</string>
-    <string name="create_rule">New Rule</string>
-    <string name="edit_rule">Edit Rule</string>
-    <string name="rule_list_empty_prompt">No rules yet. Click + to add one.</string>
-    <string name="official_code_rules_title">Official rules</string>
-    <plurals name="official_code_rules_summary">
-        <item quantity="one">Loaded %1$d rule from smscode-rules (%2$s). Refresh to pull the latest catalog.</item>
-        <item quantity="other">Loaded %1$d rules from smscode-rules (%2$s). Refresh to pull the latest catalog.</item>
-    </plurals>
-    <string name="official_code_rules_empty_prompt">No official rules loaded yet. Tap refresh to pull the catalog.</string>
-    <string name="official_code_rules_refresh_success">Official rules refreshed.</string>
-    <string name="official_code_rules_refresh_failed">Refresh failed. Using cached or bundled rules.</string>
-    <string name="action_rule_source_settings">Configure rule source</string>
-    <string name="rule_source_settings_title">Rule source</string>
-    <string name="rule_source_url_label">Custom source URL</string>
-    <string name="rule_source_url_summary">Leave blank to use the default source. Enter a catalog base URL or a full rules-index.json URL.</string>
-    <string name="rule_source_url_invalid">Enter a valid HTTP or HTTPS URL.</string>
-    <string name="rule_source_saved">Rule source saved.</string>
-    <string name="rule_source_save_failed">Couldn\'t save rule source.</string>
-    <string name="action_save">Save</string>
-    <string name="official_rule_badge_format">Official rule %1$d</string>
-    <string name="rule_company_placeholder">eg. Verification Code</string>
-    <string name="builtin_code_rules_title">Built-in rules (read only)</string>
-    <string name="builtin_code_rules_summary">Default parsing rules are shown here for reference. They use the keyword setting as the anchor and still apply keyword-distance priority, whitespace retry, and date-time filtering.</string>
-    <string name="builtin_rule_badge">Built-in</string>
-    <string name="builtin_rule_badge_format">Built-in rule %1$d</string>
-    <string name="user_rule_badge_format">User rule %1$d</string>
-    <string name="builtin_rule_keyword_setting">Built-in rules use global keywords by default</string>
-    <string name="builtin_rule_alphanumeric_title">Default alphanumeric code rule</string>
-    <string name="builtin_rule_digits_title">Default numeric code rule</string>
-    <string name="user_code_rules_title">User rules</string>
-    <string name="user_code_rules_summary">Your saved custom rules are shown here and can be edited or removed.</string>
-    <string name="rule_test_guidance">After saving this rule, go to %1$s to test the effect.</string>
-    <string name="hit_rule_label">Hit rule: %1$s</string>
-    <string name="sms_code_test_result_with_rule">%1$s, %2$s</string>
-    <string name="removed">Removed</string>
-    <string name="load_failed">Load failed, please try again.</string>
 
     <string name="sms_code_type_digit_entry">Digit Only [0\-9]</string>
     <string name="sms_code_type_letter_entry">Letter Only [a\-zA\-Z]</string>
@@ -334,10 +246,7 @@
 
     <string name="remove">Remove</string>
     <string name="edit">Edit</string>
-    <string name="action_copy">Copy</string>
-    <string name="action_clear">Clear</string>
     <string name="list_empty_prompt">No items yet!</string>
-    <string name="record_empty_summary">Wait for a new message to arrive, or trigger one of your configured test flows.</string>
 
 
 
@@ -399,6 +308,25 @@
 
     <!-- faq end -->
 
+    <!-- alipay packet start -->
+
+
+
+    <string name="alipay_red_packet_code_copied">Red packet token copied, go get it: %s</string>
+    <string name="dialog_donate_title">Buy me a coffee T_T</string>
+    <string name="dialog_donate_summary">Thanks to the developer</string>
+    <string name="dialog_donate_content">I\'m starving and can barely code. Please show some mercy and buy me a coffee! Whether it\'s WeChat or Alipay, even a penny is a huge rescue for me ✿✿ヽ(°▽°)ノ✿</string>
+    <string name="dialog_donate_wechat">Coffee (WeChat)</string>
+    <string name="dialog_donate_alipay">Coffee (Alipay)</string>
+
+    <string name="dialog_donate_alipay_token">Copy Token</string>
+    <string name="dialog_donate_alipay_qrcode">Save QR Code</string>
+
+    <string name="save_to_gallery_success">Image saved to gallery, opening %s...</string>
+    <string name="pref_sync_toast">Settings saved</string>
+    <string name="save_to_gallery_failed">Save failed, please check file permissions</string>
+    <string name="save_to_gallery">Save to Gallery</string>
+    <!-- alipay packet end -->
 
 
     <!-- check update -->
@@ -410,24 +338,16 @@
 
     <!-- faq -->
     <string-array name="question_list">
-        <item>Module inactive after being updated?</item>
-        <item>Why does Android 15 crash intermittently?</item>
-        <item>Why is the phone heating up?</item>
-        <item>Why is auto input incomplete?</item>
-        <item>What should I do if the module stops working?</item>
-        <item>Why cannot SMS be marked as read or deleted?</item>
-        <item>Which ROM is this module suitable for?</item>
-        <item>What is the original intention of this app?</item>
+        <item>Module inactive after being updated.</item>
+        <item>Which Rom is this module suitable for?</item>
+        <item>Why can\'t it mark SMS as read or delete SMS?</item>
+        <item>What\'s the original intention of this App?</item>
     </string-array>
     <string-array name="answer_list">
-        <item>Re-check this module in the module list, force-stop and reopen this app, or reboot the phone if necessary.</item>
-        <item>Android 15 introduced new system behavior. Use the latest LSPosed and configure its scope correctly.</item>
-        <item>This module is lightweight. If the phone heats up severely, check for conflicts with other modules.</item>
-        <item>Auto input can be incomplete when another app takes focus. Check for clipboard-monitoring apps and disable them, or disable the module\'s Copy to clipboard option.</item>
-        <item>1. Add the app to the allowlist of battery or process managers.\n\n2. Check whether the module components are disabled.\n\n3. Check whether the ROM\'s verification-code protection is enabled.\n\n4. Contact the developer with details.</item>
-        <item>If the default SMS app uses its own database instead of the system SMS database, marking or deleting messages may not work on the device.</item>
-        <item>It is designed for AOSP-based ROMs and may work poorly on heavily customized ROMs.</item>
-        <item>Build a clean, green Android.</item>
+        <item>Re-check this module in module list, and re-launch this app, and reboot system if it\'s necessary</item>
+        <item>It\'s suitable for AOSP Rom, may not be suitable for other third-party heavily customized Rom.</item>
+        <item>If the system default SMS app uses its own SMS database instead of the system\'s, it will not take effect for marking SMS as read or deleting SMS. If this happens, it may not work well on your device.</item>
+        <item>Don\'t be evil. Green Android.</item>
     </string-array>
     <!-- faq end -->
 
@@ -441,13 +361,10 @@
     <!-- relay conflict dialog start -->
     <string name="relay_conflict_dialog_title">Conflicting Module Detected</string>
     <string name="relay_conflict_dialog_prefix">Detected installed module: </string>
-    <string name="relay_conflict_dialog_middle">. Current SMS messages will be handled by the xinyi-relay app, so </string>
-    <string name="relay_conflict_dialog_suffix"> notification timeout and records will not apply. Uninstall the conflicting app before using this app.</string>
+    <string name="relay_conflict_dialog_middle">. Please uninstall this module first, then install and use </string>
+    <string name="relay_conflict_dialog_suffix">.</string>
     <string name="relay_conflict_other_app_name">Xinyi Relay</string>
     <string name="relay_conflict_dialog_exit">Exit</string>
-    <string name="channel_name_relay_conflict_notification">Conflict alert</string>
-    <string name="relay_conflict_notification_content">Detected %1$s (%2$s). SMS is handled by xinyi-relay, so %3$s timeout and records will not apply.</string>
-    <string name="relay_conflict_sms_toast">Feature conflict: SMS handled by xinyi-relay</string>
     <!-- relay conflict dialog end -->
 
 
@@ -465,33 +382,6 @@
     <string name="settings_group_notification">Notification</string>
     <string name="settings_group_experimental">Experimental</string>
     <string name="settings_group_others">Others</string>
-    <string name="mobile_entitlement_settings_title">Device activation status</string>
-    <string name="mobile_entitlement_settings_summary">Check status or activate this device</string>
-    <string name="mobile_entitlement_title">Device activation status</string>
-    <string name="mobile_entitlement_status">Activation status: %1$s</string>
-    <string name="mobile_entitlement_automation">Feature status: %1$s</string>
-    <string name="mobile_entitlement_allowed">available</string>
-    <string name="mobile_entitlement_paused">paused</string>
-    <string name="mobile_entitlement_expires">Expires: %1$s</string>
-    <string name="mobile_entitlement_renew_due">Activation status can be updated.</string>
-    <string name="mobile_entitlement_refresh">Refresh status</string>
-    <string name="mobile_entitlement_activate_telegram">Open Telegram</string>
-    <string name="mobile_entitlement_activate_google">Activate with Google</string>
-    <string name="mobile_entitlement_telegram_required">Google activation also requires Telegram channel membership.</string>
-    <string name="mobile_entitlement_open_telegram">Open Telegram</string>
-    <string name="mobile_entitlement_pending">Waiting for channel approval...</string>
-    <string name="mobile_entitlement_play_flow">Play activation uses Google and is not configured in this build.</string>
-    <string name="mobile_entitlement_not_loaded">Not loaded</string>
-    <string name="mobile_entitlement_poll_failed">Activation check failed; retrying...</string>
-    <string name="mobile_entitlement_challenge_expired">The activation request expired.</string>
-    <string name="mobile_entitlement_error">Request failed: %1$s</string>
-    <string name="mobile_entitlement_activation_token_label">One-time activation token</string>
-    <string name="mobile_entitlement_activation_token_hint">Enter the 32-character token returned by Telegram</string>
-    <string name="mobile_entitlement_activation_token_confirm">Activate with token</string>
-    <string name="mobile_entitlement_activation_token_get_hint">Tap “Open Telegram”, then paste the one-time token returned by the bot.</string>
-    <string name="mobile_entitlement_activation_token_invalid">Enter a valid 32-character one-time token</string>
-    <string name="mobile_entitlement_activation_token_used">The activation token has been consumed and is not saved or reusable.</string>
-    <string name="mobile_entitlement_or">Or</string>
 
     <!-- backup and restore -->
     <string name="pref_backup_title">Backup</string>
@@ -528,25 +418,7 @@
     <string name="model">Model</string>
     <string name="status_working">Working normally</string>
     <string name="status_not_active">Inactive</string>
-    <string name="mobile_entitlement_status_not_activated">Not activated</string>
     <string name="status_tip">Please enable in manager and reboot device</string>
-    <string name="framework_incompatibility_title">Framework incompatibility detected</string>
-    <string name="framework_incompatibility_hooker_annotation_message">Current framework is incompatible and hook registration failed. Please install a compatible newer build, or get the appropriate build from the community group.</string>
-    <string name="status_diag_shown">Runtime diagnostics shown</string>
-    <string name="status_diag_hidden">Runtime diagnostics hidden</string>
-    <string name="status_diag_service_title">Xposed Service</string>
-    <string name="status_diag_hook_process_title">Last hook process</string>
-    <string name="status_diag_hook_time_title">Last hook time</string>
-    <string name="status_diag_connected">Connected</string>
-    <string name="status_diag_disconnected">Disconnected</string>
-    <string name="status_diag_last_service_prefix">Last bind</string>
-    <string name="status_diag_none">None</string>
 
     <!-- overview end -->
-    <string name="status_module_activated">Module status: Activated</string>
-    <string name="status_module_not_activated">Module status: Not Activated</string>
-    <string name="status_entitlement_verified">Entitlement: Verified</string>
-    <string name="status_entitlement_unverified">Entitlement: Unverified</string>
-    <string name="status_entitlement_checking">Checking module activation and entitlement...</string>
-    <string name="status_activate_hint">Please enable module and scope in LSPosed</string>
 </resources>

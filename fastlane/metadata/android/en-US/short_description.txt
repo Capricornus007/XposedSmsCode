@@ -1,1 +1,1 @@
-Xposed module that recognizes SMS codes and copies or auto-fills them.
+Extract OTP codes from incoming SMS and copy or auto-fill instantly.

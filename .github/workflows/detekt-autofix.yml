@@ -9,33 +9,30 @@ permissions:
   contents: write
   pull-requests: write
 
-env:
-  GITHUB_TOKEN: ${{ secrets.GH_PAT != '' && secrets.GH_PAT || secrets.GITHUB_TOKEN }}
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   autofix:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v6
+      
+      - name: Setup Java
+        uses: actions/setup-java@v5
         with:
-          submodules: recursive
-          fetch-depth: 0
-      - name: Resolve CI toolkit
-        run: bash scripts/resolve_ci_toolkit.sh
-      - name: Setup Android CI
-        uses: ./.magisk-ci-toolkit/.github/actions/setup-android-ci
+          distribution: 'temurin'
+          java-version: '25'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
         with:
-          checkout: 'false'
+          validate-wrappers: false
+          allow-snapshot-wrappers: true
 
       - name: Run Detekt with Auto Correct
         continue-on-error: true
-        uses: ./.magisk-ci-toolkit/.github/actions/run-gradle-with-retry
-        with:
-          arguments: detekt --auto-correct
+        run: |
+          chmod +x gradlew
+          ./gradlew detekt --auto-correct
           
       - name: Create Pull Request
         id: cpr
@@ -59,4 +56,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          gh pr merge "${{ steps.cpr.outputs.pull-request-number }}" --auto --squash --delete-branch
+          gh pr merge "${{ steps.cpr.outputs.pull-request-number }}" --auto --merge --delete-branch
