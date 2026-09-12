@@ -52,9 +52,6 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
     } else {
         koinViewModel()
     }
-    var showDonateDialog by remember { mutableStateOf(false) }
-    var showAlipayChoiceDialog by remember { mutableStateOf(false) }
-    var showQRCodeDialog by remember { mutableStateOf<Pair<Int, String>?>(null) }
 
     val isEnabled = ModuleUtils.isModuleActivated(context)
 
@@ -208,28 +205,10 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
                             },
                         )
                         InfoItem(
-                            icon = Icons.AutoMirrored.Filled.Chat,
-                            label = stringResource(id = R.string.pref_join_qq_group_title),
-                            value = stringResource(id = R.string.pref_join_qq_group_summary),
-                            onClick = { PackageUtils.joinQQGroup(context) },
-                        )
-                        InfoItem(
-                            icon = Icons.AutoMirrored.Filled.Send,
-                            label = stringResource(id = R.string.pref_join_telegram_group_title),
-                            value = stringResource(id = R.string.pref_join_telegram_group_summary),
-                            onClick = { Utils.showWebPage(context, Const.TELEGRAM_GROUP_URL) },
-                        )
-                        InfoItem(
                             icon = Icons.Default.Code,
                             label = stringResource(id = R.string.pref_source_code_title),
                             value = stringResource(id = R.string.pref_source_code_summary),
                             onClick = { Utils.showWebPage(context, Const.PROJECT_SOURCE_CODE_URL) },
-                        )
-                        InfoItem(
-                            icon = Icons.Default.Favorite,
-                            label = stringResource(id = R.string.pref_donate_by_alipay_title),
-                            value = stringResource(id = R.string.dialog_donate_summary),
-                            onClick = { showDonateDialog = true },
                         )
                     }
                 }
@@ -252,43 +231,6 @@ fun OverviewScreen(hazeState: HazeState, hazeStyle: HazeStyle) {
         )
     }
 
-    if (showDonateDialog) {
-        DonateDialog(
-            onDismiss = { showDonateDialog = false },
-            onAlipay = {
-                showDonateDialog = false
-                showAlipayChoiceDialog = true
-            },
-            onWechat = {
-                showDonateDialog = false
-                showQRCodeDialog = Pair(R.drawable.wx, "wechat")
-            },
-        )
-    }
-
-    if (showAlipayChoiceDialog) {
-        AlipayChoiceDialog(
-            onDismiss = { showAlipayChoiceDialog = false },
-            onQRCode = {
-                showAlipayChoiceDialog = false
-                showQRCodeDialog = Pair(R.drawable.alipay, "alipay")
-            },
-            onToken = {
-                showAlipayChoiceDialog = false
-                PackageUtils.copyAlipayPocketToken(context)
-                PackageUtils.startAlipayActivity(context)
-            },
-        )
-    }
-
-    showQRCodeDialog?.let { pair ->
-        QRCodeDialog(
-            resId = pair.first,
-            type = pair.second,
-            onDismiss = { showQRCodeDialog = null },
-            onSave = { Utils.saveImageToGallery(context, pair.first, "${pair.second}_qrcode") },
-        )
-    }
 }
 
 @Composable
