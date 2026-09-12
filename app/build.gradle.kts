@@ -64,7 +64,7 @@ fun releaseAabName(versionName: String): String {
 }
 
 android {
-    namespace = "com.github.tianma8023.xposed.smscode"
+    namespace = "io.github.capricornus007.smscode"
     compileSdk = compileSdkInt
     compileSdkExtension = sdkExtensionInt
     ndkVersion = ndkVersionStr
@@ -93,7 +93,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.github.tianma8023.xposed.smscode"
+        applicationId = "io.github.capricornus007.smscode"
         val minSdkCodename = minSdkStr.removePrefix("android-")
         val minSdkAsInt = minSdkCodename.toIntOrNull()
         if (minSdkAsInt != null) {

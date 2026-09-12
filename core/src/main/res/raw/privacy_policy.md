@@ -30,7 +30,7 @@ Our application's core functionality is to extract verification codes from SMS m
 *   Network access is used for update checks/downloads and related release metadata retrieval.
 
 ### 3. Data Retention
-*   **Local Storage:** Extracted records are stored locally in a database on your device (`/data/data/com.github.tianma8023.xposed.smscode/databases/`).
+*   **Local Storage:** Extracted records are stored locally in a database on your device (`/data/data/io.github.capricornus007.smscode/databases/`).
 *   **Deletion:** You can clear this data at any time by uninstalling the application or using the "Clear Data" function in the app settings.
 
 ### 4. Data Sharing and Disclosure
@@ -80,7 +80,7 @@ If you have any questions or suggestions about our Privacy Policy, do not hesita
 *   网络访问仅用于版本检查、更新下载及相关发布信息获取。
 
 ### 3. 数据保留
-*   **本地存储：** 提取的记录存储在您设备本地的数据库中 (`/data/data/com.github.tianma8023.xposed.smscode/databases/`)。
+*   **本地存储：** 提取的记录存储在您设备本地的数据库中 (`/data/data/io.github.capricornus007.smscode/databases/`)。
 *   **删除：** 您可以通过卸载应用程序或使用应用设置中的“清除数据”功能随时清除此数据。
 
 ### 4. 数据共享与披露

@@ -3,7 +3,7 @@
 ![Star History Chart](https://api.star-history.com/svg?repos=Capricornus007/xposedsmscode&type=Date)
 
 <div align="center">
-    <a href="https://play.google.com/store/apps/details?id=com.github.tianma8023.xposed.smscode">
+    <a href="https://play.google.com/store/apps/details?id=io.github.capricornus007.smscode">
         <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="80"/>
     </a>
     <a href="https://github.com/Capricornus007/xposedsmscode/releases">

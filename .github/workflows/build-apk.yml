@@ -172,7 +172,7 @@ jobs:
           draft: true
           body: |
             <div align="center">
-              <a href="https://play.google.com/store/apps/details?id=com.github.tianma8023.xposed.smscode">
+              <a href="https://play.google.com/store/apps/details?id=io.github.capricornus007.smscode">
                 <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play" height="80"/>
               </a>
               <a href="https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}">
@@ -206,7 +206,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') && env.HAS_GOOGLE_PLAY_CREDENTIALS == 'true'
         with:
           serviceAccountJsonPlainText: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
-          packageName: com.github.tianma8023.xposed.smscode
+          packageName: io.github.capricornus007.smscode
           releaseFiles: artifacts/bundle/bundle/playRelease/*.aab
           mappingFile: artifacts/bundle/mapping/playRelease/mapping.txt
           track: ${{ steps.determine_track.outputs.track }}
@@ -221,7 +221,7 @@ jobs:
     env:
       HAS_MODULES_REPO_TOKEN: ${{ secrets.XPOSED_MODULES_REPO_TOKEN != '' }}
       HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
-      MODULES_REPO: Xposed-Modules-Repo/com.github.tianma8023.xposed.smscode
+      MODULES_REPO: Xposed-Modules-Repo/io.github.capricornus007.smscode
     steps:
       - name: Download APK Artifacts
         uses: actions/download-artifact@v8
@@ -247,7 +247,7 @@ jobs:
             --repo "${{ env.MODULES_REPO }}" \
             --title "${{ steps.extract_version.outputs.version_name }}" \
             --notes "<div align=\"center\">
-            <a href=\"https://play.google.com/store/apps/details?id=com.github.tianma8023.xposed.smscode\">
+            <a href=\"https://play.google.com/store/apps/details?id=io.github.capricornus007.smscode\">
               <img src=\"https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png\" alt=\"Get it on Google Play\" height=\"80\"/>
             </a>
             <a href=\"https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}\">

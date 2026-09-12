@@ -13,7 +13,7 @@ val allowConflictBypass = findProperty("allowConflictBypass")
     ?: false
 
 android {
-    namespace = "com.github.magisk317.smscode.core"
+    namespace = "io.github.capricornus007.smscode.core"
     compileSdk = compileSdkInt
     compileSdkExtension = compileSdkExtensionInt
 

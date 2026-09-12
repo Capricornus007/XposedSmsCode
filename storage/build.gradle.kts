@@ -7,7 +7,7 @@ plugins {
 val relayDownloadUrl = "https://github.com/magisk317/xinyi-relay"
 
 android {
-    namespace = "com.github.magisk317.smscode.storage"
+    namespace = "io.github.capricornus007.smscode.storage"
     compileSdk = libs.versions.compileSdk.get().toInt()
     compileSdkExtension = libs.versions.compileSdkExtension.get().toInt()
 
@@ -44,7 +44,7 @@ android {
     defaultConfig {
         minSdk = libs.versions.minSdk.get().toInt()
         buildConfigField("String", "LOG_TAG", "\"XSmsCode\"")
-        buildConfigField("String", "APPLICATION_ID", "\"com.github.tianma8023.xposed.smscode\"")
+        buildConfigField("String", "APPLICATION_ID", "\"io.github.capricornus007.smscode\"")
         buildConfigField("boolean", "IS_LITE_BUILD", "true")
         buildConfigField("String", "B_DOWNLOAD_URL", "\"$relayDownloadUrl\"")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

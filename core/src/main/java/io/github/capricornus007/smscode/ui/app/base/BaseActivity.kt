@@ -1,0 +1,15 @@
+package io.github.capricornus007.smscode.ui.app.base
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+
+/**
+ * base activity
+ */
+abstract class BaseActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        applyEdgeToEdge(this)
+    }
+}
