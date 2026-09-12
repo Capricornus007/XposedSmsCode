@@ -15,7 +15,7 @@
 
 [![Commits](https://img.shields.io/github/commit-activity/y/Capricornus007/xposedsmscode?style=flat-square)](https://github.com/Capricornus007/xposedsmscode/graphs/commit-activity) [![Last Commit](https://img.shields.io/github/last-commit/Capricornus007/xposedsmscode?style=flat-square)](https://github.com/Capricornus007/xposedsmscode/commits) [![Contributors](https://img.shields.io/github/contributors/Capricornus007/xposedsmscode?style=flat-square)](https://github.com/Capricornus007/xposedsmscode/graphs/contributors) [![CI](https://img.shields.io/github/actions/workflow/status/Capricornus007/xposedsmscode/ci.yml?style=flat-square&label=Build&logo=github-actions&logoColor=white)](https://github.com/Capricornus007/xposedsmscode/actions/workflows/ci.yml) [![Latest Release](https://img.shields.io/github/v/release/Capricornus007/xposedsmscode?include_prereleases&style=flat-square&logo=github)](https://github.com/Capricornus007/xposedsmscode/releases) [![Release Date](https://img.shields.io/github/release-date/Capricornus007/xposedsmscode?style=flat-square)](https://github.com/Capricornus007/xposedsmscode/releases) [![Downloads](https://img.shields.io/github/downloads/Capricornus007/xposedsmscode/total?style=flat-square&color=blue)](https://github.com/Capricornus007/xposedsmscode/releases) [![License](https://img.shields.io/github/license/Capricornus007/xposedsmscode?style=flat-square)](LICENSE)
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.03.00-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.5.0--nightly-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.2.0--alpha04-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-26-brightgreen?style=flat-square&logo=android)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android)](https://developer.android.com/about/versions) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.03.00-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.5.0--nightly-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.2.0--alpha04-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-26-brightgreen?style=flat-square&logo=android)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android)](https://developer.android.com/about/versions)
 
 </div>
 
@@ -25,9 +25,6 @@
 
 # 应用截图
 <img src="./art/cn/01.png" width="180"/><img src="./art/cn/02.png" width="180"/><img src="./art/cn/03.png" width="180"/><img src="./art/cn/04.png" width="180"/>
-
-# 交流与反馈
-- [Telegram Group](https://t.me/+NR2QaQ4dlEgxYmNl)
 
 
 # 使用
@@ -70,7 +67,6 @@
 - [更新日志 (Changelog)](docs/CHANGELOG.md)
 - [重构汇总 (Refactoring Summary)](docs/REFACTORING.md)
 - [隐私政策 (Privacy Policy)](docs/PRIVACY.md)
-- [赞助与捐赠 (Donations)](docs/DONATIONS.md)
 
 # 感谢
 - [原始项目 (tianma8023/XposedSmsCode)](https://github.com/tianma8023/XposedSmsCode)
@@ -90,11 +86,3 @@
 # 协议
 所有的源码均遵循 [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt) 协议
 
-# 赞助与捐赠
-如果本项目对你有帮助，欢迎支持开发者。你的支持会直接用于项目维护与持续迭代。
-
-赞助名单与说明请见：[赞助与捐赠文档](docs/DONATIONS.md)。
-
-| 支付宝收款码 | 微信赞赏码 | 微信收款码 |
-| :---: | :---: | :---: |
-| ![Alipay](./art/sponsorship/alipay.png) | ![WeChat Appreciation](./art/sponsorship/wx.png) | ![WeChat Collect](./art/sponsorship/wx_collect.png) |
