@@ -394,6 +394,11 @@ abstract class AppDatabase : RoomDatabase() {
                     MIGRATION_16_17,
                     MIGRATION_17_18,
                 )
+                // Renaming the package means the old (tianma) build's DB may carry a
+                // *higher* schema version (21) than ours (18); Room has no auto
+                // downgrade path, so rebuild destructively on downgrade only.
+                // Regular upgrades keep using the explicit migrations above.
+                .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = false)
                 .enableMultiInstanceInvalidation()
                 .build().also { instance = it }
         }
