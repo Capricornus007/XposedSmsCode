@@ -1,1 +1,6 @@
-Full standalone rebuild: removed all private GitLab submodules, LibXposed API 102 with hot-reload, new package name io.github.capricornus007.smscode, no licensing checks, overview screen cleanup, Room downgrade tolerance.
+- v3.2.0 (103): fully self-contained rebuild on LibXposed API 102.
+- All private GitLab submodules removed; the repo builds on its own.
+- No licensing or entitlement checks: install, enable in LSPosed, reboot, done.
+- Package renamed to io.github.capricornus007.smscode.
+- Overview screen cleanup, rewritten privacy policy, Room downgrade tolerance.
+- Details: https://github.com/Capricornus007/XposedSmsCode/releases

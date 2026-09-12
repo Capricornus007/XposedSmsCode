@@ -1,6 +1,6 @@
-- 升级至 3.1.9（102）正式版，移除 beta 标识。
-- 冲突提示、默认作用域（含 system）与繁中缺失文案已汇总修复。
-- Android 16 权限授予链路适配并增强 hook 诊断输出。
-- HyperOS 3 改用 Provider 自杀路径，提升 kill 稳定性。
-- 设置页支持一键导出分享日志包，签名输出启用 v1/v2/v3。
-- 详情与下载：https://github.com/magisk317/XposedSmsCode/releases
+- v3.2.0（103）：完全自含式重構，基於 LibXposed API 102。
+- 移除全部 GitLab 私有子模組，倉庫可自行構建。
+- 無任何授權／權益驗證：安裝 → LSPosed 啟用 → 重啟，直接使用。
+- 包名變更為 io.github.capricornus007.smscode。
+- 總覽頁精簡、隱私政策重寫、Room 降級容錯。
+- 詳情與下載：https://github.com/Capricornus007/XposedSmsCode/releases

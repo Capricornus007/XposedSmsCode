@@ -1,1 +1,6 @@
-完全自含式重構：移除全部 GitLab 私有子模組，LibXposed API 102（支援熱重載），包名改為 io.github.capricornus007.smscode，無任何授權驗證，總覽頁精簡，Room 降級容錯。
+- v3.2.0（103）：完全自含式重構，基於 LibXposed API 102。
+- 移除全部 GitLab 私有子模組，倉庫可自行構建。
+- 無任何授權／權益驗證：安裝 → LSPosed 啟用 → 重啟，直接使用。
+- 包名變更為 io.github.capricornus007.smscode。
+- 總覽頁精簡、隱私政策重寫、Room 降級容錯。
+- 詳情與下載：https://github.com/Capricornus007/XposedSmsCode/releases
