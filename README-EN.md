@@ -58,15 +58,11 @@ Welcome any feedbacks.
 - **Settings page fully migrated to Jetpack Compose**
 
 # Release Metadata
-- Fastlane metadata location: `fastlane/metadata/android`
-- Sync Fastlane changelogs/screenshots before release: `scripts/sync_fastlane_metadata.sh`
 - Validate release metadata and tag consistency: `scripts/check_release_guard.sh`
-- Fastlane changelog files `changelogs/{versionCode}.txt` are synchronized from `distribution/whatsnew`.
 
 # Documentation
 - [Release Logs](docs/CHANGELOG.md)
 - [Privacy Policy](docs/PRIVACY.md)
-- [Donations](docs/DONATIONS.md)
 
 # Thanks To
 - [Original Project (tianma8023/XposedSmsCode)](https://github.com/tianma8023/XposedSmsCode)
