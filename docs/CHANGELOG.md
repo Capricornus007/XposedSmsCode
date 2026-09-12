@@ -4,6 +4,18 @@
 
 ---
 
+## [v3.2.0-api102] - 2026-09-12
+- 版本：`versionCode 103` / `versionName 3.2.0-api102`。
+- 品牌重构：包名变更为 `io.github.capricornus007.smscode`，仓库与文档指向本 fork，移除社群群组与赞助入口，隐私政策重写（全本地处理、无遥测）。
+- 移除全部 GitLab 私有子模块与授权／启用／权益验证，仓库可自行构建，安装后 LSPosed 启用重启即用。
+- LibXposed API 102（minApi 102 / targetApi 102），支持 autoHotReload。
+- Room 降级破坏重建容错，从旧版迁移配置不再崩溃。
+- 修复 R8 混淆导致 Xposed 入口类（`java_init.list` 指向的 `LibXposedEntry`）不可加载的问题：新增 proguard keep 规则。
+
+> Full Changelog: https://github.com/Capricornus007/xposedsmscode/compare/d67c520...v3.2.0-api102
+
+---
+
 ## [v3.1.9] - 2026-03-16
 - 版本：`versionCode 102` / `versionName 3.1.9`。
 - 从 beta 转为正式版，收敛冲突提示、默认作用域（含 `system`）与繁中缺失文案等变更。
