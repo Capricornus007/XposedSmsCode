@@ -1,0 +1,1 @@
+完全自含式重構：移除全部 GitLab 私有子模組，LibXposed API 102（支援熱重載），包名改為 io.github.capricornus007.smscode，無任何授權驗證，總覽頁精簡，Room 降級容錯。

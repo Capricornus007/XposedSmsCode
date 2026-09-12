@@ -1,0 +1,1 @@
+Full standalone rebuild: removed all private GitLab submodules, LibXposed API 102 with hot-reload, new package name io.github.capricornus007.smscode, no licensing checks, overview screen cleanup, Room downgrade tolerance.

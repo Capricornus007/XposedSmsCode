@@ -65,3 +65,7 @@
 -dontwarn io.github.libxposed.annotation.**
 # Xposed end
 # ==========================
+
+# Xposed entry point: LSPosed loads this class by the exact name listed in
+# META-INF/xposed/java_init.list — R8 must not rename or strip it.
+-keep class io.github.capricornus007.smscode.xp.LibXposedEntry { *; }
