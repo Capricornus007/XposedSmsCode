@@ -28,7 +28,14 @@ jobs:
         run: chmod +x gradlew
 
       - name: Update Gradle Wrapper to Nightly
-        run: ./gradlew wrapper --gradle-version nightly
+        run: |
+          # gradle-wrapper.properties 帶 distributionSha256Sum，但 wrapper task 的
+          # 配置沒有對應值 → Gradle 直接拒絕執行：
+          #   "gradle-wrapper.properties contains distributionSha256Sum property,
+          #    but the wrapper configuration does not have one."
+          # nightly 的版本與校驗和每天變，無法預先寫死；先刪掉該行再跑 wrapper task。
+          sed -i '/^distributionSha256Sum/d' gradle/wrapper/gradle-wrapper.properties || true
+          ./gradlew wrapper --gradle-version nightly
 
       - name: Verify Build
         # Run basic checks to ensure the new wrapper doesn't break the build
