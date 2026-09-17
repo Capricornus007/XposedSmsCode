@@ -61,7 +61,10 @@ jobs:
             
             git add gradlew gradle/wrapper/gradle-wrapper.properties gradle/wrapper/gradle-wrapper.jar
             git commit -m "build(wrapper): update gradle wrapper to nightly $VERSION"
-            git pull origin master --rebase
+            # 构建/verify 步骤会顺带改动别的被跟踪文件，导致 rebase 报
+            # "cannot pull with rebase: You have unstaged changes"
+            # （2026-09-17 排程实测 exit 128）。autostash 搁置再恢复杂散改动。
+            git -c rebase.autoStash=true pull origin master --rebase
             git push origin master
           else
             echo "No changes to commit"
