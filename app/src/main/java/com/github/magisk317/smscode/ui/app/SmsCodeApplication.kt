@@ -6,6 +6,7 @@ import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.Build
 import com.github.magisk317.smscode.runtime.BuildConfig as RuntimeBuildConfig
 import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.constant.PrefConst
@@ -79,9 +80,21 @@ class SmsCodeApplication : Application() {
                 },
                 serviceName = "xposedsmscode",
                 serviceVersion = BuildConfig.VERSION_NAME,
+                serviceCommit = BuildConfig.COMMIT_HASH,
+                deviceAttributes =
+                    mapOf(
+                        "device.manufacturer" to Build.MANUFACTURER,
+                        "device.model" to Build.MODEL,
+                        "os.name" to "android",
+                        "os.version" to Build.VERSION.RELEASE,
+                        "os.api_level" to Build.VERSION.SDK_INT.toString(),
+                    ),
                 projectId = "83955172",
                 projectName = "XposedSmsCode",
                 environment = if (BuildConfig.DEBUG) "debug" else "release",
+                // Skip dominates this service (~81% of every span): an intercept check that found
+                // nothing to do. Dropping it keeps ok / error / fallback readable.
+                suppressedResultValues = setOf("skip"),
             ),
             TELEMETRY_PREFS_NAME,
         )

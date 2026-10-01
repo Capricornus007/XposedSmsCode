@@ -3,6 +3,7 @@ package com.github.magisk317.smscode.xp
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import com.github.magisk317.smscode.common.utils.HookPrefsReader
 import com.github.magisk317.smscode.common.utils.RuntimeDiagnosticsBridge
 import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogStore
@@ -82,6 +83,16 @@ object XposedRuntimeInstaller {
                     AnonymousInstallationId.PREFERENCE_KEY,
                     "",
                 ),
+                serviceCommit = BuildConfig.COMMIT_HASH,
+                deviceAttributes =
+                    mapOf(
+                        "device.manufacturer" to Build.MANUFACTURER,
+                        "device.model" to Build.MODEL,
+                        "os.name" to "android",
+                        "os.version" to Build.VERSION.RELEASE,
+                        "os.api_level" to Build.VERSION.SDK_INT.toString(),
+                    ),
+                suppressedResultValues = setOf("skip"),
             ),
         )
         installHookBridge()
@@ -124,6 +135,7 @@ object XposedRuntimeInstaller {
                     keys = keys,
                     windowMs = windowMs,
                     maxEntries = maxEntries,
+                    token = HookPrefsReader.getIpcToken(context),
                 )
 
                 override fun recordHookHeartbeat(
@@ -140,6 +152,7 @@ object XposedRuntimeInstaller {
                     source = source,
                     verboseLogging = verboseLogging,
                     route = route,
+                    token = HookPrefsReader.getIpcToken(context),
                 )
             },
         )
