@@ -3,6 +3,17 @@
 本日志记录了项目重构后的主要变更。
 
 ---
+## [v3.3.6] - 2026-10-01
+- 版本：`versionCode 130` / `versionName 3.3.6`。
+- `[fix]` 修复验证码提取（波斯文/阿拉伯文数字、关键词邻近，#267）。
+- `[fix]` 修复短信记录插入失败。
+- `[ui]` 修复 Miuix 主题下图标与刷新指示器渲染。
+- `[build]` 工具链切换至 Java 27 字节码。
+
+> Full Changelog: https://gitlab.com/magisk3171/XposedSmsCode/-/compare/v3.3.5...v3.3.6
+
+
+
 ## [v3.3.5] - 2026-09-22
 - 版本：`versionCode 129` / `versionName 3.3.5`。
 - `[ui]` 双架构与主题页优化。
