@@ -21,7 +21,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import io.github.magisk317.uikit.surface.AppIconButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -121,14 +121,14 @@ internal fun CodeRecordScreenMaterial(
                     title = title,
                     navigationIcon = {
                         if (isSelectionMode) {
-                            IconButton(onClick = onExitSelectionMode) {
+                            AppIconButton(onClick = onExitSelectionMode) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = stringResource(R.string.action_back),
                                 )
                             }
                         } else if (onBack != null) {
-                            IconButton(onClick = onBack) {
+                            AppIconButton(onClick = onBack) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = stringResource(R.string.action_back),
@@ -138,26 +138,26 @@ internal fun CodeRecordScreenMaterial(
                     },
                     actions = {
                         if (isSelectionMode) {
-                            IconButton(onClick = onSelectAllVisible) {
+                            AppIconButton(onClick = onSelectAllVisible) {
                                 Icon(
                                     Icons.Default.Check,
                                     contentDescription = stringResource(R.string.action_select_all),
                                 )
                             }
-                            IconButton(onClick = onDeleteSelected) {
+                            AppIconButton(onClick = onDeleteSelected) {
                                 Icon(
                                     Icons.Default.Delete,
                                     contentDescription = stringResource(R.string.action_delete),
                                 )
                             }
                         } else {
-                            IconButton(onClick = onOpenSettings) {
+                            AppIconButton(onClick = onOpenSettings) {
                                 Icon(
                                     Icons.Default.Tune,
                                     contentDescription = stringResource(R.string.pref_code_records_title),
                                 )
                             }
-                            IconButton(onClick = onOpenExport) {
+                            AppIconButton(onClick = onOpenExport) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_export),
                                     contentDescription = stringResource(R.string.action_export_rules),

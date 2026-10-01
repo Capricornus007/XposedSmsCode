@@ -20,16 +20,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import io.github.magisk317.uikit.common.AppSnackbarHostState
+import io.github.magisk317.uikit.surface.AppSurface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -67,7 +64,7 @@ import com.github.magisk317.smscode.runtime.RuntimeUpgradeInfo
 import com.github.magisk317.smscode.runtime.RuntimeUpgradeDownloadProgress
 import io.github.magisk317.uikit.theme.UpdateSystemBars
 import io.github.magisk317.uikit.theme.applyEdgeToEdge
-import io.github.magisk317.uikit.common.DismissibleSnackbarHost
+import io.github.magisk317.uikit.common.AppSnackbarHost
 import io.github.magisk317.uikit.foundation.LocalSnackbarHostState
 import com.github.magisk317.smscode.ui.home.update.FlavorPlayUpdateDelegate
 import java.util.Locale
@@ -90,6 +87,9 @@ import androidx.lifecycle.lifecycleScope
 import org.koin.android.ext.android.inject
 import org.koin.androidx.compose.koinViewModel
 import java.io.File
+import io.github.magisk317.uikit.text.AppText
+import io.github.magisk317.uikit.theme.AppColorRole
+import io.github.magisk317.uikit.theme.appColor
 
 class MainActivity : ComponentActivity() {
 
@@ -124,7 +124,7 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
-            val appSnackbarHostState = remember { SnackbarHostState() }
+            val appSnackbarHostState = remember { AppSnackbarHostState() }
             var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
             var showPrivacyPolicyPage by remember { mutableStateOf(false) }
             var blockingStartupDialog by remember { mutableStateOf<BlockingStartupDialog?>(null) }
@@ -299,7 +299,7 @@ class MainActivity : ComponentActivity() {
 
             CompositionLocalProvider(LocalSnackbarHostState provides appSnackbarHostState) {
                 AppTheme {
-                    Surface(color = MaterialTheme.colorScheme.background) {
+                    AppSurface(color = appColor(AppColorRole.Background)) {
                     LaunchedEffect(Unit) {
                         viewModel.setInternalFilesWritable()
                     }
@@ -368,7 +368,7 @@ class MainActivity : ComponentActivity() {
                                             append(getString(R.string.relay_conflict_dialog_prefix))
                                             withStyle(
                                                 SpanStyle(
-                                                    color = MaterialTheme.colorScheme.error,
+                                                    color = appColor(AppColorRole.Error),
                                                     fontWeight = FontWeight.Bold,
                                                 ),
                                             ) {
@@ -382,7 +382,7 @@ class MainActivity : ComponentActivity() {
                                             append(getString(R.string.relay_conflict_dialog_middle))
                                             withStyle(
                                                 SpanStyle(
-                                                    color = MaterialTheme.colorScheme.error,
+                                                    color = appColor(AppColorRole.Error),
                                                     fontWeight = FontWeight.Bold,
                                                 ),
                                             ) {
@@ -415,9 +415,9 @@ class MainActivity : ComponentActivity() {
                             githubUpdateUiState?.let { updateState ->
                             AppAlertDialog(
                                 onDismissRequest = { githubUpdateUiState = null },
-                                title = { Text(getString(R.string.github_update_dialog_title)) },
+                                title = { AppText(getString(R.string.github_update_dialog_title)) },
                                 text = {
-                                    Text(
+                                    AppText(
                                         text = buildUpdateDialogText(updateState),
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -481,11 +481,11 @@ class MainActivity : ComponentActivity() {
                             is UpdateDownloadState.Downloading -> {
                                 AppAlertDialog(
                                     onDismissRequest = {},
-                                    title = { Text(getString(R.string.update_download_in_progress_title)) },
+                                    title = { AppText(getString(R.string.update_download_in_progress_title)) },
                                     text = {
                                         Column {
                                             AppLinearProgressIndicator(progress = state.progress, modifier = Modifier.fillMaxWidth())
-                                            Text(state.progressText)
+                                            AppText(state.progressText)
                                         }
                                     },
                                     confirmButton = {
@@ -503,8 +503,8 @@ class MainActivity : ComponentActivity() {
                             is UpdateDownloadState.Failed -> {
                                 AppAlertDialog(
                                     onDismissRequest = { downloadState = UpdateDownloadState.Idle },
-                                    title = { Text(getString(R.string.update_download_failed_title)) },
-                                    text = { Text(state.message) },
+                                    title = { AppText(getString(R.string.update_download_failed_title)) },
+                                    text = { AppText(state.message) },
                                     dismissButton = {
                                         AppSecondaryButton(
                                             text = getString(R.string.cancel),
@@ -525,8 +525,8 @@ class MainActivity : ComponentActivity() {
                             is UpdateDownloadState.Downloaded -> {
                                 AppAlertDialog(
                                     onDismissRequest = {},
-                                    title = { Text(getString(R.string.update_download_completed_title)) },
-                                    text = { Text(getString(R.string.update_download_completed_message)) },
+                                    title = { AppText(getString(R.string.update_download_completed_title)) },
+                                    text = { AppText(getString(R.string.update_download_completed_message)) },
                                     dismissButton = {
                                         AppSecondaryButton(
                                             text = getString(R.string.cancel),
@@ -563,8 +563,8 @@ class MainActivity : ComponentActivity() {
                         unknownSourceApk?.let {
                             AppAlertDialog(
                                 onDismissRequest = { unknownSourceApk = null },
-                                title = { Text(getString(R.string.update_unknown_source_title)) },
-                                text = { Text(getString(R.string.update_unknown_source_message)) },
+                                title = { AppText(getString(R.string.update_unknown_source_title)) },
+                                text = { AppText(getString(R.string.update_unknown_source_message)) },
                                 dismissButton = {
                                     AppSecondaryButton(
                                         text = getString(R.string.cancel),
@@ -584,10 +584,9 @@ class MainActivity : ComponentActivity() {
                         }
 
                         io.github.magisk317.uikit.theme.ThemeRevealOverlay(themeRevealState)
-                        DismissibleSnackbarHost(
+                        AppSnackbarHost(
                             hostState = appSnackbarHostState,
                             modifier = Modifier
-                                .align(Alignment.BottomCenter)
                                 .then(
                                     if (snackbarBottomOverlayPadding > 0.dp) {
                                         Modifier.padding(bottom = snackbarBottomOverlayPadding)
@@ -863,8 +862,8 @@ private fun ExitOnlyConflictDialog(
 ) {
     AppAlertDialog(
         onDismissRequest = {},
-        title = { Text(title) },
-        text = { Text(text) },
+        title = { AppText(title) },
+        text = { AppText(text) },
         confirmButton = {
             AppPrimaryButton(
                 text = confirmText,

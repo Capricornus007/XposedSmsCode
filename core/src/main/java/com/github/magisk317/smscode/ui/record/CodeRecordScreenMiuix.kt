@@ -18,8 +18,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import io.github.magisk317.uikit.surface.AppIcon
+import top.yukonga.miuix.kmp.basic.Icon as MiuixIcon
+import io.github.magisk317.uikit.surface.AppIconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -117,15 +118,15 @@ internal fun CodeRecordScreenMiuix(
                     title = title,
                     navigationIcon = {
                         if (isSelectionMode) {
-                            IconButton(onClick = onExitSelectionMode) {
-                                Icon(
+                            AppIconButton(onClick = onExitSelectionMode) {
+                                AppIcon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = stringResource(R.string.action_back),
                                 )
                             }
                         } else if (onBack != null) {
-                            IconButton(onClick = onBack) {
-                                Icon(
+                            AppIconButton(onClick = onBack) {
+                                AppIcon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = stringResource(R.string.action_back),
                                 )
@@ -134,27 +135,27 @@ internal fun CodeRecordScreenMiuix(
                     },
                     actions = {
                         if (isSelectionMode) {
-                            IconButton(onClick = onSelectAllVisible) {
-                                Icon(
+                            AppIconButton(onClick = onSelectAllVisible) {
+                                AppIcon(
                                     Icons.Default.Check,
                                     contentDescription = stringResource(R.string.action_select_all),
                                 )
                             }
-                            IconButton(onClick = onDeleteSelected) {
-                                Icon(
+                            AppIconButton(onClick = onDeleteSelected) {
+                                AppIcon(
                                     Icons.Default.Delete,
                                     contentDescription = stringResource(R.string.action_delete),
                                 )
                             }
                         } else {
-                            IconButton(onClick = onOpenSettings) {
-                                Icon(
+                            AppIconButton(onClick = onOpenSettings) {
+                                AppIcon(
                                     Icons.Default.Tune,
                                     contentDescription = stringResource(R.string.pref_code_records_title),
                                 )
                             }
-                            IconButton(onClick = onOpenExport) {
-                                Icon(
+                            AppIconButton(onClick = onOpenExport) {
+                                MiuixIcon(
                                     painter = painterResource(R.drawable.ic_export),
                                     contentDescription = stringResource(R.string.action_export_rules),
                                 )

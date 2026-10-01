@@ -10,14 +10,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import io.github.magisk317.uikit.surface.AppHorizontalDivider
+import io.github.magisk317.uikit.common.AppSnackbarHost
+import io.github.magisk317.uikit.common.AppSnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -40,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.github.magisk317.smscode.core.R
 import com.github.magisk317.smscode.data.db.entity.AppInfo
 import io.github.magisk317.uikit.surface.AppIconImage
+import io.github.magisk317.uikit.surface.AppPullToRefresh
 import io.github.magisk317.uikit.foundation.LoadingIndicatorTokens
 import io.github.magisk317.uikit.foundation.PolygonMorphLoadingIndicator
 import io.github.magisk317.uikit.foundation.SessionLoadingRegistry
@@ -52,6 +48,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import org.koin.compose.viewmodel.koinViewModel
+import io.github.magisk317.uikit.text.AppText
+import io.github.magisk317.uikit.text.AppTextRole
+import io.github.magisk317.uikit.theme.AppColorRole
+import io.github.magisk317.uikit.theme.appColor
 
 private const val APP_LIST_PREFETCH_DISTANCE = 12
 
@@ -97,7 +97,7 @@ fun AppConfigScreen(
     val currentSortOption by viewModel.sortOptionFlow.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val shouldShowInitialLoading = remember { SessionLoadingRegistry.shouldShowInitial("app_config") }
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { AppSnackbarHostState() }
 
     var initialLoadingStarted by remember { mutableStateOf(false) }
     var manualRefreshing by remember { mutableStateOf(false) }
@@ -208,25 +208,15 @@ fun AppConfigScreen(
 
     val body: @Composable (PaddingValues, Modifier) -> Unit = { listPadding, scrollModifier ->
         val overlayTopPadding = listPadding.calculateTopPadding()
-        val pullToRefreshState = rememberPullToRefreshState()
-        PullToRefreshBox(
-            state = pullToRefreshState,
+        AppPullToRefresh(
             isRefreshing = manualRefreshing,
             onRefresh = {
                 manualRefreshStartedAt = SystemClock.elapsedRealtime()
                 manualRefreshing = true
                 viewModel.refreshData(force = true)
             },
-            indicator = {
-                PullToRefreshDefaults.LoadingIndicator(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = overlayTopPadding + LoadingIndicatorTokens.OverlayTopSpacing),
-                    isRefreshing = manualRefreshing,
-                    state = pullToRefreshState,
-                )
-            },
             modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(top = overlayTopPadding),
         ) {
             if (showLoading && !manualRefreshing) {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -257,9 +247,9 @@ fun AppConfigScreen(
                             onBlockedChange = { blocked -> viewModel.setBlocked(app.packageName, blocked) },
                         )
                         if (!isMiuix) {
-                            HorizontalDivider(
+                            AppHorizontalDivider(
                                 thickness = 0.5.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant,
+                                color = appColor(AppColorRole.OutlineVariant),
                             )
                         }
                     }
@@ -289,10 +279,9 @@ fun AppConfigScreen(
             )
         }
 
-        SnackbarHost(
+        AppSnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
-                .align(Alignment.BottomCenter)
                 .navigationBarsPadding(),
         )
 
@@ -301,7 +290,7 @@ fun AppConfigScreen(
             onDismissRequest = { showSettingsMenu = false },
             title = stringResource(R.string.app_config_settings),
         ) {
-            io.github.magisk317.uikit.preference.Item(
+            io.github.magisk317.uikit.preference.AppArrowItem(
                 title = stringResource(R.string.action_sort_by_label),
                 summary = "",
                 trailingContent = {
@@ -315,7 +304,7 @@ fun AppConfigScreen(
                     showSettingsMenu = false
                 },
             )
-            io.github.magisk317.uikit.preference.Item(
+            io.github.magisk317.uikit.preference.AppArrowItem(
                 title = stringResource(R.string.action_sort_by_selection),
                 summary = "",
                 trailingContent = {
@@ -329,7 +318,7 @@ fun AppConfigScreen(
                     showSettingsMenu = false
                 },
             )
-            io.github.magisk317.uikit.preference.Item(
+            io.github.magisk317.uikit.preference.AppArrowItem(
                 title = stringResource(R.string.action_sort_by_usage),
                 summary = "",
                 trailingContent = {
@@ -358,12 +347,11 @@ fun AppConfigScreen(
         }
     }
 
-
     if (showUsagePermissionDialog) {
         io.github.magisk317.uikit.surface.AppAlertDialog(
             onDismissRequest = { showUsagePermissionDialog = false },
-            title = { Text(stringResource(R.string.action_sort_by_usage)) },
-            text = { Text(stringResource(R.string.usage_permission_prompt)) },
+            title = { AppText(stringResource(R.string.action_sort_by_usage)) },
+            text = { AppText(stringResource(R.string.usage_permission_prompt)) },
             confirmButton = {
                 io.github.magisk317.uikit.surface.AppPrimaryButton(
                     text = stringResource(R.string.confirm),
@@ -395,7 +383,7 @@ fun AppConfigItem(
 ) {
     val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val bgColor = if (app.blocked) {
-        val base = MaterialTheme.colorScheme.errorContainer
+        val base = appColor(AppColorRole.ErrorContainer)
         if (isDark) base.copy(alpha = 0.25f) else base.copy(alpha = 0.4f)
     } else {
         Color.Transparent
@@ -420,17 +408,17 @@ fun AppConfigItem(
             )
         },
     ) {
-        Text(
+        AppText(
             text = app.label ?: app.packageName,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             fontWeight = FontWeight.Bold,
         )
-        Text(
+        AppText(
             text = app.packageName,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            style = MaterialTheme.typography.bodySmall,
+            role = AppTextRole.BodySmall,
         )
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -26,14 +27,12 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
+import io.github.magisk317.uikit.surface.AppIcon
+import io.github.magisk317.uikit.surface.AppIconButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
+import io.github.magisk317.uikit.common.AppSnackbarHostState
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -78,6 +77,10 @@ import java.util.regex.Pattern
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import io.github.magisk317.uikit.text.AppText
+import io.github.magisk317.uikit.text.AppTextRole
+import io.github.magisk317.uikit.theme.AppColorRole
+import io.github.magisk317.uikit.theme.appColor
 
 private const val BUILTIN_RULE_EDITOR_ID_ALPHANUMERIC = -101L
 private const val BUILTIN_RULE_EDITOR_ID_DIGITS = -102L
@@ -110,7 +113,7 @@ fun SmsCodeRuleListScreen(
     val storage = koinInject<UiStorageAccess>()
     val dbManager = remember(context) { storage.dbManager(context) }
     val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { AppSnackbarHostState() }
     val removedLabel = stringResource(id = R.string.removed)
     val emptyPrompt = stringResource(id = R.string.rule_list_empty_prompt)
     val officialTitle = stringResource(id = R.string.official_code_rules_title)
@@ -157,8 +160,11 @@ fun SmsCodeRuleListScreen(
         loadOfficialRules(refresh = false)
     }
 
+    val listState = rememberLazyListState()
+
     val body: @Composable (PaddingValues, Modifier) -> Unit = { listPadding, scrollModifier ->
         LazyColumn(
+            state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(listPadding)
@@ -185,10 +191,10 @@ fun SmsCodeRuleListScreen(
                             .padding(top = 8.dp, bottom = 12.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(
+                        AppText(
                             text = officialEmptyPrompt,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            role = AppTextRole.Body,
+                            color = appColor(AppColorRole.OnSurfaceVariant),
                         )
                     }
                 }
@@ -214,10 +220,10 @@ fun SmsCodeRuleListScreen(
                             .padding(top = 8.dp, bottom = 12.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(
+                        AppText(
                             text = emptyPrompt,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            role = AppTextRole.Body,
+                            color = appColor(AppColorRole.OnSurfaceVariant),
                         )
                     }
                 }
@@ -240,22 +246,22 @@ fun SmsCodeRuleListScreen(
     }
 
     val actions: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {
-        IconButton(onClick = onSourceSettingsClick) {
-            Icon(
+        AppIconButton(onClick = onSourceSettingsClick) {
+            AppIcon(
                 Icons.Filled.Settings,
                 contentDescription = stringResource(id = R.string.action_rule_source_settings),
             )
         }
-        IconButton(
+        AppIconButton(
             enabled = !officialLoading,
             onClick = { loadOfficialRules(refresh = true) },
         ) {
-            Icon(Icons.Filled.Refresh, contentDescription = stringResource(id = R.string.action_refresh))
+            AppIcon(Icons.Filled.Refresh, contentDescription = stringResource(id = R.string.action_refresh))
         }
     }
 
     val snackbarHost: @Composable () -> Unit = {
-        io.github.magisk317.uikit.common.DismissibleSnackbarHost(
+        io.github.magisk317.uikit.common.AppSnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.navigationBarsPadding(),
         )
@@ -278,6 +284,7 @@ fun SmsCodeRuleListScreen(
             actions = actions,
             snackbarHost = snackbarHost,
             floatingActionButton = floatingActionButton,
+            listState = listState,
             body = body,
         )
 
@@ -286,11 +293,11 @@ fun SmsCodeRuleListScreen(
             actions = actions,
             snackbarHost = snackbarHost,
             floatingActionButton = floatingActionButton,
+            listState = listState,
             body = body,
         )
     }
 }
-
 
 @Composable
 fun SmsCodeRuleSourceSettingsScreen(onBack: () -> Unit) {
@@ -334,14 +341,14 @@ private fun OfficialSmsCodeRuleCard(
                 .padding(horizontal = 18.dp, vertical = 14.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
+                AppText(
                     text = rule.codeKeyword,
-                    style = MaterialTheme.typography.bodyMedium,
+                    role = AppTextRole.Body,
                 )
-                Text(
+                AppText(
                     text = rule.codeRegex,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    role = AppTextRole.BodySmall,
+                    color = appColor(AppColorRole.OnSurfaceVariant),
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -371,15 +378,15 @@ private fun SmsCodeRuleCard(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (!rule.company.isNullOrBlank()) {
-                Text(
+                AppText(
                     text = rule.codeKeyword,
-                    style = MaterialTheme.typography.bodyLarge,
+                    role = AppTextRole.Body,
                 )
             }
-            Text(
+            AppText(
                 text = rule.codeRegex,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                role = AppTextRole.BodySmall,
+                color = appColor(AppColorRole.OnSurfaceVariant),
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -405,7 +412,7 @@ fun SmsCodeRuleEditorScreen(
     val storage = koinInject<UiStorageAccess>()
     val dbManager = remember(context) { storage.dbManager(context) }
     val scope = rememberCoroutineScope()
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { AppSnackbarHostState() }
     val builtinRule = remember(ruleId) { builtinRuleByEditorId(ruleId) }
     val isBuiltinRule = builtinRule != null
     val loadFailedText = stringResource(id = R.string.load_failed)
@@ -530,7 +537,7 @@ fun SmsCodeRuleEditorScreen(
     }
 
     val snackbarHost: @Composable () -> Unit = {
-        io.github.magisk317.uikit.common.DismissibleSnackbarHost(
+        io.github.magisk317.uikit.common.AppSnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier.navigationBarsPadding(),
         )
@@ -550,13 +557,13 @@ fun SmsCodeRuleEditorScreen(
                 modifier = Modifier.fillMaxWidth(),
                 label = companyLabel,
                 placeholderText = stringResource(id = R.string.rule_company_placeholder),
-                supportingText = { Text(if (isBuiltinRule) builtinSummary else rulesSummary) },
+                supportingText = { AppText(if (isBuiltinRule) builtinSummary else rulesSummary) },
                 readOnly = isBuiltinRule,
                 enabled = !loading,
                 trailingIcon = if (isBuiltinRule && company.text.isNotBlank()) {
                     {
-                        IconButton(onClick = { copyField(companyLabel, company.text.toString()) }) {
-                            Icon(Icons.Filled.ContentCopy, contentDescription = copyLabel)
+                        AppIconButton(onClick = { copyField(companyLabel, company.text.toString()) }) {
+                            AppIcon(Icons.Filled.ContentCopy, contentDescription = copyLabel)
                         }
                     }
                 } else {
@@ -572,8 +579,8 @@ fun SmsCodeRuleEditorScreen(
                 enabled = !loading,
                 trailingIcon = if (isBuiltinRule && keyword.text.isNotBlank()) {
                     {
-                        IconButton(onClick = { copyField(keywordLabel, keyword.text.toString()) }) {
-                            Icon(Icons.Filled.ContentCopy, contentDescription = copyLabel)
+                        AppIconButton(onClick = { copyField(keywordLabel, keyword.text.toString()) }) {
+                            AppIcon(Icons.Filled.ContentCopy, contentDescription = copyLabel)
                         }
                     }
                 } else {
@@ -589,8 +596,8 @@ fun SmsCodeRuleEditorScreen(
                 enabled = !loading,
                 trailingIcon = if (isBuiltinRule && regex.text.isNotBlank()) {
                     {
-                        IconButton(onClick = { copyField(regexLabel, regex.text.toString()) }) {
-                            Icon(Icons.Filled.ContentCopy, contentDescription = copyLabel)
+                        AppIconButton(onClick = { copyField(regexLabel, regex.text.toString()) }) {
+                            AppIcon(Icons.Filled.ContentCopy, contentDescription = copyLabel)
                         }
                     }
                 } else {
@@ -600,10 +607,10 @@ fun SmsCodeRuleEditorScreen(
                 singleLine = false,
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
+            AppText(
                 text = testGuidance,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                role = AppTextRole.BodySmall,
+                color = appColor(AppColorRole.OnSurfaceVariant),
             )
         }
     }

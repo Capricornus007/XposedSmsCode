@@ -3,6 +3,8 @@
 
 package com.github.magisk317.smscode.ui.home
 
+import androidx.compose.foundation.layout.PaddingValues
+
 import android.annotation.SuppressLint
 import android.Manifest
 import android.app.Activity
@@ -26,9 +28,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,11 +71,14 @@ import com.github.magisk317.smscode.common.utils.AppPreferences
 import com.github.magisk317.smscode.common.utils.XLog
 import io.github.magisk317.xposed.permission.PermissionBridge
 import io.github.magisk317.uikit.foundation.LoadingIndicatorTokens
+import io.github.magisk317.uikit.surface.AppPullToRefresh
 import io.github.magisk317.uikit.foundation.LocalSnackbarHostState
-import io.github.magisk317.uikit.common.DismissibleSnackbarHost
+import io.github.magisk317.uikit.common.AppSnackbarHost
+import io.github.magisk317.uikit.common.AppSnackbarHostState
 import io.github.magisk317.uikit.foundation.PolygonMorphLoadingIndicator
 import io.github.magisk317.uikit.foundation.SessionLoadingRegistry
 import io.github.magisk317.uikit.foundation.rememberMinDurationLoading
+import io.github.magisk317.uikit.preference.AppArrowItem
 import io.github.magisk317.uikit.preference.GeneralSettingsSection
 import io.github.magisk317.uikit.preference.NonNegativeIntegerInputDialog
 import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsCallbacks
@@ -87,6 +89,7 @@ import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsLayout
 import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsState
 import io.github.magisk317.uikit.preference.RuntimeLogShareEntryMode
 import io.github.magisk317.uikit.surface.ConfirmActionDialog
+import io.github.magisk317.uikit.surface.AppSlider
 import io.github.magisk317.uikit.surface.SectionColumn
 import io.github.magisk317.uikit.preference.SingleChoiceOptionDialog
 import io.github.magisk317.uikit.preference.SingleChoicePositionDialog
@@ -96,6 +99,10 @@ import io.github.magisk317.uikit.preference.TextInputDialog
 import com.github.magisk317.smscode.ui.privacy.PrivacyPolicyPage
 import io.github.magisk317.uikit.theme.UiKitStyle
 import io.github.magisk317.uikit.theme.currentUiKitStyle
+import io.github.magisk317.uikit.text.AppText
+import io.github.magisk317.uikit.text.AppTextRole
+import io.github.magisk317.uikit.theme.AppColorRole
+import io.github.magisk317.uikit.theme.appColor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -181,7 +188,6 @@ internal fun ComposeSettingsScreenBody(
         settingsViewModel.themeState.collect { value = it }
     }
     val themeMode = themeState.mode
-    val uiKitStyle = themeState.uiKitStyle
 
     var autoInputDelay by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_DELAY_DEFAULT) }
     var autoInputInterval by remember { mutableStateOf(PrefConst.KEY_AUTO_INPUT_CODE_INTERVAL_DEFAULT) }
@@ -196,7 +202,6 @@ internal fun ComposeSettingsScreenBody(
     var showRetentionDialog by remember { mutableStateOf(false) }
     var showSmsTestDialog by remember { mutableStateOf(false) }
     var smsTestInput by remember { mutableStateOf("") }
-    var showUiKitStyleDialog by remember { mutableStateOf(false) }
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
     var showPrivacyPolicyPage by remember { mutableStateOf(false) }
     var showKeywordsDialog by remember { mutableStateOf(false) }
@@ -401,7 +406,7 @@ internal fun ComposeSettingsScreenBody(
         }
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarHostState = remember { AppSnackbarHostState() }
     val markPrefsSaved: () -> Unit = {
         scope.launch {
             snackbarHostState.showSnackbar(context.getString(R.string.pref_sync_toast))
@@ -629,7 +634,6 @@ internal fun ComposeSettingsScreenBody(
         actualLoading = isActive && shouldShowInitialLoading && !settingsDataLoaded,
         minDurationMillis = LoadingIndicatorTokens.MIN_VISIBLE_DURATION_MILLIS,
     )
-    val pullToRefreshState = rememberPullToRefreshState()
     val autoInputEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, true)
     val autoUpdateEnabled = rememberPrefBoolean(PrefConst.KEY_AUTO_UPDATE_ON_START, true)
     val moduleEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE, true)
@@ -659,23 +663,16 @@ internal fun ComposeSettingsScreenBody(
             WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
                 if (isCompact) Const.BOTTOM_SPACE_HEIGHT.dp else 0.dp
 
-        PullToRefreshBox(
-            state = pullToRefreshState,
+        AppPullToRefresh(
             isRefreshing = manualRefreshing,
             onRefresh = {
                 scope.launch { runManualRefresh() }
             },
-            indicator = {
-                PullToRefreshDefaults.LoadingIndicator(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = listPadding.calculateTopPadding() + LoadingIndicatorTokens.OverlayTopSpacing),
-                    isRefreshing = manualRefreshing,
-                    state = pullToRefreshState,
-                )
-            },
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxSize(),
+            contentPadding = PaddingValues(
+                top = listPadding.calculateTopPadding(),
+            ),
         ) {
             if (showLoading && !manualRefreshing) {
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -745,7 +742,7 @@ internal fun ComposeSettingsScreenBody(
                             onThemeSelected = null,
                         ) {
                             val navigateToThemeSettings = LocalThemeSettingsNavigation.current
-                            Item(
+                            AppArrowItem(
                                 title = stringResource(id = R.string.pref_theme_details_title),
                                 summary = stringResource(id = R.string.pref_theme_details_summary),
                                 onClick = {
@@ -804,23 +801,23 @@ internal fun ComposeSettingsScreenBody(
                             defaultValue = false,
                             onSaved = markPrefsSaved,
                         )
-                        Item(
+                        AppArrowItem(
                             title = stringResource(id = R.string.pref_smscode_keywords_title),
                             summary = stringResource(id = R.string.pref_smscode_keywords_summary),
                         ) { showKeywordsDialog = true }
-                        Item(
+                        AppArrowItem(
                             title = stringResource(id = R.string.pref_smscode_test_title),
                             summary = stringResource(id = R.string.pref_smscode_test_summary),
                         ) { showSmsTestDialog = true }
-                        Item(
+                        AppArrowItem(
                             title = stringResource(id = R.string.pref_sim_slot1_remark_title),
                             summary = simSlotRemarkSummary(simSlot1Remark),
                         ) { showSimSlotRemarkDialog = 0 }
-                        Item(
+                        AppArrowItem(
                             title = stringResource(id = R.string.pref_sim_slot2_remark_title),
                             summary = simSlotRemarkSummary(simSlot2Remark),
                         ) { showSimSlotRemarkDialog = 1 }
-                        Item(
+                        AppArrowItem(
                             title = stringResource(id = R.string.pref_code_rules_title),
                             summary = stringResource(id = R.string.pref_code_rules_summary),
                         ) {
@@ -877,11 +874,11 @@ internal fun ComposeSettingsScreenBody(
                             defaultValue = false,
                             onSaved = markPrefsSaved,
                         )
-                        Item(
+                        AppArrowItem(
                             title = stringResource(id = R.string.pref_auto_input_code_delay_title),
                             summary = stringResource(id = R.string.pref_auto_input_code_delay_summary, autoInputDelay),
                         ) { showAutoInputDialog = true }
-                        Item(
+                        AppArrowItem(
                             title = stringResource(id = R.string.pref_auto_input_code_interval_title),
                             summary = stringResource(
                                 id = R.string.pref_auto_input_code_interval_summary,
@@ -964,7 +961,7 @@ internal fun ComposeSettingsScreenBody(
                                 onSaved = markPrefsSaved,
                             )
                             if (autoCancelNotificationEnabled.value) {
-                                Item(
+                                AppArrowItem(
                                     title = stringResource(id = R.string.pref_notification_retention_time_title),
                                     summary = notificationRetentionEntryLabel(retentionTime),
                                 ) { showRetentionDialog = true }
@@ -1002,11 +999,11 @@ internal fun ComposeSettingsScreenBody(
                         onExpandedChange = { expandOthers = !expandOthers },
                         accordionMode = accordionMode.value,
                     ) {
-                        Item(
+                        AppArrowItem(
                             title = stringResource(id = R.string.pref_backup_title),
                             summary = stringResource(id = R.string.pref_backup_summary),
                         ) { showBackupDialog = true }
-                        Item(
+                        AppArrowItem(
                             title = stringResource(id = R.string.pref_restore_title),
                             summary = stringResource(id = R.string.pref_restore_summary),
                         ) {
@@ -1034,9 +1031,18 @@ internal fun ComposeSettingsScreenBody(
                                             enabled = BuildConfig.DEBUG || enabled,
                                             serviceName = "xposedsmscode",
                                             serviceVersion = BuildConfig.VERSION_NAME,
+                                            serviceCommit = BuildConfig.COMMIT_HASH,
                                             projectId = "83955172",
                                             projectName = "XposedSmsCode",
                                             environment = if (BuildConfig.DEBUG) "debug" else "release",
+                                            deviceAttributes =
+                                                mapOf(
+                                                    "device.manufacturer" to Build.MANUFACTURER,
+                                                    "device.model" to Build.MODEL,
+                                                    "os.name" to "android",
+                                                    "os.version" to Build.VERSION.RELEASE,
+                                                    "os.api_level" to Build.VERSION.SDK_INT.toString(),
+                                                ),
                                         ),
                                     )
                                 },
@@ -1114,7 +1120,7 @@ internal fun ComposeSettingsScreenBody(
                                 onSaved = markPrefsSaved,
                             )
                         }
-                        Item(
+                        AppArrowItem(
                             title = stringResource(id = R.string.pref_privacy_policy_title),
                             summary = "",
                         ) { showPrivacyPolicyPage = true }
@@ -1125,10 +1131,9 @@ internal fun ComposeSettingsScreenBody(
             }
         }
 
-        DismissibleSnackbarHost(
+        AppSnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
-                .align(Alignment.BottomCenter)
                 .padding(bottom = if (isCompact) Const.BOTTOM_SPACE_HEIGHT.dp else 0.dp)
                 .navigationBarsPadding(),
         )
@@ -1137,7 +1142,6 @@ internal fun ComposeSettingsScreenBody(
     SettingsDialogs(
         context = context,
         scope = scope,
-        uiKitStyle = uiKitStyle,
         autoInputDelay = autoInputDelay,
         autoInputInterval = autoInputInterval,
         retentionTime = retentionTime,
@@ -1148,7 +1152,6 @@ internal fun ComposeSettingsScreenBody(
         showRetentionDialog = showRetentionDialog,
         showSmsTestDialog = showSmsTestDialog,
         showKeywordsDialog = showKeywordsDialog,
-        showUiKitStyleDialog = showUiKitStyleDialog,
         showPrivacyPolicyDialog = showPrivacyPolicyDialog,
         showPrivacyPolicyPage = showPrivacyPolicyPage,
         showBackupDialog = showBackupDialog,
@@ -1164,7 +1167,6 @@ internal fun ComposeSettingsScreenBody(
         onShowRetentionDialogChange = { showRetentionDialog = it },
         onShowSmsTestDialogChange = { showSmsTestDialog = it },
         onShowKeywordsDialogChange = { showKeywordsDialog = it },
-        onShowUiKitStyleDialogChange = { showUiKitStyleDialog = it },
         onShowPrivacyPolicyDialogChange = { showPrivacyPolicyDialog = it },
         onShowPrivacyPolicyPageChange = { showPrivacyPolicyPage = it },
         onShowBackupDialogChange = { showBackupDialog = it },
@@ -1174,7 +1176,6 @@ internal fun ComposeSettingsScreenBody(
         backupLauncher = backupLauncher,
         settingsViewModel = settingsViewModel,
         onExit = onExit,
-        onSetUiKitStyle = { style -> settingsViewModel.setUiKitStyle(style) },
     )
 
     showSimSlotRemarkDialog?.let { simSlot ->
@@ -1208,7 +1209,6 @@ internal fun ComposeSettingsScreenBody(
             showSimSlotRemarkDialog = null
         }
     }
-
 
     if (showClearLogConfirmDialog) {
         ConfirmActionDialog(
@@ -1255,7 +1255,7 @@ private fun handleSettingsEvent(
     context: android.content.Context,
     activity: Activity?,
     scope: kotlinx.coroutines.CoroutineScope,
-    snackbarHostState: SnackbarHostState,
+    snackbarHostState: AppSnackbarHostState,
     onShowPrivacyPolicy: () -> Unit,
     onShowRestoreConfirm: (android.net.Uri) -> Unit,
 ) {
@@ -1304,7 +1304,6 @@ private fun handleSettingsEvent(
 private fun SettingsDialogs(
     context: android.content.Context,
     scope: kotlinx.coroutines.CoroutineScope,
-    uiKitStyle: Int,
     autoInputDelay: String,
     autoInputInterval: String,
     retentionTime: String,
@@ -1315,7 +1314,6 @@ private fun SettingsDialogs(
     showRetentionDialog: Boolean,
     showSmsTestDialog: Boolean,
     showKeywordsDialog: Boolean,
-    showUiKitStyleDialog: Boolean,
     showPrivacyPolicyDialog: Boolean,
     showPrivacyPolicyPage: Boolean,
     showBackupDialog: Boolean,
@@ -1331,7 +1329,6 @@ private fun SettingsDialogs(
     onShowRetentionDialogChange: (Boolean) -> Unit,
     onShowSmsTestDialogChange: (Boolean) -> Unit,
     onShowKeywordsDialogChange: (Boolean) -> Unit,
-    onShowUiKitStyleDialogChange: (Boolean) -> Unit,
     onShowPrivacyPolicyDialogChange: (Boolean) -> Unit,
     onShowPrivacyPolicyPageChange: (Boolean) -> Unit,
     onShowBackupDialogChange: (Boolean) -> Unit,
@@ -1341,7 +1338,6 @@ private fun SettingsDialogs(
     backupLauncher: androidx.activity.result.ActivityResultLauncher<Intent>,
     settingsViewModel: SettingsViewModel,
     onExit: () -> Unit,
-    onSetUiKitStyle: (Int) -> Unit,
 ) {
     val activityOwner = context as? Activity
     val backupAccess = koinInject<UiBackupAccess>()
@@ -1444,17 +1440,6 @@ private fun SettingsDialogs(
         }
     }
 
-    if (BuildConfig.ENABLE_UI_KIT_STYLE_SWITCH && showUiKitStyleDialog) {
-        UiKitStyleChooserDialog(
-            currentStyle = uiKitStyle,
-            onDismiss = { onShowUiKitStyleDialogChange(false) },
-            onStyleSelected = {
-                onSetUiKitStyle(it)
-                onShowUiKitStyleDialogChange(false)
-            },
-        )
-    }
-
     if (showPrivacyPolicyDialog) {
         PrivacyPolicyDialog(
             onDismiss = { onShowPrivacyPolicyDialogChange(false) },
@@ -1527,6 +1512,7 @@ private fun ExpandableSettingsSection(
             .padding(horizontal = Const.PADDING_SMALL.dp),
     ) {
         io.github.magisk317.uikit.preference.SectionCard(
+            contentPadding = PaddingValues(0.dp),
             title = title,
             summary = summary,
             accordionMode = accordionMode,
@@ -1553,23 +1539,6 @@ private fun isAutoInputAccessibilityServiceEnabled(context: android.content.Cont
     return enabledServices.split(':').any { candidate ->
         candidate.equals(expectedService, ignoreCase = true)
     }
-}
-
-@Composable
-fun Item(
-    title: String,
-    summary: String,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    io.github.magisk317.uikit.preference.Item(
-        title = title,
-        summary = summary,
-        modifier = modifier,
-        enabled = enabled,
-        onClick = onClick,
-    )
 }
 
 @Composable
@@ -1710,35 +1679,6 @@ fun RetentionDialog(
 }
 
 @Composable
-fun UiKitStyleChooserDialog(
-    currentStyle: Int,
-    onDismiss: () -> Unit,
-    onStyleSelected: (Int) -> Unit,
-) {
-    val styles = listOf(
-        stringResource(id = R.string.ui_kit_style_expressive) to UiKitStyle.Expressive.value,
-        stringResource(id = R.string.ui_kit_style_miuix) to UiKitStyle.Miuix.value,
-    )
-    SingleChoiceOptionDialog(
-        title = stringResource(id = R.string.pref_ui_kit_style_title),
-        options = styles.map { it.first },
-        selectedIndex = styles.indexOfFirst { it.second == currentStyle }.coerceAtLeast(0),
-        onSelectionChange = { index ->
-            styles.getOrNull(index)?.second?.let(onStyleSelected)
-        },
-        onDismissRequest = onDismiss,
-    )
-}
-
-@Composable
-private fun uiKitStyleLabel(style: Int): String {
-    return when (UiKitStyle.fromValue(style)) {
-        UiKitStyle.Miuix -> stringResource(id = R.string.ui_kit_style_miuix)
-        UiKitStyle.Expressive -> stringResource(id = R.string.ui_kit_style_expressive)
-    }
-}
-
-@Composable
 fun PrivacyPolicyDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
@@ -1753,10 +1693,10 @@ fun PrivacyPolicyDialog(
             dismissOnBackPress = dismissOnBackPress,
             dismissOnClickOutside = dismissOnClickOutside,
         ),
-        title = { Text(stringResource(id = R.string.privacy_dialog_title)) },
+        title = { AppText(stringResource(id = R.string.privacy_dialog_title)) },
         text = {
             Column {
-                Text(stringResource(id = R.string.privacy_dialog_content))
+                AppText(stringResource(id = R.string.privacy_dialog_content))
                 Spacer(modifier = Modifier.height(16.dp))
                 Box(modifier = Modifier.align(Alignment.CenterHorizontally)) {
                     io.github.magisk317.uikit.surface.AppSecondaryButton(
@@ -1800,10 +1740,10 @@ private fun BackupDialog(onDismiss: () -> Unit, onConfirm: (BackupSelectionFlags
 
     io.github.magisk317.uikit.surface.AppAlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(id = R.string.dialog_backup_title)) },
+        title = { AppText(stringResource(id = R.string.dialog_backup_title)) },
         text = {
             Column {
-                Text(stringResource(id = R.string.dialog_backup_msg), modifier = Modifier.padding(bottom = 8.dp))
+                AppText(stringResource(id = R.string.dialog_backup_msg), modifier = Modifier.padding(bottom = 8.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig },
@@ -1812,7 +1752,7 @@ private fun BackupDialog(onDismiss: () -> Unit, onConfirm: (BackupSelectionFlags
                         checked = checkConfig,
                         onCheckedChange = { checkConfig = it },
                     )
-                    Text(stringResource(id = R.string.item_config))
+                    AppText(stringResource(id = R.string.item_config))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1822,7 +1762,7 @@ private fun BackupDialog(onDismiss: () -> Unit, onConfirm: (BackupSelectionFlags
                         checked = checkRules,
                         onCheckedChange = { checkRules = it },
                     )
-                    Text(stringResource(id = R.string.item_rules))
+                    AppText(stringResource(id = R.string.item_rules))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1832,7 +1772,7 @@ private fun BackupDialog(onDismiss: () -> Unit, onConfirm: (BackupSelectionFlags
                         checked = checkRecords,
                         onCheckedChange = { checkRecords = it },
                     )
-                    Text(stringResource(id = R.string.item_records))
+                    AppText(stringResource(id = R.string.item_records))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1842,7 +1782,7 @@ private fun BackupDialog(onDismiss: () -> Unit, onConfirm: (BackupSelectionFlags
                         checked = checkDatabase,
                         onCheckedChange = { checkDatabase = it },
                     )
-                    Text(stringResource(id = R.string.item_database_with_note))
+                    AppText(stringResource(id = R.string.item_database_with_note))
                 }
             }
         },
@@ -1891,10 +1831,10 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (BackupSelect
 
     io.github.magisk317.uikit.surface.AppAlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(id = R.string.dialog_restore_title)) },
+        title = { AppText(stringResource(id = R.string.dialog_restore_title)) },
         text = {
             Column {
-                Text(stringResource(id = R.string.dialog_restore_msg), modifier = Modifier.padding(bottom = 8.dp))
+                AppText(stringResource(id = R.string.dialog_restore_msg), modifier = Modifier.padding(bottom = 8.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth().clickable { checkConfig = !checkConfig },
@@ -1903,7 +1843,7 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (BackupSelect
                         checked = checkConfig,
                         onCheckedChange = { checkConfig = it },
                     )
-                    Text(stringResource(id = R.string.item_config))
+                    AppText(stringResource(id = R.string.item_config))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1913,7 +1853,7 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (BackupSelect
                         checked = checkRules,
                         onCheckedChange = { checkRules = it },
                     )
-                    Text(stringResource(id = R.string.item_rules))
+                    AppText(stringResource(id = R.string.item_rules))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1923,7 +1863,7 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (BackupSelect
                         checked = checkRecords,
                         onCheckedChange = { checkRecords = it },
                     )
-                    Text(stringResource(id = R.string.item_records))
+                    AppText(stringResource(id = R.string.item_records))
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -1933,12 +1873,12 @@ private fun RestoreConfirmDialog(onDismiss: () -> Unit, onConfirm: (BackupSelect
                         checked = checkDatabase,
                         onCheckedChange = { checkDatabase = it },
                     )
-                    Text(stringResource(id = R.string.item_database_with_note))
+                    AppText(stringResource(id = R.string.item_database_with_note))
                 }
-                Text(
+                AppText(
                     text = stringResource(id = R.string.restore_warning_msg),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
+                    role = AppTextRole.BodySmall,
+                    color = appColor(AppColorRole.Error),
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
@@ -2018,17 +1958,19 @@ fun SliderDialog(
     val confirmLabel = stringResource(id = R.string.confirm)
     io.github.magisk317.uikit.surface.AppAlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(text = title) },
+        title = { AppText(text = title) },
         text = {
             Column {
-                Text(
+                AppText(
                     text = valueFormatter(sliderState.value),
-                    style = MaterialTheme.typography.bodyLarge,
+                    role = AppTextRole.Body,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
-                Slider(
-                    state = sliderState,
+                AppSlider(
+                    value = sliderState.value,
                     onValueChange = { sliderState.value = it },
+                    valueRange = valueRange,
+                    steps = steps,
                 )
             }
         },

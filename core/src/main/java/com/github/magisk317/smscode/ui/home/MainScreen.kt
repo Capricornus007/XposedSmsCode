@@ -10,7 +10,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Widgets
-import androidx.compose.material3.Icon
+import io.github.magisk317.uikit.surface.AppIcon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -455,7 +455,7 @@ fun MainScreen(
                 reserveCompactBottomBarSpace = true,
                 retainPageContentAfterFirstFrame = true,
                 railHeader = {
-                    Icon(
+                    AppIcon(
                         imageVector = Icons.Default.Sms,
                         contentDescription = null,
                         modifier = Modifier.padding(vertical = 12.dp),
@@ -537,7 +537,7 @@ fun MainScreen(
                 },
                 onTabReselected = ::triggerRefreshForIndex,
                 railHeader = {
-                    Icon(
+                    AppIcon(
                         imageVector = Icons.Default.Sms,
                         contentDescription = null,
                         modifier = Modifier.padding(vertical = 12.dp),

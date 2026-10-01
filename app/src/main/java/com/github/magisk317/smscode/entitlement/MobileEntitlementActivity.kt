@@ -24,8 +24,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -61,6 +59,10 @@ import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import io.github.magisk317.uikit.text.AppText
+import io.github.magisk317.uikit.text.AppTextRole
+import io.github.magisk317.uikit.theme.AppColorRole
+import io.github.magisk317.uikit.theme.appColor
 
 class MobileEntitlementActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -214,14 +216,14 @@ private fun MobileEntitlementScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(
+                    AppText(
                         text = stringResource(
                             R.string.mobile_entitlement_status,
                             stringResource(mobileEntitlementStatusStringRes(evaluation?.status)),
                         ),
-                        style = MaterialTheme.typography.titleMedium,
+                        role = AppTextRole.Subtitle,
                     )
-                    Text(
+                    AppText(
                         text = stringResource(
                             R.string.mobile_entitlement_automation,
                             if (evaluation?.automationAllowed == true) {
@@ -232,7 +234,7 @@ private fun MobileEntitlementScreen(
                         ),
                     )
                     evaluation?.claims?.issuedAt?.takeIf { it > 0 }?.let { issuedAt ->
-                        Text(
+                        AppText(
                             text = stringResource(
                                 R.string.mobile_entitlement_issued_at,
                                 formatEpoch(issuedAt),
@@ -245,7 +247,7 @@ private fun MobileEntitlementScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
+                            AppText(
                                 text = stringResource(R.string.mobile_entitlement_device_id, deviceId),
                                 modifier = Modifier.weight(1f, fill = false),
                             )
@@ -285,9 +287,9 @@ private fun MobileEntitlementScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text(
+                        AppText(
                             text = stringResource(R.string.mobile_entitlement_activation_token_label),
-                            style = MaterialTheme.typography.titleMedium,
+                            role = AppTextRole.Subtitle,
                         )
                         AppTextField(
                             state = tokenState,
@@ -313,18 +315,18 @@ private fun MobileEntitlementScreen(
                                     strokeWidth = 2.dp,
                                 )
                             }
-                            Text(
+                            AppText(
                                 text = stringResource(
                                     R.string.mobile_entitlement_activation_token_confirm,
                                 ),
                             )
                         }
-                        Text(
+                        AppText(
                             text = stringResource(
                                 R.string.mobile_entitlement_activation_token_get_hint,
                             ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            role = AppTextRole.BodySmall,
+                            color = appColor(AppColorRole.OnSurfaceVariant),
                         )
                     }
                 }
@@ -348,7 +350,7 @@ private fun MobileEntitlementScreen(
                             strokeWidth = 2.dp,
                         )
                     }
-                    Text(text = stringResource(R.string.mobile_entitlement_activate_telegram))
+                    AppText(text = stringResource(R.string.mobile_entitlement_activate_telegram))
                 }
             }
             AppSecondaryButton(
@@ -370,12 +372,12 @@ private fun MobileEntitlementScreen(
                         modifier = Modifier.padding(end = 8.dp),
                     )
                 }
-                Text(text = stringResource(R.string.mobile_entitlement_refresh))
+                AppText(text = stringResource(R.string.mobile_entitlement_refresh))
             }
             message?.let {
-                Text(
+                AppText(
                     text = stringResource(R.string.mobile_entitlement_error, it),
-                    color = MaterialTheme.colorScheme.error,
+                    color = appColor(AppColorRole.Error),
                 )
             }
             Spacer(modifier = Modifier.height(24.dp))

@@ -26,9 +26,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,13 +53,18 @@ import org.koin.compose.koinInject
 import io.github.magisk317.smscode.runtime.contract.sim.SimSlotLabelFormatter
 import io.github.magisk317.smscode.rule.utils.CodeRecordSimilarityUtils
 import io.github.magisk317.uikit.surface.AppIconImage
+import io.github.magisk317.uikit.surface.AppSurface
+import io.github.magisk317.uikit.surface.AppHorizontalDivider
+import io.github.magisk317.uikit.surface.AppPullToRefresh
 import io.github.magisk317.uikit.foundation.LoadingIndicatorTokens
 import io.github.magisk317.uikit.foundation.LocalSnackbarHostState
+import io.github.magisk317.uikit.common.AppSnackbarDuration
+import io.github.magisk317.uikit.common.AppSnackbarResult
 import io.github.magisk317.uikit.common.showLatestSnackbar
 import io.github.magisk317.uikit.foundation.PolygonMorphLoadingIndicator
 import io.github.magisk317.uikit.foundation.SessionLoadingRegistry
 import io.github.magisk317.uikit.foundation.rememberMinDurationLoading
-import com.github.magisk317.smscode.ui.home.Item
+import io.github.magisk317.uikit.preference.AppArrowItem
 import com.github.magisk317.smscode.ui.home.PageRefreshAction
 import com.github.magisk317.smscode.ui.home.PageRefreshTriggerConsumer
 import com.github.magisk317.smscode.ui.home.RetentionDialog
@@ -74,6 +76,13 @@ import io.github.magisk317.uikit.surface.WorkspaceListItem
 import io.github.magisk317.uikit.surface.swipeRevealSurface
 import io.github.magisk317.uikit.theme.UiKitStyle
 import io.github.magisk317.uikit.theme.currentUiKitStyle
+import io.github.magisk317.uikit.text.AppText
+import io.github.magisk317.uikit.text.AppTextRole
+import io.github.magisk317.uikit.surface.AppIcon
+import io.github.magisk317.uikit.theme.AppColorRole
+import io.github.magisk317.uikit.theme.appColor
+import io.github.magisk317.uikit.theme.AppShapeRole
+import io.github.magisk317.uikit.theme.appShape
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -295,9 +304,9 @@ fun CodeRecordScreen(
                         1,
                     ),
                     actionLabel = context.getString(R.string.revoke),
-                    duration = SnackbarDuration.Long,
+                    duration = AppSnackbarDuration.Long,
                 )
-                if (result == SnackbarResult.ActionPerformed) {
+                if (result == AppSnackbarResult.ActionPerformed) {
                     viewModel.restoreSmsMsgList(listOf(target))
                 }
             }
@@ -320,9 +329,9 @@ fun CodeRecordScreen(
                     deleteList.size,
                 ),
                 actionLabel = context.getString(R.string.revoke),
-                duration = SnackbarDuration.Long,
+                duration = AppSnackbarDuration.Long,
             )
-            if (result == SnackbarResult.ActionPerformed) {
+            if (result == AppSnackbarResult.ActionPerformed) {
                 viewModel.restoreSmsMsgList(deleteList)
             }
         }
@@ -370,7 +379,6 @@ fun CodeRecordScreen(
 
     val body: @Composable (PaddingValues, Modifier) -> Unit = { listPadding, scrollModifier ->
         val topPadding = listPadding.calculateTopPadding()
-        val pullToRefreshState = rememberPullToRefreshState()
         val codeSmsList = deduplicateCodeRecords(
             smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() },
         )
@@ -381,25 +389,16 @@ fun CodeRecordScreen(
         Box(
             modifier = Modifier.fillMaxSize(),
         ) {
-            PullToRefreshBox(
-                state = pullToRefreshState,
+            AppPullToRefresh(
                 isRefreshing = manualRefreshing,
                 onRefresh = {
                     manualRefreshStartedAt = SystemClock.elapsedRealtime()
                     manualRefreshing = true
                     viewModel.refreshData()
                 },
-                indicator = {
-                    PullToRefreshDefaults.LoadingIndicator(
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = topPadding + LoadingIndicatorTokens.OverlayTopSpacing),
-                        isRefreshing = manualRefreshing,
-                        state = pullToRefreshState,
-                    )
-                },
                 modifier = Modifier
                     .fillMaxSize(),
+                contentPadding = PaddingValues(top = topPadding),
             ) {
                 Box(
                     modifier = Modifier
@@ -426,11 +425,11 @@ fun CodeRecordScreen(
                                 summary = stringResource(R.string.record_empty_summary),
                                 modifier = Modifier.fillMaxSize(),
                                 icon = {
-                                    Icon(
+                                    AppIcon(
                                         imageVector = Icons.Default.Email,
                                         contentDescription = null,
                                         modifier = Modifier.size(64.dp),
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        tint = appColor(AppColorRole.OnSurfaceVariant),
                                     )
                                 },
                             )
@@ -491,7 +490,7 @@ fun CodeRecordScreen(
                         defaultValue = true,
                     )
 
-                    Item(
+                    AppArrowItem(
                         title = stringResource(
                             id = R.string.pref_history_limit_title_with_target,
                             currentTabName,
@@ -562,9 +561,9 @@ fun CodeRecordScreen(
                 val currentTabName = stringResource(R.string.record_settings_target_code)
                 io.github.magisk317.uikit.surface.AppAlertDialog(
                     onDismissRequest = { showExportDialog = false },
-                    title = { Text(stringResource(R.string.record_export_dialog_title)) },
+                    title = { AppText(stringResource(R.string.record_export_dialog_title)) },
                     text = {
-                        Text(text = stringResource(R.string.record_export_current_tab_option, currentTabName))
+                        AppText(text = stringResource(R.string.record_export_current_tab_option, currentTabName))
                     },
                     confirmButton = {
                         io.github.magisk317.uikit.surface.AppPrimaryButton(
@@ -690,7 +689,7 @@ private fun RecordDetailOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.28f))
+            .background(appColor(AppColorRole.Scrim).copy(alpha = 0.28f))
             .clickable(
                 interactionSource = dismissInteraction,
                 indication = null,
@@ -713,23 +712,23 @@ private fun RecordDetailOverlay(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Text(
+                    AppText(
                         text = stringResource(R.string.detail_click_copy_hint),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        role = AppTextRole.Footnote,
+                        color = appColor(AppColorRole.OnSurfaceVariant),
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Text(
+                        AppText(
                             text = "${stringResource(R.string.detail_sender)}:",
-                            style = MaterialTheme.typography.bodyMedium,
+                            role = AppTextRole.Body,
                         )
-                        Text(
+                        AppText(
                             text = sender,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                            role = AppTextRole.Body,
+                            color = appColor(AppColorRole.Primary),
                             modifier = Modifier.clickable {
                                 val message = context.getString(
                                     R.string.prompt_field_copied,
@@ -744,14 +743,14 @@ private fun RecordDetailOverlay(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
-                            Text(
+                            AppText(
                                 text = "${stringResource(R.string.detail_receiver_sim)}:",
-                                style = MaterialTheme.typography.bodyMedium,
+                                role = AppTextRole.Body,
                             )
-                            Text(
+                            AppText(
                                 text = receiverSimLabel,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary,
+                                role = AppTextRole.Body,
+                                color = appColor(AppColorRole.Primary),
                             )
                         }
                     }
@@ -759,14 +758,14 @@ private fun RecordDetailOverlay(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Text(
+                        AppText(
                             text = "${stringResource(R.string.detail_original_time)}:",
-                            style = MaterialTheme.typography.bodyMedium,
+                            role = AppTextRole.Body,
                         )
-                        Text(
+                        AppText(
                             text = originalTime,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                            role = AppTextRole.Body,
+                            color = appColor(AppColorRole.Primary),
                             modifier = if (sms.date > 0L) {
                                 Modifier.clickable {
                                     val message = context.getString(
@@ -784,14 +783,14 @@ private fun RecordDetailOverlay(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Text(
+                        AppText(
                             text = "${stringResource(R.string.detail_processed_time)}:",
-                            style = MaterialTheme.typography.bodyMedium,
+                            role = AppTextRole.Body,
                         )
-                        Text(
+                        AppText(
                             text = processedTime,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                            role = AppTextRole.Body,
+                            color = appColor(AppColorRole.Primary),
                             modifier = if (sms.processedTime > 0L) {
                                 Modifier.clickable {
                                     val message = context.getString(
@@ -805,14 +804,14 @@ private fun RecordDetailOverlay(
                             },
                         )
                     }
-                    Text(
+                    AppText(
                         text = "${stringResource(R.string.detail_content)}:",
-                        style = MaterialTheme.typography.bodyMedium,
+                        role = AppTextRole.Body,
                     )
-                    Text(
+                    AppText(
                         text = content,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        role = AppTextRole.Body,
+                        color = appColor(AppColorRole.Primary),
                         modifier = Modifier.clickable {
                             if (content.isNotEmpty()) {
                                 val message = context.getString(
@@ -823,7 +822,7 @@ private fun RecordDetailOverlay(
                             }
                         },
                     )
-                    HorizontalDivider()
+                    AppHorizontalDivider()
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -892,12 +891,11 @@ private fun RecordSplitColumn(
     io.github.magisk317.uikit.scroll.ReportLazyListScrollToChrome(listState, scrollChromeState)
     io.github.magisk317.uikit.surface.ScrollToTopEffect(listState, scrollToTopSignal)
     val isMiuix = currentUiKitStyle() == UiKitStyle.Miuix
-    Surface(
+    AppSurface(
         modifier = modifier,
-        shape = MaterialTheme.shapes.large,
+        shape = appShape(AppShapeRole.Large),
         tonalElevation = 2.dp,
         color = Color.Transparent,
-        shadowElevation = 0.dp,
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (showHeader) {
@@ -908,19 +906,19 @@ private fun RecordSplitColumn(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
+                    AppText(
                         text = title,
-                        style = MaterialTheme.typography.titleSmall,
+                        role = AppTextRole.Subtitle,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Text(
+                    AppText(
                         text = list.size.toString(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        role = AppTextRole.Footnote,
+                        color = appColor(AppColorRole.OnSurfaceVariant),
                     )
                 }
-                HorizontalDivider()
+                AppHorizontalDivider()
             }
             if (list.isEmpty()) {
                 Box(
@@ -929,10 +927,10 @@ private fun RecordSplitColumn(
                         .padding(horizontal = 12.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
+                    AppText(
                         text = emptyHint,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        role = AppTextRole.Body,
+                        color = appColor(AppColorRole.OnSurfaceVariant),
                     )
                 }
             } else {
@@ -1021,16 +1019,16 @@ private fun RecordSplitColumn(
                                             .fillMaxSize()
                                             .then(
                                                 swipeRevealSurface(
-                                                    color = MaterialTheme.colorScheme.errorContainer,
+                                                    color = appColor(AppColorRole.ErrorContainer),
                                                 ),
                                             )
                                             .padding(horizontal = 24.dp),
                                         contentAlignment = revealAlignment,
                                     ) {
-                                        Icon(
+                                        AppIcon(
                                             imageVector = Icons.Default.Delete,
                                             contentDescription = stringResource(R.string.remove),
-                                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                                            tint = appColor(AppColorRole.OnErrorContainer),
                                         )
                                     }
                                 },
@@ -1051,7 +1049,7 @@ private fun RecordSplitColumn(
                             } // swipeReady else
                         }
                         if (!isMiuix) {
-                            HorizontalDivider()
+                            AppHorizontalDivider()
                         }
                     }
                 }
@@ -1077,12 +1075,12 @@ fun CodeRecordItem(
     val context = LocalContext.current
     val isMiuix = currentUiKitStyle() == UiKitStyle.Miuix
     val itemBackground = when {
-        isSelected -> MaterialTheme.colorScheme.primaryContainer
+        isSelected -> appColor(AppColorRole.PrimaryContainer)
         // Material rows are plain boxes with no surface of their own; an opaque fill
         // keeps the full-row swipe reveal from showing through the row, both at rest
         // and mid-swipe. Miuix rows are MiuixCards that already fall back to an opaque
         // surfaceContainer when the container color is transparent.
-        !isMiuix -> MaterialTheme.colorScheme.surfaceContainerLow
+        !isMiuix -> appColor(AppColorRole.SurfaceContainerLow)
         else -> Color.Transparent
     }
 
@@ -1143,9 +1141,9 @@ fun CodeRecordItem(
                         Spacer(modifier = Modifier.size(40.dp))
                     }
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(
+                    AppText(
                         text = displayLabel,
-                        style = MaterialTheme.typography.labelSmall,
+                        role = AppTextRole.Footnote,
                         textAlign = TextAlign.Center,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -1161,10 +1159,10 @@ fun CodeRecordItem(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
+            AppText(
                 text = codeOrSender,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary,
+                role = AppTextRole.Title,
+                color = appColor(AppColorRole.Primary),
                 fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 maxLines = 1,
                 overflow = if (hasCode) TextOverflow.Ellipsis else TextOverflow.Clip,
@@ -1182,18 +1180,18 @@ fun CodeRecordItem(
             if (!hasCode) {
                 Spacer(modifier = Modifier.weight(1f))
             }
-            Text(
+            AppText(
                 text = dateFormatter.format(Date(smsMsg.date)),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                role = AppTextRole.BodySmall,
+                color = appColor(AppColorRole.OnSurfaceVariant),
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
         if (receiverSimLabel.isNotBlank()) {
-            Text(
+            AppText(
                 text = stringResource(R.string.detail_receiver_sim_with_value, receiverSimLabel),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                role = AppTextRole.BodySmall,
+                color = appColor(AppColorRole.OnSurfaceVariant),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -1201,9 +1199,9 @@ fun CodeRecordItem(
         }
         val body = smsMsg.body
         if (!body.isNullOrEmpty()) {
-            Text(
+            AppText(
                 text = body,
-                style = MaterialTheme.typography.bodyMedium,
+                role = AppTextRole.Body,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.clickable { onDetailClick() },

@@ -14,8 +14,8 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import io.github.magisk317.uikit.surface.AppIcon
+import io.github.magisk317.uikit.surface.AppIconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -76,8 +76,8 @@ internal fun AppConfigScreenMiuix(
                     searchPlaceholder = stringResource(R.string.action_search),
                     navigationIcon = if (onBack != null) {
                         {
-                            IconButton(onClick = onBack) {
-                                Icon(
+                            AppIconButton(onClick = onBack) {
+                                AppIcon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = stringResource(R.string.action_back),
                                 )
@@ -87,8 +87,8 @@ internal fun AppConfigScreenMiuix(
                         null
                     },
                     actions = {
-                        IconButton(onClick = onOpenSettings) {
-                            Icon(Icons.Default.Tune, contentDescription = null)
+                        AppIconButton(onClick = onOpenSettings) {
+                            AppIcon(Icons.Default.Tune, contentDescription = null)
                         }
                     },
                     glassTopBar = topGlass,

@@ -17,7 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import io.github.magisk317.uikit.surface.AppIconButton
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
@@ -81,7 +81,7 @@ internal fun AppConfigScreenMaterial(
                     searchPlaceholder = stringResource(R.string.action_search),
                     navigationIcon = if (onBack != null) {
                         {
-                            IconButton(onClick = onBack) {
+                            AppIconButton(onClick = onBack) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = stringResource(R.string.action_back),
@@ -92,7 +92,7 @@ internal fun AppConfigScreenMaterial(
                         null
                     },
                     actions = {
-                        IconButton(onClick = onOpenSettings) {
+                        AppIconButton(onClick = onOpenSettings) {
                             Icon(Icons.Default.Tune, contentDescription = null)
                         }
                     },
