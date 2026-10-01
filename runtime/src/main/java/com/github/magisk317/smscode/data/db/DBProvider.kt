@@ -14,6 +14,7 @@ import kotlinx.coroutines.runBlocking
 import com.github.magisk317.smscode.common.constant.PrefConst
 import io.github.magisk317.smscode.runtime.common.prefs.AppPreferencesDataStore
 import com.github.magisk317.smscode.common.utils.ProviderCallerGuard
+import com.github.magisk317.smscode.common.utils.ProviderIpcTokenGate
 import com.github.magisk317.smscode.data.db.entity.AppInfo
 import com.github.magisk317.smscode.data.db.entity.SmsCodeRule
 import com.github.magisk317.smscode.data.db.entity.SmsMsg
@@ -51,7 +52,7 @@ class DBProvider : ContentProvider() {
     override fun getType(uri: Uri): String? = null
 
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
-        if (!isCallerAllowed()) {
+        if (!isCallerAllowed() && !isIpcTokenAllowedByExtras(extras)) {
             return Bundle().apply { putBoolean(RuntimeStateProviderContract.RESULT_OK, false) }
         }
         val ctx = context ?: return Bundle().apply {
@@ -112,7 +113,7 @@ class DBProvider : ContentProvider() {
     }
 
     override fun insert(uri: Uri, values: ContentValues?): Uri? {
-        if (!isCallerAllowed()) return null
+        if (!isCallerAllowed() && !isIpcTokenAllowedByUri(uri)) return null
         val uriType = uriMatcher.match(uri)
         val outcome = when (uriType) {
             SMS_MSG_DIR -> {
@@ -138,7 +139,10 @@ class DBProvider : ContentProvider() {
         if (outcome.inserted) {
             context?.contentResolver?.notifyChange(uri, null)
         }
-        return Uri.withAppendedPath(uri, outcome.id.toString())
+        // Strip the request query (e.g. the ipc_token auth parameter) so the token
+        // cannot leak through the returned uri into logs or telemetry.
+        val responseBaseUri = uri.buildUpon().clearQuery().build()
+        return Uri.withAppendedPath(responseBaseUri, outcome.id.toString())
             .buildUpon()
             .apply {
                 if (outcome.duplicate) {
@@ -155,7 +159,7 @@ class DBProvider : ContentProvider() {
         selectionArgs: Array<String>?,
         sortOrder: String?,
     ): Cursor? {
-        if (!isCallerAllowed()) return null
+        if (!isCallerAllowed() && !isIpcTokenAllowedByUri(uri)) return null
         val uriType = uriMatcher.match(uri)
         return when (uriType) {
             SMS_CODE_RULE_DIR -> querySmsCodeRules(projection)
@@ -169,7 +173,7 @@ class DBProvider : ContentProvider() {
     }
 
     override fun delete(uri: Uri, selection: String?, selectionArgs: Array<String>?): Int {
-        if (!isCallerAllowed()) return 0
+        if (!isCallerAllowed() && !isIpcTokenAllowedByUri(uri)) return 0
         val uriType = uriMatcher.match(uri)
         val rowsDeleted: Int = when (uriType) {
             SMS_MSG_DIR -> deleteSmsMsg(selection, selectionArgs)
@@ -368,7 +372,7 @@ class DBProvider : ContentProvider() {
         }
 
     override fun update(uri: Uri, values: ContentValues?, selection: String?, selectionArgs: Array<String>?): Int {
-        if (!isCallerAllowed()) return 0
+        if (!isCallerAllowed() && !isIpcTokenAllowedByUri(uri)) return 0
         val uriType = uriMatcher.match(uri)
         val rowsUpdated = when (uriType) {
             SMS_MSG_DIR -> updateSmsMsg(values, selection, selectionArgs)
@@ -534,6 +538,31 @@ class DBProvider : ContentProvider() {
                 XLog.w("DBProvider: deny caller uid=%d", Binder.getCallingUid())
             }
         }
+    }
+
+    /**
+     * IPC-token fallback for hook processes whose caller uid (the hooked app) is
+     * not in the trusted package allowlist. The token is presented either as a uri
+     * query parameter (insert/query/update/delete) or a call() extra.
+     */
+    private fun isIpcTokenAllowedByUri(uri: Uri?): Boolean {
+        val ctx = context ?: return false
+        val presented = ProviderIpcTokenGate.presentedToken(uri) ?: return false
+        return ProviderIpcTokenGate.evaluate(
+            callerAllowed = false,
+            expectedToken = ProviderIpcTokenGate.readExpectedToken(ctx),
+            presentedToken = presented,
+        )
+    }
+
+    private fun isIpcTokenAllowedByExtras(extras: Bundle?): Boolean {
+        val ctx = context ?: return false
+        val presented = ProviderIpcTokenGate.presentedToken(extras) ?: return false
+        return ProviderIpcTokenGate.evaluate(
+            callerAllowed = false,
+            expectedToken = ProviderIpcTokenGate.readExpectedToken(ctx),
+            presentedToken = presented,
+        )
     }
 
     private fun ContentValues?.toSmsMsg(): SmsMsg = SmsMsg(
@@ -775,11 +804,15 @@ class DBProvider : ContentProvider() {
             keys: Collection<String>,
             windowMs: Long,
             maxEntries: Int = RuntimeStateProviderContract.DEFAULT_MAX_ENTRIES,
+            token: String? = null,
         ): HookRuntimeGateClaimResult {
             val extras = Bundle().apply {
                 putStringArrayList(RuntimeStateProviderContract.EXTRA_KEYS, ArrayList(keys))
                 putLong(RuntimeStateProviderContract.EXTRA_WINDOW_MS, windowMs)
                 putInt(RuntimeStateProviderContract.EXTRA_MAX_ENTRIES, maxEntries)
+                if (!token.isNullOrBlank()) {
+                    putString(ProviderIpcTokenGate.EXTRA_IPC_TOKEN, token)
+                }
             }
             val result = runCatching {
                 context.contentResolver.call(
@@ -807,6 +840,7 @@ class DBProvider : ContentProvider() {
             source: String,
             verboseLogging: Boolean,
             route: String,
+            token: String? = null,
         ): Boolean {
             val extras = Bundle().apply {
                 putString(RuntimeStateProviderContract.EXTRA_PACKAGE_NAME, packageName)
@@ -814,6 +848,9 @@ class DBProvider : ContentProvider() {
                 putString(RuntimeStateProviderContract.EXTRA_SOURCE, source)
                 putBoolean(RuntimeStateProviderContract.EXTRA_VERBOSE_LOGGING, verboseLogging)
                 putString(RuntimeStateProviderContract.EXTRA_ROUTE, route)
+                if (!token.isNullOrBlank()) {
+                    putString(ProviderIpcTokenGate.EXTRA_IPC_TOKEN, token)
+                }
             }
             return runCatching {
                 context.contentResolver.call(

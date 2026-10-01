@@ -17,6 +17,7 @@ import com.github.magisk317.smscode.xp.hook.code.action.CallableAction
 import com.github.magisk317.smscode.xp.hook.code.helper.InputHelper
 import com.github.magisk317.smscode.xp.hook.code.VerificationSmsMsg
 import com.github.magisk317.smscode.xp.hook.code.toVerificationMessage
+import com.github.magisk317.smscode.xp.hook.code.withProviderIpcToken
 
 /**
  * 自动输入验证码
@@ -73,6 +74,7 @@ class AutoInputAction(
             // auto_input_event.record_id is nullable. Recording the attempt reliably
             // takes priority over the (secondary) record association.
             val uri = HookRuntimeBridge.contentProviderAccess.autoInputEventContentUri(mPluginContext)
+                .withProviderIpcToken(mPluginContext)
             val values = ContentValues().apply {
                 if (attemptId != null && attemptId > 0L) {
                     put("id", attemptId)
@@ -115,7 +117,10 @@ class AutoInputAction(
         val blocked = AutoInputBlockedPackageHelper.queryBlockedStateByProvider(
             context = mPluginContext,
             packageName = packageName,
-            uriResolver = { pkg -> Uri.withAppendedPath(HookRuntimeBridge.contentProviderAccess.appInfoContentUri(mPluginContext), pkg) },
+            uriResolver = { pkg ->
+                Uri.withAppendedPath(HookRuntimeBridge.contentProviderAccess.appInfoContentUri(mPluginContext), pkg)
+                    .withProviderIpcToken(mPluginContext)
+            },
         )
         return blocked?.also {
             XLog.d("AutoInput provider check: pkg=%s blocked=%s", packageName, it)

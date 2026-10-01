@@ -214,6 +214,7 @@ internal class ObservedSmsHandler(
         timestamp: Long,
     ): ExistingSmsRouting? {
         val uri = HookRuntimeBridge.contentProviderAccess.smsMsgContentUri(pluginContext)
+            .withProviderIpcToken(pluginContext)
         val projection = arrayOf("_id", "sender", "body", "date", "sim_slot", "sub_id")
         val selection = "msg_type = ?"
         val selectionArgs = arrayOf(SmsMsg.MSG_TYPE_SMS.toString())
@@ -268,6 +269,7 @@ internal class ObservedSmsHandler(
 
     private fun updateExistingSmsRouting(recordId: Long, simSlot: Int, subId: Int): Int {
         val uri = Uri.withAppendedPath(HookRuntimeBridge.contentProviderAccess.smsMsgContentUri(pluginContext), recordId.toString())
+            .withProviderIpcToken(pluginContext)
         val values = ContentValues().apply {
             put("sim_slot", simSlot)
             put("sub_id", subId)

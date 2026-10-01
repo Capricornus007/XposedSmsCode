@@ -12,6 +12,7 @@ import io.github.magisk317.smscode.runtime.verification.RecordSmsInsertResultHel
 import com.github.magisk317.smscode.xp.hook.code.action.CallableAction
 import com.github.magisk317.smscode.xp.hook.code.VerificationSmsMsg
 import com.github.magisk317.smscode.xp.hook.code.toVerificationMessage
+import com.github.magisk317.smscode.xp.hook.code.withProviderIpcToken
 
 /**
  * 记录验证码短信
@@ -38,13 +39,14 @@ class RecordSmsAction(
             withFileLock = { _, _, block -> block() },
             shouldSkipByDedup = { _, _ -> false },
             primaryInserter = { smsMsg -> insertPrimary(smsMsg.raw) },
-            fallbackExporter = { false },
+            fallbackExporter = { smsMsg -> HookRuntimeBridge.codeRecordAccess.exportToFile(mPluginContext, smsMsg.raw) },
         ).run()
     }
 
     private fun insertPrimary(smsMsg: SmsMsg): RecordSmsActionHelper.InsertResult {
         return RecordSmsInsertResultHelper.capture {
             val smsMsgUri = HookRuntimeBridge.contentProviderAccess.smsMsgContentUri(mPluginContext)
+                .withProviderIpcToken(mPluginContext)
             val resolver = mPluginContext.contentResolver
             val processedTime = smsMsg.processedTime.takeIf { it > 0L } ?: System.currentTimeMillis()
 

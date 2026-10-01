@@ -59,6 +59,8 @@ class ProviderCallerGuardTest {
         ).first(File::isFile)
         val scopePackages = scopeFile.readLines().filter(String::isNotBlank).toSet()
 
-        assertTrue(ProviderCallerGuard.trustedHookPackages.containsAll(scopePackages))
+        val providerReachable = ProviderCallerGuard.trustedHookPackages +
+            ProviderCallerGuard.TOKEN_ONLY_HOOK_PACKAGES
+        assertTrue(providerReachable.containsAll(scopePackages))
     }
 }
