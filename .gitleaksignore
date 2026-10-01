@@ -1,0 +1,15 @@
+# Known false positives in imported history. Fingerprint-specific so new
+# instances of the same rules are still reported. Mirrors NapGram's baseline
+# (2026-09-29): SharedPreferences key-name constants and the public QQ group join key.
+0616aeb7794c5a20512eb41154229b1429624d86:app/src/main/java/com/github/tianma8023/xposed/smscode/constant/IConstants.java:generic-api-key:7
+572d0924142401842d2c705f22313fb974915282:storage/src/main/java/com/tianma/xsmscode/common/constant/PrefConst.kt:generic-api-key:96
+572d0924142401842d2c705f22313fb974915282:storage/src/main/java/com/tianma/xsmscode/common/constant/PrefConst.kt:generic-api-key:97
+5f7aa60fe9bd17435df6773f7a135b823140c07d:app/src/main/java/com/github/tianma8023/xposed/smscode/constant/IConstants.java:generic-api-key:7
+80ade5a2c76eb89d755404e4c5fc11732bca3efd:app/src/main/java/com/github/tianma8023/xposed/smscode/constant/IConstants.java:generic-api-key:7
+944814c0713e95e220d018c43ddcc048ad76d9a8:app/src/main/java/com/github/tianma8023/xposed/smscode/constant/Const.java:generic-api-key:18
+b0380d32c08ece3f9e716d97f7bfe45b4f73155f:app/src/main/java/com/github/tianma8023/xposed/smscode/constant/Const.java:generic-api-key:18
+d0d384fd1b7a127d8ede0691648e0a95cceb0a4a:storage/src/main/java/com/tianma/xsmscode/common/constant/PrefConst.kt:generic-api-key:96
+d0d384fd1b7a127d8ede0691648e0a95cceb0a4a:storage/src/main/java/com/tianma/xsmscode/common/constant/PrefConst.kt:generic-api-key:97
+f9cc27c2bc8b594a37c5d7e1e1bea16458a36a99:storage/src/main/java/com/tianma/xsmscode/common/constant/PrefConst.kt:generic-api-key:96
+f9cc27c2bc8b594a37c5d7e1e1bea16458a36a99:storage/src/main/java/com/tianma/xsmscode/common/constant/PrefConst.kt:generic-api-key:97
+feb71669ca63dd7d173984ea5efd8853b2611bd7:app/src/main/java/com/github/tianma8023/xposed/smscode/constant/Const.java:generic-api-key:18
