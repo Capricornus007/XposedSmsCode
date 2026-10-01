@@ -192,16 +192,17 @@ class AutoInputAccessibilityService : AccessibilityService() {
         return AutoInputAccessibilityNodeHelper.performAutoInput(rootInActiveWindow, code, autoEnter)
     }
 
-    private fun isMobileAutomationAllowed(): Boolean {
-        if (!com.github.tianma8023.xposed.smscode.BuildConfig.ENABLE_MOBILE_ENTITLEMENT) return true
-        return runBlocking(Dispatchers.IO) {
+    private fun isMobileAutomationAllowed(): Boolean =
+        io.github.magisk317.uikit.entitlement.MobileGate.isAutomationAllowed(
+            com.github.tianma8023.xposed.smscode.BuildConfig.ENABLE_MOBILE_ENTITLEMENT,
+            applicationContext,
+        ) { ctx ->
             AppPreferencesDataStore.getBoolean(
-                applicationContext,
+                ctx,
                 PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
                 PrefConst.DEFAULT_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
             )
         }
-    }
 
 
     private fun emitA11y(stage: String, result: String = "ok", statusOk: Boolean = true) {

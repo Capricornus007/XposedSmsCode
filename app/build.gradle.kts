@@ -3,6 +3,7 @@ plugins {
     id("smscode.android.common")
     id("magisk.app.signing")
     id("magisk.app.packaging")
+    id("magisk.mobile.gate")
     id(libs.plugins.kotlin.parcelize.get().pluginId)
     id("magisk.android.room")
     id("magisk.android.compose")
@@ -72,7 +73,6 @@ android {
     productFlavors {
         getByName("play") {
             buildConfigField("String", "MOBILE_ENTITLEMENT_CHANNEL", "\"play\"")
-            buildConfigField("boolean", "ENABLE_MOBILE_ENTITLEMENT", "false")
         }
         getByName("github") {
             buildConfigField("String", "MOBILE_ENTITLEMENT_CHANNEL", "\"sideload\"")

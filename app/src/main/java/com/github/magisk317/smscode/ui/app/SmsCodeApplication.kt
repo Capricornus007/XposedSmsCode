@@ -12,6 +12,7 @@ import com.github.tianma8023.xposed.smscode.BuildConfig
 import com.github.magisk317.smscode.common.constant.PrefConst
 import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnosticsStore
 import io.github.magisk317.smscode.runtime.common.prefs.AppPreferencesDataStore
+import io.github.magisk317.uikit.entitlement.MobileGate
 import com.github.magisk317.smscode.common.utils.XscPreferenceHooks
 import com.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import io.github.magisk317.smscode.xposed.utils.ModuleActivationStore
@@ -65,7 +66,15 @@ class SmsCodeApplication : Application() {
             // always-allowed snapshot so the automation gates (app and hook
             // mirror) see the open state, including installs that cached an
             // unactivated decision.
-            publishAutomationAlwaysAllowed()
+            MobileGate.publishAlwaysAllowed(
+                applicationContext,
+                persist = { ctx ->
+                    AppPreferencesDataStore.batchEdit(ctx) {
+                        setBoolean(PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED, true)
+                    }
+                },
+                mirror = { ctx -> HookPreferenceMirror.publish(ctx) },
+            )
         }
         android.util.Log.w("smscode", "SmsCodeApplication.onCreate() START")
         val installationId = AnonymousInstallationId.getOrCreate(this, TELEMETRY_PREFS_NAME)
@@ -140,14 +149,6 @@ class SmsCodeApplication : Application() {
         }
     }
 
-    private fun publishAutomationAlwaysAllowed() {
-        runBlocking {
-            AppPreferencesDataStore.batchEdit(this@SmsCodeApplication) {
-                setBoolean(PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED, true)
-            }
-            HookPreferenceMirror.publish(this@SmsCodeApplication)
-        }
-    }
 
     private fun configureMobileEntitlement() {
         MobileEntitlementRuntime.configure(
