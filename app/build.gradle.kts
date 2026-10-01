@@ -72,12 +72,15 @@ android {
     productFlavors {
         getByName("play") {
             buildConfigField("String", "MOBILE_ENTITLEMENT_CHANNEL", "\"play\"")
+            buildConfigField("boolean", "ENABLE_MOBILE_ENTITLEMENT", "false")
         }
         getByName("github") {
             buildConfigField("String", "MOBILE_ENTITLEMENT_CHANNEL", "\"sideload\"")
+            buildConfigField("boolean", "ENABLE_MOBILE_ENTITLEMENT", "true")
         }
         getByName("fdroid") {
             buildConfigField("String", "MOBILE_ENTITLEMENT_CHANNEL", "\"sideload\"")
+            buildConfigField("boolean", "ENABLE_MOBILE_ENTITLEMENT", "true")
         }
     }
 

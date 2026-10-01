@@ -192,12 +192,15 @@ class AutoInputAccessibilityService : AccessibilityService() {
         return AutoInputAccessibilityNodeHelper.performAutoInput(rootInActiveWindow, code, autoEnter)
     }
 
-    private fun isMobileAutomationAllowed(): Boolean = runBlocking(Dispatchers.IO) {
-        AppPreferencesDataStore.getBoolean(
-            applicationContext,
-            PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
-            PrefConst.DEFAULT_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
-        )
+    private fun isMobileAutomationAllowed(): Boolean {
+        if (!com.github.tianma8023.xposed.smscode.BuildConfig.ENABLE_MOBILE_ENTITLEMENT) return true
+        return runBlocking(Dispatchers.IO) {
+            AppPreferencesDataStore.getBoolean(
+                applicationContext,
+                PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
+                PrefConst.DEFAULT_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
+            )
+        }
     }
 
 

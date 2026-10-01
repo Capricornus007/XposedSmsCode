@@ -58,7 +58,15 @@ class SmsCodeApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         AppPreferencesDataStore.install(XscPreferenceHooks)
-        configureMobileEntitlement()
+        if (BuildConfig.ENABLE_MOBILE_ENTITLEMENT) {
+            configureMobileEntitlement()
+        } else {
+            // Play distribution ships without the activation gate; publish an
+            // always-allowed snapshot so the automation gates (app and hook
+            // mirror) see the open state, including installs that cached an
+            // unactivated decision.
+            publishAutomationAlwaysAllowed()
+        }
         android.util.Log.w("smscode", "SmsCodeApplication.onCreate() START")
         val installationId = AnonymousInstallationId.getOrCreate(this, TELEMETRY_PREFS_NAME)
         runBlocking {
@@ -127,7 +135,18 @@ class SmsCodeApplication : Application() {
         importPendingCodeRecords()
         syncPreferences()
         registerLicenseActivityKiller()
-        MobileEntitlementCoordinator.initialize(this, applicationScope)
+        if (BuildConfig.ENABLE_MOBILE_ENTITLEMENT) {
+            MobileEntitlementCoordinator.initialize(this, applicationScope)
+        }
+    }
+
+    private fun publishAutomationAlwaysAllowed() {
+        runBlocking {
+            AppPreferencesDataStore.batchEdit(this@SmsCodeApplication) {
+                setBoolean(PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED, true)
+            }
+            HookPreferenceMirror.publish(this@SmsCodeApplication)
+        }
     }
 
     private fun configureMobileEntitlement() {
@@ -317,8 +336,10 @@ class SmsCodeApplication : Application() {
             override fun onActivityStarted(activity: Activity) {
                 if (startedActivityCount == 0) {
                     if (entitlementForegroundPrimed) {
-                        applicationScope.launch {
-                            runCatching { MobileEntitlementCoordinator.refresh(this@SmsCodeApplication) }
+                        if (BuildConfig.ENABLE_MOBILE_ENTITLEMENT) {
+                            applicationScope.launch {
+                                runCatching { MobileEntitlementCoordinator.refresh(this@SmsCodeApplication) }
+                            }
                         }
                     } else {
                         // initialize() covers the first process start.
