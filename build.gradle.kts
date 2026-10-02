@@ -12,6 +12,16 @@ buildscript {
             force(libs.jose4j)
             force(libs.jdom2)
             force(libs.apache.commons.lang3)
+
+            // Java 27 bytecode target: the AGP we run on bundles an ASM line that
+            // predates V27 (class major 71) and rejects it; ASM 9.10.1 adds V27.
+            // Forced here because this is the classpath AGP actually runs on
+            // (project-level forces do not reach the plugin classpath).
+            force("org.ow2.asm:asm:9.10.1")
+            force("org.ow2.asm:asm-analysis:9.10.1")
+            force("org.ow2.asm:asm-commons:9.10.1")
+            force("org.ow2.asm:asm-tree:9.10.1")
+            force("org.ow2.asm:asm-util:9.10.1")
         }
     }
 }
@@ -54,6 +64,16 @@ subprojects {
         }
         dependencies {
             "detektPlugins"(catalog.detekt.rules.ktlint)
+        }
+        // detekt CLI whitelists JVM targets and 2.0.0-alpha.6 caps at 26, so the
+        // analysis target must not exceed that ceiling even though we emit Java 27
+        // bytecode (the compile target tracks the Gradle daemon JVM, which can be
+        // newer than the bytecode we emit). Revisit when detekt ships V27 support.
+        tasks.withType<dev.detekt.gradle.Detekt>().configureEach {
+            jvmTarget.set(minOf(catalog.versions.javaBytecode.get().toInt(), 26).toString())
+        }
+        tasks.withType<dev.detekt.gradle.DetektCreateBaselineTask>().configureEach {
+            jvmTarget.set(minOf(catalog.versions.javaBytecode.get().toInt(), 26).toString())
         }
     }
 

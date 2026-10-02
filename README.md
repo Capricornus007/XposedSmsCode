@@ -2,11 +2,13 @@
 
 ![Star History Chart](https://api.star-history.com/svg?repos=Capricornus007/xposedsmscode&type=Date)
 
+
 <div align="center">
     <a href="https://play.google.com/store/apps/details?id=io.github.capricornus007.smscode">
         <img src="https://play.google.com/intl/zh-CN/badges/static/images/badges/zh-cn_badge_web_generic.png" alt="Get it on Google Play" height="80"/>
     </a>
     <a href="https://github.com/Capricornus007/xposedsmscode/releases">
+
         <img src="https://raw.githubusercontent.com/machiav3lli/oandbackupx/master/badge_github.png" alt="Get it on GitHub" height="80"/>
     </a>
 </div>
@@ -15,11 +17,15 @@
 
 [![Commits](https://img.shields.io/github/commit-activity/y/Capricornus007/xposedsmscode?style=flat-square)](https://github.com/Capricornus007/xposedsmscode/graphs/commit-activity) [![Last Commit](https://img.shields.io/github/last-commit/Capricornus007/xposedsmscode?style=flat-square)](https://github.com/Capricornus007/xposedsmscode/commits) [![Contributors](https://img.shields.io/github/contributors/Capricornus007/xposedsmscode?style=flat-square)](https://github.com/Capricornus007/xposedsmscode/graphs/contributors) [![CI](https://img.shields.io/github/actions/workflow/status/Capricornus007/xposedsmscode/ci.yml?style=flat-square&label=Build&logo=github-actions&logoColor=white)](https://github.com/Capricornus007/xposedsmscode/actions/workflows/ci.yml) [![Latest Release](https://img.shields.io/github/v/release/Capricornus007/xposedsmscode?include_prereleases&style=flat-square&logo=github)](https://github.com/Capricornus007/xposedsmscode/releases) [![Release Date](https://img.shields.io/github/release-date/Capricornus007/xposedsmscode?style=flat-square)](https://github.com/Capricornus007/xposedsmscode/releases) [![Downloads](https://img.shields.io/github/downloads/Capricornus007/xposedsmscode/total?style=flat-square&color=blue)](https://github.com/Capricornus007/xposedsmscode/releases) [![License](https://img.shields.io/github/license/Capricornus007/xposedsmscode?style=flat-square)](LICENSE)
 
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.03.00-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.5.0--nightly-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.5.0--alpha07-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-26-brightgreen?style=flat-square&logo=android)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android)](https://developer.android.com/about/versions) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.5.0--Beta1-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.09.01-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.8.0-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.5.0--alpha07-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-28-brightgreen?style=flat-square&logo=android)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android)](https://developer.android.com/about/versions) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
+
 
 </div>
 
 识别短信验证码的Xposed模块，并将验证码拷贝到剪切板，亦可以自动输入验证码。
+
+如果你还需要将验证码、短信内容或应用通知进一步转发到 Telegram、Webhook、邮箱等通道，可以了解一下新项目 [信驿 Relay](https://github.com/magisk317/xinyi-relay)。它更偏向消息转发与验证码联动场景；若主要需求是验证码识别与自动输入，继续使用本项目会更合适。
+
 
 [English Version](./README-EN.md)
 

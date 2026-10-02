@@ -4,6 +4,71 @@
 
 ---
 
+## [v3.3.7-api102] - 未發布（待出包）
+- 版本對齊上游 `beta`：`versionCode 131` / `versionName 3.3.7-api102`（上游 tag：v3.3.6 = 130、3.3.7 = 131）。
+- 工具鏈升級（上游 `build: switch to Java 27 bytecode`）：位元碼升到 **Java 27**、Gradle wrapper 改吃 **9.8.0 GA（含 SHA-256 鎖定）**、Kotlin **2.5.0-Beta1**、KSP 2.3.12、detekt 2.0.0-alpha.6（分析目標上限 26）、NDK 30.0.16248370，相依全部跟上游最新版（compose BOM 2026.09.01、room 2.8.5、lifecycle 2.11.0、navigation 2.10.2、okhttp 5.5.0、datastore 1.3.0-alpha11 等）。AGP 保留本 fork 的 9.5.0-alpha07（比上游 9.4.1 新）。
+- 根构建腳本補上 ASM 9.10.1 家族 `force`（V27 class major 71 需要），CI 四個 workflow 的 JDK 由 25 抬到 **27**，並引入上游的 `concurrency` 取消舊跑。
+- 權限：跟上游 `fix(permissions): drop vestigial READ_CONTACTS declaration` 移除 `READ_CONTACTS` 宣告與 `PermConst` 條目。
+- 上游 `feat(play): drop the activation gate`、`refactor(billing): drop subscription tier` 屬行為變更：本 fork 早已整組移除 entitlement／billing／捐贈流程，故維持移除狀態（不重建啟動閘門與訂閱層級）。
+- 上游 `fix(provider): authorize hook-process writes via IPC token and restore file fallback`：本 fork 的 `DBProvider` 沒有呼叫端白名單（hook 進程可直接寫），插入失敗的檔案回退也已在 `RecordSmsAction` 實作，故未帶入 token 通道（其實作依賴私有 `smscode-core` 的 `IpcTokenMatcher`）。
+- 未帶入项（依賴上游私有子模組 `build-logic`／`magisk-ui-kit`／`magisk-xposed-kit`／`smscode-core`，本 fork 為自包含架構）：dual-track UI 收斂、主題詳情頁（Monet／layout scale／強調色）、OpenTelemetry 遙測維度、共享 preference store 重構、GitLab CI 與共享 CI 工具鏈、fastlane／whatsnew 檔案。
+
+---
+## [v3.3.7] - 2026-10-01
+- 版本：`versionCode 131` / `versionName 3.3.7`。
+- 待补充。
+
+> Full Changelog: https://gitlab.com/magisk3171/XposedSmsCode/-/compare/v3.3.6...v3.3.7
+
+---
+
+## [v3.3.6] - 2026-10-01
+- 版本：`versionCode 130` / `versionName 3.3.6`。
+- `[fix]` 修复验证码提取（波斯文/阿拉伯文数字、关键词邻近，#267）。
+- `[fix]` 修复短信记录插入失败。
+- `[ui]` 修复 Miuix 主题下图标与刷新指示器渲染。
+- `[build]` 工具链切换至 Java 27 字节码。
+
+> Full Changelog: https://gitlab.com/magisk3171/XposedSmsCode/-/compare/v3.3.5...v3.3.6
+
+---
+
+## [v3.3.5] - 2026-09-22
+- 版本：`versionCode 129` / `versionName 3.3.5`。
+- `[ui]` 双架构与主题页优化。
+- `[notification]` 通知回退路径调整。
+- `[prefs]` 偏好存储迁移。
+- `[ci]` 构建产物优化。
+- `[deps]` 升级部分依赖。
+
+> Full Changelog: https://gitlab.com/magisk3171/XposedSmsCode/-/compare/v3.3.4...v3.3.5
+
+---
+
+## [v3.3.4] - 2026-09-18
+- 版本：`versionCode 128` / `versionName 3.3.4`。
+- 账号解封，恢复模块仓库更新。
+- `[ui]` 概览页新增 QQ 频道入口。
+- `[entitlement]` 移除残留依赖。
+- `[ci]` 发布流水线接入共享 toolkit。
+- `[deps]` 升级部分依赖。
+
+> Full Changelog: https://gitlab.com/magisk3171/XposedSmsCode/-/compare/v3.3.3...v3.3.4
+
+---
+## [v3.3.3] - 2026-09-15
+- 版本：`versionCode 127` / `versionName 3.3.3`。
+- `[ui]` 统一 UI 组件与通用设置。
+- `[entitlement]` 激活界面支持发放时间与设备 ID 复制。
+- `[prefs]` 隔离 Hook 与 App 的偏好读取。
+- `[logging]` 统一日志导出并在写入时脱敏。
+- `[build]` 升级 Kotlin、AGP 及依赖，收口版本目录。
+- `[ci]` 升级发布工具链。
+
+> Full Changelog: https://gitlab.com/magisk3171/XposedSmsCode/-/compare/v3.3.2...v3.3.3
+
+---
+
 ## [v3.2.0-api102] - 2026-09-12
 - 版本：`versionCode 103` / `versionName 3.2.0-api102`。
 - 品牌重构：包名变更为 `io.github.capricornus007.smscode`，仓库与文档指向本 fork，移除社群群组与赞助入口，隐私政策重写（全本地处理、无遥测）。
@@ -13,6 +78,7 @@
 - 修复 R8 混淆导致 Xposed 入口类（`java_init.list` 指向的 `LibXposedEntry`）不可加载的问题：新增 proguard keep 规则。
 
 > Full Changelog: https://github.com/Capricornus007/xposedsmscode/compare/d67c520...v3.2.0-api102
+
 
 ---
 
