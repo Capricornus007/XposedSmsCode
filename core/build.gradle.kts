@@ -6,6 +6,7 @@ plugins {
 
 val compileSdkInt = libs.versions.compileSdk.get().toInt()
 val compileSdkExtensionInt = libs.versions.compileSdkExtension.get().toInt()
+val compileSdkMinorInt = libs.versions.compileSdkMinor.get().toInt()
 val minSdkInt = libs.versions.minSdk.get().toInt()
 val allowConflictBypass = findProperty("allowConflictBypass")
     ?.toString()
@@ -16,6 +17,7 @@ android {
     namespace = "io.github.capricornus007.smscode.core"
     compileSdk = compileSdkInt
     compileSdkExtension = compileSdkExtensionInt
+    compileSdkMinor = compileSdkMinorInt
 
     flavorDimensions += "distribution"
     productFlavors {

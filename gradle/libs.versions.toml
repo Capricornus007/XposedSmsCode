@@ -1,6 +1,7 @@
 [versions]
 # Build SDK versions
 compileSdk = "37"
+compileSdkMinor = "1"
 compileSdkExtension = "0"
 minSdk = "28"
 targetSdk = "37"

@@ -10,6 +10,7 @@ android {
     namespace = "io.github.capricornus007.smscode.storage"
     compileSdk = libs.versions.compileSdk.get().toInt()
     compileSdkExtension = libs.versions.compileSdkExtension.get().toInt()
+    compileSdkMinor = libs.versions.compileSdkMinor.get().toInt()
 
     flavorDimensions += "distribution"
     productFlavors {

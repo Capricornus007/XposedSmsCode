@@ -44,6 +44,7 @@ val targetSdkInt = libs.versions.targetSdk.get().toInt()
 val minSdkStr = libs.versions.minSdk.get()
 val targetSdkStr = libs.versions.targetSdk.get()
 val sdkExtensionInt = libs.versions.compileSdkExtension.get().toInt()
+val compileSdkMinorInt = libs.versions.compileSdkMinor.get().toInt()
 val ndkVersionStr = libs.versions.ndk.get()
 val relayDownloadUrl = "https://github.com/magisk317/xinyi-relay"
 val allowConflictBypass = findProperty("allowConflictBypass")
@@ -67,6 +68,7 @@ android {
     namespace = "io.github.capricornus007.smscode"
     compileSdk = compileSdkInt
     compileSdkExtension = sdkExtensionInt
+    compileSdkMinor = compileSdkMinorInt
     ndkVersion = ndkVersionStr
 
     flavorDimensions += "distribution"
