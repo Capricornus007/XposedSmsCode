@@ -19,8 +19,15 @@ jobs:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
           skip-commit-verification: true
 
+      # ⚠️ 2026-10-03：大版本升級不再自動合併。實例——dependabot 把 haze 1.7.2 直接抬到
+      # 2.0.1（2.x 改了 HazeStyle 的 API），而 ci.yml 的 build job 有
+      # `if: github.actor != 'dependabot[bot]'`（依賴 PR 根本不打建置），等於「零驗證就進 master」，
+      # 結果 :core:compileGithubDebugKotlin 報 Unresolved reference 'HazeStyle'。
+      # 跨大版本一律留人工處理；patch/minor 照舊自動合併。
       - name: Enable auto-merge for Dependabot PRs
-        if: github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'app/dependabot'
+        if: >-
+          (github.event.pull_request.user.login == 'dependabot[bot]' || github.event.pull_request.user.login == 'app/dependabot')
+          && steps.metadata.outputs.update-type != 'version-update:semver-major'
         run: gh pr merge --merge --delete-branch "$PR_URL"
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
