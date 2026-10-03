@@ -66,14 +66,17 @@ class SmsCodeApplication : Application() {
             // always-allowed snapshot so the automation gates (app and hook
             // mirror) see the open state, including installs that cached an
             // unactivated decision.
+            // KMP main (6360b89): MobileGate lives in commonMain now, so the
+            // Context parameter and the Context-taking lambdas it used to
+            // thread through are gone - the closures capture the application
+            // context directly.
             MobileGate.publishAlwaysAllowed(
-                applicationContext,
-                persist = { ctx ->
-                    AppPreferencesDataStore.batchEdit(ctx) {
+                persist = {
+                    AppPreferencesDataStore.batchEdit(applicationContext) {
                         setBoolean(PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED, true)
                     }
                 },
-                mirror = { ctx -> HookPreferenceMirror.publish(ctx) },
+                mirror = { HookPreferenceMirror.publish(applicationContext) },
             )
         }
         android.util.Log.w("smscode", "SmsCodeApplication.onCreate() START")

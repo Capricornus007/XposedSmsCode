@@ -193,12 +193,14 @@ class AutoInputAccessibilityService : AccessibilityService() {
     }
 
     private fun isMobileAutomationAllowed(): Boolean =
+        // KMP main (6360b89) moved MobileGate into commonMain: the Context
+        // parameter is gone from the API (android.content.Context has no
+        // common-source representation), so capture it in the closure.
         io.github.magisk317.uikit.entitlement.MobileGate.isAutomationAllowed(
             com.github.tianma8023.xposed.smscode.BuildConfig.ENABLE_MOBILE_ENTITLEMENT,
-            applicationContext,
-        ) { ctx ->
+        ) {
             AppPreferencesDataStore.getBoolean(
-                ctx,
+                applicationContext,
                 PrefConst.KEY_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
                 PrefConst.DEFAULT_MOBILE_ENTITLEMENT_AUTOMATION_ALLOWED,
             )
