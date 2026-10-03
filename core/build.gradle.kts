@@ -15,7 +15,7 @@ android {
 
     val gitCommitHash = providers.exec {
         commandLine("git", "-C", projectDir, "rev-parse", "--short", "HEAD")
-    }.standardOutput.asText.get().trim()
+    }.standardOutput.asText.get().trim().ifEmpty { "unknown" }
 
     defaultConfig {
         buildConfigField("int", "VERSION_CODE", libs.versions.versionCode.get())
