@@ -241,6 +241,14 @@ private fun MobileEntitlementScreen(
                             ),
                         )
                     }
+                    evaluation?.lastConfirmedAt?.takeIf { it > 0 }?.let { confirmedAt ->
+                        AppText(
+                            text = stringResource(
+                                R.string.mobile_entitlement_last_confirmed_at,
+                                formatEpoch(confirmedAt),
+                            ),
+                        )
+                    }
                     evaluation?.claims?.deviceId?.takeIf { it.isNotBlank() }?.let { deviceId ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),

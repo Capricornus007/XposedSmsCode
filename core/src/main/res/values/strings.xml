@@ -502,6 +502,7 @@
     <string name="mobile_entitlement_paused">paused</string>
     <string name="mobile_entitlement_expires">Expires: %1$s</string>
     <string name="mobile_entitlement_issued_at">Activated: %1$s</string>
+    <string name="mobile_entitlement_last_confirmed_at">Last confirmed: %1$s</string>
     <string name="mobile_entitlement_device_id">Activation ID: %1$s</string>
     <string name="mobile_entitlement_copy">Copy</string>
     <string name="mobile_entitlement_copied">Copied to clipboard</string>

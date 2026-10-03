@@ -496,6 +496,7 @@
     <string name="mobile_entitlement_paused">已暂停</string>
     <string name="mobile_entitlement_expires">到期时间：%1$s</string>
     <string name="mobile_entitlement_issued_at">激活时间：%1$s</string>
+    <string name="mobile_entitlement_last_confirmed_at">最近确认时间：%1$s</string>
     <string name="mobile_entitlement_device_id">激活 ID：%1$s</string>
     <string name="mobile_entitlement_copy">复制</string>
     <string name="mobile_entitlement_copied">已复制到剪贴板</string>
