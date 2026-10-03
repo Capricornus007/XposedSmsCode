@@ -1010,44 +1010,6 @@ internal fun ComposeSettingsScreenBody(
                             val intent = backupAccess.getImportRuleListSAFIntent(context)
                             restoreLauncher.launch(intent)
                         }
-                        if (!BuildConfig.DEBUG) {
-                            io.github.magisk317.uikit.preference.StateSwitchItem(
-                                title = stringResource(id = R.string.pref_enable_analytics_title),
-                                summary = stringResource(id = R.string.pref_enable_analytics_summary),
-                                checked = analyticsEnabled.value,
-                                onCheckedChange = { enabled ->
-                                    analyticsEnabled.value = enabled
-                                    scope.launch {
-                                        AppPreferencesDataStore.setBoolean(
-                                            context,
-                                            PrefConst.KEY_ENABLE_ANALYTICS,
-                                            enabled,
-                                        )
-                                        HookPreferenceMirror.publish(context)
-                                        markPrefsSaved()
-                                    }
-                                    MagiskOtel.configure(
-                                        MagiskOtel.Config(
-                                            enabled = BuildConfig.DEBUG || enabled,
-                                            serviceName = "xposedsmscode",
-                                            serviceVersion = BuildConfig.VERSION_NAME,
-                                            serviceCommit = BuildConfig.COMMIT_HASH,
-                                            projectId = "83955172",
-                                            projectName = "XposedSmsCode",
-                                            environment = if (BuildConfig.DEBUG) "debug" else "release",
-                                            deviceAttributes =
-                                                mapOf(
-                                                    "device.manufacturer" to Build.MANUFACTURER,
-                                                    "device.model" to Build.MODEL,
-                                                    "os.name" to "android",
-                                                    "os.version" to Build.VERSION.RELEASE,
-                                                    "os.api_level" to Build.VERSION.SDK_INT.toString(),
-                                                ),
-                                        ),
-                                    )
-                                },
-                            )
-                        }
                         RuntimeLogDiagnosticsItems(
                             labels = RuntimeLogDiagnosticsLabels(
                                 shareLogTitle = stringResource(id = R.string.pref_share_log_title),
@@ -1065,6 +1027,7 @@ internal fun ComposeSettingsScreenBody(
                             ),
                             state = RuntimeLogDiagnosticsState(
                                 verboseLogEnabled = verboseLogEnabled.value,
+                                analyticsEnabled = analyticsEnabled.value,
                             ),
                             callbacks = RuntimeLogDiagnosticsCallbacks(
                                 onShareLog = ::saveRuntimeLogBundle,
@@ -1090,7 +1053,39 @@ internal fun ComposeSettingsScreenBody(
                                 },
                                 onRetentionClick = { showRuntimeLogRetentionDialog = true },
                                 onClearLogClick = { showClearLogConfirmDialog = true },
-
+                                onAnalyticsEnabledChange = if (!BuildConfig.DEBUG) {
+                                    { enabled ->
+                                        analyticsEnabled.value = enabled
+                                        scope.launch {
+                                            AppPreferencesDataStore.setBoolean(
+                                                context,
+                                                PrefConst.KEY_ENABLE_ANALYTICS,
+                                                enabled,
+                                            )
+                                            HookPreferenceMirror.publish(context)
+                                            markPrefsSaved()
+                                        }
+                                        MagiskOtel.configure(
+                                            MagiskOtel.Config(
+                                                enabled = BuildConfig.DEBUG || enabled,
+                                                serviceName = "xposedsmscode",
+                                                serviceVersion = BuildConfig.VERSION_NAME,
+                                                serviceCommit = BuildConfig.COMMIT_HASH,
+                                                projectId = "83955172",
+                                                projectName = "XposedSmsCode",
+                                                environment = if (BuildConfig.DEBUG) "debug" else "release",
+                                                deviceAttributes =
+                                                    mapOf(
+                                                        "device.manufacturer" to Build.MANUFACTURER,
+                                                        "device.model" to Build.MODEL,
+                                                        "os.name" to "android",
+                                                        "os.version" to Build.VERSION.RELEASE,
+                                                        "os.api_level" to Build.VERSION.SDK_INT.toString(),
+                                                    ),
+                                            ),
+                                        )
+                                    }
+                                } else null,
                             ),
                             layout = RuntimeLogDiagnosticsLayout(
                                 shareEntryMode = RuntimeLogShareEntryMode.SEPARATE_ITEM,
@@ -1100,6 +1095,7 @@ internal fun ComposeSettingsScreenBody(
                                     RuntimeLogDiagnosticsItem.SENSITIVE_LOG,
                                     RuntimeLogDiagnosticsItem.RETENTION,
                                     RuntimeLogDiagnosticsItem.CLEAR_LOG,
+                                    RuntimeLogDiagnosticsItem.ANALYTICS,
                                 ),
                             ),
                         )

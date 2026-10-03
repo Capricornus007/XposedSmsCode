@@ -203,8 +203,6 @@
     <string name="pref_share_log_summary">保存日志包用于调试</string>
     <string name="pref_verbose_log_mode_title">详细日志</string>
     <string name="pref_verbose_log_mode_summary">打印详细运行日志</string>
-    <string name="pref_enable_analytics_title">统计数据</string>
-    <string name="pref_enable_analytics_summary">允许开发者匿名分析通道使用情况、成功率、崩溃等技术细节</string>
     <string name="pref_runtime_log_retention_days_title">日志保留天数</string>
     <plurals name="pref_runtime_log_retention_days_summary">
         <item quantity="other">按天轮转，保留最近 %1$d 天日志</item>
