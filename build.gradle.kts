@@ -45,6 +45,15 @@ plugins {
     id("magisk.android.library") apply false
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.parcelize) apply false
+    // Pin the KMP plugin versions for the composite build: magisk-ui-kit
+    // requests org.jetbrains.kotlin.multiplatform with the shared catalog
+    // version, but build-logic pulls kotlin-gradle-plugin onto the
+    // composite classpath without a version descriptor - Gradle then
+    // refuses the versioned request ("already on the classpath with an
+    // unknown version"). Declaring both markers here, apply false, is the
+    // same pinning MiPushFramework uses.
+    alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.android.kotlin.multiplatform.library) apply false
     id("magisk.android.compose") apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.detekt) apply false
