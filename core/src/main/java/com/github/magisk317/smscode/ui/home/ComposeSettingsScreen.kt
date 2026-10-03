@@ -10,6 +10,7 @@ import android.Manifest
 import android.app.Activity
 import android.content.ComponentName
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -168,6 +169,15 @@ internal fun ComposeSettingsScreenBody(
     val keepDataActive = pageRuntime.keepDataActive
     val currentOnPageDataReady by rememberUpdatedState(pageRuntime.onPageDataReady)
     val context = LocalContext.current
+    val entitlementUiAvailable = remember(context) {
+        context.packageManager.resolveActivity(
+            Intent().setClassName(
+                context,
+                "com.github.magisk317.smscode.entitlement.MobileEntitlementActivity",
+            ),
+            PackageManager.MATCH_DEFAULT_ONLY,
+        ) != null
+    }
     val activityOwner = context as? ComponentActivity
     val settingsViewModel = viewModel ?: if (activityOwner != null) {
         koinViewModel(viewModelStoreOwner = activityOwner)
@@ -694,21 +704,23 @@ internal fun ComposeSettingsScreenBody(
                     ),
                     verticalArrangement = Arrangement.spacedBy(Const.SPACING_SMALL.dp),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = Const.PADDING_SMALL.dp),
-                    ) {
-                        StatusSettingsSection(
-                            title = stringResource(id = R.string.mobile_entitlement_settings_title),
-                            summary = stringResource(id = R.string.mobile_entitlement_settings_summary),
+                    if (entitlementUiAvailable) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = Const.PADDING_SMALL.dp),
                         ) {
-                            context.startActivity(
-                                Intent().setClassName(
-                                    context,
-                                    "com.github.magisk317.smscode.entitlement.MobileEntitlementActivity",
-                                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-                            )
+                            StatusSettingsSection(
+                                title = stringResource(id = R.string.mobile_entitlement_settings_title),
+                                summary = stringResource(id = R.string.mobile_entitlement_settings_summary),
+                            ) {
+                                context.startActivity(
+                                    Intent().setClassName(
+                                        context,
+                                        "com.github.magisk317.smscode.entitlement.MobileEntitlementActivity",
+                                    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                                )
+                            }
                         }
                     }
 

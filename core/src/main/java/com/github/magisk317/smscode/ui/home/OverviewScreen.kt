@@ -5,6 +5,7 @@ package com.github.magisk317.smscode.ui.home
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -81,6 +82,7 @@ private suspend fun readEntitlementAutomationAllowed(context: Context): Boolean 
 internal data class OverviewUiState(
     val activationStatus: ActivationStatusState,
     val mobileAutomationAllowed: Boolean,
+    val showEntitlement: Boolean,
     val showStatusDiagnostics: Boolean,
     val statusDiagnostics: List<Pair<String, String>>,
     val frameworkType: String,
@@ -133,6 +135,18 @@ fun OverviewScreen(
         isActive = isActive,
         dataStoreReader = ::readEntitlementAutomationAllowed,
     )
+    // Play removes the activation activity together with the gate. Resolve the
+    // component once so shared UI does not advertise or launch a screen that
+    // is absent from that variant's merged manifest.
+    val entitlementUiAvailable = remember(context) {
+        context.packageManager.resolveActivity(
+            Intent().setClassName(
+                context,
+                "com.github.magisk317.smscode.entitlement.MobileEntitlementActivity",
+            ),
+            PackageManager.MATCH_DEFAULT_ONLY,
+        ) != null
+    }
     val snackbarHostState = LocalSnackbarHostState.current
     val scope = rememberCoroutineScope()
     fun showMessage(message: String) {
@@ -227,6 +241,7 @@ fun OverviewScreen(
     val state = OverviewUiState(
         activationStatus = activationStatus,
         mobileAutomationAllowed = mobileAutomationAllowed,
+        showEntitlement = entitlementUiAvailable,
         showStatusDiagnostics = showStatusDiagnostics,
         statusDiagnostics = buildStatusDiagnostics(
             context = context,
@@ -364,6 +379,7 @@ fun OverviewScreen(
 fun StatusCard(
     isEnabled: Boolean,
     isEntitled: Boolean,
+    showEntitlement: Boolean = true,
     showDiagnostics: Boolean,
     diagnostics: List<Pair<String, String>>,
     onActivateClick: (() -> Unit)? = null,
@@ -374,7 +390,9 @@ fun StatusCard(
     } else {
         stringResource(id = R.string.status_module_not_activated)
     }
-    val entitlementStatusText = if (isEntitled) {
+    val entitlementStatusText = if (!showEntitlement) {
+        ""
+    } else if (isEntitled) {
         stringResource(id = R.string.status_entitlement_verified)
     } else {
         stringResource(id = R.string.status_entitlement_unverified)
@@ -391,14 +409,14 @@ fun StatusCard(
     // tap opens the entitlement page while entitlement is missing.
     if (currentUiKitStyle() == UiKitStyle.Miuix) {
         val resolvedOnClick = rememberStatusCardClickHandler(
-            isEntitled = isEntitled,
-            onActivateClick = onActivateClick,
+            isEntitled = if (showEntitlement) isEntitled else true,
+            onActivateClick = onActivateClick.takeIf { showEntitlement },
             onDiagnosticsToggle = onDiagnosticsToggle,
         )
         MiuixStatusCheckCard(
-            passed = isEntitled,
-            title = entitlementStatusText,
-            badge = moduleStatusText,
+            passed = if (showEntitlement) isEntitled else isEnabled,
+            title = if (showEntitlement) entitlementStatusText else moduleStatusText,
+            badge = if (showEntitlement) moduleStatusText else "",
             summary = activateHint,
             diagnostics = if (showDiagnostics) diagnostics else emptyList(),
             onClick = { resolvedOnClick?.invoke() },
@@ -407,13 +425,13 @@ fun StatusCard(
     }
 
     StatusHeroCard(
-        title = "$moduleStatusText\n$entitlementStatusText",
+        title = if (showEntitlement) "$moduleStatusText\n$entitlementStatusText" else moduleStatusText,
         summary = activateHint,
-        icon = if (isEnabled && isEntitled) Icons.Default.CheckCircle else Icons.Default.Warning,
-        highlighted = isEnabled && isEntitled,
+        icon = if (isEnabled && (isEntitled || !showEntitlement)) Icons.Default.CheckCircle else Icons.Default.Warning,
+        highlighted = if (showEntitlement) isEnabled && isEntitled else isEnabled,
         diagnostics = if (showDiagnostics) diagnostics else emptyList(),
-        isEntitled = isEntitled,
-        onActivateClick = onActivateClick,
+        isEntitled = if (showEntitlement) isEntitled else true,
+        onActivateClick = onActivateClick.takeIf { showEntitlement },
         onDiagnosticsToggle = onDiagnosticsToggle,
     )
 }
