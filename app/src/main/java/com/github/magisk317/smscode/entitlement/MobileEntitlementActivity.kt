@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.verticalScroll
@@ -36,6 +37,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.draw.clip
+import io.github.magisk317.uikit.common.AppSnackbarHost
+import io.github.magisk317.uikit.common.AppSnackbarHostState
 import com.magisk317.mobile.entitlement.MobileEntitlementCoordinator
 import com.magisk317.mobile.entitlement.MobileEntitlementStatus
 import com.github.magisk317.smscode.common.constant.Const
@@ -94,6 +98,8 @@ private fun MobileEntitlementScreen(
     }
     var busyAction by remember { mutableStateOf<ActivationAction?>(null) }
     var message by remember { mutableStateOf<String?>(null) }
+    var pendingBotUrl by remember { mutableStateOf<String?>(null) }
+    val snackbarHostState = remember { AppSnackbarHostState() }
     val tokenState = rememberSaveableTextFieldState()
     val tokenInputTransformation = InputTransformation {
         val original = toString()
@@ -132,7 +138,18 @@ private fun MobileEntitlementScreen(
     fun openTelegram(url: String) {
         runCatching {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-        }.onFailure { message = it.message ?: it.javaClass.simpleName }
+        }.onFailure { error ->
+            // ACTION_VIEW 失败（如设备上 Telegram 未安装或链接无法解析）时，自动把跳转
+            // 链接复制到剪贴板：用户可手动发送给机器人，或粘贴到官网激活页兑换令牌。
+            XLog.w("Mobile entitlement Telegram jump failed, link copied: %s", error.message)
+            copyPlainText(context, "bot_url", url)
+            message = error.message ?: error.javaClass.simpleName
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    context.getString(R.string.mobile_entitlement_jump_failed_copied),
+                )
+            }
+        }
     }
 
     fun openTelegramBot() {
@@ -145,12 +162,23 @@ private fun MobileEntitlementScreen(
                     MobileEntitlementCoordinator.createTelegramChallenge(context)
                 }
                 XLog.w("Mobile entitlement Telegram challenge received id=%s", challenge.id.take(8))
+                pendingBotUrl = challenge.botUrl
                 openTelegram(challenge.botUrl)
             }.onFailure {
                 XLog.e("Mobile entitlement Telegram activation failed", it)
                 message = it.message ?: it.javaClass.simpleName
             }
             busyAction = null
+        }
+    }
+
+    fun copyBotLink() {
+        val url = pendingBotUrl ?: return
+        copyPlainText(context, "bot_url", url)
+        scope.launch {
+            snackbarHostState.showSnackbar(
+                context.getString(R.string.mobile_entitlement_link_copied),
+            )
         }
     }
 
@@ -202,6 +230,7 @@ private fun MobileEntitlementScreen(
                 },
             )
         },
+        snackbarHost = { AppSnackbarHost(snackbarHostState) },
     ) { paddingValues ->
         SectionColumn(
             modifier = Modifier
@@ -258,11 +287,7 @@ private fun MobileEntitlementScreen(
                             )
                             AppIconButton(
                                 onClick = {
-                                    val cm = context.getSystemService(Context.CLIPBOARD_SERVICE)
-                                        as? android.content.ClipboardManager
-                                    cm?.setPrimaryClip(
-                                        android.content.ClipData.newPlainText("device_id", deviceId),
-                                    )
+                                    copyPlainText(context, "device_id", deviceId)
                                     android.widget.Toast
                                         .makeText(
                                             context,
@@ -342,20 +367,40 @@ private fun MobileEntitlementScreen(
                 currentEvaluation.status != MobileEntitlementStatus.ACTIVE ||
                 currentEvaluation.renewDue
             if (showActivationActions) {
-                AppSecondaryButton(
-                    onClick = ::openTelegramBot,
-                    enabled = busyAction == null,
+                Row(
                     modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Const.SPACING_SMALL.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (busyAction == ActivationAction.TELEGRAM) {
-                        AppCircularProgressIndicator(
-                            modifier = Modifier
-                                .padding(end = 8.dp)
-                                .size(18.dp),
-                            strokeWidth = 2.dp,
+                    AppSecondaryButton(
+                        onClick = ::openTelegramBot,
+                        enabled = busyAction == null,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        if (busyAction == ActivationAction.TELEGRAM) {
+                            AppCircularProgressIndicator(
+                                modifier = Modifier
+                                    .padding(end = 8.dp)
+                                    .size(18.dp),
+                                strokeWidth = 2.dp,
+                            )
+                        }
+                        AppText(text = stringResource(R.string.mobile_entitlement_activate_telegram))
+                    }
+                    AppIconButton(
+                        onClick = ::copyBotLink,
+                        enabled = busyAction == null && pendingBotUrl != null,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape),
+                    ) {
+                        AppIcon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = stringResource(
+                                R.string.mobile_entitlement_copy_link,
+                            ),
                         )
                     }
-                    AppText(text = stringResource(R.string.mobile_entitlement_activate_telegram))
                 }
             }
             AppSecondaryButton(
@@ -394,6 +439,11 @@ private enum class ActivationAction {
     REFRESH,
     TOKEN,
     TELEGRAM,
+}
+
+private fun copyPlainText(context: Context, label: String, text: String) {
+    val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+    cm?.setPrimaryClip(android.content.ClipData.newPlainText(label, text))
 }
 
 private fun formatEpoch(epochSeconds: Long): String =
