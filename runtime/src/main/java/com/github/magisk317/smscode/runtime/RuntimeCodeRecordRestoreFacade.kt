@@ -20,29 +20,41 @@ object RuntimeCodeRecordRestoreFacade : com.github.magisk317.smscode.runtime.bri
 
     override fun exportToFile(context: Context, smsMsg: SmsMsg): Boolean {
         val startedAt = System.nanoTime()
-        return runCatching {
+        var caught: Throwable? = null
+        val ok = runCatching {
             val filename = RECORD_FILE_PREFIX + smsMsg.date
             val recordFile = File(StorageUtils.getFilesDir(context), filename)
             OutputStreamWriter(FileOutputStream(recordFile), StandardCharsets.UTF_8).use { writer ->
                 JsonUtils.toJson(smsMsg, writer, true)
             }
             true
-        }.onFailure { XLog.e("Export code record to file failed", it) }
-            .getOrDefault(false)
-            .also { ok ->
-                emitRecord(
-                    result = if (ok) "ok" else "error",
-                    reason = if (ok) "export_file" else "export_file_failed",
-                    statusOk = ok,
-                    durationMs = ((System.nanoTime() - startedAt) / 1_000_000L).coerceAtLeast(0L),
+        }.onFailure { e ->
+            caught = e
+            XLog.e("Export code record to file failed", e)
+        }.getOrDefault(false)
+        emitRecord(
+            result = if (ok) "ok" else "error",
+            reason = if (ok) "export_file" else "export_file_failed",
+            statusOk = ok,
+            durationMs = ((System.nanoTime() - startedAt) / 1_000_000L).coerceAtLeast(0L),
+            extra = if (!ok && caught != null) {
+                val c = caught
+                mapOf(
+                    "error_class" to safeErrorClass(c),
+                    "error_msg" to safeErrorMessage(c),
                 )
-            }
+            } else {
+                emptyMap()
+            },
+        )
+        return ok
     }
 
     fun importToDatabase(context: Context): Boolean {
         val startedAt = System.nanoTime()
         var importedCount = 0
-        return runCatching {
+        var caught: Throwable? = null
+        val ok = runCatching {
             val recordFiles = getRecordFiles(context)
             val smsMsgList = mutableListOf<SmsMsg>()
             recordFiles?.forEach { recordFile ->
@@ -67,17 +79,26 @@ object RuntimeCodeRecordRestoreFacade : com.github.magisk317.smscode.runtime.bri
                 }
             }
             true
-        }.onFailure { XLog.e("Import code records to database failed.", it) }
-            .getOrDefault(false)
-            .also { ok ->
-                emitRecord(
-                    result = if (ok) "ok" else "error",
-                    reason = if (ok) "import_db" else "import_db_failed",
-                    statusOk = ok,
-                    durationMs = ((System.nanoTime() - startedAt) / 1_000_000L).coerceAtLeast(0L),
-                    extra = mapOf("imported_count" to importedCount.toString()),
-                )
-            }
+        }.onFailure { e ->
+            caught = e
+            XLog.e("Import code records to database failed.", e)
+        }.getOrDefault(false)
+        emitRecord(
+            result = if (ok) "ok" else "error",
+            reason = if (ok) "import_db" else "import_db_failed",
+            statusOk = ok,
+            durationMs = ((System.nanoTime() - startedAt) / 1_000_000L).coerceAtLeast(0L),
+            extra = mapOf("imported_count" to importedCount.toString()).let { base ->
+                if (!ok && caught != null) {
+                    val c = caught
+                    base + mapOf(
+                        "error_class" to safeErrorClass(c),
+                        "error_msg" to safeErrorMessage(c),
+                    )
+                } else base
+            },
+        )
+        return ok
     }
 
     private fun emitRecord(
@@ -110,5 +131,27 @@ object RuntimeCodeRecordRestoreFacade : com.github.magisk317.smscode.runtime.bri
             }
         }.onFailure { XLog.e("Load code record from file failed", it) }
             .getOrNull()
+    }
+
+    /**
+     * Throwable class name for telemetry. Framework exceptions (IOException,
+     * FileNotFoundException, SecurityException, ...) keep their real name at
+     * runtime; the kit's consumer-rules keep Throwable names from R8 in release
+     * builds, so this stays meaningful after obfuscation. Not the `reason`
+     * attribute, so it passes the hygiene gate untouched.
+     */
+    private fun safeErrorClass(t: Throwable): String {
+        val name = t.javaClass.simpleName
+        return name.ifBlank { t.javaClass.name }
+    }
+
+    /**
+     * Best-effort error message for telemetry. Collapses newlines and caps length
+     * so a verbose exception does not bloat the span; the kit truncates again at
+     * the attribute byte limit as a safety net.
+     */
+    private fun safeErrorMessage(t: Throwable): String {
+        val raw = (t.message ?: t.javaClass.name).replace('\n', ' ').replace('\r', ' ')
+        return if (raw.length > 200) raw.substring(0, 200) else raw
     }
 }
