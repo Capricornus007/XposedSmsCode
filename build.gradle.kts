@@ -112,7 +112,14 @@ subprojects {
         google()
         mavenCentral()
         gradlePluginPortal()
-        maven("https://jitpack.io")
+        // 上游 d564e76d：JitPack 只准提供 com.github.*，避免任何協作依賴
+        // 被從 JitPack 重新打包的同名座標劫持（其餘倉庫仍照下方順序解析）。
+        maven("https://jitpack.io") {
+            name = "JitPack"
+            content {
+                includeGroupByRegex("com\\.github\\..*")
+            }
+        }
         maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     }
 
