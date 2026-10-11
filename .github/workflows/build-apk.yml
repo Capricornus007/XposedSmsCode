@@ -61,6 +61,63 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
+      # Artifact-level signing gate: the DSL declares v1+v2+v3, and app/build.gradle.kts
+      # silently falls back to the debug signing config when STORE_PASSWORD etc. are missing,
+      # so only the built APK can prove it is signed. Rule: every workflow that publishes APKs
+      # must go red when the artifact is unsigned, missing a scheme, or signed with a
+      # certificate other than the pinned one (users would otherwise have to uninstall first).
+      # --min-sdk-version 21 is mandatory: without it apksigner skips the v1 check for
+      # minSdk>=24 packages and reports a good APK as "v1: false".
+      - name: Verify signed artifacts (v1+v2+v3, pinned certificate)
+        shell: bash
+        env:
+          EXPECTED_CERT_SHA256: ${{ vars.RELEASE_CERT_SHA256 || '0379f8a7e140f67a8d0b3dac73903d4fc7035a03f4068520ae71415171ede03b' }}
+        run: |
+          set -euo pipefail
+          APK_DIR=app/build/outputs/apk/github/release
+          mapfile -t APKS < <(find "$APK_DIR" -maxdepth 1 -name '*.apk' 2>/dev/null | sort)
+          if (( ${#APKS[@]} == 0 )); then
+            echo "FAIL: no APK was produced in $APK_DIR"
+            exit 1
+          fi
+          APKSIGNER="$(command -v apksigner || true)"
+          if [[ -z "$APKSIGNER" ]]; then
+            SDK_DIR="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+            APKSIGNER="$(find "$SDK_DIR/build-tools" -maxdepth 2 -name apksigner -type f 2>/dev/null | sort -V | tail -1)"
+          fi
+          if [[ -z "${APKSIGNER:-}" || ! -x "$APKSIGNER" ]]; then
+            echo "FAIL: apksigner not found on the runner"
+            exit 1
+          fi
+          echo "apksigner: $APKSIGNER"
+          for apk in "${APKS[@]}"; do
+            echo "== verifying $apk"
+            verify_out="$("$APKSIGNER" verify -v --min-sdk-version 21 "$apk" 2>&1)"
+            echo "$verify_out"
+            for scheme in \
+              'v1 scheme (JAR signing)' \
+              'v2 scheme (APK Signature Scheme v2)' \
+              'v3 scheme (APK Signature Scheme v3)'; do
+              if ! grep -qF "Verified using $scheme: true" <<<"$verify_out"; then
+                echo "FAIL: $apk does not verify with $scheme"
+                exit 1
+              fi
+            done
+            cert_out="$("$APKSIGNER" verify --print-certs "$apk" 2>&1)"
+            sha="$(sed -n 's/.*certificate SHA-256 digest: //p' <<<"$cert_out" | head -1 | tr -d '[:space:]')"
+            if [[ -z "$sha" ]]; then
+              echo "FAIL: $apk carries no signer certificate"
+              echo "$cert_out"
+              exit 1
+            fi
+            if [[ "$sha" != "$EXPECTED_CERT_SHA256" ]]; then
+              echo "FAIL: $apk is signed by $sha, not the pinned $EXPECTED_CERT_SHA256."
+              echo "A debug-keystore fallback would show up exactly here."
+              exit 1
+            fi
+            echo "PASS: $apk v1+v2+v3 true, certificate SHA-256 $sha"
+          done
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v7
         with:
