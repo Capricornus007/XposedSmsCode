@@ -62,9 +62,19 @@ class SmsProviderHook : BaseHook() {
                             }
                             else -> "<none>"
                         }
+                        // Field set matches the upstream shared-module format used by both v3.3.6
+                        // (app-side SmsProviderHook) and v3.3.8 (SmsProviderHookInstaller.logWriteDiag):
+                        // class= and process= were added upstream and are what makes a write
+                        // attributable to a ROM provider subclass.
+                        val providerClass = provider?.javaClass?.name ?: TELEPHONY_PROVIDER_CLASS
+                        val processName = runCatching {
+                            context?.applicationInfo?.processName
+                        }.getOrNull() ?: TELEPHONY_PROVIDER_PACKAGE
                         XLog.w(
-                            "Diag sms provider %s: uri=%s uid=%d pid=%d pkgs=%s values=%s",
+                            "Diag sms provider %s: class=%s process=%s uri=%s uid=%d pid=%d pkgs=%s values=%s",
                             methodName,
+                            providerClass,
+                            processName,
                             uri,
                             callingUid,
                             callingPid,

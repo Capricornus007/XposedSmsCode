@@ -4,6 +4,19 @@
 
 ---
 
+## [v3.3.8-api102] - 2026-10-11
+- 版本：`versionCode 132` / `versionName 3.3.8-api102`（對齊上游 3.3.8）。上游 APK 實測：v3.3.6 = versionCode 548、v3.3.8 = versionCode 628 —— 上游自用另一套編號，本 fork 仍走自己的 13x 序列。
+- 逆推 `arm64-v8a_XposedSmsCode_v3.3.6_release.apk` / `v3.3.8_release.apk` 的私模組 API 後，shim 對齊 3.3.8，並保留 3.3.6 路徑（新舊通吃）：
+  - 新增 `app/.../xp/helper/SmsHookContextRecovery.kt`：還原私模組 `io.github.magisk317.smscode.xposed.helper.SmsHookContextRecovery`（3.3.8 把 3.3.6 的 app 端 `SmsHandlerHook.DispatchContextRecovery` 上提到 `smscode-core`）。解析鏈取 3.3.8 完整版（含 3.3.8 新增的「沿父類別找 Context 型別欄位」這一步），其後的 `mContext / context / mPhoneContext → getContext() → mPhone|phone 跳一層` 與 3.3.6 逐字相同，因此一份實作同時蓋住兩版。
+  - `SmsHandlerHook.hookDispatchIntent29()`：改成 hook **所有** `dispatchIntent()` 同名多載，並逐字解析 receiver 參數索引（首個 `BroadcastReceiver` 型別參數、找不到回 -1），與 3.3.6／3.3.8 行為一致；原本只 hook 碰到的第一個、且取「最後一個」符合項並預設 0。
+  - `SmsHandlerHook`：構造函數鉦漏抓 handler 實例時，改用 context recovery 完成 runtime 啟動（原本直接放棄這條短信）；啟動流程拆成冪等的 `initializeRuntime()`，對應私模組 `SmsHookConstructorInitializer.handle(Context)` 的 outcome 語意。
+  - `SmsProviderHook`：診斷日誌欄位對齊上游兩版共用的格式 `Diag sms provider %s: class=%s process=%s uri=%s uid=%d pid=%d pkgs=%s values=%s`（補上 `class=`／`process=`）。
+  - 新增 `app/src/test/.../xp/helper/SmsHookContextRecoveryTest.kt`（純 JVM 反射鏈測試，覆蓋 3.3.8 父類別掃描與 3.3.6 尾路徑）。
+- 3.3.6 → 3.3.8 私模組 API 變動（`classes.dex` 簽名實測）：`SmsCodeRuleDocument` 新增 `rejectedSuffixes: List`（component8/9 順位移）；`MobileEntitlementEvaluation` 新增 `lastConfirmedAt: Long`（建構子 6→7 參數）、`MobileEntitlementKeys.LAST_CONFIRMED_AT`、`MobileEntitlementStore.read/saveLastConfirmedAt`、新增 `MobileEntitlementUpdateRequiredException`；`PermissionBridge` 新增 `permissionCommands(String, Set): List`；日誌 `StructuredLogger` 移除、`DailyJsonlLogStore` 新增；`MagiskOtel` 新增 analytics 閘門（`KEY_ANALYTICS_ENABLED`／`effectiveAnalyticsEnabled(ZZ)Z`／`ATTRIBUTE_ERROR`）；`SmsProviderHookInstaller` 新增 `logWriteDiag`／`recordLoad`／`summarizeValues`；入站短信鉦層（`BaseSmsProviderHook`／`InboundSmsHookClaim`／`InboundSmsHookInstaller`／`MmsEntryPointHook`／`SmsProviderHookHost`／`SmsInboxObserver`／`SmsRoutingProbeResolver`／`CopyCodeReceiverRegistrar`／`BlockEvaluation`／`LocalInputActions`）自 app 端上提至 `smscode-core`，被 hook 的系統符號（`InboundSmsHandler` 構造子、`dispatchIntent`、`dispatchSmsDeliveryIntent*`、`SmsDispatchersController`）兩版相同。
+- 入口類：上游 3.3.8 把手機端套件從 `com.github.magisk317` 整包改名為 `io.github.magisk317`，`META-INF/xposed/java_init.list` 也隨之從 `com.github.magisk317.smscode.xp.LibXposedEntry` 變成 `io.github.magisk317.smscode.xp.LibXposedEntry`；本 fork 用自有 `io.github.capricornus007.smscode.xp.LibXposedEntry`（`proguard-rules.pro` 有 `-keep`），不受上游改名影響，入口類在 dex 的存在改由 CI 產物實測。
+- 本 fork 沒有 entitlement／規則目錄（catalog）功能，故 `MobileEntitlement*` 與 `SmsCodeRuleDocument` 兩項變動在 shim 裡無對應物需要改（不是遺漏）。
+
+---
 ## [v3.3.7-api102] - 未發布（待出包）
 - 版本對齊上游 `beta`：`versionCode 131` / `versionName 3.3.7-api102`（上游 tag：v3.3.6 = 130、3.3.7 = 131）。
 - 工具鏈升級（上游 `build: switch to Java 27 bytecode`）：位元碼升到 **Java 27**、Gradle wrapper 改吃 **9.8.0 GA（含 SHA-256 鎖定）**、Kotlin **2.5.0-Beta1**、KSP 2.3.12、detekt 2.0.0-alpha.6（分析目標上限 26）、NDK 30.0.16248370，相依全部跟上游最新版（compose BOM 2026.09.01、room 2.8.5、lifecycle 2.11.0、navigation 2.10.2、okhttp 5.5.0、datastore 1.3.0-alpha11 等）。AGP 保留本 fork 的 9.5.0-alpha07（比上游 9.4.1 新）。

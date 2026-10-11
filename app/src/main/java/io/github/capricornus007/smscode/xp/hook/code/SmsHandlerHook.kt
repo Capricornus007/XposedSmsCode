@@ -18,6 +18,7 @@ import io.github.capricornus007.smscode.common.utils.SmsBlacklistUtils
 import io.github.capricornus007.smscode.common.utils.XLog
 import io.github.capricornus007.smscode.data.db.entity.SmsMsg
 import io.github.capricornus007.smscode.xp.helper.ModuleConflictArbiter
+import io.github.capricornus007.smscode.xp.helper.SmsHookContextRecovery
 import io.github.capricornus007.smscode.xp.helper.XposedWrapper
 import io.github.capricornus007.smscode.xp.hook.BaseHook
 import io.github.capricornus007.smscode.xp.hook.code.action.impl.OperateSmsAction
@@ -41,6 +42,12 @@ class SmsHandlerHook : BaseHook() {
     private var smsInboxObserver: SmsInboxObserver? = null
     @Volatile
     private var suppressionLogged = false
+
+    @Volatile
+    private var runtimeReady = false
+
+    /** Mirrors the private module's `SmsHookConstructorInitializer.Outcome`. */
+    private data class RuntimeInitOutcome(val initialized: Boolean, val stopReason: String? = null)
 
     override fun onLoadPackage(lpparam: LoadParam) {
         if (ANDROID_PHONE_PACKAGE == lpparam.packageName) {
@@ -167,28 +174,30 @@ class SmsHandlerHook : BaseHook() {
             return
         }
 
-        val methods = inboundSmsHandlerClass.declaredMethods
-        var exactMethod: Method? = null
-        val dispatchIntentMethodName = "dispatchIntent"
-        var receiverIndex = 0
-        for (method in methods) {
-            if (dispatchIntentMethodName == method.name) {
-                exactMethod = method
-                val parameterTypes = method.parameterTypes
-                for (i in parameterTypes.indices) {
-                    if (BroadcastReceiver::class.java.isAssignableFrom(parameterTypes[i])) {
-                        receiverIndex = i
-                    }
-                }
-                break
-            }
+        // Both v3.3.6 (app-side) and v3.3.8 (shared InboundSmsHookInstaller) hook *every*
+        // dispatchIntent() overload and resolve the receiver index per overload, because OEM and
+        // Android 15+ builds carry more than one. Hooking only the first match silently lost the
+        // other overloads.
+        val methods = inboundSmsHandlerClass.declaredMethods.filter { it.name == DISPATCH_INTENT_METHOD }
+        if (methods.isEmpty()) {
+            XLog.e("Method %s for Class %s cannot found", DISPATCH_INTENT_METHOD, SMS_HANDLER_CLASS)
+            return
         }
 
-        exactMethod?.let {
-            XposedWrapper.hookMethod(it, DispatchIntentHook(receiverIndex))
-        } ?: run {
-            XLog.e("Method %s for Class %s cannot found", dispatchIntentMethodName, SMS_HANDLER_CLASS)
+        methods.forEach { method ->
+            XposedWrapper.hookMethod(method, DispatchIntentHook(receiverArgumentIndex(method)))
         }
+    }
+
+    /** Same rule as v3.3.8 `InboundSmsHookInstallerKt.receiverArgumentIndex`: first receiver param, -1 if none. */
+    private fun receiverArgumentIndex(method: Method): Int {
+        val parameterTypes = method.parameterTypes
+        for (index in parameterTypes.indices) {
+            if (BroadcastReceiver::class.java.isAssignableFrom(parameterTypes[index])) {
+                return index
+            }
+        }
+        return -1
     }
 
     private inner class ConstructorHook : MethodHook() {
@@ -205,30 +214,39 @@ class SmsHandlerHook : BaseHook() {
 
     private fun afterConstructorHandler(param: MethodHookParam) {
         val context = param.args.getOrNull(1) as? Context ?: return
-        if (mPhoneContext == null) {
-            mPhoneContext = context
-            try {
-                mPluginContext = mPhoneContext?.createPackageContext(
-                    SMSCODE_PACKAGE,
-                    Context.CONTEXT_IGNORE_SECURITY,
-                )
-                if (mPluginContext != null) {
-                    val pluginContext = mPluginContext ?: return
-                    if (PrefsReader.showCodeNotification(pluginContext)) {
-                        initNotificationChannel()
-                        registerCopyCodeReceiver()
-                    }
-                    registerSmsInboxObserver()
-                    ModuleActivationStore.markActivated(pluginContext)
-                    if (ModuleConflictArbiter.shouldSuppressByRelay(mPhoneContext, "SmsHandlerHook#constructor")) {
-                        logSuppressedOnce("constructor")
-                    }
-                } else {
-                    XLog.e("Plugin context is null after creation attempt")
-                }
-            } catch (e: Exception) {
-                XLog.e("Create plugin context failed: %s", e)
+        initializeRuntime(context)
+    }
+
+    /**
+     * Runtime bootstrap for the hooked phone process. Mirrors the private module's
+     * `SmsHookConstructorInitializer.handle(Context)` outcome — app-side in v3.3.6, hoisted into
+     * `smscode-core` in v3.3.8 — so the same routine now serves both the InboundSmsHandler
+     * constructor hook and the dispatch-time context recovery path.
+     */
+    private fun initializeRuntime(phoneContext: Context): RuntimeInitOutcome {
+        if (runtimeReady) return RuntimeInitOutcome(initialized = true)
+        synchronized(this) {
+            if (runtimeReady) return RuntimeInitOutcome(initialized = true)
+            if (mPhoneContext == null) {
+                mPhoneContext = phoneContext
             }
+            val pluginContext = getPluginContext()
+            if (pluginContext == null) {
+                XLog.e("Plugin context is null after creation attempt")
+                return RuntimeInitOutcome(initialized = false, stopReason = "plugin_context_null")
+            }
+            mPluginContext = pluginContext
+            if (PrefsReader.showCodeNotification(pluginContext)) {
+                initNotificationChannel()
+                registerCopyCodeReceiver()
+            }
+            registerSmsInboxObserver()
+            ModuleActivationStore.markActivated(pluginContext)
+            if (ModuleConflictArbiter.shouldSuppressByRelay(mPhoneContext, "SmsHandlerHook#constructor")) {
+                logSuppressedOnce("constructor")
+            }
+            runtimeReady = true
+            return RuntimeInitOutcome(initialized = true)
         }
     }
 
@@ -273,6 +291,63 @@ class SmsHandlerHook : BaseHook() {
         }
     }
 
+    /**
+     * v3.3.8 `SmsHandlerHook.ensureRuntimeForDispatch` equivalent: when the constructor hook never
+     * saw this InboundSmsHandler instance, recover the phone context from the hook frame
+     * (handler -> receiver argument -> remaining arguments) and finish the runtime bootstrap.
+     */
+    private fun attemptDispatchRuntimeRecovery(param: MethodHookParam, receiverIndex: Int) {
+        val owner = param.thisObject?.javaClass?.name ?: "<none>"
+        val argCount = param.args.size
+        XLog.w(
+            "SmsHandlerHook dispatch runtime missing, attempt recovery: owner=%s receiverIndex=%d argCount=%d",
+            owner,
+            receiverIndex,
+            argCount,
+        )
+        val receiverArg = param.args.getOrNull(receiverIndex)
+        var recovered = SmsHookContextRecovery.resolveFirst(
+            param.thisObject to "handler",
+            receiverArg to "receiver",
+        )
+        if (recovered == null) {
+            for ((index, arg) in param.args.withIndex()) {
+                recovered = SmsHookContextRecovery.resolve(arg, "arg[$index]")
+                if (recovered != null) break
+            }
+        }
+        if (recovered == null) {
+            XLog.e(
+                "SmsHandlerHook dispatch runtime recovery skipped: no phone context owner=%s receiverIndex=%d argCount=%d",
+                owner,
+                receiverIndex,
+                argCount,
+            )
+            return
+        }
+        val recoveredContext = recovered.context
+        val recoveredSource = recovered.source
+        val recoveredPackage = recoveredContext.packageName
+        val processName = runCatching {
+            recoveredContext.applicationInfo?.processName
+        }.getOrNull() ?: recoveredPackage
+        XLog.w(
+            "SmsHandlerHook dispatch runtime recovery context: source=%s package=%s process=%s",
+            recoveredSource,
+            recoveredPackage,
+            processName,
+        )
+        val outcome = initializeRuntime(recoveredContext)
+        if (!outcome.initialized) {
+            XLog.e(
+                "SmsHandlerHook dispatch runtime recovery failed: source=%s reason=%s package=%s",
+                recoveredSource,
+                outcome.stopReason ?: "unknown",
+                recoveredPackage,
+            )
+        }
+    }
+
     private fun beforeDispatchIntentHandler(param: MethodHookParam, receiverIndex: Int) {
         val intent = param.args.getOrNull(0) as? Intent ?: return
         val action = intent.action
@@ -299,8 +374,16 @@ class SmsHandlerHook : BaseHook() {
             intent.extras != null,
         )
 
-        val pluginContext = getPluginContext()
-        val phoneContext = mPhoneContext
+        var pluginContext = getPluginContext()
+        var phoneContext = mPhoneContext
+        if (pluginContext == null || phoneContext == null) {
+            // v3.3.6 introduced an app-side DispatchContextRecovery for exactly this case (the
+            // constructor hook can miss the handler instance); v3.3.8 hoisted it into
+            // smscode-core as SmsHookContextRecovery. Bailing out here used to drop the SMS.
+            attemptDispatchRuntimeRecovery(param, receiverIndex)
+            pluginContext = getPluginContext()
+            phoneContext = mPhoneContext
+        }
         if (pluginContext == null || phoneContext == null) {
             XLog.e("Context is null, skip parsing. pluginContext: %s, phoneContext: %s", pluginContext, phoneContext)
             return
@@ -649,6 +732,7 @@ class SmsHandlerHook : BaseHook() {
         const val ANDROID_PHONE_PACKAGE = "com.android.phone"
         private const val TELEPHONY_PACKAGE = "com.android.internal.telephony"
         private const val SMS_HANDLER_CLASS = "$TELEPHONY_PACKAGE.InboundSmsHandler"
+        private const val DISPATCH_INTENT_METHOD = "dispatchIntent"
         private val SMSCODE_PACKAGE = BuildConfig.APPLICATION_ID
         private const val EVENT_BROADCAST_COMPLETE = 3
         private const val EVENT_ID_EXTRA = "event_id"
