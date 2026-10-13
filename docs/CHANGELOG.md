@@ -4,6 +4,22 @@
 
 ---
 
+## [v3.3.9-api102] - 2026-10-13
+- 版本：`versionCode 133` / `versionName 3.3.9-api102`（對齊上游 3.3.9）。上游自用編號與本 fork 的 13x 序列無關（3.3.6=548、3.3.8=628、3.3.9 另算）。
+- 逆推 `arm64-v8a_XposedSmsCode_v3.3.9_release.apk`（對照同批 `v3.3.8`、`v3.3.6`）後判定：**shim 零改動**。以下全部是本機實測，不是抄上游發行說明：
+  - `META-INF/xposed/java_init.list`：3.3.8 與 3.3.9 **md5 相同**（`2adf1567993e4277333e4f5fbb45f3e9`，內容 `io.github.magisk317.smscode.xp.LibXposedEntry`）；3.3.6 是另一顆（`7f0ef1ef3bdd46d75b195069d4d533e0`），對應 v3.3.8 那次 `com.github.magisk317 → io.github.magisk317` 整包改名。本 fork 用自有入口類，不受上游改名影響。
+  - `META-INF/xposed/module.prop`：3.3.8 與 3.3.9 **逐位元組相同**（`minApiVersion=102`／`targetApiVersion=102`／`autoHotReload=true`）。
+  - `assets/smscode-rules/`：兩版各 12 檔，**sha256 集合完全一致**（`diff` rc=0）——規則目錄這輪沒動。
+  - 私模組 API 面（`classes.dex`，以 androguard 展開 `Lio/github/magisk317/` 的 class／field／method 簽名，先把 R8 混淆型別統一規集成 `LO;`、再排除 `$` 合成類）：3.3.8 = 4442 行、3.3.9 = 4458 行，**差異 34 行（+25／−9）**，全部落在三處：
+    1. Room 生成碼的欄位字母洗牌（`data/db/AppDatabase`、`AppDatabase_Impl` 的 `J/l/m/N` 互換）——R8 每次構建都會換，不是 API 變動。
+    2. 日誌層 lambda 合成方法改名（`xposed/logging/DefaultLogSanitizer` 的 `a/b/c`、`LogDispatcher` 的 `b/e` → `a/b`）。
+    3. 三顆**新增**類別：`xposed/entitlement/MobileHookGateCheck`（`isAllowedWhenEnabled(Z,…………)Z`，把 hook 放行掛到手機 entitlement 上）、`xposed/entitlement/R`、`xposed/logging/VerboseLogEnableTracker`（`onVerboseLogToggled(Z)V`／`checkPreExport(…)`／`MIN_INTERVAL_MS`／`enableTimestamp`——詳細日誌開開關的防濫用與匯出前檢查）。
+  - 關鍵判定：**本 fork shim 觸及的兩層零變動**——差異 34 行沒有一行落在 `smscode/xposed/hook/**` 或 `smscode/xposed/helper/**`；`SmsHookContextRecovery`／`SmsHookConstructorInitializer`／`BaseSmsProviderHook`／`InboundSmsHookClaim`／`MmsEntryPointHook`／`SmsInboxObserver`／`CopyCodeReceiverRegistrar`／`LocalInputActions`／`BlockEvaluation`／`SmsRoutingProbeResolver`／`SmsProviderHookInstaller` 在簽名表中的引用數兩版逐一相同（26/14/21/39/83/86/9/14/29/33/58）。被 hook 的系統符號（`dispatchIntent`、`dispatchSmsDeliveryIntent`、`mPhoneContext`、`mPhone`、`initializeRuntime`、`logWriteDiag`）在兩版字串表也都還在。
+- 未採納的兩項上游新功能，理由：`MobileHookGateCheck` 依賴本 fork 已整組移除的 entitlement／billing（見 v3.3.7-api102 那節），不重建啟動閘門；`VerboseLogEnableTracker` 是上游「詳細日誌＋匯出」那套 UI 的配套，本 fork 沒有該入口，所以沒有可掛的地方（不是遺漏，也不是做不到）。
+- 簽名：`apksigner --print-certs` 實測三版（3.3.6／3.3.8／3.3.9）共用同一張憑證 SHA-256 `027b936e1d82a606d83599548b8b11e49a2c8ae2588c4a9fbe8311e2c54f103a`（`CN=Magisk317`）——上游沒換鑰；本 fork 走自己的鑰，不受影響。
+
+---
+
 ## [v3.3.8-api102] - 2026-10-11
 - 版本：`versionCode 132` / `versionName 3.3.8-api102`（對齊上游 3.3.8）。上游 APK 實測：v3.3.6 = versionCode 548、v3.3.8 = versionCode 628 —— 上游自用另一套編號，本 fork 仍走自己的 13x 序列。
 - 逆推 `arm64-v8a_XposedSmsCode_v3.3.6_release.apk` / `v3.3.8_release.apk` 的私模組 API 後，shim 對齊 3.3.8，並保留 3.3.6 路徑（新舊通吃）：
