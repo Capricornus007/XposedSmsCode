@@ -67,7 +67,7 @@ object XposedRuntimeInstaller {
                 .invoke(null) as? android.content.Context
         }.getOrNull()
         val otelEnabled = if (hookApp != null) {
-            BuildConfig.DEBUG || HookPrefsReader.isAnalyticsEnabled(hookApp)
+            BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD || HookPrefsReader.isAnalyticsEnabled(hookApp)
         } else {
             true
         }
@@ -82,7 +82,7 @@ object XposedRuntimeInstaller {
                 serviceVersion = BuildConfig.VERSION_NAME,
                 projectId = "83955172",
                 projectName = "XposedSmsCode",
-                environment = if (BuildConfig.DEBUG) "debug" else "release",
+                environment = if (BuildConfig.DEBUG) "debug" else if (BuildConfig.IS_CI_BUILD) "ci" else "release",
                 // Captured once here, but the provider below is what actually keeps the value
                 // alive: at hook-install time the remote prefs provider is often not bound yet,
                 // and freezing "" here used to drop service.instance.id for the whole process

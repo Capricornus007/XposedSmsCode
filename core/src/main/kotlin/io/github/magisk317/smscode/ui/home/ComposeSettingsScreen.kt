@@ -64,7 +64,6 @@ import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnost
 import io.github.magisk317.smscode.runtime.common.prefs.AppPreferencesDataStore
 import io.github.magisk317.smscode.common.utils.RuntimeDiagnosticsBridge
 import io.github.magisk317.smscode.runtime.common.diagnostics.LogBundleExporter
-import io.github.magisk317.xposed.logging.VerboseLogEnableTracker
 import io.github.magisk317.smscode.runtime.RuntimeBackupImportStatus
 import io.github.magisk317.smscode.runtime.bridge.UiBackupAccess
 import io.github.magisk317.smscode.runtime.bridge.UiNotificationAccess
@@ -114,10 +113,7 @@ import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
 
 private val isCiOrDebugBuild: Boolean =
-    BuildConfig.DEBUG ||
-        BuildConfig.VERSION_NAME.contains("-202") ||
-        BuildConfig.VERSION_NAME.contains("-test") ||
-        BuildConfig.VERSION_NAME.contains("-ci")
+    BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
 
 private data class SettingsPageRuntime(
     val isActive: Boolean = true,
@@ -440,7 +436,7 @@ internal fun ComposeSettingsScreenBody(
                 RuntimeDiagnosticsBridge.ensureInstalled()
                 val bundle = LogBundleExporter.buildLogBundle(
                     context = context,
-                    mode = DiagnosticExportMode.fromDebugLogging(verboseLogEnabled.value),
+                    mode = DiagnosticExportMode.FULL,
                 )
                 val file = bundle.file ?: return@withContext bundle.details
                 context.contentResolver.openOutputStream(destination, "wt")?.use { output ->
@@ -457,12 +453,6 @@ internal fun ComposeSettingsScreenBody(
     }
 
     fun saveRuntimeLogBundle() {
-        val blockReason = LogBundleExporter.checkPreExport(verboseLogEnabled.value)
-        if (blockReason != null) {
-            val message = io.github.magisk317.uikit.preference.resolveLogExportBlockMessage(context, blockReason)
-            scope.launch { snackbarHostState.showSnackbar(message) }
-            return
-        }
         val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", java.util.Locale.US)
             .format(java.util.Date())
         saveRuntimeLogLauncher.launch("smscode_logs_$timestamp.zip")
@@ -1040,7 +1030,6 @@ internal fun ComposeSettingsScreenBody(
                                 onShareLog = ::saveRuntimeLogBundle,
                                 onVerboseLogEnabledChange = { enabled ->
                                     verboseLogEnabled.value = enabled
-                                    VerboseLogEnableTracker.onVerboseLogToggled(enabled)
                                     io.github.magisk317.xposed.logging.LogSanitizerConfig
                                         .syncFromVerboseMode(enabled)
                                     scope.launch {
@@ -1060,7 +1049,7 @@ internal fun ComposeSettingsScreenBody(
                                 },
                                 onRetentionClick = { showRuntimeLogRetentionDialog = true },
                                 onClearLogClick = { showClearLogConfirmDialog = true },
-                                onAnalyticsEnabledChange = if (!BuildConfig.DEBUG) {
+                                onAnalyticsEnabledChange = if (!BuildConfig.DEBUG && !BuildConfig.IS_CI_BUILD) {
                                     { enabled ->
                                         analyticsEnabled.value = enabled
                                         scope.launch {
@@ -1074,13 +1063,13 @@ internal fun ComposeSettingsScreenBody(
                                         }
                                         MagiskOtel.configure(
                                             MagiskOtel.Config(
-                                                enabled = BuildConfig.DEBUG || enabled,
+                                                enabled = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD || enabled,
                                                 serviceName = "xposedsmscode",
                                                 serviceVersion = BuildConfig.VERSION_NAME,
                                                 serviceCommit = BuildConfig.COMMIT_HASH,
                                                 projectId = "83955172",
                                                 projectName = "XposedSmsCode",
-                                                environment = if (BuildConfig.DEBUG) "debug" else "release",
+                                                environment = if (BuildConfig.DEBUG) "debug" else if (BuildConfig.IS_CI_BUILD) "ci" else "release",
                                                 deviceAttributes =
                                                     mapOf(
                                                         "device.manufacturer" to Build.MANUFACTURER,
