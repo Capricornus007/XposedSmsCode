@@ -9,23 +9,26 @@
     <a href="https://github.com/magisk317/XposedSmsCode/releases">
         <img src="https://raw.githubusercontent.com/machiav3lli/oandbackupx/master/badge_github.png" alt="Get it on GitHub" height="80"/>
     </a>
+    <a href="https://gitlab.com/magisk3171/XposedSmsCode/-/releases">
+        <img src="https://img.shields.io/badge/Get%20it%20on-GitLab-FC6D26?style=for-the-badge&logo=gitlab&logoColor=white" alt="Get it on GitLab" height="40"/>
+    </a>
 </div>
 
 <div align="center">
 
 <!-- badges:platform:start -->
-[![Commits](https://img.shields.io/github/commit-activity/y/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/graphs/commit-activity) [![Last Commit](https://img.shields.io/github/last-commit/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/commits) [![Contributors](https://img.shields.io/github/contributors/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/graphs/contributors) [![CI](https://img.shields.io/github/actions/workflow/status/magisk3171/XposedSmsCode/ci.yml?style=flat-square&label=Build&logo=github-actions&logoColor=white)](https://github.com/magisk317/XposedSmsCode/actions/workflows/ci.yml) [![Latest Release](https://img.shields.io/github/v/release/magisk3171/XposedSmsCode?include_prereleases&style=flat-square&logo=github)](https://github.com/magisk317/XposedSmsCode/releases) [![Release Date](https://img.shields.io/github/release-date/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/releases) [![Downloads](https://img.shields.io/github/downloads/magisk3171/XposedSmsCode/total?style=flat-square&color=blue)](https://github.com/magisk317/XposedSmsCode/releases) [![License](https://img.shields.io/github/license/magisk3171/XposedSmsCode?style=flat-square)](LICENSE)
+[![GitLab](https://img.shields.io/badge/GitLab-magisk3171/XposedSmsCode-FC6D26?style=flat-square&logo=gitlab&logoColor=white)](https://gitlab.com/magisk3171/XposedSmsCode) [![CI](https://img.shields.io/gitlab/pipeline-status/magisk3171%2FXposedSmsCode?branch=beta&style=flat-square&logo=gitlab&label=CI)](https://gitlab.com/magisk3171/XposedSmsCode/-/pipelines?ref=beta) [![Latest Release](https://img.shields.io/gitlab/v/release/magisk3171%2FXposedSmsCode?include_prereleases&style=flat-square&logo=gitlab)](https://gitlab.com/magisk3171/XposedSmsCode/-/releases) [![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square)](LICENSE)
 <!-- badges:platform:end -->
 
 <!-- badges:tech:start -->
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.5.0--Beta1-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Java](https://img.shields.io/badge/Java-26%2B-E76F00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.08.01-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.8.0-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.4.1-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-26-brightgreen?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Xposed API](https://img.shields.io/badge/Xposed_API-102-orange?style=flat-square)](https://github.com/libxposed/api) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.5.0--Beta1-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Java](https://img.shields.io/badge/Java-27%2B-E76F00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.10.00-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.9.0--milestone--2-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.5.0--alpha10-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-28-brightgreen?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Xposed API](https://img.shields.io/badge/Xposed_API-102-orange?style=flat-square)](https://github.com/libxposed/api) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
 <!-- badges:tech:end -->
 
 </div>
 
-识别短信验证码的Xposed模块，并将验证码拷贝到剪切板，亦可以自动输入验证码。
+识别短信验证码的 Xposed 模块：收到验证码短信后自动提取验证码，复制到剪贴板，并可以在支持的应用中自动输入。
 
-如果你还需要将验证码、短信内容或应用通知进一步转发到 Telegram、Webhook、邮箱等通道，可以了解一下新项目 [信驿 Relay](https://github.com/magisk317/xinyi-relay)。它更偏向消息转发与验证码联动场景；若主要需求是验证码识别与自动输入，继续使用本项目会更合适。
+如果你还需要把验证码、短信内容或应用通知转发到 Telegram、Webhook、邮箱等通道，可以了解一下新项目 [信驿 Relay](https://gitlab.com/magisk3171/xinyi-relay)。它更偏向消息转发与验证码联动场景；若主要需求是验证码识别与自动输入，继续使用本项目会更合适。
 
 [English Version](./README-EN.md)
 
@@ -35,49 +38,32 @@
 # 交流与反馈
 - [Telegram Group](https://t.me/+NR2QaQ4dlEgxYmNl)
 
-
 # 使用
-1. Root你的设备，安装Xposed框架；
-2. 安装本模块，激活并重启；
-3. Enjoy it！
+1. Root 你的设备，安装 Xposed/LSPosed 框架；
+2. 安装本模块，在框架中激活并重启；
+3. 在模块设置中按需开启复制、Toast、通知、自动输入等能力。
 
-欢迎反馈，欢迎提出意见或建议。
-
-# 注意
-- **此模块适用于偏原生的系统，其他第三方定制Rom可能不适用。**
-- **兼容性：最低 Android 8.0（API 26），目标 Android 16（API 37）。**
-- **支持 LibXposed API 102。**
-- **代码库：100% Kotlin + Jetpack Compose + Room + Coroutines**
-- **遇到问题请先阅读模块中的"常见问题"**
-- Play、GitHub 与预留的 F-Droid 配置仅表示发行渠道差异；项目不再提供独立 Lite APK 或用构建变体划分功能层级。
+遇到问题请先阅读模块内的「常见问题」，再提交反馈。
 
 # 功能
-- 收到验证码短信后将验证码提取并复制到系统剪贴板
-- 收到验证码时显示 Toast 提示
-- 收到验证码时显示系统通知
-- 将提取过的验证码短信标记为已读（实验性）
-- 验证码提取成功后，自动删除该验证码短信（实验性）
-- 拦截并屏蔽特定的验证码短信
-- 支持自定义验证码短信关键字（支持正则表达式）
-- 支持官方只读验证码规则与自定义验证码匹配提取规则（支持导入与导出用户规则表）
-- 在支持的应用中自动输入提取的验证码
-- 提取并转发应用通知消息中的验证码
+- 收到验证码短信后提取验证码，并复制到系统剪贴板（可开关）
+- 提取到验证码时显示 Toast 提示（可开关）
+- 提取到验证码时显示状态栏通知：支持通知归属（模块自身 / 电话服务）、自动取消与保留时间（可开关）
+- 在支持的应用中自动输入验证码：无障碍服务辅助定位输入框，支持自动确认/回车、输入延迟与间隔（可开关）
+- 拦截验证码短信：提取成功后拦截，短信应用不再收到（实验性）
+- 自定义验证码短信关键字，支持正则表达式
+- 验证码规则管理：官方规则与自定义匹配规则分层合并，支持配置与规则的备份/恢复
+- 验证码历史记录：记录开关、数量上限与 SIM 卡槽备注
+- 应用内更新检查：支持启动时自动检查与仅 Wi-Fi 检查
+- 运行日志：日志分享、详细日志模式、保留天数与敏感字段脱敏
+- Material 3 界面：动态颜色、界面风格（Material / Miuix）、底栏与背景模糊等可视化设置
 
-# 待实现
-- 定时发送短信
-
-# 发布元数据维护
-- 发版前编辑 `docs/CHANGELOG.md` 当前版本块。
-- 发版前校验版本、发布说明与标签：`scripts/release/check_release_guard.sh`
-- GitHub Release、Xposed-Modules-Repo 与 Telegram 通知共用当前版本 changelog 块。
-
-# 自动化维护边界
-- CI 公共逻辑固定到 `magisk-ci-toolkit` 的不可变提交；GitLab `include.ref`、作业变量和
-  本地/GitHub resolver 必须保持同一 SHA。resolver 使用 exact fetch，因此仍可由维护者
-  显式覆盖为 branch/tag，但仓库默认值不得回退到浮动 `main`。
-- Telegram CI 通知：GitHub 侧由 `.github/workflows/notification.yml` 处理，GitLab 侧由 `.gitlab-ci.yml` 的 `telegram:ci` 处理；tag/release 通知仍由 release workflow 完成后触发。
-- Renovate：GitLab 已配置定时 pipeline，使用 `.gitlab/renovate-config.js` 和隐藏变量 `RENOVATE_TOKEN`；手动 web/API pipeline 需要设置 `DEPENDENCY_OWNER=gitlab` 才会只跑 Renovate；GitLab MR 使用 Renovate 原生 automerge。
-- Dependabot：依赖 GitHub Dependency Graph / alerts，本轮不迁移，现有 GitHub dependency workflow 保持不变。
+# 注意
+- **此模块适用于偏原生系统，第三方深度定制 Rom 可能存在兼容性差异。**
+- **兼容性：最低 Android 9.0（API 28），目标 API 37。**
+- **支持 LibXposed API 102。**
+- **自动输入需要在系统设置中为本模块开启无障碍服务。**
+- **Play 与 GitHub 发行、预留的 F-Droid 配置仅表示发行渠道差异；项目不提供独立 Lite APK，也不以构建变体划分功能层级。**
 
 # 文档
 - [更新日志 (Changelog)](docs/CHANGELOG.md)
@@ -89,8 +75,6 @@
 - [原始项目 (tianma8023/XposedSmsCode)](https://github.com/tianma8023/XposedSmsCode)
 - [Xposed](https://github.com/rovo89/Xposed)
 - [NekoSMS](https://github.com/apsun/NekoSMS)
-- [Xposed](https://github.com/rovo89/Xposed)
-- [NekoSMS](https://github.com/apsun/NekoSMS)
 - [Material Dialogs](https://github.com/afollestad/material-dialogs)
 - [EventBus](https://github.com/greenrobot/EventBus)
 - [Room](https://developer.android.com/training/data-storage/room)
@@ -98,7 +82,6 @@
 - [Kotlin Coroutines](https://github.com/Kotlin/kotlinx.coroutines)
 - [Material Design 3](https://m3.material.io/)
 - [Jetpack Compose](https://developer.android.com/jetpack/compose)
-
 
 # 协议
 所有的源码均遵循 [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt) 协议

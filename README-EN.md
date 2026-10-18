@@ -9,23 +9,26 @@
     <a href="https://github.com/magisk317/XposedSmsCode/releases">
         <img src="https://raw.githubusercontent.com/machiav3lli/oandbackupx/master/badge_github.png" alt="Get it on GitHub" height="80"/>
     </a>
+    <a href="https://gitlab.com/magisk3171/XposedSmsCode/-/releases">
+        <img src="https://img.shields.io/badge/Get%20it%20on-GitLab-FC6D26?style=for-the-badge&logo=gitlab&logoColor=white" alt="Get it on GitLab" height="40"/>
+    </a>
 </div>
 
 <div align="center">
 
 <!-- badges:platform:start -->
-[![Commits](https://img.shields.io/github/commit-activity/y/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/graphs/commit-activity) [![Last Commit](https://img.shields.io/github/last-commit/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/commits) [![Contributors](https://img.shields.io/github/contributors/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/graphs/contributors) [![CI](https://img.shields.io/github/actions/workflow/status/magisk3171/XposedSmsCode/ci.yml?style=flat-square&label=Build&logo=github-actions&logoColor=white)](https://github.com/magisk317/XposedSmsCode/actions/workflows/ci.yml) [![Latest Release](https://img.shields.io/github/v/release/magisk3171/XposedSmsCode?include_prereleases&style=flat-square&logo=github)](https://github.com/magisk317/XposedSmsCode/releases) [![Release Date](https://img.shields.io/github/release-date/magisk3171/XposedSmsCode?style=flat-square)](https://github.com/magisk317/XposedSmsCode/releases) [![Downloads](https://img.shields.io/github/downloads/magisk3171/XposedSmsCode/total?style=flat-square&color=blue)](https://github.com/magisk317/XposedSmsCode/releases) [![License](https://img.shields.io/github/license/magisk3171/XposedSmsCode?style=flat-square)](LICENSE)
+[![GitLab](https://img.shields.io/badge/GitLab-magisk3171/XposedSmsCode-FC6D26?style=flat-square&logo=gitlab&logoColor=white)](https://gitlab.com/magisk3171/XposedSmsCode) [![CI](https://img.shields.io/gitlab/pipeline-status/magisk3171%2FXposedSmsCode?branch=beta&style=flat-square&logo=gitlab&label=CI)](https://gitlab.com/magisk3171/XposedSmsCode/-/pipelines?ref=beta) [![Latest Release](https://img.shields.io/gitlab/v/release/magisk3171%2FXposedSmsCode?include_prereleases&style=flat-square&logo=gitlab)](https://gitlab.com/magisk3171/XposedSmsCode/-/releases) [![License](https://img.shields.io/badge/License-GPL--3.0-blue?style=flat-square)](LICENSE)
 <!-- badges:platform:end -->
 
 <!-- badges:tech:start -->
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.4.10-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Java](https://img.shields.io/badge/Java-26%2B-E76F00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.08.01-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.7.1-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.3.2-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-26-brightgreen?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Xposed API](https://img.shields.io/badge/Xposed_API-102-orange?style=flat-square)](https://github.com/libxposed/api) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.5.0--Beta1-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Java](https://img.shields.io/badge/Java-27%2B-E76F00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.10.00-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.9.0--milestone--2-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.5.0--alpha10-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-28-brightgreen?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Xposed API](https://img.shields.io/badge/Xposed_API-102-orange?style=flat-square)](https://github.com/libxposed/api) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
 <!-- badges:tech:end -->
 
 </div>
 
-An Xposed module which can recognize, parse SMS code and copy it to clipboard when a new message arrives. It can also input SMS code automatically.
+An Xposed module which recognizes and parses SMS verification codes: when a verification SMS arrives, the code is extracted, copied to the clipboard, and can be auto-inputted into supported apps.
 
-If you also need to forward verification codes, SMS content, or app notifications to Telegram, Webhook, email, or other channels, you may also want to check out the newer project [Xinyi Relay](https://github.com/magisk317/xinyi-relay). It is more focused on message relay and verification-code workflows; if your main need is SMS code recognition and auto-fill, this project is still the better fit.
+If you also need to forward verification codes, SMS content, or app notifications to Telegram, Webhook, email, or other channels, check out the newer project [Xinyi Relay](https://gitlab.com/magisk3171/xinyi-relay). It focuses on message relay and verification-code workflows; if your main need is SMS code recognition and auto-input, this project remains the better fit.
 
 [中文版说明](./README.md)
 
@@ -36,53 +39,35 @@ If you also need to forward verification codes, SMS content, or app notification
 - [Telegram Group](https://t.me/+NR2QaQ4dlEgxYmNl)
 
 # Usage
-1. Root your device and install Xposed Framework.
-2. Install and activite this xposed module and then reboot.
-3. Enjoy it!
+1. Root your device and install the Xposed/LSPosed framework.
+2. Install this module, activate it in the framework, and reboot.
+3. Enable the capabilities you need (clipboard, toast, notification, auto-input) in the module settings.
 
-Welcome any feedbacks.
-
-# Attention
-- **This module is designed for AOSP-like systems; it may not function correctly on heavily customized ROMs.**
-- **Compatibility: Minimum Android 8.0 (API 26), target Android 16 (API 37).**
-- **Supports LibXposed API 102.**
-- **Tech Stack: 100% Kotlin + Jetpack Compose + Room + Coroutines**
-- **Please read the FAQ in the app first if you encounter any problems.**
-- Play, GitHub, and the reserved F-Droid configuration identify distribution channels only; the
-  project no longer ships a separate Lite APK or uses build variants as feature tiers.
+Please read the in-app FAQ first if you encounter any problems, then file feedback.
 
 # Features
-- Copy verification code to clipboard when a new message arrives.
-- Show toast when the verification code is copied.
-- Show notification when verification SMS parsed.
-- Mark verification SMS as read (experimental).
-- Delete verification SMS when it's extracted successfully (experimental).
-- Block verification SMS if it's extracted successfully.
-- Custom keywords about verification code message (regular expressions allowed).
-- Support official read-only SMS code rules plus custom match rules with user-rule import/export.
-- Auto-input SMS code.
-- **Compatible with Android 8.0+ (API 26+) and continuously optimized for newer Android versions**
-- **Material Design 3 (MD3) + Material You Dynamic Color**
-- **100% Kotlin + Coroutines + Room Database**
-- **Modern UI built with Jetpack Compose**
-- **Settings page fully migrated to Jetpack Compose**
+- Extract the verification code from an incoming SMS and copy it to the system clipboard (toggleable)
+- Show a toast when a verification code is extracted (toggleable)
+- Show a status-bar notification when a code is extracted: notification owner (module itself / phone service), auto-cancel and retention time (toggleable)
+- Auto-input the verification code into supported apps: an accessibility service locates the input field, with auto-confirm/enter, input delay and interval (toggleable)
+- Block verification SMS: once extracted, the SMS is intercepted and no longer reaches the SMS app (experimental)
+- Custom verification-SMS keywords with regular-expression support
+- Verification-code rules: official rules and custom match rules merged in layers, with config/rule backup and restore
+- Verification-code history: record toggle, entry limit and SIM-slot remarks
+- In-app update check: auto-check on start and Wi-Fi-only options
+- Runtime logs: log sharing, verbose-log mode, retention days and sensitive-field redaction
+- Material 3 UI: dynamic color, interface style (Material / Miuix), bottom bar and background blur, and other visual settings
 
-# Release Metadata
-- Edit the current version block in `docs/CHANGELOG.md` before release.
-- Validate version, release notes, and tag consistency: `scripts/release/check_release_guard.sh`.
-- GitHub Release, Xposed-Modules-Repo, and Telegram notification share the current changelog block.
-
-# Automation Ownership
-- Shared CI logic is pinned to an immutable `magisk-ci-toolkit` commit. GitLab `include.ref`, the
-  job variable, and the local/GitHub resolver must stay on the same SHA. The resolver uses an exact
-  fetch, so maintainers may explicitly override it with a branch or tag, but the repository default
-  must not fall back to a floating `main`.
-- Telegram CI notification: GitHub is handled by `.github/workflows/notification.yml`; GitLab is handled by the `telegram:ci` job in `.gitlab-ci.yml`; tag/release notifications still wait for the release workflow to finish.
-- Renovate: GitLab has a scheduled pipeline using `.gitlab/renovate-config.js` and the hidden `RENOVATE_TOKEN` variable; manual web/API pipelines need `DEPENDENCY_OWNER=gitlab` to run only Renovate; GitLab MRs use Renovate-native automerge.
-- Dependabot: GitHub Dependency Graph / alerts are still GitHub-owned. This migration leaves the existing GitHub dependency workflows unchanged.
+# Attention
+- **This module is designed for AOSP-like systems; heavily customized ROMs may have compatibility issues.**
+- **Compatibility: minimum Android 9.0 (API 28), target API 37.**
+- **Supports LibXposed API 102.**
+- **Auto-input requires enabling the module's accessibility service in system settings.**
+- **Play and GitHub distributions, plus the reserved F-Droid configuration, identify distribution channels only; the project ships no separate Lite APK and uses no build variants as feature tiers.**
 
 # Documentation
 - [Release Logs](docs/CHANGELOG.md)
+- [Refactoring Summary](docs/REFACTORING.md)
 - [Privacy Policy](docs/PRIVACY.md)
 - [Donations](docs/DONATIONS.md)
 
@@ -99,10 +84,12 @@ Welcome any feedbacks.
 - [Jetpack Compose](https://developer.android.com/jetpack/compose)
 
 # License
-All code is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt) 
+All code is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.txt)
 
 # Donation
-If you find this project helpful, please consider rewarding the developer with a cup of coffee. Your support is the greatest motivation for my persistent maintenance!
+If you find this project helpful, please consider supporting the developer. Your support directly helps maintenance and iteration.
+
+Donation list and details: [Donations](docs/DONATIONS.md).
 
 | Alipay Receipt | WeChat Appreciation | WeChat Collect |
 | :---: | :---: | :---: |

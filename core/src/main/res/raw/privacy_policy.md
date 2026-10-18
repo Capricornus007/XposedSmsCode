@@ -1,6 +1,6 @@
 # Privacy Policy / 隐私政策
 
-**Effective Date / 生效日期:** 2026-01-29
+**Effective Date / 生效日期:** 2026-10-18
 
 [English Version](#privacy-policy-for-xposedsmscode) | [中文版本](#xposedsmscode-隐私政策)
 
@@ -29,27 +29,31 @@ Our application's core functionality is to extract verification codes from SMS m
 *   The app has no backend service for collecting SMS content.
 *   Network access is used for update checks/downloads and related release metadata retrieval.
 
-### 3. Data Retention
+### 3. Technical Diagnostics
+
+XposedSmsCode does not collect technical diagnostic or usage statistics data, and does not send such data to any server operated by the project. Network access is used only for update checks, update downloads, and related release metadata retrieval, as described above.
+
+### 4. Data Retention
 *   **Local Storage:** Extracted records are stored locally in a database on your device (`/data/data/com.github.tianma8023.xposed.smscode/databases/`).
 *   **Deletion:** You can clear this data at any time by uninstalling the application or using the "Clear Data" function in the app settings.
 
-### 4. Data Sharing and Disclosure
+### 5. Data Sharing and Disclosure
 We **DO NOT** sell, trade, or otherwise transfer your personally identifiable information to outside parties.
 *   We do not have a backend server that collects your SMS data.
 *   Verification code content is processed locally on device and is not forwarded by this app to third-party services.
 
-### 5. Security
+### 6. Security
 We implement a variety of security measures to maintain the safety of your personal information.
 *   The app operates ensuring that sensitive permissions are used solely for the stated core purpose.
 *   Network communication for update checks/downloads uses standard HTTPS encryption.
 
-### 6. Children's Privacy
+### 7. Children's Privacy
 Our Service does not address anyone under the age of 13. We do not knowingly collect personally identifiable information from children under 13.
 
-### 7. Changes to This Privacy Policy
+### 8. Changes to This Privacy Policy
 We may update our Privacy Policy from time to time. Thus, you are advised to review this page periodically for any changes. We will notify you of any changes by posting the new Privacy Policy on this page.
 
-### 8. Contact Us
+### 9. Contact Us
 If you have any questions or suggestions about our Privacy Policy, do not hesitate to contact us at:
 
 **Email:** play@usdt.edu.kg
@@ -79,27 +83,31 @@ If you have any questions or suggestions about our Privacy Policy, do not hesita
 *   应用没有用于收集短信内容的后端服务。
 *   网络访问仅用于版本检查、更新下载及相关发布信息获取。
 
-### 3. 数据保留
+### 3. 技术诊断数据
+
+XposedSmsCode 不收集技术诊断或使用统计数据，也不会向本项目运营的服务器发送此类数据。网络访问仅用于版本检查、更新下载及相关发布信息获取（如前文所述）。
+
+### 4. 数据保留
 *   **本地存储：** 提取的记录存储在您设备本地的数据库中 (`/data/data/com.github.tianma8023.xposed.smscode/databases/`)。
 *   **删除：** 您可以通过卸载应用程序或使用应用设置中的“清除数据”功能随时清除此数据。
 
-### 4. 数据共享与披露
+### 5. 数据共享与披露
 我们**不会**向外界出售、交易或以其他方式转移您的个人身份信息。
 *   我们没有用于收集您短信数据的后端服务器。
 *   验证码内容在本地处理，本应用不会将其转发到第三方服务。
 
-### 5. 安全性
+### 6. 安全性
 我们实施了多种安全措施来维护您个人信息的安全。
 *   应用程序确保敏感权限仅用于声明的核心目的。
 *   更新检查与下载相关网络通信使用标准 HTTPS 加密。
 
-### 6. 儿童隐私
+### 7. 儿童隐私
 我们的服务不针对 13 岁以下的任何人。我们不会有意收集 13 岁以下儿童的个人身份信息。
 
-### 7. 本隐私政策的更改
+### 8. 本隐私政策的更改
 我们可能会不时更新我们的隐私政策。因此，建议您定期查看本页面以了解任何更改。我们将通过在此页面上发布新的隐私政策来通知您任何更改。
 
-### 8. 联系我们
+### 9. 联系我们
 如果您对我们的隐私政策有任何疑问或建议，请随时通过以下方式联系我们：
 
 **邮箱：** play@usdt.edu.kg
