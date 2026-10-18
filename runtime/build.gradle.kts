@@ -46,7 +46,7 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            buildConfigField("int", "LOG_LEVEL", "4")
+            buildConfigField("int", "LOG_LEVEL", "5")
             buildConfigField("boolean", "LOG_TO_XPOSED", "true")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -61,7 +61,7 @@ android {
     // Sources live under src/<name>/kotlin. AGP compiles src/<name>/java by default, so
     // each source set is pointed at the kotlin directory explicitly.
     sourceSets {
-        listOf("main", "test", "github", "fdroid", "play", "nonPlayBilling").forEach { name ->
+        listOf("main", "test", "github", "fdroid", "play").forEach { name ->
             findByName(name)?.kotlin?.directories?.add("src/$name/kotlin")
         }
     }
@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.mobile.entitlement.android)
     implementation(project(":magisk-xposed-kit"))
     implementation(project(":magisk-xposed-kit:entitlement"))
+    implementation(project(":magisk-xposed-kit:logging"))
     implementation(project(":smscode-core:contract"))
     implementation(project(":smscode-core:verification"))
     implementation(project(":smscode-core:hook"))

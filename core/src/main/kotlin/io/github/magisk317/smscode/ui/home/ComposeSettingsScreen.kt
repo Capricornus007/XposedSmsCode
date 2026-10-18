@@ -3,6 +3,9 @@
 
 package io.github.magisk317.smscode.ui.home
 
+import io.github.magisk317.uikit.update.AppUpdateController
+import org.koin.compose.koinInject
+
 import androidx.compose.foundation.layout.PaddingValues
 
 import android.annotation.SuppressLint
@@ -68,7 +71,7 @@ import io.github.magisk317.smscode.runtime.bridge.UiNotificationAccess
 import org.koin.compose.koinInject
 import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogStore
 import io.github.magisk317.smscode.common.utils.AppPreferences
-import io.github.magisk317.smscode.common.utils.XLog
+import io.github.magisk317.xposed.logging.XLog
 import io.github.magisk317.xposed.permission.PermissionBridge
 import io.github.magisk317.uikit.foundation.LoadingIndicatorTokens
 import io.github.magisk317.uikit.surface.AppPullToRefresh
@@ -109,6 +112,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
+
+private val isCiOrDebugBuild: Boolean =
+    BuildConfig.DEBUG ||
+        BuildConfig.VERSION_NAME.contains("-202") ||
+        BuildConfig.VERSION_NAME.contains("-test") ||
+        BuildConfig.VERSION_NAME.contains("-ci")
 
 private data class SettingsPageRuntime(
     val isActive: Boolean = true,
@@ -342,7 +351,7 @@ internal fun ComposeSettingsScreenBody(
         val data = result.data
         val pickedUri = data?.data ?: data?.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
         XLog.i(
-            "Backup picker result: code=%d uri=%s clipCount=%d",
+            message = "Backup picker result: code=%d uri=%s clipCount=%d",
             result.resultCode,
             pickedUri?.toString() ?: "<null>",
             data?.clipData?.itemCount ?: 0,
@@ -364,7 +373,7 @@ internal fun ComposeSettingsScreenBody(
         val data = result.data
         val pickedUri = data?.data ?: data?.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
         XLog.i(
-            "Restore picker result: code=%d uri=%s clipCount=%d",
+            message = "Restore picker result: code=%d uri=%s clipCount=%d",
             result.resultCode,
             pickedUri?.toString() ?: "<null>",
             data?.clipData?.itemCount ?: 0,
@@ -380,14 +389,14 @@ internal fun ComposeSettingsScreenBody(
                     context.contentResolver.takePersistableUriPermission(pickedUri, flagsToPersist)
                 } else {
                     XLog.w(
-                        "Persistable grant not returned by picker: uri=%s flags=0x%x",
+                        message = "Persistable grant not returned by picker: uri=%s flags=0x%x",
                         pickedUri.toString(),
                         dataFlags,
                     )
                 }
             }.onFailure {
                 XLog.w(
-                    "takePersistableUriPermission failed: uri=%s err=%s",
+                    message = "takePersistableUriPermission failed: uri=%s err=%s",
                     pickedUri.toString(),
                     it.message ?: it.javaClass.simpleName,
                 )
@@ -396,9 +405,9 @@ internal fun ComposeSettingsScreenBody(
             // when Activity lifecycle transitions around document picker return.
             restoreUri = pickedUri
             showRestoreDialog = true
-            XLog.i("Restore confirm dialog requested directly: uri=%s", pickedUri.toString())
+            XLog.i(message = "Restore confirm dialog requested directly: uri=%s", pickedUri.toString())
         } else if (result.resultCode == android.app.Activity.RESULT_OK) {
-            XLog.w("Restore picker returned OK but uri is null")
+            XLog.w(message = "Restore picker returned OK but uri is null")
         }
     }
 
@@ -450,8 +459,7 @@ internal fun ComposeSettingsScreenBody(
     fun saveRuntimeLogBundle() {
         val blockReason = LogBundleExporter.checkPreExport(verboseLogEnabled.value)
         if (blockReason != null) {
-            val resId = context.resources.getIdentifier(blockReason, "string", context.packageName)
-            val message = if (resId != 0) context.getString(resId) else blockReason
+            val message = io.github.magisk317.uikit.preference.resolveLogExportBlockMessage(context, blockReason)
             scope.launch { snackbarHostState.showSnackbar(message) }
             return
         }
@@ -523,7 +531,7 @@ internal fun ComposeSettingsScreenBody(
             // An empty list means the service is already in the requested state, so no su round trip.
             val commands = PermissionBridge.accessibilityCommands(currentServices, component, enable)
             commands.isEmpty() || PermissionBridge.runRoot(commands) { message ->
-                XLog.w("Root accessibility toggle: %s", message)
+                XLog.w(message = "Root accessibility toggle: %s", message)
             }
         }
     }
@@ -1090,30 +1098,21 @@ internal fun ComposeSettingsScreenBody(
                                 shareEntryMode = RuntimeLogShareEntryMode.SEPARATE_ITEM,
                                 itemOrder = listOf(
                                     RuntimeLogDiagnosticsItem.SHARE_LOG,
-                                    RuntimeLogDiagnosticsItem.VERBOSE_LOG,
                                     RuntimeLogDiagnosticsItem.SENSITIVE_LOG,
                                     RuntimeLogDiagnosticsItem.RETENTION,
                                     RuntimeLogDiagnosticsItem.CLEAR_LOG,
                                     RuntimeLogDiagnosticsItem.ANALYTICS,
                                 ),
                             ),
+                            enabled = isCiOrDebugBuild,
                         )
-                        SwitchItem(
-                            title = stringResource(id = R.string.pref_auto_update_on_start_title),
-                            summary = stringResource(id = R.string.pref_auto_update_on_start_summary),
-                            key = PrefConst.KEY_AUTO_UPDATE_ON_START,
-                            defaultValue = true,
-                            stateOverride = autoUpdateEnabled,
-                            onSaved = markPrefsSaved,
-                        )
-                        if (autoUpdateEnabled.value) {
-                            SwitchItem(
-                                title = stringResource(id = R.string.pref_auto_update_wifi_only_title),
-                                summary = stringResource(id = R.string.pref_auto_update_wifi_only_summary),
-                                key = PrefConst.KEY_AUTO_UPDATE_WIFI_ONLY,
-                                defaultValue = false,
-                                onSaved = markPrefsSaved,
-                            )
+
+                        val updateController = koinInject<AppUpdateController>()
+                        AppArrowItem(
+                            title = stringResource(id = R.string.check_update_title),
+                            summary = stringResource(id = R.string.check_update_summary),
+                        ) {
+                            updateController.check(userInitiated = true)
                         }
                         AppArrowItem(
                             title = stringResource(id = R.string.pref_privacy_policy_title),
