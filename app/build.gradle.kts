@@ -1,6 +1,6 @@
 plugins {
     id("magisk.android.application")
-    id("smscode.android.common")
+    id("xsc.android.common")
     id("magisk.app.signing")
     id("magisk.app.packaging")
     id("magisk.mobile.gate")
@@ -51,17 +51,12 @@ android {
         localeFilters.addAll(listOf("en", "zh-rCN", "zh-rTW"))
     }
 
-    val gitCommitHash = providers.exec {
-        commandLine("git", "-C", projectDir, "rev-parse", "--short", "HEAD")
-    }.standardOutput.asText.get().trim().ifEmpty { "unknown" }
-
     defaultConfig {
         applicationId = "com.github.tianma8023.xposed.smscode"
         versionCode = versionCodeInt
         versionName = versionNameStr
 
         buildConfigField("String", "LOG_TAG", "\"smscode\"")
-        buildConfigField("String", "COMMIT_HASH", "\"$gitCommitHash\"")
         buildConfigField("int", "MODULE_VERSION", "$versionCodeInt")
         buildConfigField("boolean", "ALLOW_CONFLICT_BYPASS", allowConflictBypass.toString())
         buildConfigField("String", "B_DOWNLOAD_URL", "\"$relayDownloadUrl\"")
@@ -85,7 +80,7 @@ android {
         }
         // Sources live under src/<name>/kotlin. AGP compiles src/<name>/java by default, so
         // each source set is pointed at the kotlin directory explicitly.
-        listOf("main", "test", "github", "fdroid", "play", "nonPlayBilling").forEach { name ->
+        listOf("main", "test", "github", "play").forEach { name ->
             findByName(name)?.kotlin?.directories?.add("src/$name/kotlin")
         }
     }
@@ -110,6 +105,7 @@ dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
     implementation(project(":core"))
     implementation(project(":magisk-ui-kit"))
+    implementation(project(":magisk-ui-kit:update"))
     implementation(project(":hook"))
     implementation(project(":runtime"))
     implementation(project(":smscode-core:domain"))

@@ -4,7 +4,7 @@ plugins {
     // variant and, through it, :runtime's. Without the dimension the strategy
     // below would pin :runtime to its github variant even in a play build,
     // silently re-arming the activation gate the play flavor ships off.
-    id("smscode.android.common")
+    id("xsc.android.common")
     // Carries the distribution identity (gate flag + channel) the hook process
     // reports with its diagnostics attributes.
     id("magisk.mobile.gate")
@@ -13,9 +13,6 @@ plugins {
 
 val appVersionName = libs.versions.versionName.get()
 val appVersionCode = libs.versions.versionCode.get().toInt()
-val gitCommitHash = providers.exec {
-    commandLine("git", "-C", projectDir, "rev-parse", "--short", "HEAD")
-}.standardOutput.asText.get().trim().ifEmpty { "unknown" }
 
 android {
     namespace = "io.github.magisk317.smscode.hook"
@@ -26,7 +23,6 @@ android {
 
         // Keep hook diagnostics and module compatibility checks on the app's catalog version.
         buildConfigField("String", "LOG_TAG", "\"smscode\"")
-        buildConfigField("String", "COMMIT_HASH", "\"$gitCommitHash\"")
         buildConfigField("String", "APPLICATION_ID", "\"com.github.tianma8023.xposed.smscode\"")
         buildConfigField("String", "VERSION_NAME", "\"$appVersionName\"")
         buildConfigField("int", "VERSION_CODE", "$appVersionCode")
@@ -36,7 +32,7 @@ android {
     // Sources live under src/<name>/kotlin. AGP compiles src/<name>/java by default, so
     // each source set is pointed at the kotlin directory explicitly.
     sourceSets {
-        listOf("main", "test", "github", "fdroid", "play", "nonPlayBilling").forEach { name ->
+        listOf("main", "test", "github", "play").forEach { name ->
             findByName(name)?.kotlin?.directories?.add("src/$name/kotlin")
         }
     }

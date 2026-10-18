@@ -2,7 +2,7 @@ plugins {
     id("magisk.android.library")
     id("magisk.android.compose")
     alias(libs.plugins.kotlin.serialization)
-    id("smscode.android.common")
+    id("xsc.android.common")
 }
 
 val allowConflictBypass = findProperty("allowConflictBypass")
@@ -13,14 +13,9 @@ val allowConflictBypass = findProperty("allowConflictBypass")
 android {
     namespace = "io.github.magisk317.smscode.core"
 
-    val gitCommitHash = providers.exec {
-        commandLine("git", "-C", projectDir, "rev-parse", "--short", "HEAD")
-    }.standardOutput.asText.get().trim().ifEmpty { "unknown" }
-
     defaultConfig {
         buildConfigField("int", "VERSION_CODE", libs.versions.versionCode.get())
         buildConfigField("String", "VERSION_NAME", "\"${libs.versions.versionName.get()}\"")
-        buildConfigField("String", "COMMIT_HASH", "\"$gitCommitHash\"")
         buildConfigField("boolean", "ALLOW_CONFLICT_BYPASS", allowConflictBypass.toString())
     }
 
@@ -38,9 +33,9 @@ android {
         listOf("main", "test", "play").forEach { name ->
             getByName(name).kotlin.directories.add("src/$name/kotlin")
         }
-        listOf("github", "fdroid").forEach { flavor ->
+        listOf("github").forEach { flavor ->
             getByName(flavor).kotlin.directories.add("src/$flavor/kotlin")
-            getByName(flavor).kotlin.directories.add("src/nonPlayBilling/kotlin")
+            getByName(flavor).kotlin.directories.add("src/nonPlay/kotlin")
         }
     }
 }
@@ -48,6 +43,7 @@ android {
 dependencies {
     implementation(project(":runtime"))
     api(project(":magisk-ui-kit"))
+    api(project(":magisk-ui-kit:update"))
     implementation(project(":magisk-xposed-kit:logging"))
     implementation(project(":magisk-xposed-kit:diagnostics"))
     implementation(project(":magisk-xposed-kit:permission"))
@@ -65,7 +61,6 @@ dependencies {
     implementation(libs.timber)
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.mobile.entitlement.android)
-    add("playImplementation", libs.play.app.update)
     add("playImplementation", project(":magisk-ui-kit:billing"))
 
     testImplementation(libs.junit.jupiter)
