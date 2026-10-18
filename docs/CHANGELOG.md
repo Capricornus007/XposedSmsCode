@@ -3,12 +3,13 @@
 本日志记录了项目重构后的主要变更。
 
 ---
-## [v3.4.0] - Unreleased
+## [v3.4.0] - 2026-10-18
 - 版本：`versionCode 134` / `versionName 3.4.0`。
-- 下一轮开发占位，发布前补充具体变更。
-
+- `[feat]` 更新支持 OTA 与分发渠道分流。
+- `[fix]` 修复偏好服务延迟绑定导致 service.instance.id 丢失。
+- `[fix]` 修复重复 DataStore 实例导致的崩溃。
+- `[fix]` 修复日志导出阻塞原因不显示。
 > Full Changelog: https://gitlab.com/magisk3171/XposedSmsCode/-/compare/v3.3.9...v3.4.0
-
 ---
 ## [v3.3.9] - 2026-10-12
 - 版本：`versionCode 133` / `versionName 3.3.9`。

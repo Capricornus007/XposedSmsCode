@@ -1,3 +1,5 @@
 - Updated to 3.4.0 (134).
-- Development build; release notes will be updated before publishing.
+- In-app updates support OTA with distribution channel split.
+- Fixed late-binding preference provider and duplicate DataStore crashes.
+- Fixed the hidden log-export block reason.
 - https://gitlab.com/magisk3171/XposedSmsCode/-/releases
