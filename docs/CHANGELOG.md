@@ -3,6 +3,13 @@
 本日志记录了项目重构后的主要变更。
 
 ---
+## [v3.4.1] - Unreleased
+- 版本：`versionCode 135` / `versionName 3.4.1`。
+- 下一轮开发占位，发布前补充具体变更。
+
+> Full Changelog: https://gitlab.com/magisk3171/XposedSmsCode/-/compare/v3.4.0...v3.4.1
+
+---
 ## [v3.4.0] - 2026-10-18
 - 版本：`versionCode 134` / `versionName 3.4.0`。
 - `[feat]` 更新支持 OTA 与分发渠道分流。
