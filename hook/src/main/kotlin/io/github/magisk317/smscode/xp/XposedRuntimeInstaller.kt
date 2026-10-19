@@ -218,24 +218,19 @@ object XposedRuntimeInstaller {
     }
 
     /**
-     * Apply [LogSanitizerConfig] from prefs. Called at init and on a throttled
-     * schedule from the sink; do not re-read prefs on every log line (hot path
-     * + noisy). See [maybeResyncLogSanitizerConfig].
+     * Apply [LogSanitizerConfig] from the build type: debug/CI builds log raw,
+     * release builds deep-sanitize. Constant per build; still called on the
+     * throttled schedule for call-site compatibility.
      */
     private fun syncLogSanitizerConfig() {
-        val ctx = moduleContext ?: return
-        val sensitiveDebugEnabled = runCatching {
-            HookPrefsReader.isSensitiveDebugLogMode(ctx)
-        }.getOrNull()
         io.github.magisk317.xposed.logging.LogSanitizerConfig
-            .syncFromVerboseMode(sensitiveDebugEnabled)
+            .syncFromVerboseMode(BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD)
         lastSanitizerSyncAt = android.os.SystemClock.elapsedRealtime()
     }
 
     /**
-     * Re-read the sanitize pref at most once per [SANITIZER_SYNC_TTL_MS] so a
-     * settings-page toggle propagates to hook processes (which have no live pref
-     * listener) within a few seconds, without paying a prefs read per log line.
+     * Re-applies the (constant) sanitizer config at most once per
+     * [SANITIZER_SYNC_TTL_MS] from the sink, without touching it per log line.
      */
     private fun maybeResyncLogSanitizerConfig() {
         val now = android.os.SystemClock.elapsedRealtime()

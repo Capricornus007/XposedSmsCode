@@ -189,7 +189,7 @@ class MainActivity : ComponentActivity() {
                             }
                             XLog.i(
                                 message = "Sms code test result delivered in MainActivity: code=%s matchedRule=%s",
-                                if (prefsAccess.isSensitiveDebugLogMode(context)) {
+                                if (BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD) {
                                     StringUtils.escape(event.code)
                                 } else {
                                     StringUtils.summarizeCode(event.code)

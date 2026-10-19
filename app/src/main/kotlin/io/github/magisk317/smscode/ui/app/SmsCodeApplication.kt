@@ -209,20 +209,11 @@ class SmsCodeApplication : Application() {
     private fun syncPreferences() {
         applicationScope.launch {
             HookPreferenceMirror.publish(this@SmsCodeApplication)
-            val verboseLog = AppPreferencesDataStore.getBoolean(
-                this@SmsCodeApplication,
-                PrefConst.KEY_VERBOSE_LOG_MODE,
-                false,
-            )
             RuntimeDiagnosticsBridge.ensureInstalled()
-            RuntimeLogStore.setEnabled(verboseLog)
-            val sensitiveDebugMode = AppPreferencesDataStore.getBoolean(
-                this@SmsCodeApplication,
-                PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE,
-                false,
-            )
+            val isPlaintextBuild = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
+            RuntimeLogStore.setEnabled(isPlaintextBuild)
             io.github.magisk317.xposed.logging.LogSanitizerConfig
-                .syncFromVerboseMode(sensitiveDebugMode)
+                .syncFromVerboseMode(isPlaintextBuild)
             StorageUtils.ensureExternalAppDataPermissions(this@SmsCodeApplication)
         }
     }
@@ -350,9 +341,7 @@ class SmsCodeApplication : Application() {
         )
     }
 
-    private fun readVerboseLogMode(): Boolean = runBlocking(Dispatchers.IO) {
-        AppPreferencesDataStore.getBoolean(this@SmsCodeApplication, PrefConst.KEY_VERBOSE_LOG_MODE, false)
-    }
+    private fun readVerboseLogMode(): Boolean = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
 
     private fun registerLicenseActivityKiller() {
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {

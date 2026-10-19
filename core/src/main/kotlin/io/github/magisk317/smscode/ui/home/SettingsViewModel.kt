@@ -350,12 +350,7 @@ class SettingsViewModel(
             }
             val code = result?.code.orEmpty()
             val matchedRuleLabel = result?.matchedRule?.let(::formatMatchedRuleLabel)
-            val safeCode = if (AppPreferencesDataStore.getBoolean(
-                    getApplication(),
-                    PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE,
-                    false,
-                )
-            ) {
+            val safeCode = if (BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD) {
                 StringUtils.escape(code)
             } else {
                 StringUtils.summarizeCode(code)

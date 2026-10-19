@@ -233,7 +233,6 @@ internal fun ComposeSettingsScreenBody(
     var expandOthers by remember { mutableStateOf(false) }
     val launcherIconVisible = remember { mutableStateOf(true) }
     var runtimeLogRetentionDays by remember { mutableIntStateOf(PrefConst.RUNTIME_LOG_RETENTION_DAYS_DEFAULT) }
-    val verboseLogEnabled = rememberPrefBoolean(PrefConst.KEY_VERBOSE_LOG_MODE, false)
     val analyticsEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE_ANALYTICS, true)
     var showRuntimeLogRetentionDialog by remember { mutableStateOf(false) }
     var showClearLogConfirmDialog by remember { mutableStateOf(false) }
@@ -1019,8 +1018,6 @@ internal fun ComposeSettingsScreenBody(
                             labels = RuntimeLogDiagnosticsLabels(
                                 shareLogTitle = stringResource(id = R.string.pref_share_log_title),
                                 shareLogSummary = stringResource(id = R.string.pref_share_log_summary),
-                                verboseLogTitle = stringResource(id = R.string.pref_verbose_log_mode_title),
-                                verboseLogSummary = stringResource(id = R.string.pref_verbose_log_mode_summary),
                                 retentionTitle = stringResource(id = R.string.pref_runtime_log_retention_days_title),
                                 retentionSummary = pluralStringResource(
                                     id = R.plurals.pref_runtime_log_retention_days_summary,
@@ -1031,30 +1028,10 @@ internal fun ComposeSettingsScreenBody(
                                 clearLogSummary = stringResource(id = R.string.runtime_log_clear_summary),
                             ),
                             state = RuntimeLogDiagnosticsState(
-                                verboseLogEnabled = verboseLogEnabled.value,
                                 analyticsEnabled = analyticsEnabled.value,
                             ),
                             callbacks = RuntimeLogDiagnosticsCallbacks(
                                 onShareLog = ::saveRuntimeLogBundle,
-                                onVerboseLogEnabledChange = { enabled ->
-                                    verboseLogEnabled.value = enabled
-                                    io.github.magisk317.xposed.logging.LogSanitizerConfig
-                                        .syncFromVerboseMode(enabled)
-                                    scope.launch {
-                                        AppPreferencesDataStore.setBoolean(
-                                            context,
-                                            PrefConst.KEY_VERBOSE_LOG_MODE,
-                                            enabled,
-                                        )
-                                        HookPreferenceMirror.publish(context)
-                                        markPrefsSaved()
-                                    }
-                                    RuntimeDiagnosticsBridge.ensureInstalled()
-                                    RuntimeLogStore.setEnabled(enabled)
-                                    XLog.setLogLevel(
-                                        if (enabled) Log.VERBOSE else io.github.magisk317.smscode.runtime.BuildConfig.LOG_LEVEL,
-                                    )
-                                },
                                 onRetentionClick = { showRuntimeLogRetentionDialog = true },
                                 onClearLogClick = { showClearLogConfirmDialog = true },
                                 onAnalyticsEnabledChange = if (!BuildConfig.DEBUG && !BuildConfig.IS_CI_BUILD) {
@@ -1095,7 +1072,6 @@ internal fun ComposeSettingsScreenBody(
                                 shareEntryMode = RuntimeLogShareEntryMode.SEPARATE_ITEM,
                                 itemOrder = listOf(
                                     RuntimeLogDiagnosticsItem.SHARE_LOG,
-                                    RuntimeLogDiagnosticsItem.SENSITIVE_LOG,
                                     RuntimeLogDiagnosticsItem.RETENTION,
                                     RuntimeLogDiagnosticsItem.CLEAR_LOG,
                                     RuntimeLogDiagnosticsItem.ANALYTICS,

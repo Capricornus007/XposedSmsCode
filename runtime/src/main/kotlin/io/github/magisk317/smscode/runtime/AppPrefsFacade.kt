@@ -7,11 +7,8 @@ import io.github.magisk317.smscode.runtime.bridge.UiPrefsAccess
 
 /** App-process preference access. It never reads the hook's remote Provider. */
 object AppPrefsFacade : UiPrefsAccess {
-    override suspend fun isSensitiveDebugLogMode(context: Context): Boolean = getBoolean(
-        context,
-        PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE,
-        false,
-    )
+    override suspend fun isSensitiveDebugLogMode(context: Context): Boolean =
+        BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
 
     override suspend fun getSimSlotRemark(context: Context, simSlot: Int): String {
         val key = when (simSlot) {
