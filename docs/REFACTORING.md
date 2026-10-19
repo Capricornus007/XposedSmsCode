@@ -100,7 +100,7 @@
 - `runtime:verifyNoComposeUiLeak`: 禁止 runtime 源码引入 Compose / UI API。
 - `core:verifyNoRuntimeStorageImplLeak`: 禁止 core 直接绑定任意 `Runtime*Facade`，并禁止存储、更新和 feature internals；UI 只能消费 runtime gateway/model。
 - `app:verifyNoLocalVerificationEngine`: 禁止 app 重新引入共享验证码引擎基础设施，也禁止 `app` 拥有 `io.github.magisk317.smscode.xp` 生产源码；Xposed entry/runtime 必须位于 `hook`。
-- `scripts/checks/verify_shared_submodule_compat.sh`: 验证根边界、`smscode-core` domain 单测、
+- `magisk-ci-toolkit/gradle/verify_consumer_compat.sh`（配置由 `scripts/config/compat-check.json` 提供）：验证根边界、`smscode-core` domain 单测、
   verification detekt、hook/runtime lint、`core` 和 `app:check` 的兼容链路。
 
 ## 继续优化的方向
