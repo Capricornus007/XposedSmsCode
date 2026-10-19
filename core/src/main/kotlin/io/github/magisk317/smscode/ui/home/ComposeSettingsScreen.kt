@@ -453,6 +453,14 @@ internal fun ComposeSettingsScreenBody(
     }
 
     fun saveRuntimeLogBundle() {
+        if (LogBundleExporter.checkPreExport() != null) {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    context.getString(io.github.magisk317.uikit.R.string.uikit_log_export_need_root),
+                )
+            }
+            return
+        }
         val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", java.util.Locale.US)
             .format(java.util.Date())
         saveRuntimeLogLauncher.launch("smscode_logs_$timestamp.zip")
