@@ -28,7 +28,7 @@ XposedSmsCode（XSC）是一个 Android/Kotlin LSPosed/Xposed 模块：在宿主
 
 | 名字 | 实际含义 | 不是什么 |
 |---|---|---|
-| `:core` | **UI / presentation 层**（Compose、导航、ViewModel、主题、UI gateway 消费端），历史命名 | 不是底层 core，不承载共享业务逻辑 |
+| `:presentation` | **UI / presentation 层**（Compose、导航、ViewModel、主题、UI gateway 消费端） | 2026-10-20 由 `:core` 更名对齐；不是底层 core，不承载共享业务逻辑 |
 | `:smscode-core:*` | 跨项目共享领域层（contract/domain/hook/rule/runtime/verification/db 七个模块） | 不是主项目私有代码 |
 | `:runtime` | 主项目私有的运行时与数据主层（db/prefs/update/backup/store/forwarder） | 不是共享运行时能力 |
 | `:smscode-core:runtime` | 可复用的共享运行时能力（日志、备份、规则目录、更新、包环境） | 不含主项目数据实现 |
@@ -39,11 +39,11 @@ XposedSmsCode（XSC）是一个 Android/Kotlin LSPosed/Xposed 模块：在宿主
 
 硬规则：
 
-- `core` 是 UI/展示层，不得被当作底层 contract 模块继续塞共享业务逻辑。
+- `:presentation` 是 UI/展示层，不得被当作底层 contract 模块继续塞共享业务逻辑。
 - 可复用的短信策略优先下沉到 `smscode-core:verification` 或 `smscode-core:hook`，
   主项目 `hook` 只保留宿主适配。
-- `core` 的更名评估（如 `ui-core` / `presentation`）见 REFACTORING.md「继续优化的方向」；
-  当前策略是用文档与边界闸门消除歧义，不急于重命名。
+- `:core` → `:presentation` 的更名已于 2026-10-20 落地：模块目录、Gradle 坐标、
+  Kotlin namespace、R/BuildConfig 引用、CI 与脚本任务路径同步切换；新代码一律写 `:presentation`。
 
 ## Gradle 坐标与物理路径
 
@@ -54,7 +54,7 @@ XposedSmsCode（XSC）是一个 Android/Kotlin LSPosed/Xposed 模块：在宿主
 | Gradle 坐标 | 物理目录 |
 |---|---|
 | `:app` | `app/` |
-| `:core` | `core/` |
+| `:presentation` | `presentation/` |
 | `:hook` | `hook/` |
 | `:runtime` | `runtime/` |
 | `:smscode-core:hook` | `smscode/core/hook/`（子模块） |
@@ -77,8 +77,8 @@ MiPushFramework 使用，本仓的保活策略留在 `runtime`/`hook` 主项目�
 | 模块 | 职责 | 硬约束 |
 |---|---|---|
 | `:app` | application 壳、manifest entry、Receiver/Service、composition root、APK 打包、`smscode-rules` assets 同步 | 不重新定义已下沉 `smscode-core` 的验证码主链；不承载 `...smscode.xp` 生产源码 |
-| `:core` | UI/presentation：Compose、导航、ViewModel、主题、UI gateway 消费端 | 不直接引用 `Runtime*Facade`、`AppDatabase`、`DBManager`、`DBProvider` 或 update/store 实现类；只经 `runtime.bridge.Ui*Access` gateway |
-| `:hook` | libxposed entry、hook 宿主适配、`XposedRuntimeInstaller`、`CorePrefsBridge`、项目专属 hooks/actions | 不得依赖 `:app` 或 UI `:core` |
+| `:presentation` | UI/presentation：Compose、导航、ViewModel、主题、UI gateway 消费端 | 不直接引用 `Runtime*Facade`、`AppDatabase`、`DBManager`、`DBProvider` 或 update/store 实现类；只经 `runtime.bridge.Ui*Access` gateway |
+| `:hook` | libxposed entry、hook 宿主适配、`XposedRuntimeInstaller`、`CorePrefsBridge`、项目专属 hooks/actions | 不得依赖 `:app` 或 UI `:presentation` |
 | `:runtime` | 数据主层：`common/constant`、`data/db`、`data/prefs`、`data/update`、`feature/backup`、`feature/store`、`forwarder/*` | 禁止 Compose/UI API；对外优先 facade |
 | `:smscode-core:*` | 共享验证码主链与跨项目公共能力（唯一共享实现来源） | 不得反向依赖主项目模块或 `:magisk-ui-kit` |
 | `:magisk-ui-kit` | 共享 UI chrome（搜索面、tab scaffold、系统栏 scrim） | 父模块只保留路由/业务差异，不复制 chrome 样式 |
@@ -152,9 +152,9 @@ smscode-core:* 不反向依赖任何主项目模块；smscode/rules 不进依赖
 
 | 闸门 | 禁令 |
 |---|---|
-| `verifyMainModuleDependencies` | `runtime` 不反向依赖 `app`/`core`；`core` 不依赖 `app`；`smscode-core:*` 不依赖主项目或 `magisk-ui-kit` |
+| `verifyMainModuleDependencies` | `runtime` 不反向依赖 `app`/`presentation`；`presentation` 不依赖 `app`；`smscode-core:*` 不依赖主项目或 `magisk-ui-kit` |
 | `runtime:verifyNoComposeUiLeak` | `runtime` 源码禁 Compose/UI API |
-| `core:verifyNoRuntimeStorageImplLeak` | `core` 禁直接绑定任意 `Runtime*Facade`，禁存储/更新/feature internals |
+| `presentation:verifyNoRuntimeStorageImplLeak` | `presentation` 禁直接绑定任意 `Runtime*Facade`，禁存储/更新/feature internals |
 | `app:verifyNoLocalVerificationEngine` | `app` 禁重新引入共享验证码引擎；禁 `...smscode.xp` 生产源码 |
 
 跨仓兼容面另由 toolkit 的 `gradle/verify_consumer_compat.sh` 校验
