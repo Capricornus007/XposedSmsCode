@@ -1,6 +1,6 @@
 plugins {
     id("magisk.android.application")
-    id("xsc.android.common")
+    id("magisk.android.distribution")
     id("magisk.app.signing")
     id("magisk.app.packaging")
     id("magisk.mobile.gate")
