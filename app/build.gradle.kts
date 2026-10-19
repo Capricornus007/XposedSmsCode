@@ -103,7 +103,7 @@ tasks.named("preBuild") {
 dependencies {
     implementation(libs.mobile.entitlement.android)
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
-    implementation(project(":core"))
+    implementation(project(":presentation"))
     implementation(project(":magisk-ui-kit"))
     implementation(project(":magisk-ui-kit:update"))
     implementation(project(":hook"))

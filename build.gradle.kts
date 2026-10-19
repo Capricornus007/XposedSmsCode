@@ -136,11 +136,11 @@ val sharedCoreProjectPaths = listOf(
     ":smscode-core:verification",
 )
 val forbiddenMainModuleDependencies = buildMap {
-    put(":runtime", setOf(":app", ":core", ":hook"))
-    put(":hook", setOf(":app", ":core"))
-    put(":core", setOf(":app", ":hook"))
+    put(":runtime", setOf(":app", ":presentation", ":hook"))
+    put(":hook", setOf(":app", ":presentation"))
+    put(":presentation", setOf(":app", ":hook"))
     sharedCoreProjectPaths.forEach { sourcePath ->
-        put(sourcePath, setOf(":app", ":core", ":runtime", ":magisk-ui-kit"))
+        put(sourcePath, setOf(":app", ":presentation", ":runtime", ":magisk-ui-kit"))
     }
 }
 
@@ -181,12 +181,12 @@ val verifyMainModuleDependencies = tasks.register("verifyMainModuleDependencies"
 
 val verifyModuleBoundaries = tasks.register("verifyModuleBoundaries") {
     group = "verification"
-    description = "Run root module-boundary checks for app/core/runtime and shared smscode-core."
+    description = "Run root module-boundary checks for app/presentation/runtime and shared smscode-core."
 
     dependsOn(
         verifyMainModuleDependencies,
         ":app:verifyNoLocalVerificationEngine",
-        ":core:verifyNoRuntimeStorageImplLeak",
+        ":presentation:verifyNoRuntimeStorageImplLeak",
         ":runtime:verifyNoComposeUiLeak",
     )
 }

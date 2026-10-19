@@ -475,7 +475,7 @@ jobs:
         with:
           arguments: >
             --warning-mode all
-            :core:check
+            :presentation:check
             :runtime:check
             :app:check
             :smscode-core:contract:test

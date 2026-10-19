@@ -5,7 +5,7 @@ import android.os.Build
 import io.github.magisk317.smscode.common.constant.NotificationConst
 import io.github.magisk317.smscode.common.constant.PrefConst
 import io.github.magisk317.smscode.runtime.common.prefs.AppPreferencesDataStore
-import io.github.magisk317.smscode.core.R
+import io.github.magisk317.smscode.presentation.R
 import io.github.magisk317.smscode.runtime.RuntimeNotificationFacade as NotificationUtils
 import io.github.magisk317.smscode.xp.hook.code.AutoCancelReceiver
 import io.github.magisk317.smscode.xp.hook.code.CodeNotificationBroadcastContract

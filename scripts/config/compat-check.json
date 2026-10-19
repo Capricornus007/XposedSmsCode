@@ -15,8 +15,8 @@
         ":magisk-xposed-kit:diagnostics:testDebugUnitTest",
         ":smscode-core:hook:lintDebug",
         ":smscode-core:runtime:lintDebug",
-        ":core:testGithubDebugUnitTest",
-        ":core:compileGithubDebugKotlin",
+        ":presentation:testGithubDebugUnitTest",
+        ":presentation:compileGithubDebugKotlin",
         ":app:check"
       ]
     }

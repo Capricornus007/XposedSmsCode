@@ -38,7 +38,7 @@ include(
     ":app",
     ":hook",
     ":runtime",
-    ":core",
+    ":presentation",
     ":smscode-core:hook",
     ":smscode-core:domain",
     ":smscode-core:runtime",

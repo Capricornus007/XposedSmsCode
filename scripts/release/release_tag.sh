@@ -13,13 +13,13 @@ source "${TOOLKIT_DIR}/release/release_tag.sh"
 run_pre_push_checks() {
   run_common_gradle_checks "$ROOT_DIR" \
     --warning-mode all \
-    :core:check \
+    :presentation:check \
     :runtime:check \
     :app:check \
     :app:compileGithubDebugAndroidTestKotlin \
     :app:compilePlayDebugAndroidTestKotlin \
-    :core:compilePlayDebugUnitTestKotlin \
-    :core:generatePlayDebugUnitTestStubRFile \
+    :presentation:compilePlayDebugUnitTestKotlin \
+    :presentation:generatePlayDebugUnitTestStubRFile \
     :runtime:compileGithubDebugAndroidTestKotlin \
     :runtime:compilePlayDebugAndroidTestKotlin \
     :app:assembleGithubDebug \
