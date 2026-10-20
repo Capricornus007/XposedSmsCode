@@ -48,7 +48,8 @@ import io.github.magisk317.uikit.update.UpdatePlayPolicy
 import io.github.magisk317.uikit.update.WifiState
 import io.github.magisk317.uikit.shell.PlayUpdateDelegate
 import io.github.magisk317.smscode.ui.nav.SmsCodeNavHost
-import io.github.magisk317.smscode.ui.privacy.PrivacyPolicyPage
+import io.github.magisk317.smscode.common.constant.Const
+import io.github.magisk317.smscode.runtime.common.utils.BrowserUtils
 import io.github.magisk317.smscode.ui.theme.AppTheme
 import io.github.magisk317.uikit.surface.AppAlertDialog
 import io.github.magisk317.uikit.surface.AppPrimaryButton
@@ -96,7 +97,6 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             val appSnackbarHostState = remember { AppSnackbarHostState() }
             var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
-            var showPrivacyPolicyPage by remember { mutableStateOf(false) }
             var blockingStartupDialog by remember { mutableStateOf<BlockingStartupDialog?>(null) }
             var startupBlockingCheckComplete by remember { mutableStateOf(false) }
             var snackbarBottomOverlayPadding by remember { mutableStateOf(0.dp) }
@@ -248,24 +248,14 @@ class MainActivity : ComponentActivity() {
                                     finish()
                                 },
                                 onViewPolicy = {
-                                    showPrivacyPolicyDialog = false
-                                    showPrivacyPolicyPage = true
+                                    BrowserUtils.openWebPage(
+                                        context,
+                                        Const.PRIVACY_POLICY_URL,
+                                        R.string.browser_install_or_enable_prompt,
+                                    )
                                 },
                                 dismissOnBackPress = false,
                                 dismissOnClickOutside = false,
-                            )
-                        }
-
-                        if (shouldShowRegularUi && showPrivacyPolicyPage) {
-                            PrivacyPolicyPage(
-                                onDismiss = {
-                                    showPrivacyPolicyPage = false
-                                    scope.launch {
-                                        if (!AppPreferences.isPrivacyPolicyAccepted(context)) {
-                                            showPrivacyPolicyDialog = true
-                                        }
-                                    }
-                                },
                             )
                         }
 
