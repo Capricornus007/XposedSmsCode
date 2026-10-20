@@ -5,6 +5,14 @@ plugins {
     id("magisk.android.distribution")
 }
 
+val versionNameStr = rootProject.providers.gradleProperty("versionName")
+    .orElse(libs.versions.versionName)
+    .get()
+val versionCodeInt = rootProject.providers.gradleProperty("versionCode")
+    .map { requireNotNull(it.toIntOrNull()) { "Invalid -PversionCode=$it" } }
+    .orElse(libs.versions.versionCode.map { it.toInt() })
+    .get()
+
 val allowConflictBypass = findProperty("allowConflictBypass")
     ?.toString()
     ?.toBooleanStrictOrNull()
@@ -14,8 +22,8 @@ android {
     namespace = "io.github.magisk317.smscode.presentation"
 
     defaultConfig {
-        buildConfigField("int", "VERSION_CODE", libs.versions.versionCode.get())
-        buildConfigField("String", "VERSION_NAME", "\"${libs.versions.versionName.get()}\"")
+        buildConfigField("int", "VERSION_CODE", versionCodeInt.toString())
+        buildConfigField("String", "VERSION_NAME", "\"$versionNameStr\"")
         buildConfigField("boolean", "ALLOW_CONFLICT_BYPASS", allowConflictBypass.toString())
     }
 

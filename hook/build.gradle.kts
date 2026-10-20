@@ -11,8 +11,13 @@ plugins {
     id("kotlin-parcelize")
 }
 
-val appVersionName = libs.versions.versionName.get()
-val appVersionCode = libs.versions.versionCode.get().toInt()
+val appVersionName = rootProject.providers.gradleProperty("versionName")
+    .orElse(libs.versions.versionName)
+    .get()
+val appVersionCode = rootProject.providers.gradleProperty("versionCode")
+    .map { requireNotNull(it.toIntOrNull()) { "Invalid -PversionCode=$it" } }
+    .orElse(libs.versions.versionCode.map { it.toInt() })
+    .get()
 
 android {
     namespace = "io.github.magisk317.smscode.hook"
