@@ -80,20 +80,20 @@ val verifyNoRuntimeStorageImplLeak = tasks.register("verifyNoRuntimeStorageImplL
     group = "verification"
     description = "Ensure the presentation module does not directly depend on runtime storage/update implementation types."
 
-    val sourceRoot = layout.projectDirectory.dir("src/main/kotlin")
+    val sourceRoot = layout.projectDirectory.dir("src")
     val recordSourceRoot = layout.projectDirectory.dir("src/main/kotlin/io/github/magisk317/smscode/ui/record")
     val projectRoot = layout.projectDirectory.asFile
     val bannedRegexes = listOf(
-        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.runtime\.Runtime\w*Facade\b"""),
-        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.data\.db\.(AppDatabase|DBManager|DBProvider)\b"""),
-        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.data\.update\."""),
-        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.common\.utils\.(PrefsReader|HookPrefsReader)\b"""),
-        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.common\.utils\.NotificationUtils\b"""),
-        Regex("""\bcom\.github\.magisk317\.smscode\.feature\.backup\."""),
-        Regex("""\bcom\.github\.magisk317\.smscode\.feature\.store\."""),
+        Regex("""^\s*import\s+io\.github\.magisk317\.smscode\.runtime\.Runtime\w*Facade\b"""),
+        Regex("""^\s*import\s+io\.github\.magisk317\.smscode\.data\.db\.(AppDatabase|DBManager|DBProvider)\b"""),
+        Regex("""^\s*import\s+io\.github\.magisk317\.smscode\.data\.update\."""),
+        Regex("""^\s*import\s+io\.github\.magisk317\.smscode\.common\.utils\.(PrefsReader|HookPrefsReader)\b"""),
+        Regex("""^\s*import\s+io\.github\.magisk317\.smscode\.common\.utils\.NotificationUtils\b"""),
+        Regex("""\bio\.github\.magisk317\.smscode\.feature\.backup\."""),
+        Regex("""\bio\.github\.magisk317\.smscode\.feature\.store\."""),
     )
     val recordBannedRegexes = listOf(
-        Regex("""^\s*import\s+com\.github\.magisk317\.smscode\.runtime\.RuntimeStorageFacade\b"""),
+        Regex("""^\s*import\s+io\.github\.magisk317\.smscode\.runtime\.RuntimeStorageFacade\b"""),
         Regex("""\bRuntimeStorageFacade\.dbManager\("""),
         Regex("""^\s*import\s+io\.github\.magisk317\.smscode\.runtime\.common\.utils\.JsonUtils\b"""),
     )

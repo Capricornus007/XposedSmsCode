@@ -134,6 +134,7 @@ val sharedCoreProjectPaths = listOf(
     ":smscode-core:rule",
     ":smscode-core:runtime",
     ":smscode-core:verification",
+    ":smscode-core:db",
 )
 val forbiddenMainModuleDependencies = buildMap {
     put(":runtime", setOf(":app", ":presentation", ":hook"))
