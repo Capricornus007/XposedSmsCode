@@ -49,7 +49,7 @@
     {"paths": ["app/*"], "tasks": [":app:check", ":app:compileGithubDebugAndroidTestKotlin", ":app:compilePlayDebugAndroidTestKotlin", ":app:koverVerifyGithubDebug", ":app:koverHtmlReportGithubDebug"]},
     {"paths": ["presentation/*"], "tasks": [":presentation:check", ":presentation:compilePlayDebugUnitTestKotlin", ":presentation:generatePlayDebugUnitTestStubRFile"]},
     {"paths": ["runtime/*"], "tasks": [":runtime:check", ":runtime:compileGithubDebugAndroidTestKotlin", ":runtime:compilePlayDebugAndroidTestKotlin"]},
-    {"paths": ["hook/*"], "tasks": [":presentation:check"]},
+    {"paths": ["hook/*"], "tasks": [":hook:check", ":hook:compileGithubDebugKotlin"]},
     {"paths": ["smscode/*"], "tasks": [":smscode-core:contract:test", ":smscode-core:domain:test", ":smscode-core:hook:testDebugUnitTest", ":smscode-core:runtime:testDebugUnitTest", ":smscode-core:verification:detekt", ":smscode-core:verification:test", ":smscode-core:rule:test"]},
     {"paths": ["magisk-ui-kit/*"], "tasks": [":magisk-ui-kit:testAndroidHostTest", ":magisk-ui-kit:jvmTest", ":magisk-ui-kit:billing:testDebugUnitTest"]},
     {"paths": ["magisk-xposed-kit/*"], "tasks": [":magisk-xposed-kit:testDebugUnitTest", ":magisk-xposed-kit:logging:testDebugUnitTest", ":magisk-xposed-kit:diagnostics:testDebugUnitTest"]}
