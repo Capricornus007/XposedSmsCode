@@ -260,6 +260,27 @@ class DBProvider : ContentProvider() {
                     rows = rows.filter { it.msgType == expected }
                 }
 
+                "sender = ?" -> {
+                    val expected = selectionArgs?.getOrNull(argIndex)
+                    argIndex += 1
+                    require(expected != null) { "Missing sender selection arg" }
+                    rows = rows.filter { it.sender == expected }
+                }
+
+                "body = ?" -> {
+                    val expected = selectionArgs?.getOrNull(argIndex)
+                    argIndex += 1
+                    require(expected != null) { "Missing body selection arg" }
+                    rows = rows.filter { it.body == expected }
+                }
+
+                "date = ?" -> {
+                    val expected = selectionArgs?.getOrNull(argIndex)?.toLongOrNull()
+                    argIndex += 1
+                    require(expected != null) { "Missing or invalid date selection arg" }
+                    rows = rows.filter { it.date == expected }
+                }
+
                 "sms_code is not null" -> {
                     rows = rows.filter { !it.smsCode.isNullOrEmpty() }
                 }

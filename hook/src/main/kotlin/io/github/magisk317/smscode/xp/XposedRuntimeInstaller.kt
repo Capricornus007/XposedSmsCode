@@ -5,9 +5,13 @@ import android.content.Context
 import android.net.Uri
 import android.os.Build
 import io.github.magisk317.smscode.common.utils.HookPrefsReader
+import io.github.magisk317.smscode.common.utils.ProviderIpcTokenGate
 import io.github.magisk317.smscode.common.utils.RuntimeDiagnosticsBridge
 import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogStore
 import io.github.magisk317.smscode.data.db.DBProvider
+import io.github.magisk317.smscode.db.entity.SmsMsg
+import io.github.magisk317.smscode.verification.SmsDuplicateCheckResult
+import io.github.magisk317.smscode.verification.resolveSmsDuplicateCheck
 import io.github.magisk317.smscode.data.log.RuntimeLogProvider
 import io.github.magisk317.smscode.runtime.BuildConfig as RuntimeBuildConfig
 import io.github.magisk317.smscode.runtime.RuntimeCodeRecordRestoreFacade
@@ -136,6 +140,28 @@ object XposedRuntimeInstaller {
 
                 override fun authority(context: Context): String =
                     DBProvider.authority(context)
+
+                override fun querySmsMsgByFingerprint(
+                    context: Context,
+                    sender: String?,
+                    body: String,
+                    date: Long,
+                ): SmsDuplicateCheckResult {
+                    val token = HookPrefsReader.getIpcToken(context)
+                    return resolveSmsDuplicateCheck(token) {
+                        val uri = DBProvider.smsMsgContentUri(context)
+                            .buildUpon()
+                            .appendQueryParameter(ProviderIpcTokenGate.PARAM_IPC_TOKEN, token)
+                            .build()
+                        context.contentResolver.query(
+                            uri,
+                            arrayOf("_id"),
+                            "msg_type = ? AND sender = ? AND body = ? AND date = ?",
+                            arrayOf(SmsMsg.MSG_TYPE_SMS.toString(), sender.orEmpty(), body, date.toString()),
+                            null,
+                        )?.use { it.moveToFirst() }
+                    }
+                }
 
                 override fun claimRuntimeGate(
                     context: Context,

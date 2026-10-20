@@ -16,6 +16,7 @@ import io.github.magisk317.smscode.rule.utils.SmsCodeParsedMetadataResolver
 import io.github.magisk317.xposed.logging.XLog
 import io.github.magisk317.smscode.verification.ObservedInboxScanRecord
 import io.github.magisk317.smscode.runtime.verification.ObservedSmsHandler as SharedObservedSmsHandler
+import io.github.magisk317.smscode.verification.SmsDuplicateCheckResult
 import io.github.magisk317.smscode.runtime.verification.SmsCodePostParseCoordinator
 import io.github.magisk317.smscode.verification.SmsInboxObserverDecision
 import io.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
@@ -45,7 +46,7 @@ internal class ObservedSmsHandler(
             )
     },
     private val roleStateLogger: (String) -> Unit = {},
-    private val duplicateChecker: ((SmsCodePostParseCoordinator.Settings, String, String, Long) -> Boolean)? = null,
+    private val duplicateChecker: ((SmsCodePostParseCoordinator.Settings, String, String, Long) -> SmsDuplicateCheckResult)? = null,
     private val smsEnricher: (Context, ObservedInboxScanRecord) -> VerificationSmsMsg = { context, record ->
         val (company, packageName) = resolveCompanyAndPackage(context, record.body)
         SmsMsg(
@@ -130,14 +131,17 @@ internal class ObservedSmsHandler(
         sender: String,
         body: String,
         date: Long,
-    ): Boolean {
+    ): SmsDuplicateCheckResult {
         if (!settings.deduplicateSmsEnabled) {
-            return false
+            return SmsDuplicateCheckResult.NOT_DUPLICATE
         }
         val timestamp = if (date > 0) date else currentTimeMillis()
-        return runCatching {
-            HookRuntimeBridge.storageAccess.dbManager(pluginContext).querySmsMsgByFingerprint(sender, body, timestamp) != null
-        }.getOrDefault(false)
+        return HookRuntimeBridge.contentProviderAccess.querySmsMsgByFingerprint(
+            context = pluginContext,
+            sender = sender,
+            body = body,
+            date = timestamp,
+        )
     }
 
     private fun backfillExistingSimRouting(record: ObservedInboxScanRecord): Boolean {

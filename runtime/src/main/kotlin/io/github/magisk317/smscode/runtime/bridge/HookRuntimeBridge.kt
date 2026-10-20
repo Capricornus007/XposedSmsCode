@@ -5,6 +5,7 @@ import android.net.Uri
 import io.github.magisk317.smscode.data.db.DBManager
 import io.github.magisk317.smscode.db.entity.SmsMsg
 import io.github.magisk317.smscode.runtime.contract.notification.NotificationPlatformBridge
+import io.github.magisk317.smscode.verification.SmsDuplicateCheckResult
 import io.github.magisk317.xposed.logging.MagiskOtel
 
 /**
@@ -81,6 +82,12 @@ interface HookContentProviderAccess {
     fun appInfoContentUri(context: Context): Uri
     fun autoInputEventContentUri(context: Context): Uri
     fun authority(context: Context): String
+    fun querySmsMsgByFingerprint(
+        context: Context,
+        sender: String?,
+        body: String,
+        date: Long,
+    ): SmsDuplicateCheckResult
 
     /**
      * Claims one or more deduplication keys in storage owned by the module app.
