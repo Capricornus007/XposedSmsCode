@@ -17,11 +17,11 @@ buildscript {
             // predates V27 (class major 71) and rejects it; ASM 9.10.1 adds V27.
             // Forced here because this is the classpath AGP actually runs on
             // (project-level forces do not reach the plugin classpath).
-            force("org.ow2.asm:asm:9.11")
-            force("org.ow2.asm:asm-analysis:9.11")
-            force("org.ow2.asm:asm-commons:9.11")
-            force("org.ow2.asm:asm-tree:9.11")
-            force("org.ow2.asm:asm-util:9.11")
+            force("org.ow2.asm:asm:9.11.1")
+            force("org.ow2.asm:asm-analysis:9.11.1")
+            force("org.ow2.asm:asm-commons:9.11.1")
+            force("org.ow2.asm:asm-tree:9.11.1")
+            force("org.ow2.asm:asm-util:9.11.1")
         }
     }
 }
