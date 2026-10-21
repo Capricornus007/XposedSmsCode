@@ -56,7 +56,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import io.github.magisk317.smscode.common.utils.ModuleUtils
 import io.github.magisk317.smscode.presentation.BuildConfig
 import io.github.magisk317.xposed.logging.MagiskOtel
-import io.github.magisk317.xposed.diagnostics.DiagnosticExportMode
+import io.github.magisk317.xposed.diagnostics.DiagnosticBundleNames
 import io.github.magisk317.smscode.presentation.R
 import io.github.magisk317.smscode.common.constant.Const
 import io.github.magisk317.smscode.common.constant.PrefConst
@@ -68,6 +68,7 @@ import io.github.magisk317.smscode.runtime.RuntimeBackupImportStatus
 import io.github.magisk317.smscode.runtime.bridge.UiBackupAccess
 import io.github.magisk317.smscode.runtime.bridge.UiNotificationAccess
 import org.koin.compose.koinInject
+import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeDiagnosticsEnvironment
 import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogStore
 import io.github.magisk317.smscode.common.utils.AppPreferences
 import io.github.magisk317.xposed.logging.XLog
@@ -432,10 +433,7 @@ internal fun ComposeSettingsScreenBody(
         scope.launch {
             val result = withContext(Dispatchers.IO) {
                 RuntimeDiagnosticsBridge.ensureInstalled()
-                val bundle = LogBundleExporter.buildLogBundle(
-                    context = context,
-                    mode = DiagnosticExportMode.FULL,
-                )
+                val bundle = LogBundleExporter.buildLogBundle(context = context)
                 val file = bundle.file ?: return@withContext bundle.details
                 context.contentResolver.openOutputStream(destination, "wt")?.use { output ->
                     file.inputStream().use { input -> input.copyTo(output) }
@@ -459,9 +457,15 @@ internal fun ComposeSettingsScreenBody(
             }
             return
         }
-        val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", java.util.Locale.US)
-            .format(java.util.Date())
-        saveRuntimeLogLauncher.launch("smscode_logs_$timestamp.zip")
+        RuntimeDiagnosticsBridge.ensureInstalled()
+        // The name offered here is the name the exporter will write, because both come from
+        // the product token in the installed configuration.
+        saveRuntimeLogLauncher.launch(
+            DiagnosticBundleNames.bundleFileName(
+                product = RuntimeDiagnosticsEnvironment.current().product,
+                timestamp = DiagnosticBundleNames.exportTimestamp(),
+            ),
+        )
     }
 
     fun clearRuntimeLogFolders() {

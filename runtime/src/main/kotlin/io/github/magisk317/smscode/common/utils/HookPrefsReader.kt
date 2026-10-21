@@ -1,5 +1,6 @@
 package io.github.magisk317.smscode.common.utils
 
+import io.github.magisk317.xposed.logging.MagiskLogPolicy
 import io.github.magisk317.xposed.logging.XLog
 import android.content.Context
 import android.content.SharedPreferences
@@ -230,9 +231,11 @@ object HookPrefsReader : HookPrefsAccess {
             appId = "xposed-sms-code",
         )
 
-    override fun isVerboseLogMode(context: Context): Boolean = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
+    override fun isVerboseLogMode(context: Context): Boolean =
+        MagiskLogPolicy.current().verboseLogging
 
-    override fun isSensitiveDebugLogMode(context: Context): Boolean = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
+    override fun isSensitiveDebugLogMode(context: Context): Boolean =
+        !MagiskLogPolicy.current().sanitizesText
 
     @JvmStatic
     fun isAnalyticsEnabled(context: Context): Boolean {
