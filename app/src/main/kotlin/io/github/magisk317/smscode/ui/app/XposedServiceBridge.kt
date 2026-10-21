@@ -1,71 +1,87 @@
 package io.github.magisk317.smscode.ui.app
 
 import io.github.magisk317.smscode.common.constant.PrefConst
-import io.github.magisk317.smscode.runtime.common.prefs.AppPreferencesDataStore
 import io.github.magisk317.smscode.common.utils.HookPreferenceMirror
-import io.github.libxposed.service.XposedService
-import io.github.libxposed.service.XposedServiceHelper
+import io.github.magisk317.xposed.logging.MagiskOtel
 import io.github.magisk317.xposed.logging.XLog
+import io.github.magisk317.xposed.service.ServiceState
+import io.github.magisk317.xposed.service.XposedServiceBridge as KitServiceBridge
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import io.github.magisk317.xposed.logging.MagiskOtel
 
+/**
+ * The kit owns the libxposed listener and its bind/retract state; this object only maps each
+ * transition onto the effects the app has always performed on them.
+ */
 internal object XposedServiceBridge {
     fun initialize(application: SmsCodeApplication, applicationScope: CoroutineScope) {
         XLog.i(message = "XposedServiceBridge.initialize() called")
-        runCatching<Unit> {
-            XposedServiceHelper.registerListener(
-                object : XposedServiceHelper.OnServiceListener {
-                    override fun onServiceBind(service: XposedService) {
-                        MagiskOtel.event(
-                            name = "hook.service",
-                            attributes = mapOf(
-                                "result" to "ok",
-                                "duration_ms" to "0",
-                                "process" to "app",
-                                "stage" to "bound",
-                            ),
-                            statusOk = true,
-                        )
-                        XLog.i(
-                            message = "XposedServiceBridge.onServiceBind() called: framework=%s version=%s",
-                            service.frameworkName,
-                            service.frameworkVersion,
-                        )
-                        application.handleXposedServiceBound(
-                            remotePrefsProvider = { service.getRemotePreferences(PrefConst.REMOTE_PREFS_GROUP) },
-                            frameworkName = service.frameworkName,
-                            frameworkVersion = service.frameworkVersion,
-                        )
-                        PhoneProcessRestartCoordinator.requestAfterXposedServiceBind(
-                            application,
-                            applicationScope,
-                        )
-                        applicationScope.launch {
-                            HookPreferenceMirror.publish(application)
-                        }
-                    }
-
-                    override fun onServiceDied(service: XposedService) {
-                        MagiskOtel.event(
-                            name = "hook.service",
-                            attributes = mapOf(
-                                "result" to "ok",
-                                "duration_ms" to "0",
-                                "process" to "app",
-                                "stage" to "died",
-                            ),
-                            statusOk = true,
-                        )
-                        XLog.w(message = "XposedServiceBridge.onServiceDied() called")
-                        application.handleXposedServiceDied()
-                    }
-                },
-            )
+        val registered = KitServiceBridge.register(
+            onError = { operation, error ->
+                XLog.e(message = "Xposed service bridge failed during %s", operation, error)
+                application.logXposedServiceBridgeFailure(error)
+            },
+        )
+        if (registered) {
             XLog.i(message = "XposedServiceHelper.registerListener() succeeded")
-        }.onFailure {
-            XLog.e(message = "XposedServiceHelper.registerListener() failed", it)
-            application.logXposedServiceBridgeFailure(it)
         }
+        applicationScope.launch {
+            KitServiceBridge.state.collect { state ->
+                when (state) {
+                    is ServiceState.Bound -> onBound(application, applicationScope, state)
+                    ServiceState.Retracted -> onRetracted(application)
+                    ServiceState.Waiting -> Unit
+                }
+            }
+        }
+    }
+
+    private fun onBound(
+        application: SmsCodeApplication,
+        applicationScope: CoroutineScope,
+        bound: ServiceState.Bound,
+    ) {
+        MagiskOtel.event(
+            name = "hook.service",
+            attributes = mapOf(
+                "result" to "ok",
+                "duration_ms" to "0",
+                "process" to "app",
+                "stage" to "bound",
+            ),
+            statusOk = true,
+        )
+        XLog.i(
+            message = "XposedServiceBridge.onServiceBind() called: framework=%s version=%s",
+            bound.service.frameworkName,
+            bound.service.frameworkVersion,
+        )
+        application.handleXposedServiceBound(
+            remotePrefsProvider = { bound.service.getRemotePreferences(PrefConst.REMOTE_PREFS_GROUP) },
+            frameworkName = bound.service.frameworkName,
+            frameworkVersion = bound.service.frameworkVersion,
+        )
+        PhoneProcessRestartCoordinator.requestAfterXposedServiceBind(
+            application,
+            applicationScope,
+        )
+        applicationScope.launch {
+            HookPreferenceMirror.publish(application)
+        }
+    }
+
+    private fun onRetracted(application: SmsCodeApplication) {
+        MagiskOtel.event(
+            name = "hook.service",
+            attributes = mapOf(
+                "result" to "ok",
+                "duration_ms" to "0",
+                "process" to "app",
+                "stage" to "died",
+            ),
+            statusOk = true,
+        )
+        XLog.w(message = "XposedServiceBridge.onServiceDied() called")
+        application.handleXposedServiceDied()
     }
 }

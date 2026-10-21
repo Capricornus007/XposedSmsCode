@@ -12,11 +12,11 @@ class XposedServiceBridgeContractTest {
         val bridgeSource = projectFile(
             "app/src/main/kotlin/io/github/magisk317/smscode/ui/app/XposedServiceBridge.kt",
         ).readText()
-        val beforeBind = bridgeSource.substringBefore("override fun onServiceBind")
+        val beforeBind = bridgeSource.substringBefore("private fun onBound(")
         val bindCallback = bridgeSource
-            .substringAfter("override fun onServiceBind")
-            .substringBefore("override fun onServiceDied")
-        val diedCallback = bridgeSource.substringAfter("override fun onServiceDied")
+            .substringAfter("private fun onBound(")
+            .substringBefore("private fun onRetracted(")
+        val diedCallback = bridgeSource.substringAfter("private fun onRetracted(")
         val handleBindCall = "application.handleXposedServiceBound"
         val restartCall = "PhoneProcessRestartCoordinator.requestAfterXposedServiceBind"
 
@@ -25,6 +25,22 @@ class XposedServiceBridgeContractTest {
         assertTrue(handleBindCall in bindCallback)
         assertTrue(bindCallback.indexOf(handleBindCall) < bindCallback.indexOf(restartCall))
         assertFalse(restartCall in diedCallback)
+    }
+
+    @Test
+    fun `the kit is the only owner of the libxposed service listener`() {
+        val bridgeSource = projectFile(
+            "app/src/main/kotlin/io/github/magisk317/smscode/ui/app/XposedServiceBridge.kt",
+        ).readText()
+        val appBuild = projectFile("app/build.gradle.kts").readText()
+
+        assertEquals(1, bridgeSource.windowed(KIT_REGISTER.length).count { it == KIT_REGISTER })
+        assertTrue("KitServiceBridge.state.collect" in bridgeSource)
+        assertTrue("implementation(project(\":magisk-xposed-kit:service\"))" in appBuild)
+        assertFalse("implementation(libs.libxposed.service)" in appBuild)
+        productionAppFiles(".kt", ".java").forEach { source ->
+            assertFalse(HELPER_IMPORT in source.readText(), source.path)
+        }
     }
 
     @Test
@@ -113,5 +129,10 @@ class XposedServiceBridgeContractTest {
                     .filter { file -> file.isFile && suffixes.any(file.name::endsWith) }
                     .toList()
             }
+    }
+
+    private companion object {
+        const val KIT_REGISTER = "KitServiceBridge.register("
+        const val HELPER_IMPORT = "import io.github.libxposed.service.XposedServiceHelper"
     }
 }

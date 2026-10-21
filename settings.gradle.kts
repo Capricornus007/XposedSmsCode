@@ -55,6 +55,7 @@ include(
     ":magisk-xposed-kit:diagnostics",
     ":magisk-xposed-kit:permission",
     ":magisk-xposed-kit:entitlement",
+    ":magisk-xposed-kit:service",
 )
 
 project(":smscode-core:hook").projectDir = file("smscode/core/hook")
@@ -70,5 +71,6 @@ project(":magisk-xposed-kit:logging-core").projectDir = file("magisk-xposed-kit/
 project(":magisk-xposed-kit:diagnostics").projectDir = file("magisk-xposed-kit/diagnostics")
 project(":magisk-xposed-kit:permission").projectDir = file("magisk-xposed-kit/permission")
 project(":magisk-xposed-kit:entitlement").projectDir = file("magisk-xposed-kit/entitlement")
+project(":magisk-xposed-kit:service").projectDir = file("magisk-xposed-kit/service")
 project(":magisk-ui-kit:billing").projectDir = file("magisk-ui-kit/billing")
 project(":magisk-ui-kit:update").projectDir = file("magisk-ui-kit/update")
