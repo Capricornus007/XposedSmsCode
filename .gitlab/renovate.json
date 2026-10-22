@@ -3,6 +3,10 @@
   "extends": [
     "gitlab>magisk3171/shared/magisk-ci-toolkit"
   ],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**"
+  ],
   "prConcurrentLimit": 1,
   "branchConcurrentLimit": 1,
   "prHourlyLimit": 0
