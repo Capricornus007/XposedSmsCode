@@ -172,6 +172,33 @@ class DBProvider : ContentProvider() {
                     }
                 }
 
+                // The hook process runs inside the hooked app, so it cannot open this
+                // database with Room safely. Duplicate checks go through the provider
+                // and need these fingerprint columns to be selectable.
+                "sender = ?" -> {
+                    val expected = selectionArgs?.getOrNull(argIndex)
+                    argIndex += 1
+                    if (expected != null) {
+                        rows = rows.filter { it.sender == expected }
+                    }
+                }
+
+                "body = ?" -> {
+                    val expected = selectionArgs?.getOrNull(argIndex)
+                    argIndex += 1
+                    if (expected != null) {
+                        rows = rows.filter { it.body == expected }
+                    }
+                }
+
+                "date = ?" -> {
+                    val expected = selectionArgs?.getOrNull(argIndex)?.toLongOrNull()
+                    argIndex += 1
+                    if (expected != null) {
+                        rows = rows.filter { it.date == expected }
+                    }
+                }
+
                 "sms_code is not null" -> {
                     rows = rows.filter { !it.smsCode.isNullOrEmpty() }
                 }

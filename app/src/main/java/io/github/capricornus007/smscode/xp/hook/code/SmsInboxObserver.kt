@@ -11,7 +11,7 @@ import io.github.capricornus007.smscode.common.utils.PrefsReader
 import io.github.capricornus007.smscode.common.utils.SmsCodeUtils
 import io.github.capricornus007.smscode.common.utils.StringUtils
 import io.github.capricornus007.smscode.common.utils.XLog
-import io.github.capricornus007.smscode.data.db.DBManager
+import io.github.capricornus007.smscode.data.db.DBProvider
 import io.github.capricornus007.smscode.data.db.entity.SmsMsg
 import io.github.capricornus007.smscode.xp.hook.code.action.impl.AutoInputAction
 import io.github.capricornus007.smscode.xp.hook.code.action.impl.RecordSmsAction
@@ -118,7 +118,18 @@ internal class SmsInboxObserver(
         if (PrefsReader.deduplicateSms(pluginContext)) {
             val timestamp = if (date > 0) date else System.currentTimeMillis()
             val duplicated = runCatching {
-                DBManager.get(pluginContext).querySmsMsgByFingerprint(sender, body, timestamp) != null
+                pluginContext.contentResolver.query(
+                    DBProvider.SMS_MSG_CONTENT_URI,
+                    arrayOf("_id"),
+                    "msg_type = ? AND sender = ? AND body = ? AND date = ?",
+                    arrayOf(
+                        SmsMsg.MSG_TYPE_SMS.toString(),
+                        sender,
+                        body,
+                        timestamp.toString(),
+                    ),
+                    null,
+                )?.use { it.moveToFirst() } ?: false
             }.getOrDefault(false)
             if (duplicated) {
                 XLog.w("Diag observer duplicate skip: event_id=%s", eventId)

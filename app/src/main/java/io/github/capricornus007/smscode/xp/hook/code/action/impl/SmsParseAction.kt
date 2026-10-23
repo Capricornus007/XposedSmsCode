@@ -8,7 +8,7 @@ import io.github.capricornus007.smscode.BuildConfig
 import io.github.capricornus007.smscode.common.utils.SmsCodeUtils
 import io.github.capricornus007.smscode.common.utils.StringUtils
 import io.github.capricornus007.smscode.common.utils.XLog
-import io.github.capricornus007.smscode.data.db.DBManager
+import io.github.capricornus007.smscode.data.db.DBProvider
 import io.github.capricornus007.smscode.data.db.entity.SmsMsg
 import io.github.capricornus007.smscode.xp.hook.code.action.CallableAction
 
@@ -66,8 +66,21 @@ class SmsParseAction(pluginContext: Context, phoneContext: Context, smsMsg: SmsM
         val timestamp = if (smsMsg.date > 0) smsMsg.date else System.currentTimeMillis()
         XLog.w("Diag SMS body: %s", StringUtils.escape(msgBodyNotNull))
         if (mDeduplicateEnabled) {
+            // Never open Room from the hooked app's process: query the exported
+            // provider owned by this module instead (upstream 5ff5eae9).
             val duplicated = runCatching {
-                DBManager.get(mPluginContext).querySmsMsgByFingerprint(sender, msgBodyNotNull, timestamp) != null
+                mPluginContext.contentResolver.query(
+                    DBProvider.SMS_MSG_CONTENT_URI,
+                    arrayOf("_id"),
+                    "msg_type = ? AND sender = ? AND body = ? AND date = ?",
+                    arrayOf(
+                        SmsMsg.MSG_TYPE_SMS.toString(),
+                        sender.orEmpty(),
+                        msgBodyNotNull,
+                        timestamp.toString(),
+                    ),
+                    null,
+                )?.use { it.moveToFirst() } ?: false
             }.getOrDefault(false)
             if (duplicated) {
                 XLog.i("Duplicate SMS detected by fingerprint, skip parsing.")

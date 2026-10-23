@@ -4,6 +4,16 @@
 
 ---
 
+## [v3.4.1-api102] - 2026-10-23
+- 版本：`versionCode 135` / `versionName 3.4.1-api102`（合併 upstream/beta 至上游 3.4.1，共 84 筆提交）。
+- 架構取捨：本 fork 維持自包含三模組（`:app`／`:core`／`:storage`），**不引入**上游的 `build-logic`、`smscode-core`、`magisk-ui-kit`、`magisk-xposed-kit` 子模組，也不採用 `:hook`／`:runtime`／`:presentation` 的模組拆分；上游本輪 54 筆子模組指標與共享庫重構因此不進樹。
+- 版本取捨（最新優先）：AGP 保留本 fork 較新的 `9.6.0-alpha01`（上游為 `9.5.0-rc01`）；Kotlin 抬到 `2.5.0-Beta2`、Compose BOM `2026.10.01`、kotlinx-serialization `1.12.0`、DataStore `1.3.0`（轉穩定版）、compileSdk 抬到 `37.2`；Gradle wrapper 保留較新的 nightly `9.9.0-20261021133240`。
+- 功能帶入：採納上游 `5ff5eae9`「重複短信檢查改走 ContentProvider」——hook 進程不再直接開 Room，改為查本模組匯出的 `DBProvider`；`DBProvider` 同步補上 `sender`／`body`／`date` 三種篩選條件。
+- 明確不帶入：entitlement／billing／QQ 啟用頁（本 fork 早已整組移除）、共享日誌庫與 CI toolkit、OTA 分渠道重構、Room v24（本 fork 的 DB 版本線為 v18，與上游 v22→v24 不同）、Miuix／ui-kit 的 UI 對齊（本 fork 沒有該依賴）。
+- 驗證：本地隔離副本照 `.github/workflows/ci.yml` 跑 `assembleGithubDebug`＋`testGithubDebugUnitTest`＋Kover；推送後由 GitHub Actions 再驗一次。
+
+---
+
 ## [v3.3.9-api102] - 2026-10-13
 - 版本：`versionCode 133` / `versionName 3.3.9-api102`（對齊上游 3.3.9）。上游自用編號與本 fork 的 13x 序列無關（3.3.6=548、3.3.8=628、3.3.9 另算）。
 - 逆推 `arm64-v8a_XposedSmsCode_v3.3.9_release.apk`（對照同批 `v3.3.8`、`v3.3.6`）後判定：**shim 零改動**。以下全部是本機實測，不是抄上游發行說明：
