@@ -113,8 +113,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
 
-private val isCiOrDebugBuild: Boolean =
-    BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
+private val allowsLogExport: Boolean =
+    BuildConfig.BUILD_TYPE == "debug" || BuildConfig.ALLOW_PLAINTEXT_LOGS
 
 private data class SettingsPageRuntime(
     val isActive: Boolean = true,
@@ -1080,7 +1080,7 @@ internal fun ComposeSettingsScreenBody(
                                     RuntimeLogDiagnosticsItem.ANALYTICS,
                                 ),
                             ),
-                            enabled = isCiOrDebugBuild,
+                            enabled = allowsLogExport,
                         )
 
                         val updateController = koinInject<AppUpdateController>()
