@@ -19,20 +19,26 @@
 # tag here, so an unset variable would make every mirrored tag a second publish
 # from the mirror's own pushes.
 #
-# Emergency sequence:
+# Emergency sequence -- the full procedure, including the recovery checklist, is
+# docs/github-fallback-release.md in the toolkit. Short form:
 #   1. scripts/release/release_tag.sh creates the signed annotated tag locally
 #      (it sources the toolkit's release/release_tag.sh; no signing key exists
 #      on GitHub and none is created here).
-#   2. push the tag to gitlab AND to github -- sync:github cannot run while the
-#      fleet is down, so the mirror push is manual.
+#   2. push the branch and the tag to github only. sync:github cannot run while
+#      the fleet is down, so the mirror push is manual -- and pushing the tag to
+#      GitLab now would queue a tag pipeline that publishes a second time as
+#      soon as a runner returns. The tag goes back during recovery.
 #   3. set RELEASE_OWNER=github on this repository.
 #   4. Run workflow -> Release, tag name, publish switches as required.
 #      Steps 3 and 4 are the only actions that produce external side effects, so
 #      rehearse first with dry_run=true and RELEASE_OWNER left as `gitlab`: a dry
-#      run builds and verifies and writes nothing outside the runner.
-#   5. When GitLab runners are back, set RELEASE_OWNER back and run the toolkit's
-#      reconcile script before the next sync:github push, or the mirror
-#      force-pushes away whatever this chain published.
+#      run builds and verifies and writes nothing outside the runner. It does not
+#      need a tag that exists yet, because the guard compares the tag name with
+#      versionName -- so the next version is a valid rehearsal target.
+#   5. When GitLab runners are back, run the toolkit's
+#      release/reconcile_github_refs.sh (read-only first, then --apply) and only
+#      then set RELEASE_OWNER back, or the next sync:github force-push overwrites
+#      whatever this chain published.
 #
 # Telegram is not part of this chain. The release card is reviewed by a human
 # before it goes out (notification.yml stays workflow_dispatch only), so nothing
@@ -134,11 +140,11 @@ jobs:
     if: needs.release-eligibility.outputs.proceed == 'true'
     permissions:
       contents: write
-    uses: magisk317/magisk-ci-toolkit/.github/workflows/release-android.yml@0c7fcaf6b81380549ab95fdf9b530c323324a1aa
+    uses: magisk317/magisk-ci-toolkit/.github/workflows/release-android.yml@32b04bbf4364ad3446ff4d296738fa77944a27af
     with:
       # Must equal the ref above, MAGISK_CI_TOOLKIT_REF and every GitLab
       # include.ref; ci/verify_toolkit_pin.sh in the toolkit checks it.
-      toolkit_ref: 0c7fcaf6b81380549ab95fdf9b530c323324a1aa
+      toolkit_ref: 32b04bbf4364ad3446ff4d296738fa77944a27af
       release_tag: ${{ inputs.release_tag }}
       package_name: com.github.tianma8023.xposed.smscode
       release_cert_sha256: 027b936e1d82a606d83599548b8b11e49a2c8ae2588c4a9fbe8311e2c54f103a
@@ -203,7 +209,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/resolve-ci-toolkit
         with:
-          ref: 0c7fcaf6b81380549ab95fdf9b530c323324a1aa
+          ref: 32b04bbf4364ad3446ff4d296738fa77944a27af
       - name: Setup Android CI
         uses: ./.magisk-ci-toolkit/.github/actions/setup-android-ci
         with:
