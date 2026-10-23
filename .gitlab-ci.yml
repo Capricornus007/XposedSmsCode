@@ -151,7 +151,7 @@ android:test:
   # stage still runs when the publish job is absent) instead of
   # consuming the release runner in parallel.
   needs:
-    - job: android:ci:play-beta
+    - job: android:ci:publish-play
       artifacts: false
       optional: true
   script:
@@ -182,6 +182,7 @@ android:test:
 cancel:older:mr:pipelines:
   extends: .magisk_cancel_older_mr_pipelines
 
+# The in-app updater resolves this job by name; do not rename it.
 android:build:
   extends:
     - .magisk_android_build
@@ -249,7 +250,7 @@ android:detekt:
   # stage still runs when the publish job is absent) instead of
   # consuming the release runner in parallel.
   needs:
-    - job: android:ci:play-beta
+    - job: android:ci:publish-play
       artifacts: false
       optional: true
   artifacts:
@@ -277,7 +278,7 @@ android:release:guard:
   tags:
     - $XPOSED_GITLAB_LINUX_ARM64_RUNNER_TAG
 
-android:release:github-apk:
+android:release:apk:
   # The shared template resolves the version once and records play-release.env,
   # so downstream jobs reuse this version decision instead of re-deriving it.
   extends: .magisk_android_release_apk
@@ -297,7 +298,7 @@ android:release:github-apk:
       - app/build/outputs/apk/**/release/*.apk
       - play-release.env
 
-android:release:play-bundle:
+android:release:aab:
   extends: .magisk_android_release_aab
   resource_group: xposed-android-release-play
   stage: build
@@ -325,13 +326,13 @@ android:release:gitlab:
   tags:
     - $XPOSED_GITLAB_LINUX_ARM64_RUNNER_TAG
   needs:
-    - job: android:release:github-apk
+    - job: android:release:apk
       artifacts: true
-    - job: android:release:play-bundle
+    - job: android:release:aab
       artifacts: true
       optional: true
 
-android:release:play:
+android:release:publish-play:
   extends: .magisk_android_publish_play
   resource_group: xposed-android-release-play
   stage: release
@@ -343,10 +344,10 @@ android:release:play:
   tags:
     - $XPOSED_GITLAB_LINUX_ARM64_RUNNER_TAG
   needs:
-    - job: android:release:play-bundle
+    - job: android:release:aab
       artifacts: true
 
-android:ci:play-beta-bundle:
+android:ci:aab:
   extends: .magisk_android_base
   resource_group: xposed-android-release-play
   stage: build
@@ -388,7 +389,7 @@ android:ci:play-beta-bundle:
       - app/build/outputs/mapping/**/mapping.txt
       - play-release.env
 
-android:ci:play-beta:
+android:ci:publish-play:
   extends: .magisk_utility_base
   resource_group: xposed-android-release-play
   stage: release
@@ -405,7 +406,7 @@ android:ci:play-beta:
       when: on_success
     - when: never
   needs:
-    - job: android:ci:play-beta-bundle
+    - job: android:ci:aab
       artifacts: true
   # .magisk_utility_base ships the image only, and this job runs
   # release/publish_play.sh from the toolkit, so resolve the toolkit here with
@@ -444,7 +445,7 @@ android:release:modules-repo:
   tags:
     - $XPOSED_GITLAB_LINUX_ARM64_RUNNER_TAG
   needs:
-    - job: android:release:github-apk
+    - job: android:release:apk
       artifacts: true
 
 telegram:release:
@@ -460,7 +461,7 @@ telegram:release:
     # TG_CHAT_ID (which retargets CI to the new room) does NOT override this.
     TG_RELEASE_CHAT_ID: "-1003532345372"
   needs:
-    - job: android:release:github-apk
+    - job: android:release:apk
       artifacts: true
     - job: android:release:gitlab
       artifacts: false
@@ -533,7 +534,7 @@ android:release:github:
     # so a global override here would be silently ignored.
     MAGISK_ANDROID_RELEASE_GITHUB_ASSET_PATTERN: "*.apk"
   needs:
-    - job: android:release:github-apk
+    - job: android:release:apk
       artifacts: true
     # The GitHub release must wait for the mirror push, otherwise it would
     # create the tag at the GitHub default-branch HEAD before it exists.
