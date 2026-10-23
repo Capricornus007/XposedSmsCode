@@ -34,7 +34,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/resolve-ci-toolkit
         with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
+          ref: 94c53f1bbc921cccd4b0d399b5da7c54da4a6ce6
       - name: Setup Android CI
         uses: ./.magisk-ci-toolkit/.github/actions/setup-android-ci
         with:
@@ -70,7 +70,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/resolve-ci-toolkit
         with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
+          ref: 94c53f1bbc921cccd4b0d399b5da7c54da4a6ce6
       - name: Setup Android CI
         uses: ./.magisk-ci-toolkit/.github/actions/setup-android-ci
         with:
@@ -118,7 +118,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/resolve-ci-toolkit
         with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
+          ref: 94c53f1bbc921cccd4b0d399b5da7c54da4a6ce6
       - name: Setup Android CI
         uses: ./.magisk-ci-toolkit/.github/actions/setup-android-ci
         with:
@@ -198,7 +198,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/resolve-ci-toolkit
         with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
+          ref: 94c53f1bbc921cccd4b0d399b5da7c54da4a6ce6
       - uses: actions/download-artifact@v8
         with:
           name: apks-github
@@ -253,7 +253,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/resolve-ci-toolkit
         with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
+          ref: 94c53f1bbc921cccd4b0d399b5da7c54da4a6ce6
       - uses: actions/download-artifact@v8
         with:
           name: bundle-assets
@@ -334,7 +334,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/resolve-ci-toolkit
         with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
+          ref: 94c53f1bbc921cccd4b0d399b5da7c54da4a6ce6
       - uses: actions/download-artifact@v8
         with:
           name: bundle-assets
@@ -391,7 +391,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/resolve-ci-toolkit
         with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
+          ref: 94c53f1bbc921cccd4b0d399b5da7c54da4a6ce6
       - uses: actions/download-artifact@v8
         with:
           name: apks-github
@@ -465,7 +465,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/resolve-ci-toolkit
         with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
+          ref: 94c53f1bbc921cccd4b0d399b5da7c54da4a6ce6
       - name: Setup Android CI
         uses: ./.magisk-ci-toolkit/.github/actions/setup-android-ci
         with:
