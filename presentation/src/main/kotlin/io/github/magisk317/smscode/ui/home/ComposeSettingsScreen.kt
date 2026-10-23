@@ -431,7 +431,6 @@ internal fun ComposeSettingsScreenBody(
         ActivityResultContracts.CreateDocument("application/zip"),
     ) { destination ->
         if (destination == null) return@rememberLauncherForActivityResult
-        if (!allowsLogExport) return@rememberLauncherForActivityResult
         scope.launch {
             val result = withContext(Dispatchers.IO) {
                 RuntimeDiagnosticsBridge.ensureInstalled()
@@ -451,7 +450,6 @@ internal fun ComposeSettingsScreenBody(
     }
 
     fun saveRuntimeLogBundle() {
-        if (!allowsLogExport) return
         if (LogBundleExporter.checkPreExport() != null) {
             scope.launch {
                 snackbarHostState.showSnackbar(
@@ -1037,9 +1035,21 @@ internal fun ComposeSettingsScreenBody(
                                 analyticsEnabled = analyticsEnabled.value,
                             ),
                             callbacks = RuntimeLogDiagnosticsCallbacks(
-                                onShareLog = ::saveRuntimeLogBundle,
-                                onRetentionClick = { showRuntimeLogRetentionDialog = true },
-                                onClearLogClick = { showClearLogConfirmDialog = true },
+                                onShareLog = if (allowsLogExport) {
+                                    { saveRuntimeLogBundle() }
+                                } else {
+                                    {}
+                                },
+                                onRetentionClick = if (allowsLogExport) {
+                                    { showRuntimeLogRetentionDialog = true }
+                                } else {
+                                    {}
+                                },
+                                onClearLogClick = if (allowsLogExport) {
+                                    { showClearLogConfirmDialog = true }
+                                } else {
+                                    {}
+                                },
                                 onAnalyticsEnabledChange = if (!BuildConfig.DEBUG && !BuildConfig.IS_CI_BUILD) {
                                     { enabled ->
                                         analyticsEnabled.value = enabled
