@@ -2,6 +2,7 @@ package io.github.magisk317.smscode.xp.hook.helper
 
 import android.content.Context
 import io.github.magisk317.smscode.common.utils.SmsCodeUtils
+import io.github.magisk317.smscode.hook.BuildConfig
 import io.github.magisk317.smscode.runtime.bridge.HookRuntimeBridge
 import io.github.magisk317.smscode.runtime.common.utils.StringUtils
 import io.github.magisk317.smscode.runtime.contract.logging.LogRoute
@@ -17,10 +18,10 @@ import io.github.magisk317.smscode.xposed.hook.HookHostCapabilities
  */
 internal object XscHookHostCapabilities : HookHostCapabilities {
     override fun isVerboseLogMode(context: Context): Boolean =
-        HookRuntimeBridge.prefsAccess.isVerboseLogMode(context)
+        BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
 
     override fun isSensitiveDebugLogMode(context: Context): Boolean =
-        runCatching { HookRuntimeBridge.prefsAccess.isSensitiveDebugLogMode(context) }.getOrDefault(false)
+        BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
 
     override fun escapeCode(value: String): String = StringUtils.escape(value).orEmpty()
 

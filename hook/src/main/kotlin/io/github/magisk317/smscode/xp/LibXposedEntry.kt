@@ -45,12 +45,10 @@ class LibXposedEntry : BaseLibXposedEntry {
         // Diagnostic: test remote prefs reading
         runCatching {
             val prefs = remotePrefsProvider()
-            val sensitiveLog = prefs?.getBoolean("pref_sensitive_debug_log_mode", false)
             val enabled = prefs?.getBoolean("pref_enable", false)
             XLog.w(
-                message = "Hook remotePrefs: prefs=%s sensitiveLog=%s enabled=%s keys=%s",
+                message = "Hook remotePrefs: prefs=%s enabled=%s keys=%s",
                 prefs != null,
-                sensitiveLog,
                 enabled,
                 prefs?.all?.keys?.size,
             )

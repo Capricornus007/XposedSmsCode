@@ -230,14 +230,9 @@ object HookPrefsReader : HookPrefsAccess {
             appId = "xposed-sms-code",
         )
 
-    override fun isVerboseLogMode(context: Context): Boolean {
-        val defaultValue = false
-        return getBooleanViaProvider(PrefConst.KEY_VERBOSE_LOG_MODE, defaultValue)
-    }
+    override fun isVerboseLogMode(context: Context): Boolean = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
 
-    override fun isSensitiveDebugLogMode(context: Context): Boolean {
-        return getBooleanViaProvider(PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE, false)
-    }
+    override fun isSensitiveDebugLogMode(context: Context): Boolean = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
 
     @JvmStatic
     fun isAnalyticsEnabled(context: Context): Boolean {

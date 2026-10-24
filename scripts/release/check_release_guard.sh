@@ -4,19 +4,21 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 TOOLKIT_DIR="$("$ROOT_DIR/scripts/resolve_ci_toolkit.sh")"
+export MAGISK_RELEASE_POLICY_FILE="$ROOT_DIR/scripts/config/release-policy.json"
 
 # Source the toolkit's modular release guard
 source "${TOOLKIT_DIR}/release/check_release_guard.sh"
 
 # XposedSmsCode specific configuration
-MAX_LEN="${PLAY_WHATSNEW_MAX:-500}"
+validate_release_policy "$ROOT_DIR"
+MAX_LEN="${MAGISK_RELEASE_WHATSNEW_MAX_LENGTH:-${PLAY_WHATSNEW_MAX:-500}}"
 if [[ -n "${1:-}" ]] && [[ -d "$1" ]]; then
   TAG_NAME="${2:-}"
 else
   TAG_NAME="${1:-}"
 fi
-REQUIRED_LOCALES=(${PLAY_WHATSNEW_REQUIRED_LOCALES:-en-US zh-CN})
-ALLOW_NON_ASCII_COMMIT_SUBJECT="${ALLOW_NON_ASCII_COMMIT_SUBJECT:-false}"
+read -r -a REQUIRED_LOCALES <<< "${MAGISK_RELEASE_WHATSNEW_LOCALES:-${PLAY_WHATSNEW_REQUIRED_LOCALES:-en-US zh-CN}}"
+ALLOW_NON_ASCII_COMMIT_SUBJECT="${MAGISK_RELEASE_ALLOW_NON_ASCII_COMMIT_SUBJECT:-${ALLOW_NON_ASCII_COMMIT_SUBJECT:-false}}"
 
 # Validate numeric inputs
 if [[ ! "$MAX_LEN" =~ ^[0-9]+$ ]]; then
@@ -46,7 +48,7 @@ check_versioncode_increment "$ROOT_DIR"
 check_tag_matches_version "$TAG_NAME" "$VERSION_NAME"
 
 # XposedSmsCode specific: check whatsnew locales
-whatsnew_dir="${ROOT_DIR}/distribution/whatsnew"
+whatsnew_dir="${ROOT_DIR}/${MAGISK_RELEASE_WHATSNEW_DIRECTORY:-distribution/whatsnew}"
 fail=0
 for locale in "${REQUIRED_LOCALES[@]}"; do
   file="$whatsnew_dir/whatsnew-$locale"

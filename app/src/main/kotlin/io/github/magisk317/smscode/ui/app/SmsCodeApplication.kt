@@ -94,7 +94,7 @@ class SmsCodeApplication : Application() {
         MagiskOtel.configureForInstallation(
             this,
             MagiskOtel.Config(
-                enabled = BuildConfig.DEBUG || runBlocking {
+                enabled = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD || runBlocking {
                     AppPreferencesDataStore.getBoolean(
                         this@SmsCodeApplication,
                         PrefConst.KEY_ENABLE_ANALYTICS,
@@ -117,7 +117,7 @@ class SmsCodeApplication : Application() {
                     ),
                 projectId = "83955172",
                 projectName = "XposedSmsCode",
-                environment = if (BuildConfig.DEBUG) "debug" else "release",
+                environment = if (BuildConfig.DEBUG) "debug" else if (BuildConfig.IS_CI_BUILD) "ci" else "release",
                 // Skip dominates this service (~81% of every span): an intercept check that found
                 // nothing to do. Dropping it keeps ok / error / fallback readable.
                 suppressedResultValues = setOf("skip"),
@@ -153,10 +153,7 @@ class SmsCodeApplication : Application() {
         importPendingCodeRecords()
         syncPreferences()
         registerLicenseActivityKiller()
-        val isCiOrDebug = BuildConfig.DEBUG ||
-            BuildConfig.VERSION_NAME.contains("-202") ||
-            BuildConfig.VERSION_NAME.contains("-test") ||
-            BuildConfig.VERSION_NAME.contains("-ci")
+        val isCiOrDebug = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
         if (BuildConfig.ENABLE_MOBILE_ENTITLEMENT) {
             // entitlement 100% 保留：任何分发形态都初始化激活协调器
             MobileEntitlementCoordinator.initialize(this, applicationScope)
@@ -212,20 +209,11 @@ class SmsCodeApplication : Application() {
     private fun syncPreferences() {
         applicationScope.launch {
             HookPreferenceMirror.publish(this@SmsCodeApplication)
-            val verboseLog = AppPreferencesDataStore.getBoolean(
-                this@SmsCodeApplication,
-                PrefConst.KEY_VERBOSE_LOG_MODE,
-                false,
-            )
             RuntimeDiagnosticsBridge.ensureInstalled()
-            RuntimeLogStore.setEnabled(verboseLog)
-            val sensitiveDebugMode = AppPreferencesDataStore.getBoolean(
-                this@SmsCodeApplication,
-                PrefConst.KEY_SENSITIVE_DEBUG_LOG_MODE,
-                false,
-            )
+            val isPlaintextBuild = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
+            RuntimeLogStore.setEnabled(isPlaintextBuild)
             io.github.magisk317.xposed.logging.LogSanitizerConfig
-                .syncFromVerboseMode(sensitiveDebugMode)
+                .syncFromVerboseMode(isPlaintextBuild)
             StorageUtils.ensureExternalAppDataPermissions(this@SmsCodeApplication)
         }
     }
@@ -353,9 +341,7 @@ class SmsCodeApplication : Application() {
         )
     }
 
-    private fun readVerboseLogMode(): Boolean = runBlocking(Dispatchers.IO) {
-        AppPreferencesDataStore.getBoolean(this@SmsCodeApplication, PrefConst.KEY_VERBOSE_LOG_MODE, false)
-    }
+    private fun readVerboseLogMode(): Boolean = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
 
     private fun registerLicenseActivityKiller() {
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {

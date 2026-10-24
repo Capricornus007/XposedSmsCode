@@ -64,7 +64,6 @@ import io.github.magisk317.smscode.runtime.common.diagnostics.ActivationDiagnost
 import io.github.magisk317.smscode.runtime.common.prefs.AppPreferencesDataStore
 import io.github.magisk317.smscode.common.utils.RuntimeDiagnosticsBridge
 import io.github.magisk317.smscode.runtime.common.diagnostics.LogBundleExporter
-import io.github.magisk317.xposed.logging.VerboseLogEnableTracker
 import io.github.magisk317.smscode.runtime.RuntimeBackupImportStatus
 import io.github.magisk317.smscode.runtime.bridge.UiBackupAccess
 import io.github.magisk317.smscode.runtime.bridge.UiNotificationAccess
@@ -114,10 +113,7 @@ import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
 
 private val isCiOrDebugBuild: Boolean =
-    BuildConfig.DEBUG ||
-        BuildConfig.VERSION_NAME.contains("-202") ||
-        BuildConfig.VERSION_NAME.contains("-test") ||
-        BuildConfig.VERSION_NAME.contains("-ci")
+    BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
 
 private data class SettingsPageRuntime(
     val isActive: Boolean = true,
@@ -237,7 +233,6 @@ internal fun ComposeSettingsScreenBody(
     var expandOthers by remember { mutableStateOf(false) }
     val launcherIconVisible = remember { mutableStateOf(true) }
     var runtimeLogRetentionDays by remember { mutableIntStateOf(PrefConst.RUNTIME_LOG_RETENTION_DAYS_DEFAULT) }
-    val verboseLogEnabled = rememberPrefBoolean(PrefConst.KEY_VERBOSE_LOG_MODE, false)
     val analyticsEnabled = rememberPrefBoolean(PrefConst.KEY_ENABLE_ANALYTICS, true)
     var showRuntimeLogRetentionDialog by remember { mutableStateOf(false) }
     var showClearLogConfirmDialog by remember { mutableStateOf(false) }
@@ -440,7 +435,7 @@ internal fun ComposeSettingsScreenBody(
                 RuntimeDiagnosticsBridge.ensureInstalled()
                 val bundle = LogBundleExporter.buildLogBundle(
                     context = context,
-                    mode = DiagnosticExportMode.fromDebugLogging(verboseLogEnabled.value),
+                    mode = DiagnosticExportMode.FULL,
                 )
                 val file = bundle.file ?: return@withContext bundle.details
                 context.contentResolver.openOutputStream(destination, "wt")?.use { output ->
@@ -457,10 +452,12 @@ internal fun ComposeSettingsScreenBody(
     }
 
     fun saveRuntimeLogBundle() {
-        val blockReason = LogBundleExporter.checkPreExport(verboseLogEnabled.value)
-        if (blockReason != null) {
-            val message = io.github.magisk317.uikit.preference.resolveLogExportBlockMessage(context, blockReason)
-            scope.launch { snackbarHostState.showSnackbar(message) }
+        if (LogBundleExporter.checkPreExport() != null) {
+            scope.launch {
+                snackbarHostState.showSnackbar(
+                    context.getString(io.github.magisk317.uikit.R.string.uikit_log_export_need_root),
+                )
+            }
             return
         }
         val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", java.util.Locale.US)
@@ -1021,8 +1018,6 @@ internal fun ComposeSettingsScreenBody(
                             labels = RuntimeLogDiagnosticsLabels(
                                 shareLogTitle = stringResource(id = R.string.pref_share_log_title),
                                 shareLogSummary = stringResource(id = R.string.pref_share_log_summary),
-                                verboseLogTitle = stringResource(id = R.string.pref_verbose_log_mode_title),
-                                verboseLogSummary = stringResource(id = R.string.pref_verbose_log_mode_summary),
                                 retentionTitle = stringResource(id = R.string.pref_runtime_log_retention_days_title),
                                 retentionSummary = pluralStringResource(
                                     id = R.plurals.pref_runtime_log_retention_days_summary,
@@ -1033,34 +1028,13 @@ internal fun ComposeSettingsScreenBody(
                                 clearLogSummary = stringResource(id = R.string.runtime_log_clear_summary),
                             ),
                             state = RuntimeLogDiagnosticsState(
-                                verboseLogEnabled = verboseLogEnabled.value,
                                 analyticsEnabled = analyticsEnabled.value,
                             ),
                             callbacks = RuntimeLogDiagnosticsCallbacks(
                                 onShareLog = ::saveRuntimeLogBundle,
-                                onVerboseLogEnabledChange = { enabled ->
-                                    verboseLogEnabled.value = enabled
-                                    VerboseLogEnableTracker.onVerboseLogToggled(enabled)
-                                    io.github.magisk317.xposed.logging.LogSanitizerConfig
-                                        .syncFromVerboseMode(enabled)
-                                    scope.launch {
-                                        AppPreferencesDataStore.setBoolean(
-                                            context,
-                                            PrefConst.KEY_VERBOSE_LOG_MODE,
-                                            enabled,
-                                        )
-                                        HookPreferenceMirror.publish(context)
-                                        markPrefsSaved()
-                                    }
-                                    RuntimeDiagnosticsBridge.ensureInstalled()
-                                    RuntimeLogStore.setEnabled(enabled)
-                                    XLog.setLogLevel(
-                                        if (enabled) Log.VERBOSE else io.github.magisk317.smscode.runtime.BuildConfig.LOG_LEVEL,
-                                    )
-                                },
                                 onRetentionClick = { showRuntimeLogRetentionDialog = true },
                                 onClearLogClick = { showClearLogConfirmDialog = true },
-                                onAnalyticsEnabledChange = if (!BuildConfig.DEBUG) {
+                                onAnalyticsEnabledChange = if (!BuildConfig.DEBUG && !BuildConfig.IS_CI_BUILD) {
                                     { enabled ->
                                         analyticsEnabled.value = enabled
                                         scope.launch {
@@ -1074,13 +1048,13 @@ internal fun ComposeSettingsScreenBody(
                                         }
                                         MagiskOtel.configure(
                                             MagiskOtel.Config(
-                                                enabled = BuildConfig.DEBUG || enabled,
+                                                enabled = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD || enabled,
                                                 serviceName = "xposedsmscode",
                                                 serviceVersion = BuildConfig.VERSION_NAME,
                                                 serviceCommit = BuildConfig.COMMIT_HASH,
                                                 projectId = "83955172",
                                                 projectName = "XposedSmsCode",
-                                                environment = if (BuildConfig.DEBUG) "debug" else "release",
+                                                environment = if (BuildConfig.DEBUG) "debug" else if (BuildConfig.IS_CI_BUILD) "ci" else "release",
                                                 deviceAttributes =
                                                     mapOf(
                                                         "device.manufacturer" to Build.MANUFACTURER,
@@ -1098,7 +1072,6 @@ internal fun ComposeSettingsScreenBody(
                                 shareEntryMode = RuntimeLogShareEntryMode.SEPARATE_ITEM,
                                 itemOrder = listOf(
                                     RuntimeLogDiagnosticsItem.SHARE_LOG,
-                                    RuntimeLogDiagnosticsItem.SENSITIVE_LOG,
                                     RuntimeLogDiagnosticsItem.RETENTION,
                                     RuntimeLogDiagnosticsItem.CLEAR_LOG,
                                     RuntimeLogDiagnosticsItem.ANALYTICS,
