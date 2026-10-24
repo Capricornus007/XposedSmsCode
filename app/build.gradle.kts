@@ -129,7 +129,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     compileOnly(libs.libxposed.api)
-    implementation(libs.libxposed.service)
+    implementation(project(":magisk-xposed-kit:service"))
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging.interceptor)
     implementation(libs.kotlinx.serialization.json)
