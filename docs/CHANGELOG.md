@@ -3,6 +3,13 @@
 本日志记录了项目重构后的主要变更。
 
 ---
+## [v3.4.2] - Unreleased
+- 版本：`versionCode 136` / `versionName 3.4.2`。
+- 下一轮开发占位，发布前补充具体变更。
+
+> Full Changelog: https://gitlab.com/magisk3171/XposedSmsCode/-/compare/v3.4.1...v3.4.2
+
+---
 ## [v3.4.1] - 2026-10-24
 - 版本：`versionCode 135` / `versionName 3.4.1`。
 - `[log]` 日志策略随构建类型调整
