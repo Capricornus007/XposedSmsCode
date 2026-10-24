@@ -49,6 +49,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.okhttp)
     implementation(project(":runtime"))
     api(project(":magisk-ui-kit"))
     api(project(":magisk-ui-kit:update"))
