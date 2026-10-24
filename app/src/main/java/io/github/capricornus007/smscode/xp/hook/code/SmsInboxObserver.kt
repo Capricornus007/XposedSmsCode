@@ -235,7 +235,9 @@ internal class SmsInboxObserver(
 
     private fun buildObservedEventId(smsId: Long, date: Long): String {
         val ts = if (date > 0) date else System.currentTimeMillis()
-        return "sms_observed_${ts.toString(36)}_${smsId.toString(36)}"
+        // detekt MagicNumber：進制基數 36（base-36 緊湊編碼，非魔術數值）
+        @Suppress("MagicNumber")
+        return "sms_observed_${ts.toString(RADIX_36)}_${smsId.toString(RADIX_36)}"
     }
 
     private fun markSeen(smsId: Long): Boolean = synchronized(recentSmsIds) {
@@ -255,6 +257,7 @@ internal class SmsInboxObserver(
     }
 
     companion object {
+        private const val RADIX_36 = 36
         private const val RECENT_SMS_WINDOW_MS = 10 * 60 * 1000L
         private const val MAX_RECENT_SMS_COUNT = 32
         private const val MAX_TRACKED_SMS_IDS = 128
