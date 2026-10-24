@@ -18,6 +18,7 @@ import io.github.magisk317.smscode.common.utils.HookPreferenceMirror
 import io.github.magisk317.smscode.xposed.utils.ModuleActivationStore
 import io.github.magisk317.smscode.xposed.utils.ModuleUtils
 import io.github.magisk317.smscode.common.utils.RuntimeDiagnosticsBridge
+import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeCrashLogs
 import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogStore
 import io.github.magisk317.smscode.xp.helper.ModuleConflictArbiter
 import io.github.magisk317.smscode.xposed.runtime.CoreHookPolicy
@@ -28,6 +29,7 @@ import io.github.magisk317.smscode.xposed.runtime.CoreRuntime
 import io.github.magisk317.smscode.runtime.common.utils.StorageUtils
 import io.github.magisk317.smscode.xposed.runtime.CoreRuntimeAccess
 import io.github.magisk317.xposed.logging.XLog
+import io.github.magisk317.xposed.logging.MagiskLogPolicy
 import io.github.magisk317.xposed.logging.DefaultLogSanitizer
 import io.github.magisk317.smscode.di.appModule
 import io.github.magisk317.smscode.di.billingModule
@@ -61,6 +63,14 @@ class SmsCodeApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Before anything logs or crashes: the policy decides both redaction and how much a
+        // bundle collects, and the crash writer has to be in place to catch the rest of startup.
+        MagiskLogPolicy.install(
+            isDebugBuild = BuildConfig.DEBUG,
+            isCiBuild = BuildConfig.IS_CI_BUILD,
+            allowPlaintextLogs = BuildConfig.ALLOW_PLAINTEXT_LOGS,
+        )
+        RuntimeCrashLogs.install(this)
         AppPreferencesDataStore.install(XscPreferenceHooks)
         if (BuildConfig.ENABLE_MOBILE_ENTITLEMENT) {
             configureMobileEntitlement()
@@ -210,10 +220,7 @@ class SmsCodeApplication : Application() {
         applicationScope.launch {
             HookPreferenceMirror.publish(this@SmsCodeApplication)
             RuntimeDiagnosticsBridge.ensureInstalled()
-            val isPlaintextBuild = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
-            RuntimeLogStore.setEnabled(isPlaintextBuild)
-            io.github.magisk317.xposed.logging.LogSanitizerConfig
-                .syncFromVerboseMode(isPlaintextBuild)
+            RuntimeLogStore.setEnabled(MagiskLogPolicy.current().verboseLogging)
             StorageUtils.ensureExternalAppDataPermissions(this@SmsCodeApplication)
         }
     }
@@ -341,7 +348,7 @@ class SmsCodeApplication : Application() {
         )
     }
 
-    private fun readVerboseLogMode(): Boolean = BuildConfig.DEBUG || BuildConfig.IS_CI_BUILD
+    private fun readVerboseLogMode(): Boolean = MagiskLogPolicy.current().verboseLogging
 
     private fun registerLicenseActivityKiller() {
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {

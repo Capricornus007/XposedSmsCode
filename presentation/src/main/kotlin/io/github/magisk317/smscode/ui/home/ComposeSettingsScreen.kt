@@ -56,7 +56,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import io.github.magisk317.smscode.common.utils.ModuleUtils
 import io.github.magisk317.smscode.presentation.BuildConfig
 import io.github.magisk317.xposed.logging.MagiskOtel
-import io.github.magisk317.xposed.diagnostics.DiagnosticExportMode
+import io.github.magisk317.xposed.diagnostics.DiagnosticBundleNames
 import io.github.magisk317.smscode.presentation.R
 import io.github.magisk317.smscode.common.constant.Const
 import io.github.magisk317.smscode.common.constant.PrefConst
@@ -68,6 +68,7 @@ import io.github.magisk317.smscode.runtime.RuntimeBackupImportStatus
 import io.github.magisk317.smscode.runtime.bridge.UiBackupAccess
 import io.github.magisk317.smscode.runtime.bridge.UiNotificationAccess
 import org.koin.compose.koinInject
+import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeDiagnosticsEnvironment
 import io.github.magisk317.smscode.runtime.common.diagnostics.RuntimeLogStore
 import io.github.magisk317.smscode.common.utils.AppPreferences
 import io.github.magisk317.xposed.logging.XLog
@@ -98,7 +99,7 @@ import io.github.magisk317.uikit.preference.SingleChoicePositionDialog
 import io.github.magisk317.uikit.preference.SingleChoiceValueDialog
 import io.github.magisk317.uikit.preference.StatusSettingsSection
 import io.github.magisk317.uikit.preference.TextInputDialog
-import io.github.magisk317.smscode.ui.privacy.PrivacyPolicyPage
+import io.github.magisk317.smscode.runtime.common.utils.BrowserUtils
 import io.github.magisk317.uikit.theme.UiKitStyle
 import io.github.magisk317.uikit.theme.currentUiKitStyle
 import io.github.magisk317.uikit.text.AppText
@@ -217,7 +218,6 @@ internal fun ComposeSettingsScreenBody(
     var showSmsTestDialog by remember { mutableStateOf(false) }
     var smsTestInput by remember { mutableStateOf("") }
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
-    var showPrivacyPolicyPage by remember { mutableStateOf(false) }
     var showKeywordsDialog by remember { mutableStateOf(false) }
     var showSimSlotRemarkDialog by remember { mutableStateOf<Int?>(null) }
     var isActivated by remember { mutableStateOf(false) }
@@ -433,10 +433,7 @@ internal fun ComposeSettingsScreenBody(
         scope.launch {
             val result = withContext(Dispatchers.IO) {
                 RuntimeDiagnosticsBridge.ensureInstalled()
-                val bundle = LogBundleExporter.buildLogBundle(
-                    context = context,
-                    mode = DiagnosticExportMode.FULL,
-                )
+                val bundle = LogBundleExporter.buildLogBundle(context = context)
                 val file = bundle.file ?: return@withContext bundle.details
                 context.contentResolver.openOutputStream(destination, "wt")?.use { output ->
                     file.inputStream().use { input -> input.copyTo(output) }
@@ -460,9 +457,15 @@ internal fun ComposeSettingsScreenBody(
             }
             return
         }
-        val timestamp = java.text.SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", java.util.Locale.US)
-            .format(java.util.Date())
-        saveRuntimeLogLauncher.launch("smscode_logs_$timestamp.zip")
+        RuntimeDiagnosticsBridge.ensureInstalled()
+        // The name offered here is the name the exporter will write, because both come from
+        // the product token in the installed configuration.
+        saveRuntimeLogLauncher.launch(
+            DiagnosticBundleNames.bundleFileName(
+                product = RuntimeDiagnosticsEnvironment.current().product,
+                timestamp = DiagnosticBundleNames.exportTimestamp(),
+            ),
+        )
     }
 
     fun clearRuntimeLogFolders() {
@@ -1090,7 +1093,13 @@ internal fun ComposeSettingsScreenBody(
                         AppArrowItem(
                             title = stringResource(id = R.string.pref_privacy_policy_title),
                             summary = "",
-                        ) { showPrivacyPolicyPage = true }
+                        ) {
+                            BrowserUtils.openWebPage(
+                                context,
+                                Const.PRIVACY_POLICY_URL,
+                                R.string.browser_install_or_enable_prompt,
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(Const.SPACING_SMALL.dp))
@@ -1120,7 +1129,6 @@ internal fun ComposeSettingsScreenBody(
         showSmsTestDialog = showSmsTestDialog,
         showKeywordsDialog = showKeywordsDialog,
         showPrivacyPolicyDialog = showPrivacyPolicyDialog,
-        showPrivacyPolicyPage = showPrivacyPolicyPage,
         showBackupDialog = showBackupDialog,
         showRestoreDialog = showRestoreDialog,
         restoreUri = restoreUri,
@@ -1135,7 +1143,6 @@ internal fun ComposeSettingsScreenBody(
         onShowSmsTestDialogChange = { showSmsTestDialog = it },
         onShowKeywordsDialogChange = { showKeywordsDialog = it },
         onShowPrivacyPolicyDialogChange = { showPrivacyPolicyDialog = it },
-        onShowPrivacyPolicyPageChange = { showPrivacyPolicyPage = it },
         onShowBackupDialogChange = { showBackupDialog = it },
         onShowRestoreDialogChange = { showRestoreDialog = it },
         onBackupFlagsChange = { backupFlags = it },
@@ -1282,7 +1289,6 @@ private fun SettingsDialogs(
     showSmsTestDialog: Boolean,
     showKeywordsDialog: Boolean,
     showPrivacyPolicyDialog: Boolean,
-    showPrivacyPolicyPage: Boolean,
     showBackupDialog: Boolean,
     showRestoreDialog: Boolean,
     restoreUri: android.net.Uri?,
@@ -1297,7 +1303,6 @@ private fun SettingsDialogs(
     onShowSmsTestDialogChange: (Boolean) -> Unit,
     onShowKeywordsDialogChange: (Boolean) -> Unit,
     onShowPrivacyPolicyDialogChange: (Boolean) -> Unit,
-    onShowPrivacyPolicyPageChange: (Boolean) -> Unit,
     onShowBackupDialogChange: (Boolean) -> Unit,
     onShowRestoreDialogChange: (Boolean) -> Unit,
     onBackupFlagsChange: (BackupSelectionFlags) -> Unit,
@@ -1420,14 +1425,13 @@ private fun SettingsDialogs(
                 onExit()
             },
             onViewPolicy = {
-                onShowPrivacyPolicyDialogChange(false)
-                onShowPrivacyPolicyPageChange(true)
+                BrowserUtils.openWebPage(
+                    context,
+                    Const.PRIVACY_POLICY_URL,
+                    R.string.browser_install_or_enable_prompt,
+                )
             },
         )
-    }
-
-    if (showPrivacyPolicyPage) {
-        PrivacyPolicyPage(onDismiss = { onShowPrivacyPolicyPageChange(false) })
     }
 
     if (showBackupDialog) {

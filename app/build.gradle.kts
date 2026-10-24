@@ -42,6 +42,13 @@ val syncSmsCodeRulesAssets = tasks.register<Sync>("syncSmsCodeRulesAssets") {
     into(generatedSmsCodeRulesAssetsDir.map { it.dir("smscode-rules") })
 }
 
+val verifySmsCodeRulesIndex = tasks.register<org.gradle.api.tasks.Exec>("verifySmsCodeRulesIndex") {
+    group = "verification"
+    inputs.file(rootProject.layout.projectDirectory.file("smscode/rules/_meta/rules-index.json"))
+    workingDir(rootProject.layout.projectDirectory.dir("smscode/rules").asFile)
+    commandLine("python3", "tools/build_index.py", "--check")
+}
+
 android {
     namespace = "com.github.tianma8023.xposed.smscode"
     ndkVersion = ndkVersionStr
@@ -97,7 +104,11 @@ android {
 }
 
 tasks.named("preBuild") {
-    dependsOn(syncSmsCodeRulesAssets)
+    dependsOn(syncSmsCodeRulesAssets, verifySmsCodeRulesIndex)
+}
+
+tasks.named("check") {
+    dependsOn(verifySmsCodeRulesIndex)
 }
 
 dependencies {
@@ -146,26 +157,21 @@ val verifyNoLocalVerificationEngine = tasks.register("verifyNoLocalVerificationE
     group = "verification"
     description = "Ensure the app shell owns neither hook runtime code nor a local verification engine."
 
-    val bannedFiles = listOf(
-        "src/main/java/com/github/magisk317/smscode/xp/hook/code/InboundSmsBlocker.kt",
-        "src/main/java/com/github/magisk317/smscode/xp/hook/code/InboundSmsMethodInvoker.kt",
-        "src/main/java/com/github/magisk317/smscode/xp/hook/code/SmsIntentHookSupport.kt",
-    )
     val projectRoot = layout.projectDirectory.asFile
-    val hookSourceDir = projectRoot.resolve("src/main/java/com/github/magisk317/smscode/xp")
+    val sourceRoots = listOf("src/main/kotlin", "src/main/java").map(projectRoot::resolve)
+    val forbiddenPackagePath = "/io/github/magisk317/smscode/xp/"
 
-    inputs.files(bannedFiles.map(projectRoot::resolve))
-    inputs.files(fileTree(hookSourceDir) { include("**/*.kt") })
+    inputs.files(sourceRoots)
 
     doLast {
-        val violations = bannedFiles
-            .map(projectRoot::resolve)
-            .filter(File::exists)
-            .map { it.relativeTo(projectRoot).path } +
-            hookSourceDir.walkTopDown()
-                .filter { it.isFile && it.extension == "kt" }
+        val violations = sourceRoots.flatMap { root ->
+            if (!root.exists()) return@flatMap emptyList()
+            root.walkTopDown()
+                .filter { it.isFile && it.extension in setOf("kt", "java") }
+                .filter { it.path.replace(File.separatorChar, '/').contains(forbiddenPackagePath) }
                 .map { it.relativeTo(projectRoot).path }
                 .toList()
+        }
 
         if (violations.isNotEmpty()) {
             error(
