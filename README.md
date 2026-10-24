@@ -21,7 +21,7 @@
 <!-- badges:platform:end -->
 
 <!-- badges:tech:start -->
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.5.0--Beta1-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Java](https://img.shields.io/badge/Java-27%2B-E76F00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.10.00-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.9.0--milestone--2-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.5.0--alpha10-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-28-brightgreen?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Xposed API](https://img.shields.io/badge/Xposed_API-102-orange?style=flat-square)](https://github.com/libxposed/api) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.5.0--Beta2-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org) [![Java](https://img.shields.io/badge/Java-27%2B-E76F00?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org) [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2026.10.01-4285F4?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/jetpack/compose) [![Gradle](https://img.shields.io/badge/Gradle-9.9.0--milestone--2-02303A?style=flat-square&logo=gradle&logoColor=white)](https://gradle.org) [![AGP](https://img.shields.io/badge/AGP-9.5.0--rc01-3DDC84?style=flat-square&logo=gradle&logoColor=white)](https://developer.android.com/studio/releases/gradle-plugin) [![Min SDK](https://img.shields.io/badge/Min_SDK-28-brightgreen?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Target SDK](https://img.shields.io/badge/Target_SDK-37-blue?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/about/versions) [![Xposed API](https://img.shields.io/badge/Xposed_API-102-orange?style=flat-square)](https://github.com/libxposed/api) [![Telegram](https://img.shields.io/badge/Telegram-Group-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://t.me/+NR2QaQ4dlEgxYmNl)
 <!-- badges:tech:end -->
 
 </div>
@@ -55,7 +55,7 @@
 - 验证码规则管理：官方规则与自定义匹配规则分层合并，支持配置与规则的备份/恢复
 - 验证码历史记录：记录开关、数量上限与 SIM 卡槽备注
 - 应用内更新检查：支持启动时自动检查与仅 Wi-Fi 检查
-- 运行日志：CI 产出的 debug 构建或本机 debug 版本可导出日志归档并设置保留天数（默认 2 天）；正式版为性能关闭日志打印，需要导出日志请安装 CI 产出的 debug 版本且设备已 root
+- 运行日志：CI 产出的 debug 构建或本机 debug 版本可导出日志归档并设置保留天数（默认 2 天）；正式版为性能关闭日志打印，设置中不显示日志导出、保留天数与清理入口，需要导出日志请安装 CI 产出的 debug 版本且设备已 root
 - Material 3 界面：动态颜色、界面风格（Material / Miuix）、底栏与背景模糊等可视化设置
 
 # 注意

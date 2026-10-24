@@ -1,3 +1,48 @@
+# GitHub fallback for the Android release axis.
+#
+# GitLab owns releases: .gitlab-ci.yml runs the same scripts through
+# .gitlab/ci/android-release.yml, gated by the $RELEASE_OWNER group variable.
+# This file exists for the one situation where that chain cannot run at all --
+# the GitLab runner fleet is down -- so a release can still be cut, published to
+# the GitHub Release, submitted to Play, and pushed to Xposed-Modules-Repo.
+#
+# The publishing itself lives in the toolkit
+# (magisk317/magisk-ci-toolkit/.github/workflows/release-android.yml,
+# .gitlab-ci.yml pins it at the same SHA the GitLab pipeline includes), so the
+# two hosts share one implementation instead of two that drift. See
+# docs/hosting-cutover.md, "GitHub fallback release chain".
+#
+# Deploying this file does not enable publishing. GitHub publishes only while the
+# repository variable RELEASE_OWNER is exactly `github`:
+#   Settings -> Secrets and variables -> Actions -> Repository variables
+# That equality is deliberate -- sync:github force-pushes every GitLab release
+# tag here, so an unset variable would make every mirrored tag a second publish
+# from the mirror's own pushes.
+#
+# Emergency sequence -- the full procedure, including the recovery checklist, is
+# docs/github-fallback-release.md in the toolkit. Short form:
+#   1. scripts/release/release_tag.sh creates the signed annotated tag locally
+#      (it sources the toolkit's release/release_tag.sh; no signing key exists
+#      on GitHub and none is created here).
+#   2. push the branch and the tag to github only. sync:github cannot run while
+#      the fleet is down, so the mirror push is manual -- and pushing the tag to
+#      GitLab now would queue a tag pipeline that publishes a second time as
+#      soon as a runner returns. The tag goes back during recovery.
+#   3. set RELEASE_OWNER=github on this repository.
+#   4. Run workflow -> Release, tag name, publish switches as required.
+#      Steps 3 and 4 are the only actions that produce external side effects, so
+#      rehearse first with dry_run=true and RELEASE_OWNER left as `gitlab`: a dry
+#      run builds and verifies and writes nothing outside the runner. It does not
+#      need a tag that exists yet, because the guard compares the tag name with
+#      versionName -- so the next version is a valid rehearsal target.
+#   5. When GitLab runners are back, run the toolkit's
+#      release/reconcile_github_refs.sh (read-only first, then --apply) and only
+#      then set RELEASE_OWNER back, or the next sync:github force-push overwrites
+#      whatever this chain published.
+#
+# Telegram is not part of this chain. The release card is reviewed by a human
+# before it goes out (notification.yml stays workflow_dispatch only), so nothing
+# here sends it automatically.
 name: Release
 
 on:
@@ -5,449 +50,148 @@ on:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Signed release tag to publish (created locally with scripts/release/release_tag.sh)'
+        required: true
+        type: string
+      publish_github_release:
+        description: 'Create or update the GitHub Release'
+        type: boolean
+        default: true
+      publish_play:
+        description: 'Submit the Play bundle to Google Play'
+        type: boolean
+        default: true
+      publish_modules_repo:
+        description: 'Publish the channel tag to Xposed-Modules-Repo'
+        type: boolean
+        default: true
+      dry_run:
+        description: 'Build and verify only; no GitHub Release, Play or Xposed-Modules-Repo side effects'
+        type: boolean
+        default: false
 
 permissions:
-  contents: write
+  contents: read
 
+# A half-finished publish must never be cancelled out from under a re-run: the
+# GitHub Release would exist without the Xposed-Modules-Repo channel tag, and the
+# next run would upload into that mixture.
 concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: true
+  group: release-${{ inputs.release_tag || github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  validate-release-metadata:
-    name: Validate Release Metadata
-    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') }}
-    runs-on: ubuntu-26.04
-    steps:
-      - name: Configure GitLab submodule credentials
-        env:
-          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
-        run: |
-          if [[ -z "$GITLAB_TOKEN" ]]; then
-            echo "::error::GITLAB_TOKEN secret is not set; cannot clone gitlab.com submodules"
-            exit 1
-          fi
-          git config --global http.https://gitlab.com/.extraheader "AUTHORIZATION: basic $(printf 'oauth2:%s' "$GITLAB_TOKEN" | base64 -w0)"
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
-          fetch-depth: 0
-      - uses: ./.github/actions/resolve-ci-toolkit
-        with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
-      - name: Setup Android CI
-        uses: ./.magisk-ci-toolkit/.github/actions/setup-android-ci
-        with:
-          checkout: 'false'
-      - name: Validate release notes and tag/version consistency
-        run: |
-          chmod +x scripts/release/check_release_guard.sh
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            scripts/release/check_release_guard.sh "${GITHUB_REF_NAME}"
-          else
-            echo "Skip formal release guard on beta branch; this pipeline publishes Alpha."
-          fi
-  build-github-apk:
-    name: Build GitHub APK
-    needs: [validate-release-metadata]
-    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') }}
-    runs-on: ubuntu-26.04
-    env:
-      HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
-    steps:
-      - name: Configure GitLab submodule credentials
-        env:
-          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
-        run: |
-          if [[ -z "$GITLAB_TOKEN" ]]; then
-            echo "::error::GITLAB_TOKEN secret is not set; cannot clone gitlab.com submodules"
-            exit 1
-          fi
-          git config --global http.https://gitlab.com/.extraheader "AUTHORIZATION: basic $(printf 'oauth2:%s' "$GITLAB_TOKEN" | base64 -w0)"
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
-          fetch-depth: 0
-      - uses: ./.github/actions/resolve-ci-toolkit
-        with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
-      - name: Setup Android CI
-        uses: ./.magisk-ci-toolkit/.github/actions/setup-android-ci
-        with:
-          checkout: 'false'
-      - name: Decode Keystore
-        if: env.HAS_RELEASE_KEYSTORE == 'true'
-        run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 --decode > release.jks
-      - name: Build GitHub APK with Splits
-        uses: ./.magisk-ci-toolkit/.github/actions/run-gradle-with-retry
-        with:
-          arguments: :app:assembleGithubRelease -PbuildSplits
-        env:
-          KEYSTORE_FILE: release.jks
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: apks-github
-          path: app/build/outputs/apk/**/release/*.apk
-
-  build-aab:
-    name: Build Bundle
-    needs: [validate-release-metadata]
-    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') }}
+  # Decides, and says out loud why. A fallback workflow that silently produced an
+  # empty green run is how a release gets "published" by nobody.
+  release-eligibility:
+    name: Check release ownership
     runs-on: ubuntu-26.04
     outputs:
-      has_play_native_symbols: ${{ steps.play_symbols.outputs.exists }}
-    env:
-      HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
+      proceed: ${{ steps.gate.outputs.proceed }}
+      publishes: ${{ steps.gate.outputs.publishes }}
     steps:
-      - name: Configure GitLab submodule credentials
-        env:
-          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
-        run: |
-          if [[ -z "$GITLAB_TOKEN" ]]; then
-            echo "::error::GITLAB_TOKEN secret is not set; cannot clone gitlab.com submodules"
-            exit 1
-          fi
-          git config --global http.https://gitlab.com/.extraheader "AUTHORIZATION: basic $(printf 'oauth2:%s' "$GITLAB_TOKEN" | base64 -w0)"
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
-          fetch-depth: 0
-      - uses: ./.github/actions/resolve-ci-toolkit
-        with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
-      - name: Setup Android CI
-        uses: ./.magisk-ci-toolkit/.github/actions/setup-android-ci
-        with:
-          checkout: 'false'
-      - name: Decode Keystore
-        if: env.HAS_RELEASE_KEYSTORE == 'true'
-        run: echo "${{ secrets.RELEASE_KEYSTORE }}" | base64 --decode > release.jks
-      - name: Resolve Play release version
+      - id: gate
         shell: bash
         env:
-          ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
-        run: |
-          bash .magisk-ci-toolkit/release/resolve_play_release.sh \
-            --package-name com.github.tianma8023.xposed.smscode \
-            --version-file gradle/libs.versions.toml \
-            --output play-release.env
-          {
-            cat play-release.env
-          } >> "$GITHUB_ENV"
-      - name: Build App Bundle
-        uses: ./.magisk-ci-toolkit/.github/actions/run-gradle-with-retry
-        with:
-          arguments: :app:bundlePlayRelease -PversionName=${{ env.MAGISK_PLAY_VERSION_NAME }} -PversionCode=${{ env.MAGISK_PLAY_VERSION_CODE }}
-        env:
-          KEYSTORE_FILE: release.jks
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-      - name: Upload AAB Artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: bundle-assets
-          path: |
-            app/build/outputs/bundle/**/*.aab
-            app/build/outputs/mapping/**/mapping.txt
-            play-release.env
-      - name: Detect Play Native Symbols
-        id: play_symbols
-        shell: bash
-        run: |
-          file="$(find app/build/outputs/native-debug-symbols -type f -name native-debug-symbols.zip | sort | head -n 1 || true)"
-          if [[ -n "$file" ]]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-            echo "path=$file" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Upload Play Native Symbols Artifact
-        if: steps.play_symbols.outputs.exists == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: native-symbols-play
-          path: ${{ steps.play_symbols.outputs.path }}
-
-  release:
-    name: Create Release
-    needs: [validate-release-metadata, build-github-apk, build-aab]
-    if: always() && (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') && needs.validate-release-metadata.result == 'success' && needs.build-github-apk.result == 'success'
-    runs-on: ubuntu-26.04
-    permissions:
-      contents: write
-    env:
-      HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
-    steps:
-      - name: Configure GitLab submodule credentials
-        env:
-          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
-        run: |
-          if [[ -z "$GITLAB_TOKEN" ]]; then
-            echo "::error::GITLAB_TOKEN secret is not set; cannot clone gitlab.com submodules"
-            exit 1
-          fi
-          git config --global http.https://gitlab.com/.extraheader "AUTHORIZATION: basic $(printf 'oauth2:%s' "$GITLAB_TOKEN" | base64 -w0)"
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
-          fetch-depth: 0
-      - uses: ./.github/actions/resolve-ci-toolkit
-        with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
-      - uses: actions/download-artifact@v8
-        with:
-          name: apks-github
-          path: artifacts/apks
-      - uses: actions/download-artifact@v8
-        if: needs.build-aab.result == 'success'
-        with:
-          name: bundle-assets
-          path: artifacts/bundle
-      - name: Generate Release Notes
-        if: startsWith(github.ref, 'refs/tags/')
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
-        run: |
-          .magisk-ci-toolkit/release/release_notes.sh \
-            --tag "$GITHUB_REF_NAME" \
-            --package-name "com.github.tianma8023.xposed.smscode" \
-            --source-repo "$GITHUB_REPOSITORY" \
-            --generate-github-notes \
-            --output release-notes.md
-      - name: Publish Release
-        if: startsWith(github.ref, 'refs/tags/') && env.HAS_RELEASE_KEYSTORE == 'true'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT || github.token }}
+          OWNER: ${{ vars.RELEASE_OWNER }}
+          EVENT: ${{ github.event_name }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
           set -euo pipefail
-          mapfile -d '' release_assets < <(
-            find artifacts/apks artifacts/bundle -type f \( -name '*.apk' -o -name '*.aab' \) -print0 2>/dev/null | sort -z
-          )
-          if [[ ${#release_assets[@]} -eq 0 ]]; then
-            echo "ERROR: no release assets found under artifacts/apks or artifacts/bundle" >&2
+          proceed=false
+          publishes=false
+          mode=''
+          if [[ "$OWNER" == "github" ]]; then
+            proceed=true
+            if [[ "$DRY_RUN" == "true" ]]; then
+              mode='dry run while RELEASE_OWNER=github'
+            else
+              publishes=true
+              mode='publishing (RELEASE_OWNER=github)'
+            fi
+          elif [[ "$EVENT" == "workflow_dispatch" && "$DRY_RUN" == "true" ]]; then
+            # A rehearsal writes nothing outside the runner, so it is allowed
+            # while GitLab still owns the release.
+            proceed=true
+            mode="dry run (RELEASE_OWNER=${OWNER:-unset})"
+          elif [[ "$EVENT" == "workflow_dispatch" ]]; then
+            echo "::error::GitHub is not the release owner (RELEASE_OWNER=${OWNER:-unset})."
+            echo "   Either set RELEASE_OWNER=github on this repository to publish from here,"
+            echo "   or re-run with dry_run checked to rehearse without side effects."
             exit 1
-          fi
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" "${release_assets[@]}" --clobber
-            gh release edit "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --draft=false --notes-file release-notes.md
           else
-            gh release create "$GITHUB_REF_NAME" "${release_assets[@]}" --title "$GITHUB_REF_NAME" --verify-tag --notes-file release-notes.md
+            mode="not the owner (RELEASE_OWNER=${OWNER:-unset}); tag ref left unhandled"
           fi
-
-  publish-play:
-    name: Publish to Google Play
-    needs: [build-aab]
-    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') }}
-    runs-on: ubuntu-26.04
-    env:
-      HAS_GOOGLE_PLAY_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS != '' }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/resolve-ci-toolkit
-        with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
-      - uses: actions/download-artifact@v8
-        with:
-          name: bundle-assets
-          path: artifacts/bundle
-      - name: Load Play release version
-        run: cat artifacts/bundle/play-release.env >> "$GITHUB_ENV"
-      - uses: actions/download-artifact@v8
-        if: needs.build-aab.outputs.has_play_native_symbols == 'true'
-        with:
-          name: native-symbols-play
-          path: artifacts/symbols-play
-      - name: Resolve Play Publish Inputs
-        id: resolve_play
-        shell: bash
-        run: |
-          aab_file=$(find artifacts/bundle -type f -name '*.aab' | sort | head -n 1)
-          if [[ -z "$aab_file" ]]; then
-            echo "ERROR: no .aab found under artifacts/bundle" >&2
-            exit 1
-          fi
-          mapping_file=$(find artifacts/bundle -type f -name mapping.txt | sort | head -n 1 || true)
-          symbols_file=$(find artifacts/symbols-play -type f -name native-debug-symbols.zip 2>/dev/null | sort | head -n 1 || true)
-          echo "aab_file=$aab_file" >> "$GITHUB_OUTPUT"
-          if [[ -n "$mapping_file" ]]; then
-            echo "has_mapping=true" >> "$GITHUB_OUTPUT"
-            echo "mapping_file=$mapping_file" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_mapping=false" >> "$GITHUB_OUTPUT"
-          fi
-          if [[ -n "$symbols_file" ]]; then
-            echo "has_symbols=true" >> "$GITHUB_OUTPUT"
-            echo "symbols_file=$symbols_file" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_symbols=false" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Publish to Google Play
-        if: env.HAS_GOOGLE_PLAY_CREDENTIALS == 'true'
-        shell: bash
-        env:
-          ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
-          FASTLANE_SKIP_UPDATE_CHECK: '1'
-          FASTLANE_DISABLE_COLORS: '1'
-          CI: 'true'
-        run: |
-          set -euo pipefail
-          export MAGISK_ANDROID_RELEASE_PACKAGE_NAME="com.github.tianma8023.xposed.smscode"
-          export MAGISK_PLAY_AAB_FILE="${{ steps.resolve_play.outputs.aab_file }}"
-          if [[ "${{ steps.resolve_play.outputs.has_mapping }}" == "true" ]]; then
-            export MAGISK_PLAY_MAPPING_FILE="${{ steps.resolve_play.outputs.mapping_file }}"
-          fi
-          if [[ "${{ steps.resolve_play.outputs.has_symbols }}" == "true" ]]; then
-            export MAGISK_PLAY_SYMBOLS_FILE="${{ steps.resolve_play.outputs.symbols_file }}"
-          fi
-          export MAGISK_RELEASE_ENV_FILE=play-release-status.env
-          bash .magisk-ci-toolkit/release/publish_play.sh
-
-  publish-play-alpha:
-    name: Publish Alpha to Google Play
-    needs: [build-aab]
-    if: ${{ false }}
-    runs-on: ubuntu-26.04
-    env:
-      HAS_RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE != '' }}
-      HAS_GOOGLE_PLAY_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS != '' }}
-    steps:
-      - name: Configure GitLab submodule credentials
-        env:
-          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
-        run: |
-          if [[ -z "$GITLAB_TOKEN" ]]; then
-            echo "::error::GITLAB_TOKEN secret is not set; cannot clone gitlab.com submodules"
-            exit 1
-          fi
-          git config --global http.https://gitlab.com/.extraheader "AUTHORIZATION: basic $(printf 'oauth2:%s' "$GITLAB_TOKEN" | base64 -w0)"
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
-          fetch-depth: 0
-      - uses: ./.github/actions/resolve-ci-toolkit
-        with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
-      - uses: actions/download-artifact@v8
-        with:
-          name: bundle-assets
-          path: artifacts/bundle
-      - name: Resolve Play release inputs
-        shell: bash
-        env:
-          ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
-        run: |
-          cp artifacts/bundle/play-release.env .
-          source ./play-release.env
+          echo "proceed=$proceed" >> "$GITHUB_OUTPUT"
+          echo "publishes=$publishes" >> "$GITHUB_OUTPUT"
           {
-            echo "MAGISK_PLAY_TRACK=$MAGISK_PLAY_TRACK"
-            echo "MAGISK_PLAY_VERSION_NAME=$MAGISK_PLAY_VERSION_NAME"
-            echo "MAGISK_PLAY_VERSION_CODE=$MAGISK_PLAY_VERSION_CODE"
-          } >> "$GITHUB_ENV"
-      - name: Publish Alpha to Google Play
-        if: env.HAS_RELEASE_KEYSTORE == 'true' && env.HAS_GOOGLE_PLAY_CREDENTIALS == 'true'
-        env:
-          ANDROID_PUBLISHER_CREDENTIALS: ${{ secrets.ANDROID_PUBLISHER_CREDENTIALS }}
-          MAGISK_ANDROID_RELEASE_PACKAGE_NAME: com.github.tianma8023.xposed.smscode
-          MAGISK_PLAY_AAB_FILE: ${{ '' }}
-        shell: bash
-        run: |
-          aab_file="$(find artifacts/bundle -type f -name '*.aab' | sort | head -n 1)"
-          mapping_file="$(find artifacts/bundle -type f -name mapping.txt | sort | head -n 1 || true)"
-          export MAGISK_PLAY_AAB_FILE="$aab_file"
-          export MAGISK_PLAY_MAPPING_FILE="$mapping_file"
-          export MAGISK_RELEASE_ENV_FILE=play-release-status.env
-          bash .magisk-ci-toolkit/release/publish_play.sh
-      - name: Upload Alpha publish status
-        if: success()
-        uses: actions/upload-artifact@v7
-        with:
-          name: play-alpha-status
-          path: play-release-status.env
-      - name: Verify Alpha publish credentials
-        if: env.HAS_RELEASE_KEYSTORE != 'true' || env.HAS_GOOGLE_PLAY_CREDENTIALS != 'true'
-        run: |
-          echo "ERROR: Alpha Play publishing requires RELEASE_KEYSTORE and ANDROID_PUBLISHER_CREDENTIALS" >&2
-          exit 1
-
-  publish-modules-repo:
-    name: Publish to Xposed-Modules-Repo
-    needs: [build-github-apk]
-    if: ${{ (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') }}
-    runs-on: ubuntu-26.04
-    env:
-      HAS_MODULES_REPO_TOKEN: ${{ secrets.XPOSED_MODULES_REPO_TOKEN != '' }}
-      MODULES_REPO: Xposed-Modules-Repo/com.github.tianma8023.xposed.smscode
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - uses: ./.github/actions/resolve-ci-toolkit
-        with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
-      - uses: actions/download-artifact@v8
-        with:
-          name: apks-github
-          path: artifacts/apks
-      - name: Generate Release Notes
-        env:
-          GH_TOKEN: ${{ secrets.XPOSED_MODULES_REPO_TOKEN }}
-        run: |
-          .magisk-ci-toolkit/release/release_notes.sh \
-            --tag "$GITHUB_REF_NAME" \
-            --package-name "com.github.tianma8023.xposed.smscode" \
-            --source-repo "$GITHUB_REPOSITORY" \
-            --generate-github-notes \
-            --output release-notes.md
-      - name: Publish Release in Xposed-Modules-Repo
-        if: env.HAS_MODULES_REPO_TOKEN == 'true'
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.XPOSED_MODULES_REPO_TOKEN }}
-        run: |
-          set -euo pipefail
-          mapfile -d '' apk_files < <(find artifacts/apks -type f -name '*.apk' -print0 | sort -z)
-          if [[ ${#apk_files[@]} -eq 0 ]]; then
-            echo "ERROR: no APK files found under artifacts/apks" >&2
-            exit 1
-          fi
-          if gh release view "$GITHUB_REF_NAME" --repo "$MODULES_REPO" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" "${apk_files[@]}" --repo "$MODULES_REPO" --clobber
-            gh release edit "$GITHUB_REF_NAME" --repo "$MODULES_REPO" --title "$GITHUB_REF_NAME" --draft=false --notes-file release-notes.md
-          else
-            gh release create "$GITHUB_REF_NAME" "${apk_files[@]}" --repo "$MODULES_REPO" --title "$GITHUB_REF_NAME" --notes-file release-notes.md
-          fi
-
-  release-notification:
-    name: Release Notification
-    needs: [release, publish-play, publish-play-alpha, publish-modules-repo]
-    if: always() && (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') && needs.publish-play.result != 'failure' && needs.publish-play-alpha.result != 'failure' && needs.publish-modules-repo.result != 'failure' && needs.release.result != 'failure'
-    runs-on: ubuntu-26.04
-    steps:
-      - name: Write release status
-        shell: bash
-        run: |
-          {
-            echo "## Release status"
+            echo "### Release eligibility"
             echo ""
-            echo "- Ref: $GITHUB_REF_NAME"
-            echo "- Play: ${{ needs.publish-play.result }}"
-            echo "- Alpha Play: ${{ needs.publish-play-alpha.result }}"
-            echo "- GitHub Release: ${{ needs.release.result }}"
-            echo "- Modules Repo: ${{ needs.publish-modules-repo.result }}"
+            echo "- Event: \`$EVENT\`"
+            echo "- RELEASE_OWNER: \`${OWNER:-unset}\`"
+            echo "- Decision: **$mode**"
           } >> "$GITHUB_STEP_SUMMARY"
 
+  release:
+    name: Release (toolkit chain)
+    needs: release-eligibility
+    if: needs.release-eligibility.outputs.proceed == 'true'
+    permissions:
+      contents: write
+    uses: magisk317/magisk-ci-toolkit/.github/workflows/release-android.yml@65505809acb199c24ae9e63df1975cdea2ab494b
+    with:
+      # Must equal the ref above, MAGISK_CI_TOOLKIT_REF and every GitLab
+      # include.ref; ci/verify_toolkit_pin.sh in the toolkit checks it.
+      toolkit_ref: 65505809acb199c24ae9e63df1975cdea2ab494b
+      release_tag: ${{ inputs.release_tag }}
+      package_name: com.github.tianma8023.xposed.smscode
+      release_cert_sha256: 027b936e1d82a606d83599548b8b11e49a2c8ae2588c4a9fbe8311e2c54f103a
+      # The same project-specific values .gitlab-ci.yml passes to the GitLab
+      # release templates, under the input names that mirror those variables.
+      apk_tasks: :app:assembleGithubRelease
+      gradle_extra_args: -PbuildSplits
+      aab_tasks: :app:bundlePlayRelease
+      play_track_override: production
+      initial_version_code: '126'
+      modules_repo: Xposed-Modules-Repo/com.github.tianma8023.xposed.smscode
+      play_url: https://play.google.com/store/apps/details?id=com.github.tianma8023.xposed.smscode
+      gitlab_project_url: https://gitlab.com/magisk3171/XposedSmsCode
+      # github_repository is left at its default: the calling repository already
+      # is magisk317/XposedSmsCode, and the GitLab value exists only because
+      # that pipeline runs somewhere else.
+      #
+      # MAGISK_ANDROID_RELEASE_GITHUB_ASSET_PATTERN is overridden to *.apk in
+      # .gitlab-ci.yml because this app ships every ABI to the GitHub Release;
+      # the toolkit default publishes only the arm64 artifact.
+      github_asset_pattern: '*.apk'
+      # The GitLab GitHub-release job attaches APKs only; the bundle goes to
+      # Play. The previous in-repo chain attached the .aab here as well, which is
+      # one of the divergences this file removes.
+      attach_aab: false
+      # On a tag push every channel is on, exactly as the old chain behaved. On a
+      # dispatch the operator picks; dry_run still turns all of them off inside
+      # the chain.
+      publish_github_release: ${{ github.event_name != 'workflow_dispatch' || inputs.publish_github_release }}
+      publish_play: ${{ github.event_name != 'workflow_dispatch' || inputs.publish_play }}
+      publish_modules_repo: ${{ github.event_name != 'workflow_dispatch' || inputs.publish_modules_repo }}
+      dry_run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+      enabled: ${{ needs.release-eligibility.outputs.proceed == 'true' }}
+      # Submodules are GitLab-hosted, so the chain needs GITLAB_TOKEN to check
+      # them out; it arrives through `secrets: inherit`.
+      checkout_submodules: recursive
+    secrets: inherit
+
+  # Project-specific and stays here: the task list is this app's quality gate, not
+  # a release-chain concern. Runs after the publish jobs, as it did before.
   post-release-quality:
     name: Post-release Quality
-    needs: [release, publish-play, publish-play-alpha, publish-modules-repo]
-    if: always() && (vars.RELEASE_OWNER == '' || vars.RELEASE_OWNER == 'github') && startsWith(github.ref, 'refs/tags/') && needs.publish-play.result != 'failure' && needs.publish-play-alpha.result != 'failure' && needs.publish-modules-repo.result != 'failure' && needs.release.result != 'failure'
+    needs: [release-eligibility, release]
+    # Only after a real publish from this host. A dry run has nothing to guard,
+    # and an emergency release should not spend the runner minutes on the test
+    # suite before the artifact is out -- the suite is what CI runs on beta.
+    if: needs.release-eligibility.outputs.publishes == 'true'
     runs-on: ubuntu-26.04
     steps:
       - name: Configure GitLab submodule credentials
@@ -465,7 +209,7 @@ jobs:
           fetch-depth: 0
       - uses: ./.github/actions/resolve-ci-toolkit
         with:
-          ref: 5a9cef57abe852dc7798664e03ad50256a0204dd
+          ref: 65505809acb199c24ae9e63df1975cdea2ab494b
       - name: Setup Android CI
         uses: ./.magisk-ci-toolkit/.github/actions/setup-android-ci
         with:

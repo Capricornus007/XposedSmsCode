@@ -87,6 +87,7 @@ import io.github.magisk317.uikit.preference.NonNegativeIntegerInputDialog
 import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsCallbacks
 import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsItem
 import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsItems
+import io.github.magisk317.xposed.logging.MagiskLogPolicy
 import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsLabels
 import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsLayout
 import io.github.magisk317.uikit.preference.RuntimeLogDiagnosticsState
@@ -113,8 +114,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinViewModel
 
-private val allowsLogExport: Boolean =
-    BuildConfig.BUILD_TYPE == "debug" || BuildConfig.ALLOW_PLAINTEXT_LOGS
+private val allowsLogExport: Boolean
+    get() = MagiskLogPolicy.current().allowsLogExport
 
 private data class SettingsPageRuntime(
     val isActive: Boolean = true,
@@ -1034,9 +1035,21 @@ internal fun ComposeSettingsScreenBody(
                                 analyticsEnabled = analyticsEnabled.value,
                             ),
                             callbacks = RuntimeLogDiagnosticsCallbacks(
-                                onShareLog = ::saveRuntimeLogBundle,
-                                onRetentionClick = { showRuntimeLogRetentionDialog = true },
-                                onClearLogClick = { showClearLogConfirmDialog = true },
+                                onShareLog = if (allowsLogExport) {
+                                    { saveRuntimeLogBundle() }
+                                } else {
+                                    {}
+                                },
+                                onRetentionClick = if (allowsLogExport) {
+                                    { showRuntimeLogRetentionDialog = true }
+                                } else {
+                                    {}
+                                },
+                                onClearLogClick = if (allowsLogExport) {
+                                    { showClearLogConfirmDialog = true }
+                                } else {
+                                    {}
+                                },
                                 onAnalyticsEnabledChange = if (!BuildConfig.DEBUG && !BuildConfig.IS_CI_BUILD) {
                                     { enabled ->
                                         analyticsEnabled.value = enabled
@@ -1073,12 +1086,16 @@ internal fun ComposeSettingsScreenBody(
                             ),
                             layout = RuntimeLogDiagnosticsLayout(
                                 shareEntryMode = RuntimeLogShareEntryMode.SEPARATE_ITEM,
-                                itemOrder = listOf(
-                                    RuntimeLogDiagnosticsItem.SHARE_LOG,
-                                    RuntimeLogDiagnosticsItem.RETENTION,
-                                    RuntimeLogDiagnosticsItem.CLEAR_LOG,
-                                    RuntimeLogDiagnosticsItem.ANALYTICS,
-                                ),
+                                itemOrder = if (allowsLogExport) {
+                                    listOf(
+                                        RuntimeLogDiagnosticsItem.SHARE_LOG,
+                                        RuntimeLogDiagnosticsItem.RETENTION,
+                                        RuntimeLogDiagnosticsItem.CLEAR_LOG,
+                                        RuntimeLogDiagnosticsItem.ANALYTICS,
+                                    )
+                                } else {
+                                    listOf(RuntimeLogDiagnosticsItem.ANALYTICS)
+                                },
                             ),
                             enabled = allowsLogExport,
                         )
