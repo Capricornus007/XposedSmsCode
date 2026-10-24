@@ -54,8 +54,16 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
+<<<<<<< HEAD
           validate-wrappers: false
           allow-snapshot-wrappers: true
+=======
+          ref: af0295f4631f61a163e981d52bc863e5b8f00dde
+      - name: Setup Android CI
+        uses: ./.magisk-ci-toolkit/.github/actions/setup-android-ci
+        with:
+          checkout: 'false'
+>>>>>>> upstream/beta
 
       - name: Run Detekt
         continue-on-error: true
