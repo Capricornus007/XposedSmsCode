@@ -45,7 +45,34 @@ plugins {
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.kover) apply false
     id("magisk.maintenance")
+    id("magisk.distribution.policy")
 }
+
+// Which distributions this app ships as and what each one compiles in. This is
+// product data, so it belongs here rather than in the shared convention: the
+// convention owns only the mechanism that turns this table into AGP flavors.
+//
+// Play and GitHub are the active channels. F-Droid is paused - the commented
+// flavor in each channel block is the single resume point, so a paused
+// distribution stays a documented state instead of becoming a flavor that was
+// quietly dropped.
+magiskDistribution {
+    flavor("play") {
+        buildConfigBoolean("ENABLE_SMS_CHANNEL", false)
+        buildConfigBoolean("ALLOW_HTTP_WEBHOOK", true)
+        buildConfigBoolean("ENABLE_ACCESSIBILITY_AUTO_INPUT", false)
+        buildConfigBoolean("HAS_BILLING", true)
+    }
+    flavor("github") {
+        buildConfigBoolean("ENABLE_SMS_CHANNEL", true)
+        buildConfigBoolean("ALLOW_HTTP_WEBHOOK", true)
+        buildConfigBoolean("ENABLE_ACCESSIBILITY_AUTO_INPUT", true)
+        buildConfigBoolean("HAS_BILLING", false)
+    }
+    // F-Droid paused: re-enable the flavor above and add it here to restore it.
+    // flavor("fdroid") { ... }
+}
+
 
 val catalog = libs
 val enableKover = providers.gradleProperty("enableKover")
@@ -109,11 +136,11 @@ val sharedCoreProjectPaths = listOf(
     ":smscode-core:verification",
 )
 val forbiddenMainModuleDependencies = buildMap {
-    put(":runtime", setOf(":app", ":core", ":hook"))
-    put(":hook", setOf(":app", ":core"))
-    put(":core", setOf(":app", ":hook"))
+    put(":runtime", setOf(":app", ":presentation", ":hook"))
+    put(":hook", setOf(":app", ":presentation"))
+    put(":presentation", setOf(":app", ":hook"))
     sharedCoreProjectPaths.forEach { sourcePath ->
-        put(sourcePath, setOf(":app", ":core", ":runtime", ":magisk-ui-kit"))
+        put(sourcePath, setOf(":app", ":presentation", ":runtime", ":magisk-ui-kit"))
     }
 }
 
@@ -154,12 +181,12 @@ val verifyMainModuleDependencies = tasks.register("verifyMainModuleDependencies"
 
 val verifyModuleBoundaries = tasks.register("verifyModuleBoundaries") {
     group = "verification"
-    description = "Run root module-boundary checks for app/core/runtime and shared smscode-core."
+    description = "Run root module-boundary checks for app/presentation/runtime and shared smscode-core."
 
     dependsOn(
         verifyMainModuleDependencies,
         ":app:verifyNoLocalVerificationEngine",
-        ":core:verifyNoRuntimeStorageImplLeak",
+        ":presentation:verifyNoRuntimeStorageImplLeak",
         ":runtime:verifyNoComposeUiLeak",
     )
 }

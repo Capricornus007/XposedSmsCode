@@ -19,7 +19,7 @@ import androidx.compose.ui.res.stringResource
 import com.magisk317.mobile.entitlement.MobileEntitlementChallenge
 import com.magisk317.mobile.entitlement.MobileEntitlementCoordinator
 import com.magisk317.mobile.entitlement.MobileEntitlementStatus
-import io.github.magisk317.smscode.core.R
+import io.github.magisk317.smscode.presentation.R
 import io.github.magisk317.smscode.common.constant.Const
 import io.github.magisk317.xposed.logging.XLog
 import io.github.magisk317.smscode.ui.theme.AppTheme

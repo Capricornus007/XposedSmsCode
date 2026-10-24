@@ -68,6 +68,7 @@
 # 文档
 - [更新日志 (Changelog)](docs/CHANGELOG.md)
 - [重构汇总 (Refactoring Summary)](docs/REFACTORING.md)
+- [系统架构 (Architecture)](docs/ARCHITECTURE.md)
 - [隐私政策 (Privacy Policy)](docs/PRIVACY.md)
 - [赞助与捐赠 (Donations)](docs/DONATIONS.md)
 

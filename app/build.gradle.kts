@@ -1,6 +1,6 @@
 plugins {
     id("magisk.android.application")
-    id("xsc.android.common")
+    id("magisk.android.distribution")
     id("magisk.app.signing")
     id("magisk.app.packaging")
     id("magisk.mobile.gate")
@@ -103,7 +103,7 @@ tasks.named("preBuild") {
 dependencies {
     implementation(libs.mobile.entitlement.android)
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
-    implementation(project(":core"))
+    implementation(project(":presentation"))
     implementation(project(":magisk-ui-kit"))
     implementation(project(":magisk-ui-kit:update"))
     implementation(project(":hook"))

@@ -1,10 +1,10 @@
 plugins {
     id("magisk.android.library")
     // The hook process reads preferences from this module, so it must carry the
-    // distribution flavors (xsc.android.common) and the gate flag
+    // distribution flavors (magisk.android.distribution) and the gate flag
     // (magisk.mobile.gate) the app decides with. Without them the hook boundary
     // would enforce the signed lease on every distribution, play included.
-    id("xsc.android.common")
+    id("magisk.android.distribution")
     id("magisk.mobile.gate")
     id(libs.plugins.kotlin.serialization.get().pluginId)
     id(libs.plugins.kotlin.parcelize.get().pluginId)

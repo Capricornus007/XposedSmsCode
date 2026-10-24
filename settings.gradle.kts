@@ -10,11 +10,10 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
-        gradlePluginPortal()
         maven("https://jitpack.io") {
             name = "JitPack"
             content {
@@ -39,7 +38,7 @@ include(
     ":app",
     ":hook",
     ":runtime",
-    ":core",
+    ":presentation",
     ":smscode-core:hook",
     ":smscode-core:domain",
     ":smscode-core:runtime",
