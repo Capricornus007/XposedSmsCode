@@ -296,7 +296,9 @@ fun CodeRecordScreen(
     val deleteAndUndo = remember(viewModel, scope, context, resources, snackbarHostState) {
         { target: SmsMsg ->
             viewModel.removeSmsMsg(listOf(target))
-            scope.launch {
+            // The Job is only the undo snackbar's lifetime; callers need the side effect, so it
+            // is bound instead of leaving the lambda with a Job to hand back.
+            val undoSnackbar = scope.launch {
                 val result = snackbarHostState.showLatestSnackbar(
                     message = resources.getQuantityString(
                         R.plurals.some_items_removed,

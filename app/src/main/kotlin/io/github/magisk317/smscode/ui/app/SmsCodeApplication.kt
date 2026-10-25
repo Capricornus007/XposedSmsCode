@@ -359,7 +359,9 @@ class SmsCodeApplication : Application() {
                     if (entitlementForegroundPrimed) {
                         if (BuildConfig.ENABLE_MOBILE_ENTITLEMENT) {
                             applicationScope.launch {
-                                runCatching { MobileEntitlementCoordinator.refresh(this@SmsCodeApplication) }
+                                runCatching { MobileEntitlementCoordinator.refresh(this@SmsCodeApplication) }.onFailure {
+                                    XLog.w("entitlement refresh failed: ${it.message}", it)
+                                }
                             }
                         }
                     } else {
