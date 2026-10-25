@@ -25,6 +25,25 @@ buildscript {
     }
 }
 
+
+// Java 27 bytecode target, lint side: AGP 9.5.0-rc01's lint-api (32.5.0-rc01)
+// resolves ASM 9.9 (V26 max) on androidLintTool, so lintAnalyze skips every
+// major-71 class with "broken class file?" warnings while the job stays green.
+// The buildscript force above does not reach project configurations; force the
+// same family here until the lint toolchain ships ASM >= 9.10 itself.
+allprojects {
+    configurations.configureEach {
+        if (name == "androidLintTool") {
+            resolutionStrategy {
+                force("org.ow2.asm:asm:9.11.1")
+                force("org.ow2.asm:asm-analysis:9.11.1")
+                force("org.ow2.asm:asm-commons:9.11.1")
+                force("org.ow2.asm:asm-tree:9.11.1")
+                force("org.ow2.asm:asm-util:9.11.1")
+            }
+        }
+    }
+}
 plugins {
     id("nl.littlerobots.version-catalog-update") version "1.1.1"
     id("magisk.android.application") apply false
