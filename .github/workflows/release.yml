@@ -230,7 +230,7 @@ jobs:
             :smscode-core:verification:detekt
             :smscode-core:verification:test
             :magisk-xposed-kit:testDebugUnitTest
-            :magisk-xposed-kit:logging:testDebugUnitTest
+            :magisk-xposed-kit:logging:jvmTest
             :magisk-xposed-kit:diagnostics:testDebugUnitTest
             :app:koverVerifyGithubDebug
             -PenableKover=true

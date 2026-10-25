@@ -53,6 +53,8 @@ import org.koin.core.context.startKoin
 import timber.log.Timber
 import io.github.magisk317.xposed.logging.MagiskOtel
 import io.github.magisk317.xposed.logging.AnonymousInstallationId
+import io.github.magisk317.xposed.logging.getOrCreate
+import io.github.magisk317.xposed.logging.configureForInstallation
 
 @SuppressLint("LogNotTimber")
 class SmsCodeApplication : Application() {

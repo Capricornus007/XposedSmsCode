@@ -14,7 +14,7 @@
     ":smscode-core:verification:test",
     ":smscode-core:rule:test",
     ":magisk-xposed-kit:testDebugUnitTest",
-    ":magisk-xposed-kit:logging:testDebugUnitTest",
+    ":magisk-xposed-kit:logging:jvmTest",
     ":magisk-xposed-kit:diagnostics:testDebugUnitTest",
     ":app:compileGithubDebugAndroidTestKotlin",
     ":app:compilePlayDebugAndroidTestKotlin",
@@ -52,6 +52,6 @@
     {"paths": ["hook/*"], "tasks": [":hook:check", ":hook:compileGithubDebugKotlin"]},
     {"paths": ["smscode/*"], "tasks": [":smscode-core:contract:test", ":smscode-core:domain:test", ":smscode-core:hook:testDebugUnitTest", ":smscode-core:runtime:testDebugUnitTest", ":smscode-core:verification:detekt", ":smscode-core:verification:test", ":smscode-core:rule:test"]},
     {"paths": ["magisk-ui-kit/*"], "tasks": [":magisk-ui-kit:testAndroidHostTest", ":magisk-ui-kit:jvmTest", ":magisk-ui-kit:billing:testDebugUnitTest"]},
-    {"paths": ["magisk-xposed-kit/*"], "tasks": [":magisk-xposed-kit:testDebugUnitTest", ":magisk-xposed-kit:logging:testDebugUnitTest", ":magisk-xposed-kit:diagnostics:testDebugUnitTest"]}
+    {"paths": ["magisk-xposed-kit/*"], "tasks": [":magisk-xposed-kit:testDebugUnitTest", ":magisk-xposed-kit:logging:jvmTest", ":magisk-xposed-kit:diagnostics:testDebugUnitTest"]}
   ]
 }
