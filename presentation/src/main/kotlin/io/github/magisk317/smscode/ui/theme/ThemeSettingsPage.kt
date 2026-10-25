@@ -1,5 +1,6 @@
 package io.github.magisk317.smscode.ui.theme
 
+import io.github.magisk317.uikit.theme.ThemeAccent
 import android.os.Build
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
