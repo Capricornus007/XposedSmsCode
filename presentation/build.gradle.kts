@@ -59,7 +59,7 @@ dependencies {
     implementation(project(":smscode-core:domain"))
     implementation(project(":smscode-core:rule"))
     implementation(project(":smscode-core:runtime"))
-    api(project(":smscode-core:db"))
+    implementation(project(":smscode-core:db"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.material.icons.core)
