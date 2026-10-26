@@ -377,7 +377,6 @@
     <!-- code parsing notification end -->
 
     <!-- faq -->
-    <string name="action_home_faq_title">FAQ</string>
 
     <!-- faq end -->
 
@@ -413,26 +412,6 @@
 
 
     <!-- faq -->
-    <string-array name="question_list">
-        <item>Module inactive after being updated?</item>
-        <item>Why does Android 15 crash intermittently?</item>
-        <item>Why is the phone heating up?</item>
-        <item>Why is auto input incomplete?</item>
-        <item>What should I do if the module stops working?</item>
-        <item>Why cannot SMS be marked as read or deleted?</item>
-        <item>Which ROM is this module suitable for?</item>
-        <item>What is the original intention of this app?</item>
-    </string-array>
-    <string-array name="answer_list">
-        <item>Re-check this module in the module list, force-stop and reopen this app, or reboot the phone if necessary.</item>
-        <item>Android 15 introduced new system behavior. Use the latest LSPosed and configure its scope correctly.</item>
-        <item>This module is lightweight. If the phone heats up severely, check for conflicts with other modules.</item>
-        <item>Auto input can be incomplete when another app takes focus. Check for clipboard-monitoring apps and disable them, or disable the module\'s Copy to clipboard option.</item>
-        <item>1. Add the app to the allowlist of battery or process managers.\n\n2. Check whether the module components are disabled.\n\n3. Check whether the ROM\'s verification-code protection is enabled.\n\n4. Contact the developer with details.</item>
-        <item>If the default SMS app uses its own database instead of the system SMS database, marking or deleting messages may not work on the device.</item>
-        <item>It is designed for AOSP-based ROMs and may work poorly on heavily customized ROMs.</item>
-        <item>Build a clean, green Android.</item>
-    </string-array>
     <!-- faq end -->
 
     <!-- privacy policy start -->
