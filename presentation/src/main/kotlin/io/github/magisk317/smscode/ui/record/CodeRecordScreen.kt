@@ -47,7 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.magisk317.smscode.presentation.R
 import io.github.magisk317.smscode.common.constant.PrefConst
 import io.github.magisk317.smscode.runtime.common.prefs.AppPreferencesDataStore
-import io.github.magisk317.smscode.db.entity.SmsMsg
+import io.github.magisk317.smscode.runtime.contract.record.SmsMsgRecordData
 import io.github.magisk317.smscode.runtime.bridge.UiPrefsAccess
 import org.koin.compose.koinInject
 import io.github.magisk317.smscode.runtime.contract.sim.SimSlotLabelFormatter
@@ -270,7 +270,7 @@ fun CodeRecordScreen(
     }
 
     // Detail Dialog State
-    var detailSmsMsg by remember { mutableStateOf<SmsMsg?>(null) }
+    var detailSmsMsg by remember { mutableStateOf<SmsMsgRecordData?>(null) }
 
     // Logic to toggle selection mode
     fun toggleSelection(id: Long) {
@@ -294,7 +294,7 @@ fun CodeRecordScreen(
 
     // Move deleteAndUndo outside items block and remember it
     val deleteAndUndo = remember(viewModel, scope, context, resources, snackbarHostState) {
-        { target: SmsMsg ->
+        { target: SmsMsgRecordData ->
             viewModel.removeSmsMsg(listOf(target))
             // The Job is only the undo snackbar's lifetime; callers need the side effect, so it
             // is bound instead of leaving the lambda with a Job to hand back.
@@ -358,7 +358,7 @@ fun CodeRecordScreen(
     }
     val onSelectAllVisible: () -> Unit = {
         val visibleIds = smsList
-            .filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() }
+            .filter { it.msgType == SmsMsgRecordData.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() }
             .mapNotNull { it.id }
             .toSet()
         if (visibleIds.isNotEmpty()) {
@@ -382,7 +382,7 @@ fun CodeRecordScreen(
     val body: @Composable (PaddingValues, Modifier) -> Unit = { listPadding, scrollModifier ->
         val topPadding = listPadding.calculateTopPadding()
         val codeSmsList = deduplicateCodeRecords(
-            smsList.filter { it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() },
+            smsList.filter { it.msgType == SmsMsgRecordData.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank() },
         )
         val activeSmsList = codeSmsList
         val activeTitle = context.getString(R.string.records_column_code_title)
@@ -645,7 +645,7 @@ fun CodeRecordScreen(
         }
     }
 }
-private fun deduplicateCodeRecords(records: List<SmsMsg>): List<SmsMsg> {
+private fun deduplicateCodeRecords(records: List<SmsMsgRecordData>): List<SmsMsgRecordData> {
     return CodeRecordSimilarityUtils.deduplicateRecords(
         records = records,
         projection = { record ->
@@ -666,7 +666,7 @@ private fun deduplicateCodeRecords(records: List<SmsMsg>): List<SmsMsg> {
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun RecordDetailOverlay(
-    sms: SmsMsg,
+    sms: SmsMsgRecordData,
     onDismiss: () -> Unit,
     onCopy: (label: String, value: String, toast: String) -> Unit,
     onDelete: () -> Unit,
@@ -871,14 +871,14 @@ private fun formatDetailTime(
 private fun RecordSplitColumn(
     title: String,
     emptyHint: String,
-    list: List<SmsMsg>,
+    list: List<SmsMsgRecordData>,
     isSelectionMode: Boolean,
     selectedIds: Set<Long>,
     onToggleSelection: (Long) -> Unit,
     onActivateSelection: (Long) -> Unit,
-    onCopyCode: (SmsMsg) -> Unit,
-    onShowDetail: (SmsMsg) -> Unit,
-    onDelete: (SmsMsg) -> Unit,
+    onCopyCode: (SmsMsgRecordData) -> Unit,
+    onShowDetail: (SmsMsgRecordData) -> Unit,
+    onDelete: (SmsMsgRecordData) -> Unit,
     modifier: Modifier = Modifier,
     showHeader: Boolean = true,
     listContentPadding: PaddingValues = PaddingValues(0.dp),
@@ -1062,7 +1062,7 @@ private fun RecordSplitColumn(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CodeRecordItem(
-    smsMsg: SmsMsg,
+    smsMsg: SmsMsgRecordData,
     isSelectionMode: Boolean,
     isSelected: Boolean,
     onClick: () -> Unit,
