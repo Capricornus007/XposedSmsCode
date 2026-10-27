@@ -1,0 +1,26 @@
+{
+  "gradle_args": [],
+  "groups": [
+    {
+      "tasks": [
+        "verifyModuleBoundaries",
+        ":smscode-core:contract:test",
+        ":smscode-core:domain:test",
+        ":smscode-core:hook:testDebugUnitTest",
+        ":smscode-core:runtime:testDebugUnitTest",
+        ":smscode-core:verification:detekt",
+        ":smscode-core:verification:test",
+        ":magisk-xposed-kit:testDebugUnitTest",
+        ":magisk-xposed-kit:logging:compileAndroidMain",
+        ":magisk-xposed-kit:logging:compileKotlinJvm",
+        ":magisk-xposed-kit:logging:jvmTest",
+        ":magisk-xposed-kit:diagnostics:testDebugUnitTest",
+        ":smscode-core:hook:lintDebug",
+        ":smscode-core:runtime:lintDebug",
+        ":presentation:testGithubDebugUnitTest",
+        ":presentation:compileGithubDebugKotlin",
+        ":app:check"
+      ]
+    }
+  ]
+}
