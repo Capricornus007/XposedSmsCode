@@ -63,6 +63,10 @@
 -keep class io.github.capricornus007.smscode.xp.hook.** { *; }
 -adaptresourcefilecontents META-INF/xposed/java_init.list
 -dontwarn io.github.libxposed.annotation.**
+# libxposed-service 是模組 app 與 LSPosed 管理器之間的 binder 介面：管理器用介面描述子
+# marshal IXposedService/IXposedScopeCallback，R8 一改名牌服務就綁不上（2026-10-31
+# upstream 實測 IXposedScopeCallback 變成 R8$$、app 卡在未激活）。移植自 upstream cf2850c9。
+-keep class io.github.libxposed.service.** { *; }
 # Xposed end
 # ==========================
 
