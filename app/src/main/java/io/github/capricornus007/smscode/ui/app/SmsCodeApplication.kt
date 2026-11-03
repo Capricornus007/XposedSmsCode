@@ -66,7 +66,7 @@ class SmsCodeApplication : Application() {
         applicationScope.launch {
             AppPreferencesDataStore.syncToSharedPrefs(this@SmsCodeApplication)
             AppPreferencesDataStore.ensureReadable(this@SmsCodeApplication)
-            val verboseLog = AppPreferencesDataStore.getBoolean(
+            val verboseLog = BuildConfig.DEBUG && AppPreferencesDataStore.getBoolean(
                 this@SmsCodeApplication,
                 PrefConst.KEY_VERBOSE_LOG_MODE,
                 false,

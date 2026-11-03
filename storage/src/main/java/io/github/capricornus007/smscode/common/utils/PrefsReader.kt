@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import android.content.Context
 import io.github.capricornus007.smscode.common.constant.PrefConst
 import io.github.capricornus007.smscode.data.db.entity.SmsMsg
+import io.github.capricornus007.smscode.storage.BuildConfig
 
 object PrefsReader {
     private const val PREFS_NAME = "xposed_prefs"
@@ -196,8 +197,8 @@ object PrefsReader {
 
     @JvmStatic
     fun isVerboseLogMode(context: Context): Boolean {
-        val defaultValue = false
-        return getBooleanViaProvider(context, PrefConst.KEY_VERBOSE_LOG_MODE, defaultValue)
+        if (!BuildConfig.DEBUG) return false
+        return getBooleanViaProvider(context, PrefConst.KEY_VERBOSE_LOG_MODE, false)
     }
 
     @JvmStatic

@@ -7,6 +7,8 @@
 - 版本：`versionCode 135` / `versionName 3.4.1`。
 - `[sync]` 合併 `origin/master` 機器人更新與上游 `beta` 至 `a601af80`；本 fork 延續自包含三模組架構，不復活上游已分拆的 `build-logic`／`hook`／`runtime`／`presentation` 與共享子模組。
 - `[deps]` Gradle wrapper 更新至 `9.10.0-20261103002137+0000`（SHA-256 `8cfee718e13173384e0c0999410a46b3b8813379edfca191d4791176fba138d1`），AGP 更新至 `9.6.0-alpha02`。
+- `[privacy]` 詳細執行期日誌、備份還原與日誌匯出僅在 debug／CI 建置啟用；release 會停用捕獲、移除共享偏好並清除既有執行期日誌，避免短信正文或驗證碼落盤與匯出。
+- `[build]` Java 27 的 `androidLintTool` 類別路徑固定 ASM `9.11.1`；nightly wrapper 排程會從新 distribution URL 取得並持久化官方 SHA-256，不再留下無校驗和的 wrapper。
 - `[log]` 日志策略集中到共享库，由构建类型决定：正式版脱敏且不导出，debug 构建保留原文并尽量导出。CI 标记不再把 release 放宽成捕获构建；设置页在正式版隐藏日志导出、保留天数与清理入口，并且不挂导出回调，导出链路在正式版不可达。
 - `[log]` 导出包名、暂存目录、私有导出目录统一由同一产品标识派生，另存对话框给出的名字与写盘归档名同源。
 - `[log]` 日志保留天数默认两天，跨设备、跨应用一致。

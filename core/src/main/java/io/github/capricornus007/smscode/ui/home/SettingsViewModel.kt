@@ -302,6 +302,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
                         val map = HashMap<String, String?>()
                         for ((k, v) in allPrefs) {
                             if (k.startsWith("internal_")) continue
+                            if (!BuildConfig.DEBUG && k == PrefConst.KEY_VERBOSE_LOG_MODE) continue
                             map[k] = v?.toString()
                         }
                         map
@@ -448,6 +449,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         if (prefsMap.isEmpty()) return
         for ((k, v) in prefsMap) {
             if (v == null) continue
+            if (!BuildConfig.DEBUG && k == PrefConst.KEY_VERBOSE_LOG_MODE) continue
             val strV = v
             val coerced = coerceRestoreValue(k, strV)
             if (!coerced.shouldWrite) {

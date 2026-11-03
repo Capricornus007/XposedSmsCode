@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
+import io.github.capricornus007.smscode.storage.BuildConfig
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -37,6 +38,9 @@ object LogBundleExporter {
      */
     @Suppress("TooGenericExceptionCaught")
     fun buildLogBundle(context: Context): ExportResult {
+        if (!BuildConfig.DEBUG) {
+            return ExportResult(null, "log export is unavailable in release builds")
+        }
         synchronized(opLock) {
             val timestamp = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.getDefault()).format(Date())
             val exportDir = getPrivateExportDir(context)
@@ -109,6 +113,7 @@ object LogBundleExporter {
     }
 
     fun shareLogBundle(context: Context, file: File) {
+        check(BuildConfig.DEBUG) { "log sharing is unavailable in release builds" }
         if (!file.exists() || !file.isFile || !file.canRead()) {
             throw IllegalStateException("share file unavailable: ${file.absolutePath}")
         }

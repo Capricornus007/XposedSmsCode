@@ -26,6 +26,23 @@ buildscript {
     }
 }
 
+// Java 27 bytecode target, lint side: AGP 9.6.0-alpha02 still resolves an ASM
+// line that cannot parse class major 71. The buildscript force above does not
+// reach project configurations, so pin the lint tool classpath independently.
+allprojects {
+    configurations.configureEach {
+        if (name == "androidLintTool") {
+            resolutionStrategy {
+                force("org.ow2.asm:asm:9.11.1")
+                force("org.ow2.asm:asm-analysis:9.11.1")
+                force("org.ow2.asm:asm-commons:9.11.1")
+                force("org.ow2.asm:asm-tree:9.11.1")
+                force("org.ow2.asm:asm-util:9.11.1")
+            }
+        }
+    }
+}
+
 plugins {
     id("nl.littlerobots.version-catalog-update") version "1.1.1"
     alias(libs.plugins.android.application) apply false

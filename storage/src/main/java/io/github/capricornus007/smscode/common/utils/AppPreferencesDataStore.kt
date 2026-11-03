@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import io.github.capricornus007.smscode.common.constant.PrefConst
+import io.github.capricornus007.smscode.storage.BuildConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -191,7 +192,11 @@ object AppPreferencesDataStore {
             PrefConst.KEY_SETTINGS_ACCORDION_MODE,
             getBoolean(context, PrefConst.KEY_SETTINGS_ACCORDION_MODE, true),
         )
-        editor.putBoolean(PrefConst.KEY_VERBOSE_LOG_MODE, getBoolean(context, PrefConst.KEY_VERBOSE_LOG_MODE, false))
+        if (BuildConfig.DEBUG) {
+            editor.putBoolean(PrefConst.KEY_VERBOSE_LOG_MODE, getBoolean(context, PrefConst.KEY_VERBOSE_LOG_MODE, false))
+        } else {
+            editor.remove(PrefConst.KEY_VERBOSE_LOG_MODE)
+        }
         editor.putBoolean(
             PrefConst.KEY_ENABLE_AUTO_INPUT_CODE,
             getBoolean(context, PrefConst.KEY_ENABLE_AUTO_INPUT_CODE, true),

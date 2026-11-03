@@ -539,34 +539,38 @@ fun ComposeSettingsScreen(
                             val intent = io.github.capricornus007.smscode.feature.backup.BackupManager.getImportRuleListSAFIntent(context)
                             restoreLauncher.launch(intent)
                         }
-                        SwitchItem(
-                            title = stringResource(id = R.string.pref_verbose_log_mode_title),
-                            summary = stringResource(id = R.string.pref_verbose_log_mode_summary),
-                            key = PrefConst.KEY_VERBOSE_LOG_MODE,
-                            defaultValue = false,
-                            onItemClick = {
-                                scope.launch {
-                                    val result = withContext(Dispatchers.IO) {
-                                        LogBundleExporter.buildLogBundle(context)
+                        if (BuildConfig.DEBUG) {
+                            SwitchItem(
+                                title = stringResource(id = R.string.pref_verbose_log_mode_title),
+                                summary = stringResource(id = R.string.pref_verbose_log_mode_summary),
+                                key = PrefConst.KEY_VERBOSE_LOG_MODE,
+                                defaultValue = false,
+                                onItemClick = {
+                                    scope.launch {
+                                        val result = withContext(Dispatchers.IO) {
+                                            LogBundleExporter.buildLogBundle(context)
+                                        }
+                                        val file = result.file
+                                        if (file == null) {
+                                            Toast.makeText(context, "导出失败: ${result.details}", Toast.LENGTH_LONG).show()
+                                            return@launch
+                                        }
+                                        runCatching {
+                                            LogBundleExporter.shareLogBundle(context, file)
+                                        }.onFailure {
+                                            Toast.makeText(context, "分享失败: ${it.message}", Toast.LENGTH_LONG).show()
+                                        }
                                     }
-                                    val file = result.file
-                                    if (file == null) {
-                                        Toast.makeText(context, "导出失败: ${result.details}", Toast.LENGTH_LONG).show()
-                                        return@launch
-                                    }
-                                    runCatching {
-                                        LogBundleExporter.shareLogBundle(context, file)
-                                    }.onFailure {
-                                        Toast.makeText(context, "分享失败: ${it.message}", Toast.LENGTH_LONG).show()
-                                    }
-                                }
-                            },
-                            onToggle = { on ->
-                                RuntimeLogStore.setEnabled(on)
-                                XLog.setLogLevel(if (on) Log.VERBOSE else io.github.capricornus007.smscode.storage.BuildConfig.LOG_LEVEL)
-                            },
-                            onSaved = markPrefsSaved,
-                        )
+                                },
+                                onToggle = { on ->
+                                    RuntimeLogStore.setEnabled(on)
+                                    XLog.setLogLevel(
+                                        if (on) Log.VERBOSE else io.github.capricornus007.smscode.storage.BuildConfig.LOG_LEVEL,
+                                    )
+                                },
+                                onSaved = markPrefsSaved,
+                            )
+                        }
                         SwitchItem(
                             title = stringResource(id = R.string.pref_auto_update_on_start_title),
                             summary = stringResource(id = R.string.pref_auto_update_on_start_summary),

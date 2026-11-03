@@ -2,6 +2,7 @@ package io.github.capricornus007.smscode.common.utils
 
 import android.content.Context
 import android.util.Log
+import io.github.capricornus007.smscode.storage.BuildConfig
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -21,6 +22,7 @@ object RuntimeLogStore {
     private const val MAX_READ_LINES = 2000
     private val lock = Any()
     private val buffer = ArrayDeque<RuntimeLogEntry>(MAX_BUFFER_SIZE)
+    private val buildAllowsDetailedLogs: Boolean = BuildConfig.DEBUG
 
     @Volatile
     private var appContext: Context? = null
@@ -30,16 +32,18 @@ object RuntimeLogStore {
 
     fun initialize(context: Context, enableDetailedLogs: Boolean) {
         appContext = context.applicationContext ?: context
-        enabled = enableDetailedLogs
+        enabled = buildAllowsDetailedLogs && enableDetailedLogs
+        if (!buildAllowsDetailedLogs) clear()
     }
 
     fun setEnabled(on: Boolean) {
-        enabled = on
+        enabled = buildAllowsDetailedLogs && on
     }
 
-    fun isEnabled(): Boolean = enabled
+    fun isEnabled(): Boolean = buildAllowsDetailedLogs && enabled
 
     fun append(priority: Int, tag: String, message: String, force: Boolean = false) {
+        if (!buildAllowsDetailedLogs) return
         if (!enabled && !force) return
         val entry = RuntimeLogEntry(
             timestamp = System.currentTimeMillis(),
@@ -61,10 +65,15 @@ object RuntimeLogStore {
             buffer.clear()
         }
         val file = getLogFile() ?: return
-        runCatching { file.writeText("") }
+        runCatching { if (file.exists()) file.delete() }
+        file.parentFile?.let { parent ->
+            val backup = File(parent, "$LOG_FILE_NAME.bak")
+            runCatching { if (backup.exists()) backup.delete() }
+        }
     }
 
     fun query(minutes: Int?, keyword: String?, limit: Int = 600): List<RuntimeLogEntry> {
+        if (!buildAllowsDetailedLogs) return emptyList()
         val memoryList = synchronized(lock) { buffer.toList() }
         val source = if (memoryList.isNotEmpty()) memoryList else readFromFile()
         val now = System.currentTimeMillis()
@@ -94,6 +103,7 @@ object RuntimeLogStore {
     }
 
     fun exportToFile(context: Context, minutes: Int?, keyword: String?, limit: Int = 1200): File? {
+        if (!buildAllowsDetailedLogs) return null
         val dir = StorageUtils.getPrivateLogExportDir(context)
         if (!dir.exists() && !dir.mkdirs()) return null
 
