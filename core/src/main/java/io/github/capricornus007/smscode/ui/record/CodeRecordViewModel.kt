@@ -10,7 +10,7 @@ import io.github.capricornus007.smscode.common.constant.Const
 import io.github.capricornus007.smscode.common.utils.JsonUtils
 import io.github.capricornus007.smscode.common.utils.XLog
 import io.github.capricornus007.smscode.data.db.DBManager
-import io.github.capricornus007.smscode.data.db.entity.SmsMsg
+import io.github.capricornus007.smscode.data.db.record.SmsMsgRecordData
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -22,14 +22,14 @@ import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
 @Immutable
-data class CodeRecordUiState(val smsList: ImmutableList<SmsMsg> = persistentListOf(), val isLoading: Boolean = false)
+data class CodeRecordUiState(val smsList: ImmutableList<SmsMsgRecordData> = persistentListOf(), val isLoading: Boolean = false)
 
 class CodeRecordViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _loading = MutableStateFlow(false)
 
     val uiState: StateFlow<CodeRecordUiState> = DBManager.get(application)
-        .queryAllSmsMsgFlow()
+        .observeSmsMsgRecords()
         .combine(_loading) { smsList, loading ->
             CodeRecordUiState(smsList.toImmutableList(), loading)
         }
@@ -48,7 +48,7 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
             _loading.value = true
             try {
                 withContext(Dispatchers.IO) {
-                    DBManager.get(getApplication()).queryAllSmsMsg()
+                    DBManager.get(getApplication()).querySmsMsgRecords()
                 }
             } finally {
                 _loading.value = false
@@ -56,22 +56,22 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
         }
     }
 
-    fun removeSmsMsg(smsMsgList: List<SmsMsg>) {
+    fun removeSmsMsg(smsMsgList: List<SmsMsgRecordData>) {
         viewModelScope.launch {
             try {
                 DBManager.get(getApplication())
-                    .removeSmsMsgListSuspend(smsMsgList)
+                    .removeSmsMsgRecordsSuspend(smsMsgList)
             } catch (ignored: Throwable) {
                 XLog.e("Error occurs when remove SMS records", ignored)
             }
         }
     }
 
-    fun restoreSmsMsgList(smsMsgList: List<SmsMsg>) {
+    fun restoreSmsMsgList(smsMsgList: List<SmsMsgRecordData>) {
         viewModelScope.launch {
             try {
                 DBManager.get(getApplication())
-                    .insertSmsMsgListSuspend(smsMsgList)
+                    .restoreSmsMsgRecordsSuspend(smsMsgList)
             } catch (ignored: Throwable) {
                 XLog.e("Error occurs when restore SMS records", ignored)
             }
@@ -84,7 +84,7 @@ class CodeRecordViewModel(application: Application) : AndroidViewModel(applicati
             try {
                 val allRecords = uiState.value.smsList.toList()
                 val codeRecords = allRecords.filter {
-                    it.msgType == SmsMsg.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank()
+                    it.msgType == SmsMsgRecordData.MSG_TYPE_SMS && !it.smsCode.isNullOrBlank()
                 }
                 withContext(Dispatchers.IO) {
                     context.contentResolver.openOutputStream(uri)?.use { os ->

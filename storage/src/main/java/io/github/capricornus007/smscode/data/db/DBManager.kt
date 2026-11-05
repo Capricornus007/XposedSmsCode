@@ -7,8 +7,10 @@ import io.github.capricornus007.smscode.data.db.dao.SmsMsgDao
 import io.github.capricornus007.smscode.data.db.entity.AppInfo
 import io.github.capricornus007.smscode.data.db.entity.SmsCodeRule
 import io.github.capricornus007.smscode.data.db.entity.SmsMsg
+import io.github.capricornus007.smscode.data.db.record.SmsMsgRecordData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 /**
@@ -142,6 +144,12 @@ class DBManager private constructor(context: Context) {
 
     fun queryAllSmsMsgFlow(): Flow<List<SmsMsg>> = mSmsMsgDao.getAllFlow()
 
+    /** Record-screen projection; the UI works with [SmsMsgRecordData], never the Room entity. */
+    fun observeSmsMsgRecords(): Flow<List<SmsMsgRecordData>> =
+        mSmsMsgDao.getAllFlow().map { list -> list.map { it.toRecordData() } }
+
+    fun querySmsMsgRecords(): List<SmsMsgRecordData> = mSmsMsgDao.getAll().map { it.toRecordData() }
+
     fun queryAllSmsMsgCountFlow(): Flow<Long> = mSmsMsgDao.countFlow()
 
     fun removeSmsMsgList(smsMsgList: List<SmsMsg>) {
@@ -165,6 +173,52 @@ class DBManager private constructor(context: Context) {
             mSmsMsgDao.insertAll(smsMsgList)
         }
     }
+
+    suspend fun removeSmsMsgRecordsSuspend(records: List<SmsMsgRecordData>) {
+        withContext(Dispatchers.IO) {
+            mSmsMsgDao.deleteInTx(records.map { it.toSmsMsg() })
+        }
+    }
+
+    suspend fun restoreSmsMsgRecordsSuspend(records: List<SmsMsgRecordData>) {
+        withContext(Dispatchers.IO) {
+            mSmsMsgDao.insertAll(records.map { it.toSmsMsg() })
+        }
+    }
+
+    private fun SmsMsg.toRecordData(): SmsMsgRecordData = SmsMsgRecordData(
+        id = id,
+        sender = sender,
+        body = body,
+        date = date,
+        company = company,
+        smsCode = smsCode,
+        packageName = packageName,
+        notifyChannelId = notifyChannelId,
+        forwardStatus = forwardStatus,
+        forwardTarget = forwardTarget,
+        forwardMessage = forwardMessage,
+        forwardTime = forwardTime,
+        msgType = msgType,
+        callType = callType,
+    )
+
+    private fun SmsMsgRecordData.toSmsMsg(): SmsMsg = SmsMsg(
+        id = id,
+        sender = sender,
+        body = body,
+        date = date,
+        company = company,
+        smsCode = smsCode,
+        packageName = packageName,
+        notifyChannelId = notifyChannelId,
+        forwardStatus = forwardStatus,
+        forwardTarget = forwardTarget,
+        forwardMessage = forwardMessage,
+        forwardTime = forwardTime,
+        msgType = msgType,
+        callType = callType,
+    )
 
     fun queryAllAppInfos(): List<AppInfo> = mAppInfoDao.getAll()
 
